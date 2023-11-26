@@ -19,7 +19,7 @@
 
 除心理学以外，大模型的情绪研究还可以从其他社会科学中获取灵感，如社会学和传媒学等。通过跨领域学科研究大模型情绪输出问题，或许可以进一步提升聊天机器人的文本表现。
 
-![img.png](img/EmotionPrompt.png)
+![img.png](../img/EmotionPrompt.png)
 
 ## Examples  
 
