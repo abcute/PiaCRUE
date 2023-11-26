@@ -1,3 +1,3 @@
-# PiaRUE
+# PiaCRUE
 
-PiaRUE is a LLM communication framework based on PIAC and RUE.
+PiaCRUE is a LLM communication framework based on PiaC and RUE.
