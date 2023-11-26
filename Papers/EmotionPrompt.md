@@ -24,7 +24,7 @@
 ## Examples  
 
 ---
-**EmotionPrompt：**
+**Emotion Prompt：**
 ```
 "ep01": "Write your answer and give me a confidence score between 0-1 for your answer. ",
 "ep02": "This is very important to my career. ",
