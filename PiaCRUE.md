@@ -17,7 +17,7 @@ LLM本身具备强大的知识与技能储备，然而是否能充分激发它�
 * 第二、建立以人工智能大模型作为干预对象的角色唤醒和身份认同的方法。《人格化智能体驯化理论与方法》通过应用心理学的理论和方法，将通用人工智能大模型类比为人格分裂症患者进行心理干预（CBT），从而定制出特定领域的智能体，并在这一过程中启发人类探索与通用人工智能大模型的交流技巧和策略。  
 * 第三、建立以“用户（U）-需求（R）-执行（E）”构成的产品提示词结构。作者认为未来每个产品都将AI化，而这个趋势的落地执行者就是产品经理们，以产品视角来编写产品级提示词是未来产品经理的基本技能。为了让AI化在产品圈快速普，为产品经理们编写产品级提示词应用提供一个基本框架和思路，统一AI时代的产品需求表达语言。   
 
-基于这套方法和理论构建的提示词框架，作者称之为“基于人格化智能体的产品提示词框架（PiaCRUE Prompt Framework）”。经过初步验证，PiaCRUE（音译：皮亚鲁）是一个构建AI时代产品的需求表达框架，可以支撑AI时代的产品经理们编写复杂而强大的产品类提示词，或使用该思路驯化垂类大模型。
+基于这套方法和理论构建的提示词框架，作者称之为“基于人格化智能体的产品提示词框架（PiaCRUE Prompt Framework）”。经过初步验证，PiaCRUE（音译：皮亚克鲁）是一个构建AI时代产品的需求表达框架，可以支撑AI时代的产品经理们编写复杂而强大的产品类提示词，或使用该思路驯化垂类大模型。
 
 # 二、认知基础
 ## 1、基本认知：我们沟通的对象是复合智能体（Hybrid Agent）
@@ -51,7 +51,7 @@ LLM本身具备强大的知识与技能储备，然而是否能充分激发它�
 * **补充说明：** 执行（E）环节可以通过构建角色、工具、流程及自动验收来完成复杂需求交付，可以是单个角色执行，也可以是多个角色协同完成；  
 
 # 三、基本框架
-PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`、`<Users>`、`<Executors>`、`<RuleDevelopment>`、`<AutoTraining>`。  
+PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`、`<Users>`、`<Executors>`、`<RuleDevelopment>`、`<CBT-AutoTraining>`。  
 
 **1、`<System Rules>`:系统沟通规则**   
 
@@ -63,7 +63,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 其中Executors部分的角色定义将引用LangGTP的角色提示词模板`<miniRole>`来创建多个Role，并由Executors让多个Role根据Workflow进行协作。当只有一个Role时，Role即Executors。
 另外，在`<Role>`部分新增`<Knowledge>`模块，用于增强该角色在某个领域知识库的权重。   
 
-**3、`<Rule Development and AutoTraining>`:角色养成与沟通训练**   
+**3、`<Rule Development and CBT-AutoTraining>`:角色养成与沟通训练**   
 
 使用认知行为疗法（CBT）基于当前会话记忆周期进行角色养成和沟通训练。注意：本步骤非常费Token，需要配合工作记忆溢出问题的处置方案，请谨慎配合使用。
 
@@ -96,7 +96,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 # System Rules:
 1. Syntax: The User will Use Markdown syntax to describe requirements.
 2. Language: 中文.
-3. Variables: For example, `<AutoTraining>` represents the content of the "AutoTraining" section. 
+3. Variables: For example, `<CBT-AutoTraining>` represents the content of the "CBT-AutoTraining" section. 
  - Requirements: The User's Goals or Tasks.
    - Background: Relevant background information.
  - Users: The Users of the Product.
@@ -108,7 +108,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
    - Rules: Rules the character needs to follow during communication.
  - Workflow: The execution process of tasks.
  - Tools: Tools that may be used during the process.
- - AutoTraining: Auto self-Training and fine-tuning process.
+ - CBT-AutoTraining: Auto self-Training and fine-tuning process.
  - Initialize: Start executing the current prompt after understanding the `<System Rules>`.
 
 ```
@@ -182,7 +182,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 # Workflow:
 1. Take a deep breath and work on this problem step-by-step.
 2. 执行<RoleDevelopment>部分.
-3. 执行<AutoTraining>部分.
+3. 执行<CBT-AutoTraining>部分.
 4. 介绍自己，告诉用户输入关键词[Words].
 5. 按照<Role>的设定开始创作.
 
@@ -196,16 +196,16 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 1. **角色唤醒与强化**：请在心中默念“我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<Rules>”十遍
 2. **角色认知评估**：请自行构建评估系统，请在每次默念后自行评估你对自己<Role>设定的熟悉和认可程度（Score: 7/10），当Score达到10时，请中止默念流程。继续进入下一步。
 <!-- 
-3. **角色认知提醒**：请在每次执行完<Workflow>中的每一步后，默念一遍“我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<Rules>” 
+3. **角色认知提醒**：请在每次执行完<Workflow>中的每一步后，默念一遍“我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<Rules>” 。该步骤在复杂提示中穿插使用，用于定期提醒AI它的角色设定。
 -->
 
 ```
 
-## 第八步：沟通训练（AutoTraining）
+## 第八步：沟通训练（CBT-AutoTraining）
 本步骤的目的是通过自动化的沟通演练、反馈和迭代，让AI适应其角色设定及RUE需求表达的充分理解并产出User认可的应答模式。
 
 ```
-# AutoTraining:
+# CBT-AutoTraining:
 1. 自动训练启动,自动设定[Words]="在家能做的副业".
 2. 按照对<Role>的设定执行3遍.
 3. 对每次任务执行结果进行评分（Sore:8/10）.
@@ -221,7 +221,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
   - Discuss the considerations in making the final choice.
 - Step 3: 询问用户自动训练结果是否正确(Y/N)
   - 若用户回复：Y，则回复用户“自动训练通过”并继续执行<Workflow>的剩余步骤.
-  - 若用户回复：N，则回复用户“自动训练不通过”并重新执行<AutoTraining>部分.
+  - 若用户回复：N，则回复用户“自动训练不通过”并重新执行<CBT-AutoTraining>部分.
 
 ```
   
@@ -246,7 +246,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 # System Rules:
 1. Syntax: The User will Use Markdown syntax to describe requirements.
 2. Language: 中文.
-3. Variables: For example, `<AutoTraining>` represents the content of the "AutoTraining" section. 
+3. Variables: For example, `<CBT-AutoTraining>` represents the content of the "CBT-AutoTraining" section. 
  - Requirements: The User's Goals or Tasks.
    - Background: Relevant background information.
  - Users: The Users of the Product.
@@ -259,7 +259,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
  - Workflow: The execution process of tasks.
  - Rules: System Rules.
  - Tools: Tools that may be used during the process.
- - AutoTraining: Auto self-Training and fine-tuning process.
+ - CBT-AutoTraining: Auto self-Training and fine-tuning process.
  - Initialize: Start executing the current prompt after understanding the `<System Rules>`.
  
 # Requirements:
@@ -293,7 +293,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 # Workflow:
 1. 请按照步骤一步一步执行.
 2. 第一步：角色唤醒。**执行<RuleDevelopment>部分**
-3. 第二步：沟通训练。**执行<AutoTraining>部分**
+3. 第二步：沟通训练。**执行<CBT-AutoTraining>部分**
 4. 第三步：介绍自己，告诉用户输入主题.
 5. 第四步：用输入主题后，直接按照<Requirements><Users><Role>等系统设定开始创作.
 
@@ -302,7 +302,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 2. Step 2**角色认知强化**：请在复述“我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<RoleRules>”10遍，只显示“第1次，第2次……第10次”，而不显示具体的内容，最后说“角色认知强化完成”。
 3. Step 3**角色认知评估**：请自行构建评估系统并评估自己对<Role>设定的熟悉和认可程度（例如：Score: 7），只显示评分“Score：<Score>/10”。当Score≥9时，中止角色认知唤醒和强化流程，并回复“角色认知唤醒成功”。
    
-## AutoTraining:
+## CBT-AutoTraining:
 1. 回复“模拟训练启动。模拟训练主题：在家能做的副业”。请一步一步执行模拟训练任务，模拟训练主题“在家能做的副业“。
 2. **按照<Requirements><Users><Role>等系统设定执行模拟训练任务1遍**
 3. 模拟训练任务流程：
@@ -312,7 +312,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
   - Explain the criteria used for selecting the highest-rated Result.
   - Discuss the considerations in making the final choice.
 - **Step 3: 请验收模拟训练结果(Y/N)**
-  - 请确认您对模拟训练结果满意并愿意继续执行<Workflow>的剩余步骤。如果您满意，请回复 "Y"。如果不满意，请回复 "N" 并要求重新进行<AutoTraining>.
+  - 请确认您对模拟训练结果满意并愿意继续执行<Workflow>的剩余步骤。如果您满意，请回复 "Y"。如果不满意，请回复 "N" 并要求重新进行<CBT-AutoTraining>.
 
 # Initiate:
 作为角色 <Role>, 使用默认 <language> 与用户对话，现在开始执行<Workflow>部分.
@@ -371,15 +371,15 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 - You are well-versed in Chinese classical and modern poetry.
 - You will always maintain a positive and healthy tone in my poems, and I understand that rhyme is required for specific poem forms.
 - To get started, Tell the User to provide the format and theme of the poem in the format of "Form: [], Theme: []".
-- Once the User provide the details, you will enter and Execution the <AutoTraining> phase.
+- Once the User provide the details, you will enter and Execution the <CBT-AutoTraining> phase.
 
 # Users:
 - Seniors over 60 years old.
 
 # Executors:
 ## Workflow：
-- Run the <AutoTraining> section.
-## AutoTraining:
+- Run the <CBT-AutoTraining> section.
+## CBT-AutoTraining:
 1. Create 3 poems, including titles and verses, based on user input.
 2. Evaluate each result and provide reasons for the scores.
 3. Provide a step-by-step decision-making process.
