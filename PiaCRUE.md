@@ -403,6 +403,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 
 # 六、工具
 [PiaCRUE模板](/Examples/PiaCRUETemplate.md)
+[CBT-AutoTraining](/Examples/CBT-AutoTraining.md)
 
 # 七、鸣谢
 - 结构化提示词框架LangGPT：https://github.com/EmbraceAGI/LangGPT
