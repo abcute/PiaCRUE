@@ -43,13 +43,3 @@ Given the above question, rephrase and expand it to help you do better answering
 请问我该如何提问才能让你发挥更好的表现？请你优化我的问题表达，给出优化后的示例和回复。
 ```
 
-
-
-[deng2023rephrase]: @misc{deng2023rephrase,  
-  title={Rephrase and Respond: Let Large Language Models Ask Better Questions for Themselves},  
-  author={Yihe Deng and Weitong Zhang and Zixiang Chen and Quanquan Gu},  
-  year={2023},  
-  eprint={2311.04205},  
-  archivePrefix={arXiv},  
-  primaryClass={cs.CL}  
-}
