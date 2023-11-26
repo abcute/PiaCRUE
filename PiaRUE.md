@@ -91,7 +91,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 # 四、步骤
 ## 第一步：建立系统沟通规则，统一沟通编码及解码系统。
 所谓建立系统沟通规则，就是用简洁的叙述性语言告诉AI，它该如何编码和解码的接收到的信息和输入。比如：作者使用了Markdown语法来描述需求。比如：`<System Rules>`代表你必须首先遵守的基础规则，`<Requirements>`代表用户需要你完成的任务或目标，`<Users>`代表用户的特点（需求满足需考虑用户特点），`<Role>`代表用户需要你扮演的角色，`<Workflow>`代表任务执行流程。
-
+**方法一：用户约定**
 ```
 # System Rules:
 1. Syntax: The User will Use Markdown syntax to describe requirements.
@@ -111,6 +111,11 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
  - AutoTraining: Auto self-Training and fine-tuning process.
  - Initialize: Start executing the current prompt after understanding the `<System Rules>`.
 
+```
+**方法二：让AI来告诉你**
+```
+我的问题是"{问题}"，
+请问我该如何提问才能让你发挥更好的表现？请你优化我的问题表达，给出优化后的示例和回复。
 ```
 
 ## 第二步：明确需求、任务及目标
