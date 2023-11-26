@@ -9,8 +9,8 @@
 ## Summary
 
 ---
-### RaR方法与PiaC评价
-RaR方法是[PiaRUE](PiaRUE.md)方法中关于[PIAC](PIAC.md)沟通编码思想的一个非常棒的应用实例，即让人工智能来优化原始提示词，以形成人工智能能够理解的方式来进行表达。这个思想在日常Prompt编写中有很多变种应用方法。比如：
+### RaR方法与PiaC思想
+RaR方法是[PiaRUE](PiaRUE.md)方法中关于[PiaC](PiaC.md)人工智能沟通编码思想的一个非常棒的应用实例，即让人工智能来优化原始提示词，以形成人工智能能够理解的方式来进行表达。这个思想在日常Prompt编写中有很多变种应用方法。比如在编写Prompt时参考人工智能的意见：
 ```
 ChatGPT你好，请问我该如何提问才能让你发挥更好的表现？我的问题是"{问题}"，请你优化我的问题表达，给出优化后的示例和回复。
 
@@ -27,12 +27,18 @@ ChatGPT你好，请问我该如何提问才能让你发挥更好的表现？我�
 ## Examples  
 
 ---
-
+**One-step RaR**
 ```
 "{question}"
 Rephrase and expand the question, and respond.
 ```
+**Two-step RaR**
+```
 
+        "{question}"
+        Given the above question, rephrase and expand it to help you do better answering. Maintain all information in the original question.
+```
+**PiaC**
 ```
 我的问题是"{问题}"，
 请问我该如何提问才能让你发挥更好的表现？请你优化我的问题表达，给出优化后的示例和回复。
