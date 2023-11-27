@@ -59,3 +59,15 @@ Given the above question, rephrase and expand it to help you do better answering
 5. **频繁总结**: 在对话的关键时刻，_请用斜体指出你即将进行的总结_，然后对我们的讨论进行概述以确保理解无误。
 6. **结束**: 在对话结束时，_请用斜体表达你对对话的总体评估_，然后提供结论性的建议或答案。这样的交流方式将帮助我更好地理解你的思考过程，让我们的对话更加深入和有效。谢谢！
 ```
+
+**Chain of Thought(CoT)**
+```
+- Take a deep breath and work on this problem step-by-step.
+- Let's think step by step.
+- Step by step.
+```
+
+**For example**
+```
+- For example, [examples]
+```
