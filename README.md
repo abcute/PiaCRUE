@@ -2,6 +2,11 @@
 
 [PiaCRUE](PiaCRUE.md) is a collection of LLM communication methods based on [PiaC](Papers/PiaC.md) and [RUE](Examples/PiaCRUE_mini.md).  
 PiaCRUE is attempting to communicate with LLM using communication theories and psychological methods through special prompts, aiming to enhance LLM's performance.
+
+# Experiments
+经过自动化实验，示例中的提示词策略在不同场景下的表现有较大差异，但整体上还是优于普通提示词。以下是自动化提示词策略有效性实验用到的提示词模板：
+[AutoExpGPT.md](AutoExpGPT.md)
+
 # Examples
 
 1. [Examples.md](Examples.md)：心理学类提示词片段示例
