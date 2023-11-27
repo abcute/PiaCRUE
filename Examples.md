@@ -1,9 +1,9 @@
 # Description
 
 ---
-- Theory: [Theory]
-- Author: [Author]
-- Link:  https://github.com/abcute/PiaCRUE
+- Theory: PiaC
+- Author: abcute
+- Link: https://github.com/abcute/PiaCRUE
 
 ## Summary
 
