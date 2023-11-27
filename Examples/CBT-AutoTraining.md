@@ -11,7 +11,7 @@
 5. 若用户回复：Y，则自动训练通过并继续执行<Workflow>的剩余步骤.
 ## Execution Process:
 - Step 1: 根据[Words]执行任务
-  - 执行第一次并评分. Example: (Sore:8/10)
+  - 执行第一次并评分. For example: (Sore:8/10)
   - 执行第二次并评分.
   - 执行第三次并评分.
 - Step 2: 决策过程

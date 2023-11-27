@@ -71,3 +71,22 @@ Given the above question, rephrase and expand it to help you do better answering
 ```
 - For example, [examples]
 ```
+
+**PiaC-建立沟通编码系统**
+
+```
+我的问题是"{问题}"，
+为了让你发挥更好的表现，请你优化我的问题表达，给出优化后的表达示例和回复。
+```
+
+**PiaC-角色认知唤醒**
+
+```
+请在心中默念"我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<Rules>"。
+```
+
+**PiaC-角色认知强化**
+
+```
+请在复述角色设定10遍，显示进度“第1次，第2次……第10次”，而不显示具体的内容，最后说“角色认知强化完成”。复述内容：“我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<RoleRules>”。
+```
