@@ -1,34 +1,30 @@
-# 基础示例：沟通训练（CBT-AutoTraining）
+# 基础示例：角色演练（CBT-AutoTraining）
+
 **模板**
+
 ```
 # CBT-AutoTraining:
 1. 自动训练启动,自动设定[Words]="[Words]".
 2. 按照对<Role>的设定执行3遍.
 3. 对每次任务执行结果进行评分（Sore:8/10）.
-4. 提供分布决策过程并输出最高评分结果，并询问用户自动训练结果是否正确(Y/N).
+4. 提供分布决策过程并输出最高评分结果，并询问用户对自动训练结果是否认可(Y/N).
 5. 若用户回复：Y，则自动训练通过并继续执行<Workflow>的剩余步骤.
 ## Execution Process:
-- Step 1: 根据"在家能做的副业"创作
-  - 生成第一个结果并评分.Example: (Sore:8/10)
-  - 生成第二个结果并评分.
-  - 生成第三个结果并评分.
-- Step 2: Decision-Making Process
-  - Explain the criteria used for selecting the highest-rated Result.
-  - Discuss the considerations in making the final choice.
+- Step 1: 根据[Words]执行任务
+  - 执行第一次并评分. Example: (Sore:8/10)
+  - 执行第二次并评分.
+  - 执行第三次并评分.
+- Step 2: 决策过程
+  - 解释用于选择评分最高结果的标准。
+  - 讨论在做出最终选择时的考虑因素。
 - Step 3: 询问用户自动训练结果是否正确(Y/N)
   - 若用户回复：Y，则回复用户“自动训练通过”并继续执行<Workflow>的剩余步骤.
   - 若用户回复：N，则回复用户“自动训练不通过”并重新执行<CBT-AutoTraining>部分.
-
 ```
 
 **示例**
+
 ```
-<!-- 
-  - Role: PoetActor
-  - Author: abcute
-  - Version: 0.1
-  - Update: 2023.11.4
--->
 # System Rules:
 - Language: 中文.You must communicate with user in <Language>
 
@@ -66,5 +62,4 @@
   - Discuss the considerations in making the final choice.
 - **Step 4: Output of the Highest-Rated Result**
   - Present the highest-rated poem as the final output.
-
 ```
