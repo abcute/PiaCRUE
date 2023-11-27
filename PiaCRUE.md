@@ -402,7 +402,7 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 ```
 
 # 六、工具
-[PiaCRUE模板](/Examples/PiaCRUETemplate.md)
+[PiaCRUE模板](/Examples/PiaCRUE_Template.md)
 [CBT-AutoTraining](/Examples/CBT-AutoTraining.md)
 
 # 七、鸣谢
