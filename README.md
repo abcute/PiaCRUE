@@ -1,6 +1,6 @@
 # PiaCRUE
 
-[PiaCRUE](PiaCRUE.md) is a LLM communication framework based on [PiaC.md](Papers/PiaC.md) and [RUE](Examples/PiaCRUE_mini.md).
+[PiaCRUE](PiaCRUE.md) is a LLM communication framework based on [PiaC.md](Papers/PiaC.md) and [RUE](Examples/PiaCRUE_mini.md).  
 PiaCRUE is attempting to communicate with LLM using psychological methods through special prompts, aiming to enhance LLM's performance.
 
 # Examples
