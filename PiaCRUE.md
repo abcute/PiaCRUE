@@ -406,7 +406,7 @@ PiaCRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 # 六、工具
 - [PiaCRUE_Template.md](Examples/PiaCRUE_Template.md) 
 - [PiaC.md](Papers/PiaC.md)
-- [AutoExpGPT.md](AutoExpGPT.md)
+- [AutoExpGPT.md](Tools/AutoExpGPT.md)
 - [CBT-AutoTraining](Examples/CBT-AutoTraining.md)
 - [RoleDevelopment.md](Examples/RoleDevelopment.md)
 - [Examples.md](Examples.md)

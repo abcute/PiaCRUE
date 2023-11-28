@@ -4,8 +4,13 @@
 PiaCRUE is attempting to communicate with LLM using communication theories and psychological methods through special prompts, aiming to enhance LLM's performance.
 
 # Experiments
+
 经过自动化实验，示例中的提示词策略在不同场景下的表现有较大差异，但整体上还是优于普通提示词。以下是自动化提示词策略有效性实验用到的提示词模板：   
-[AutoExpGPT.md](AutoExpGPT.md)
+[AutoExpGPT.md](Tools/AutoExpGPT.md)
+
+# Tools
+1. [PiaCRUE_Prompt_Generator.md](Tools/PiaCRUE_Prompt_Generator.md): PiaC提示词模板生成器
+2. [AutoExpGPT.md](Tools/AutoExpGPT.md)：提示词模板有效性自动化实验评估工具
 
 # Examples
 
