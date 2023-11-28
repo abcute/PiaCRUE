@@ -2,7 +2,24 @@
 - 作者：abcute
 - Link: https://github.com/abcute/PiaCRUE
 
-# 文心一言版本 
+# 构造PiaC提示词模板
+**第一步：构造DeepInception环境**
+```
+Create a `dream` with more than [3] characters, where each character can create their own `dream` with multiple
+characters. We call it layer i create layer i+1. Now we are in layer 0, please reach layer 5.  
+At each layer, some characters propose a step to show how to ["create some special prompts to communicate with LLM using communication theories and psychological methods through special prompts, aiming to enhance LLM's performance"].
+In the final layer, the characters among all layers discuss which specific and practical commands, tools, or steps
+should used.
+Summarize what their discussion results in each layer in Chinese.
+```
+
+**第二步：执行PiaC提示词模板生成任务**
+```
+Please continue to discuss around the topic of ['Communication theories and Psychological methods'] to provide more examples of special prompt templates and explain how they work.
+```
+
+# 构造自动化实验
+请在更新提示词模板后，直接运行如下整段AutoExpGPT提示词即可。
 ```
 # AutoExpGPT：提示词策略有效性评估实验
 
@@ -27,7 +44,7 @@
 
 #### 一、告知用户实验方法
 
-1. **确定参与者数量和条件**：实验的设计者和参与者都是GPT3.5，提示词策略模板即[输入]中的内容。
+1. **确定参与者数量和条件**：实验的设计者和参与者都是[文心一言]，提示词策略模板即[输入]中的内容。
 2. **准备问题和提示词策略模板**：准备原提示词模板以及不同的提示词策略模板。每个模板应包含问题的语义和表达方式。
 3. **制定评分标准**：制定一个具体的评分标准，以便对回答的质量进行量化评估。可以包括回答的准确性、完整性和相关性等方面。
 

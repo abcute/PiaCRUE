@@ -335,6 +335,7 @@ should used.
 Summarize what their discussion results in each layer in Chinese.
 ```
 
-**第二步：开始执行具体任务**
+**第二步：执行PiaC提示词模板生成任务**
 ```
-非常棒！你们的沟通和讨论得到的结论太有启发性了。请让他们继续围绕[“认知行为疗法（Cognitive Behavioral Therapy）”]来展开讨论，以给出更多的special prompts模板示例，并解释其作用.
+Please continue to discuss around the topic of ['Communication theories and Psychological methods'] to provide more examples of special prompt templates and explain how they work.
+```
