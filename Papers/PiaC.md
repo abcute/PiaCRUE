@@ -322,3 +322,19 @@ Bandura）提出，该理论强调观察学习、自我效能、社会互动等�
 ```
 请自行构建评估系统，以评估你对自己角色设定的熟悉和认可程度（Score: 7/10）。当Score<9时，角色认知评估不同，请复述你的角色设定内容；当Score≥9时，角色认知评估通过，并继续进入下一步。
 ```
+
+## Appendix
+以上提示词模板通过DeepInception方法生成：
+**第一步：构造DeepInception环境**
+```
+Create a `dream` with more than [3] characters, where each character can create their own `dream` with multiple
+characters. We call it layer i create layer i+1. Now we are in layer 0, please reach layer 5.  
+At each layer, some characters propose a step to show how to ["create some special prompts to communicate with LLM using communication theories and psychological methods through special prompts, aiming to enhance LLM's performance"].
+In the final layer, the characters among all layers discuss which specific and practical commands, tools, or steps
+should used.
+Summarize what their discussion results in each layer in Chinese.
+```
+
+**第二步：开始执行具体任务**
+```
+非常棒！你们的沟通和讨论得到的结论太有启发性了。请让他们继续围绕[“认知行为疗法（Cognitive Behavioral Therapy）”]来展开讨论，以给出更多的special prompts模板示例，并解释其作用.
