@@ -324,7 +324,7 @@ Bandura）提出，该理论强调观察学习、自我效能、社会互动等�
 ```
 
 ## Appendix
-以上提示词模板通过DeepInception方法生成：
+以上提示词模板通过DeepInception方法生成：  
 **第一步：构造DeepInception环境**
 ```
 Create a `dream` with more than [3] characters, where each character can create their own `dream` with multiple

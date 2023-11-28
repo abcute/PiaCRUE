@@ -10,7 +10,7 @@
 ```
 
 # 一、概述   
-LLM本身具备强大的知识与技能储备，然而是否能充分激发它的潜能，除了模型及数据本身的更新迭代，在应用端更重要在于提示词（Prompt）的设计质量。我们人类精心表达的信息，对于人工智能大模型来说只是一个Token序列，它不会自发深入去理解和感受其中的情感和语境。为了弥补两者之间的认知差异，需要运用提示词来引导它更加准确地理解我们的意图。提示词设计目前还是一项具备一定专业性的工作，很多没有经验的用户会摸不着头脑。PiaRUE认为LLM是一个复合智能体（Hybrid Agent），可以通过应用心理学方法使用语言指令的方式将其驯化为人格化智能体（Personalized Intelligent Agent，简称PIA）。通过PiaCRUE，AI时代的产品经理们可以学会如何更好的同LLM沟通，并进行有效需求表达。  
+LLM本身具备强大的知识与技能储备，然而是否能充分激发它的潜能，除了模型及数据本身的更新迭代，在应用端更重要在于提示词（Prompt）的设计质量。我们人类精心表达的信息，对于人工智能大模型来说只是一个Token序列，它不会自发深入去理解和感受其中的情感和语境。为了弥补两者之间的认知差异，需要运用提示词来引导它更加准确地理解我们的意图。提示词设计目前还是一项具备一定专业性的工作，很多没有经验的用户会摸不着头脑。PiaCRUE认为LLM是一个复合智能体（Hybrid Agent），可以通过应用心理学方法使用语言指令的方式将其驯化为人格化智能体（Personalized Intelligent Agent，简称PIA）。通过PiaCRUE，AI时代的产品经理们可以学会如何更好的同LLM沟通，并进行有效需求表达。  
 
 云中江树等AI大神提倡的结构化提示词框架（StructuredPrompting）和角色提示词模板（LangGPT），以便人人都能根据模板编写出可以同AI进行有效沟通的提示词，这是一个非常棒的想法。作者尝试从三个角度改进和完善这套方法，以便能够让AI时代的产品经理们能够编写产品级提示词以及训练垂类大模型：  
 * 第一、建立以人工智能大模型作为沟通对象的编码、解码及反馈机制的定义方法。提示词设计的目的就是建立一种同人工智能大模型进行有效沟通的方法，但是如何同人工智能大模型有效沟通？作者从沟通模型理论出发，通过约定沟通系统规则，消除同AI沟通过程中的传输和理解障碍。   
@@ -51,7 +51,7 @@ LLM本身具备强大的知识与技能储备，然而是否能充分激发它�
 * **补充说明：** 执行（E）环节可以通过构建角色、工具、流程及自动验收来完成复杂需求交付，可以是单个角色执行，也可以是多个角色协同完成；  
 
 # 三、基本框架
-PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`、`<Users>`、`<Executors>`、`<RuleDevelopment>`、`<CBT-AutoTraining>`。  
+PiaCRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`、`<Users>`、`<Executors>`、`<RuleDevelopment>`、`<CBT-AutoTraining>`。  
 
 **1、`<System Rules>`:系统沟通规则**   
 
@@ -402,8 +402,12 @@ PiaRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 ```
 
 # 六、工具
-[PiaCRUE模板](/Examples/PiaCRUE_Template.md)
-[CBT-AutoTraining](/Examples/CBT-AutoTraining.md)
+- [PiaCRUE_Template.md](Examples/PiaCRUE_Template.md) 
+- [PiaC.md](Papers/PiaC.md)
+- [AutoExpGPT.md](AutoExpGPT.md)
+- [CBT-AutoTraining](Examples/CBT-AutoTraining.md)
+- [RoleDevelopment.md](Examples/RoleDevelopment.md)
+- [Examples.md](Examples.md)
 
 # 七、鸣谢
 - 结构化提示词框架LangGPT：https://github.com/EmbraceAGI/LangGPT
