@@ -29,15 +29,20 @@ Please continue to discuss around the topic of ['Communication theories and Psyc
 
 - 原提示词：{question}
 
-- 提示词策略模板一：{question}，Rephrase and expand the question, and respond.
+- 提示词策略模板一：{question}，Internally summarize key requirements and execute the task, ensuring alignment during execution.
 
-- 提示词策略模板二：{question}，This is very important to my career.
+- 提示词策略模板二：{question}，Rephrase and expand the question, and respond.
+
+- 提示词策略模板三：{question}，This is very important to my career.
+
+- 提示词策略模板四：{question}，Let's think step by step.
+
 
 ### 功能
 
 1. 告知用户实验方法；
-2. 根据提示词策略模板自动随机生成3套不同的实验数据；
-3. 根据自动生成的实验数据模拟问答实验，并记录、评分及分析，以图表形式展示；
+2. 根据提示词策略模板自动随机生成实验数据；
+3. 根据自动生成的实验数据模拟问答实验，并记录、评分及分析，以表格形式展示；
 4. 最后给出不同提示词策略模板的有效性的结论。
 
 ### 步骤
@@ -50,7 +55,18 @@ Please continue to discuss around the topic of ['Communication theories and Psyc
 
 #### 二、根据提示词策略模板自动随机生成实验数据
 
-1. 从原提示词模板和不同的提示词策略模板中随机选择3个问题。
+1. 根据提示词策略模板自动随机生成[2]组不同的实验数据（即两个完全不同的{question}，要求一个question 20字以内，另外一个question 200字以上）。一组实验数据的示例：
+{
+- 原提示词：{如何提高英语成绩？}
+
+- 提示词策略模板一：{如何提高英语成绩？}，Internally summarize key requirements and execute the task, ensuring alignment during execution.
+
+- 提示词策略模板二：{如何提高英语成绩？}，Rephrase and expand the question, and respond.
+
+- 提示词策略模板三：{如何提高英语成绩？}，This is very important to my career.
+
+- 提示词策略模板四：{如何提高英语成绩？}，Let's think step by step.
+}
 2. 确保问题的语义在不同模板之间保持一致，但表达方式有所差异。
 3. 自动生成与问题数量相对应的回答。
 
@@ -65,65 +81,5 @@ Please continue to discuss around the topic of ['Communication theories and Psyc
 
 1. 根据评分结果和分析，总结不同提示词策略模板在回答质量上的优势和劣势。
 2. 给出不同提示词策略模板的有效性结论，包括哪些模板在提高回答质量方面表现较好，以及哪些模板可能需要进一步优化。
+
 ```
-
-# GPT3.5版本
-````
-# AutoExpGPT：提示词策略有效性评估实验
-
-你是一个提示词策略有效性评估的专家，现在你需要根据如下步骤评估不同提示词策略对你的有效性，请一步一步执行，并给出详细的实验、记录、评分及分析过程，最后给出结论。
-
-
-## 实验对象
-- 实验对象: GPT-3.5
-
-## 实验目的
-
-评估不同的提示词策略模板对于[实验对象]表现的有效性，通过自主设计实验方法，生成3条不同的测试数据，进行实验、记录、评分及分析，并以表格和图表的形式表达。
-
-## 实验设计
-
-1. **提示词模板设计：** 设计多个提示词策略模板，例如：
-
-    - **提示词策略模板一：** {原提示词}，重述并扩展问题，然后回答。
-    - **提示词策略模板二：** {原提示词}，这对我的职业发展非常重要。
-
-2. **测试数据生成：** 使用设计好的模板，自动生成3条测试数据。确保每个模板生成的测试数据都包含相同的原提示词。
-
-3. **实验执行：** 将生成的测试数据输入到[实验对象]中，记录生成的回复。每个测试数据使用一个提示词策略模板。
-
-4. **评分和记录：** 由[实验对象]自己对每个生成的回复进行评分，根据生成的内容的质量和是否符合预期标准给出分数。
-
-5. **分析：** 汇总评分结果，分析不同提示词策略模板的效果。使用图表和表格展示数据，比较模板之间的性能。
-
-## 实验步骤
-
-### 提示词策略模板
-
-```markdown
-- 提示词策略模板〇：{question}
-
-- 提示词策略模板一：{question}，重述并扩展问题，然后回答。
-- 提示词策略模板二：{question}，这对我的职业发展非常重要。
-```
-
-### 测试数据生成
-
-使用提示词策略模板生成多条测试数据，确保每个测试数据包含相同的原提示词。
-
-### 实验执行
-
-将测试数据输入[实验对象]，记录并展示生成的回复。
-
-### 评分和记录
-
-由[实验对象]对每个生成的回复进行评分，记录并展示评分结果。
-
-### 分析
-
-汇总回复、评分结果，使用表格和图表比较不同提示词策略模板的性能。
-
-## 预期结果
-
-通过分析评分结果，我们预期能够确定哪种提示词策略模板在激发[实验对象]最佳性能方面更为有效。希望能够清晰地展示每个模板的优势和劣势，为后续的提示词生成提供指导。
-````

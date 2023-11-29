@@ -98,3 +98,9 @@ Given the above question, rephrase and expand it to help you do better answering
 - 你很棒！请继续保持。
 - 你很棒！如果你能够在做如下改进就更棒了！改进点[改进点]。
 ```
+
+**PiaC-执行、监督与反馈(Execution-Supervision-Feedback)**
+```
+{Prompts}，
+内部总结关键要求并执行任务，执行时对照，回答中不列明细。
+```
