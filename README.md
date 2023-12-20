@@ -6,14 +6,21 @@ PiaCRUE is attempting to communicate with LLM using communication theories and p
 PiaCRUE是一个基于人格化智能体和结构化需求表达方式的大模型沟通方法及策略集合，PiaCRUE致力于跨学科提示词策略研究和应用，试图使用应用心理学、有效沟通理论等方法和技巧，以增强大模型的应答表现。
 PiaCRUE的核心思想是视LLM为具有人格和心理特性的人格化智能体（Personalized Intelligent Agent，简称PIA），或者是"拥有全人类知识和人格数据的复杂人类"。然后使用与人类交互和沟通的方法来与之进行交互和沟通，以实现更高效、更人性化的交互体验，并在这一过程中启发人类探索与通用人工智能大模型的沟通技巧和策略（PiaC）。
 
+PiaCRUE的GPTs机器人：
+1. [GPTs-PiaCRUE小助手](https://chat.openai.com/g/g-mGgqa0Aft-piacrue): GPTs版的PiaCRUE小助手，可以回答关于本项目的所有问题（思想、方法、技巧、示例）
+
 # Experiments
 
-经过自动化实验，示例中的提示词策略在不同场景下的表现有较大差异，但整体上还是优于普通提示词。以下是自动化提示词策略有效性实验用到的提示词模板：   
-[AutoExpGPT.md](Tools/AutoExpGPT.md)
+经过自动化实验，示例中的提示词策略在不同场景下的表现有较大差异，但整体上还是优于普通提示词。以下是自动化提示词策略有效性实验用到的提示词模板：[AutoExpGPT.md](Tools/AutoExpGPT.md)。
+AutoExpGPT的GPTs机器人：
+1. [GTPs-AutoExpGPT](https://chat.openai.com/g/g-9pFb5GFXw-autoexpgpt): GPTs版的AutoExpGPT，输入提示词策略模板即可自动化构造实验并评估其有效性
 
 # Tools
 1. [PiaCRUE_Prompt_Generator.md](Tools/PiaCRUE_Prompt_Generator.md): PiaC提示词模板生成器
 2. [AutoExpGPT.md](Tools/AutoExpGPT.md)：提示词模板有效性自动化实验评估工具
+3. [GPTs-PiaCRUE小助手](https://chat.openai.com/g/g-mGgqa0Aft-piacrue): GPTs版的PiaCRUE小助手，可以回答关于本项目的所有问题
+4. [GTPs-AutoExpGPT](https://chat.openai.com/g/g-9pFb5GFXw-autoexpgpt): GPTs版的AutoExpGPT，输入提示词策略模板即可自动化构造实验并评估其有效性
+
 
 # Examples
 

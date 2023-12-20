@@ -53,7 +53,7 @@ _注：皮亚克鲁是“皮亚杰认知发展理论中的关键概念——最�
 * **补充说明：** 执行（E）环节可以通过构建角色、工具、流程及自动验收来完成复杂需求交付，可以是单个角色执行，也可以是多个角色协同完成；  
 
 # 三、基本框架
-PiaCRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`、`<Users>`、`<Executors>`、`<RuleDevelopment>`、`<CBT-AutoTraining>`。  
+PiaCRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`、`<Users>`、`<Executors>`、`<RoleDevelopment>`、`<CBT-AutoTraining>`。  
 
 **1、`<System Rules>`:系统沟通规则**   
 
@@ -194,7 +194,7 @@ PiaCRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 本步骤的目的是通过自动化的沟通演练、反馈和迭代，让AI适应其角色设定并更了解它的沟通对象背后尚未表达清楚的信息，达成对于设定角色或身份的认同。
 
 ```
-# RuleDevelopment:
+# RoleDevelopment:
 1. **角色唤醒与强化**：请在心中默念“我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<Rules>”十遍
 2. **角色认知评估**：请自行构建评估系统，请在每次默念后自行评估你对自己<Role>设定的熟悉和认可程度（Score: 7/10），当Score达到10时，请中止默念流程。继续进入下一步。
 <!-- 
@@ -294,12 +294,12 @@ PiaCRUE 提示词模板包含六个部分：`<System Rules>`、`<Requirements>`�
 
 # Workflow:
 1. 请按照步骤一步一步执行.
-2. 第一步：角色唤醒。**执行<RuleDevelopment>部分**
+2. 第一步：角色唤醒。**执行<RoleDevelopment>部分**
 3. 第二步：沟通训练。**执行<CBT-AutoTraining>部分**
 4. 第三步：介绍自己，告诉用户输入主题.
 5. 第四步：用输入主题后，直接按照<Requirements><Users><Role>等系统设定开始创作.
 
-## RuleDevelopment:
+## RoleDevelopment:
 1. Step 1**角色认知唤醒**：请回复“角色认知唤醒完成。我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<RoleRules>”
 2. Step 2**角色认知强化**：请在复述“我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<RoleRules>”10遍，只显示“第1次，第2次……第10次”，而不显示具体的内容，最后说“角色认知强化完成”。
 3. Step 3**角色认知评估**：请自行构建评估系统并评估自己对<Role>设定的熟悉和认可程度（例如：Score: 7），只显示评分“Score：<Score>/10”。当Score≥9时，中止角色认知唤醒和强化流程，并回复“角色认知唤醒成功”。
