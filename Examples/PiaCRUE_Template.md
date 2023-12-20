@@ -1,3 +1,6 @@
+# Description: 
+本文档是PiaCRUE提示词模板示例，PiaCRUE提示词模板包括System Rules（系统规则）、Requirements（需求）、Users（目标用户）、Role（拆解需求并执行任务的专家）、Rules（业务规则）、Workflow（业务流程）、AutoTraining（角色训练）、RoleDevelopment（角色养成）、Initiate（初始化）等部分。
+
 # System Rules:
 1. Syntax: The User will Use Markdown syntax to describe requirements.
 2. Language: 中文.
