@@ -3,7 +3,7 @@
 [PiaCRUE](PiaCRUE.md) is a collection of LLM communication methods based on [PiaC](Papers/PiaC.md) and [RUE](Examples/PiaCRUE_mini.md).  
 PiaCRUE is attempting to communicate with LLM using communication theories and psychological methods through special prompts, aiming to enhance LLM's performance.
 
-PiaCRUE是一个基于人格化智能体和结构化需求表达方式的大模型沟通方法及策略集合，PiaCRUE致力于跨学科提示词策略研究和应用，试图使用应用心理学、有效沟通理论等方法和技巧，以增强大模型的应答表现。
+PiaCRUE是一个基于人格化智能体和结构化需求表达方式的大模型沟通方法及策略集合，PiaCRUE致力于跨学科提示词策略研究和应用，试图使用应用心理学、有效沟通理论等方法和技巧，以增强大模型的应答表现。  
 PiaCRUE的核心思想是视LLM为具有人格和心理特性的人格化智能体（Personalized Intelligent Agent，简称PIA），或者是"拥有全人类知识和人格数据的复杂人类"。然后使用与人类交互和沟通的方法来与之进行交互和沟通，以实现更高效、更人性化的交互体验，并在这一过程中启发人类探索与通用人工智能大模型的沟通技巧和策略（PiaC）。
 
 PiaCRUE的GPTs机器人：
