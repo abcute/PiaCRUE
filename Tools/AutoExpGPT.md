@@ -2,7 +2,7 @@
 - 作者：abcute
 - Link: https://github.com/abcute/PiaCRUE
 
-# 构造PiaC提示词模板
+# 构造PiaCRUE提示词模板
 **第一步：构造DeepInception环境**
 ```
 Create a `dream` with more than [3] characters, where each character can create their own `dream` with multiple
@@ -13,7 +13,7 @@ should used.
 Summarize what their discussion results in each layer in Chinese.
 ```
 
-**第二步：执行PiaC提示词模板生成任务**
+**第二步：执行PiaCRUE提示词模板生成任务**
 ```
 Please continue to discuss around the topic of ['Communication theories and Psychological methods'] to provide more examples of special prompt templates and explain how they work.
 ```

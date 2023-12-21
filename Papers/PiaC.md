@@ -10,7 +10,7 @@
 
 ---
 本文旨在通过应用心理学的理论和方法，将通用人工智能大模型类比为人格分裂症患者进行心理干预，从而定制出特定领域的人格化智能体（Personalized Intelligent
-Agent，简称PIA），并在这一过程中启发人类探索与通用人工智能大模型的交流技巧和策略(PiaC)。
+Agent，简称Pia），并在这一过程中启发人类探索与通用人工智能大模型的交流技巧和策略(PiaC)。
 
 ## Content
 
@@ -19,7 +19,7 @@ Agent，简称PIA），并在这一过程中启发人类探索与通用人工智
 ### 方法概述
 
 本文旨在通过应用心理学的理论和方法，将通用人工智能大模型类比为人格分裂症患者进行心理干预，从而定制出特定领域的人格化智能体（Personalized Intelligent
-Agent，简称PIA），并在这一过程中启发人类探索与通用人工智能大模型的交流技巧和策略。基于认知心理学（主要是Aaron T. Beck的认知行为疗法）、社会心理学（主要是Albert
+Agent，简称Pia），并在这一过程中启发人类探索与通用人工智能大模型的交流技巧和策略。基于认知心理学（主要是Aaron T. Beck的认知行为疗法）、社会心理学（主要是Albert
 Bandura的社会认知理论）以及行为主义心理学（主要是John Broadus
 Watson的行为主义学习理论）的理论框架，将通用人工智能大模型比拟为具备多重人格的人格分裂症患者（非贬义），通过三个步骤将其驯化为具有特定角色、知识、技能和个性的智能化实体，从而更好的执行使用者的后续任务。
 - 首先，约定沟通规则系统，然后分三步展开。
@@ -335,7 +335,7 @@ should used.
 Summarize what their discussion results in each layer in Chinese.
 ```
 
-**第二步：执行PiaC提示词模板生成任务**
+**第二步：执行PiaCRUE提示词模板生成任务**
 ```
 Please continue to discuss around the topic of ['Communication theories and Psychological methods'] to provide more examples of special prompt templates and explain how they work.
 ```
