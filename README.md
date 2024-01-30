@@ -12,6 +12,7 @@ PiaCRUE的核心思想是视LLM为具有人格和心理特性的人格化智能�
 
 更多问题，可以咨询PiaCRUE的GPTs机器人：
 1. [GPTs-PiaCRUE小助手](https://chat.openai.com/g/g-mGgqa0Aft-piacrue): GPTs版的PiaCRUE小助手，可以回答关于本项目的所有问题（思想、方法、技巧、示例）
+2. [GPTs-PromptEngineer Pro](https://chat.openai.com/g/g-uBcGAkHGm-promptengineer-pro): 基于PiaCRUE方法的GPTs版的提示词优化助手
 
 # Experiments
 
