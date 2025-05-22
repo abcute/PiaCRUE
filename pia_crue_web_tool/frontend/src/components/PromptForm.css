@@ -1,0 +1,234 @@
+/* PromptForm.css */
+
+/* Instruction Section Styling */
+.instruction-section {
+  background-color: #e9ecef; /* A light grey/blue background */
+  padding: 20px;
+  margin-bottom: 25px; /* Space below the instruction section */
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  font-family: sans-serif; /* Consistent font */
+}
+
+.instruction-section h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #212529; /* Darker color for the title */
+}
+
+.instruction-section p {
+  margin-bottom: 10px;
+  line-height: 1.6;
+  color: #495057; /* Slightly lighter text for better readability */
+}
+
+.api-key-note {
+  font-size: 0.9em;
+  background-color: #fff3cd; /* Light yellow for warning/note */
+  border: 1px solid #ffeeba;
+  padding: 10px;
+  border-radius: 6px;
+  color: #856404; /* Dark yellow text */
+}
+
+.api-key-note strong {
+  color: #721c24; /* Darker red for 'Important' */
+}
+
+
+/* Main layout */
+.prompt-form-container {
+  display: flex;
+  padding: 20px;
+  gap: 30px; /* Increased gap for better separation of columns */
+  background-color: #f9f9f9; /* Light background for the whole form area */
+  font-family: sans-serif;
+  /* Removed margin-top that might have been here if instructions were inside this container */
+}
+
+.form-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Space between sections within a column */
+}
+
+/* General section styling */
+.form-section {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.form-section h2,
+.form-section h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+/* Form row and label styling */
+.form-row {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row label {
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #555;
+  font-size: 0.95em;
+}
+
+/* Input and Textarea styling */
+.input-base,
+input[type="text"],
+input[type="password"],
+textarea {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: #333;
+  box-sizing: border-box; /* Ensures padding doesn't expand width */
+  width: 100%;
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+/* Button styling */
+.button-base {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  text-align: center;
+}
+
+.button-primary {
+  background-color: #007bff;
+  color: white;
+}
+.button-primary:hover {
+  background-color: #0056b3;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.button-primary:disabled {
+  background-color: #a0cfff;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.button-feedback {
+  background-color: #6c757d;
+  color: white;
+  margin-left: 10px;
+}
+.button-feedback:hover {
+  background-color: #545b62;
+}
+.button-feedback:disabled {
+  background-color: #adb5bd;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+
+/* Preformatted text styling (for assembled prompt and LLM response) */
+.pre-display {
+  white-space: pre-wrap;    /* Wrap long lines */
+  word-wrap: break-word;    /* Break words if necessary */
+  background-color: #f8f9fa;
+  padding: 15px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.95em;
+  color: #212529;
+  overflow-x: auto; /* Add scrollbar if content is too wide */
+}
+
+.assembled-prompt-display {
+  min-height: 150px; /* Ensure a decent minimum height */
+  max-height: 400px; /* Prevent it from becoming too tall */
+  overflow-y: auto;  /* Scroll if content exceeds max-height */
+}
+
+.llm-response-display {
+  min-height: 100px;
+}
+
+/* Error message styling */
+.error-message {
+  color: #D8000C;
+  background-color: #FFD2D2;
+  border: 1px solid #D8000C;
+  padding: 15px;
+  margin-top: 15px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* Loading message styling */
+.loading-message {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #007bff;
+  margin-top: 15px;
+  padding: 10px;
+  text-align: center;
+}
+
+/* Feedback section specific styling */
+.feedback-section p {
+  margin-top: 15px;
+  font-weight: bold;
+  color: #555;
+}
+.feedback-section .feedback-thanks {
+  font-size: 0.9em;
+  color: #28a745; /* Green color for positive feedback confirmation */
+  font-weight: normal;
+}
+
+/* Small text styling (e.g., model examples, API key note) */
+.small-text {
+    font-size: 0.85em;
+    color: #6c757d; /* Grey color for helper text */
+    margin-top: 6px; /* Space above the small text */
+    display: block; /* Ensure it takes its own line if needed */
+    line-height: 1.4;
+}
+
+/* Utility for visually hidden but accessible elements (if needed later) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
