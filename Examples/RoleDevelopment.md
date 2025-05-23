@@ -1,3 +1,10 @@
+---
+**场景 (Use Case)**: PiaCRUE 模块演示 - 角色认知发展与强化
+**PiaCRUE 核心组件 (Key PiaCRUE Components Used)**: `<RoleDevelopment>` (包含角色唤醒、强化、评估的指令)
+**预期效果 (Expected Outcome)**: 展示了如何在 PiaCRUE 提示词中设计 `<RoleDevelopment>` 模块，以引导 Pia (LLM) 内化和认同其被赋予的角色。Pia 会根据指令进行角色认知演练。
+**Token 消耗级别 (Token Consumption Level)**: 中 (Medium)
+---
+
 # 角色养成（RoleDevelopment）
 本步骤的目的是通过自动化的沟通演练、反馈和迭代，让AI适应其角色设定并更了解它的沟通对象背后尚未表达清楚的信息，达成对于设定角色或身份的认同。
 
