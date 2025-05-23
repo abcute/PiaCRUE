@@ -1,45 +1,56 @@
-# Description
+# Rephrase-and-Respond (RaR): A Method for Enhancing LLM Accuracy
 
----
+**Original Source:** Gu, Quanquan; Deng, Yoeho; Zhang, Weitong; Chen, Zixiang (UCLA).
+**Paper Link:** [https://arxiv.org/pdf/2311.04205.pdf](https://arxiv.org/pdf/2311.04205.pdf)
+**Associated Project Page:** [https://uclaml.github.io/Rephrase-and-Respond](https://uclaml.github.io/Rephrase-and-Respond)
+*Note: This document summarizes the "Rephrase-and-Respond" (RaR) prompting strategy, which aims to improve the accuracy of Large Language Model (LLM) responses by having the LLM first rephrase and expand upon the user's question.*
 
-- Theory: Rephrase-and-Respond（RaR）
-- Author: 加利福尼亚大学洛杉矶分校（UCLA）顾全全、邓依荷、张蔚桐、陈子翔
-- Link: https://arxiv.org/pdf/2311.04205.pdf, https://uclaml.github.io/Rephrase-and-Respond
+## Abstract
+The Rephrase-and-Respond (RaR) method is a prompting strategy designed to enhance the accuracy of Large Language Models (LLMs) by instructing them to first rephrase and expand on a given question before answering. This approach, including its "One-step RaR" and "Two-step RaR" variations, helps the LLM better understand the query's nuances, leading to more precise responses. It aligns with the PiaCRUE project's PiaC principles of optimizing LLM communication by refining how queries are presented to the model.
 
-## Summary
+## RaR Method and PiaC Ideology
 
----
-### RaR方法与PiaC思想
-RaR方法是[PiaRUE](../PiaCRUE.md)方法中关于[PiaC](PiaC.md)人工智能沟通编码思想的一个非常棒的应用实例，即让人工智能来优化原始提示词，以形成人工智能能够理解的方式来进行表达。这个思想在日常Prompt编写中有很多变种应用方法。比如在编写Prompt时参考人工智能的意见：
+The RaR method is an excellent application example of the PiaC (Personalized Intelligent Agent Customization) communication encoding ideas within the [PiaCRUE framework](../PiaCRUE.md). Specifically, it embodies the principle of having the AI optimize the original prompt to express it in a way the AI can better understand. This idea has various applications in everyday prompt engineering. For instance, one might solicit the AI's input when crafting a prompt:
+
 ```
-ChatGPT你好，请问我该如何提问才能让你发挥更好的表现？我的问题是"{问题}"，请你优化我的问题表达，给出优化后的示例和回复。
-
+Hello ChatGPT, how should I phrase my question to enable you to perform better? My question is "{question}". Please optimize my question's phrasing, provide an improved example, and then respond.
 ```
 
 ### One-step RaR
-复述并扩写（RaR）该方案的核心在于让大语言模型对提出的问题进行复述与扩写，以提高其回答的准确性。基于以上的发现，研究者提出了一个简单但效果显著的提示词 (prompt)：“Rephrase and expand the question, and respond”（简称为 RaR）。这一提示词直接提高了 LLM 回答问题的质量，展示了在问题处理上的一个重要提升。  
-![img.png](../img/RaR.png)
+The core of the Rephrase-and-Respond (RaR) scheme is to have the Large Language Model rephrase and expand on the posed question to improve the accuracy of its answer. Based on this finding, researchers proposed a simple yet effective prompt: "Rephrase and expand the question, and respond" (abbreviated as RaR). This prompt directly enhances the quality of LLM responses, demonstrating a significant improvement in question processing.
 
-### Two-step RaR 
-研究团队还提出了 RaR 的一种变体，称为 “Two-step RaR”，以充分利用像 GPT-4 这样的大模型复述问题的能力。这种方法遵循两个步骤：首先，针对给定的问题，使用一个专门的 Rephrasing LLM 生成一个复述问题；其次，将原始问题和复述后的问题结合起来，用于提示一个 Responding LLM 进行回答。
-![img.png](../img/Two-stepRaR.png)
+![One-step RaR Diagram](../img/RaR.png)
+*Caption: Diagram illustrating the One-step RaR process.*
 
-## Examples  
+### Two-step RaR
+The research team also proposed a variation of RaR called "Two-step RaR" to fully leverage the capability of large models like GPT-4 to rephrase questions. This method follows two steps:
+1.  First, for a given question, a dedicated "Rephrasing LLM" is used to generate a rephrased version of the question.
+2.  Second, the original question and the rephrased question are combined to prompt a "Responding LLM" to generate the answer.
+
+![Two-step RaR Diagram](../img/Two-stepRaR.png)
+*Caption: Diagram illustrating the Two-step RaR process.*
+
+## Examples
 
 ---
-**One-step RaR**
-```
+**One-step RaR:**
+This prompt instructs the LLM to perform both rephrasing/expansion and answering in a single step.
+```markdown
 "{question}"
 Rephrase and expand the question, and respond.
 ```
-**Two-step RaR**
-```
+
+**Two-step RaR (Rephrasing Prompt):**
+This is the prompt given to the "Rephrasing LLM" in the first step of the Two-step RaR method.
+```markdown
 "{question}"
 Given the above question, rephrase and expand it to help you do better answering. Maintain all information in the original question.
 ```
-**PiaC**
-```
-我的问题是"{问题}"，
-请问我该如何提问才能让你发挥更好的表现？请你优化我的问题表达，给出优化后的示例和回复。
-```
+*(Note: The output of this step would then be combined with the original question for the "Responding LLM".)*
 
+**PiaC-inspired Query for Self-Optimization:**
+This is an example of asking the LLM to help optimize the user's query, reflecting the underlying principle of RaR.
+```markdown
+My question is "{question}".
+How should I phrase my question to enable you to perform better? Please optimize my question's phrasing, provide an improved example, and then respond.
+```

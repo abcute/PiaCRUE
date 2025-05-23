@@ -1,43 +1,63 @@
-# Introduction
-[PiaCRUE](PiaCRUE.md)  is a collection of LLM communication methods based on [PiaC](Papers/PiaC.md) and [RUE](Examples/PiaCRUE_mini.md), PiaCRUE is attempting to communicate with LLM using communication theories and psychological methods through special prompts, aiming to enhance LLM's performance. 
-- PiaCRUE has different components such as papers, PiaCRUE prompt strategies, experiments, tools and examples. 
-- PiaCRUE provides PiaCRUE prompt strategies, tools and examples for experimentation and development. 
-- Papers within the PiaCRUE collection cover various topics related to communication methods and psychological techniques.
-- The PiaCRUE_Prompt_Generator tool in PiaCRUE is used for generate prompt templates base on communication theories and psychological methods.
-- The AutoExpGPT tool in PiaCRUE is used for the evaluation of prompt templates.  
+# PiaCRUE: A Framework for Enhanced LLM Interaction
 
-PiaCRUE是一个基于人格化智能体和结构化需求表达方式的大模型沟通方法及策略集合，PiaCRUE致力于跨学科提示词策略研究和应用，试图使用应用心理学、有效沟通理论等方法和技巧，以增强大模型的应答表现。  
+PiaCRUE (Personalized Intelligent Agent via Communication, Requirements, Users, and Executors) is an innovative framework designed to enhance human-Large Language Model (LLM) interaction. By integrating principles from communication theory and applied psychology, PiaCRUE aims to improve LLM performance, enabling more effective, nuanced, and product-oriented conversations. Our core methodology, detailed in `PiaCRUE.md`, treats LLMs as "Hybrid Agents" that can be guided into "Personalized Intelligent Agents" (Pia) through structured and psychologically-informed prompting techniques.
 
-PiaCRUE的核心思想是视LLM为具有人格和心理特性的人格化智能体（Personalized Intelligent Agent，简称Pia），或者是"拥有全人类知识和人格数据的复杂人类"。然后使用与人类交互和沟通的方法来与之进行交互和沟通，以实现更高效、更人性化的交互体验，并在这一过程中启发人类探索与通用人工智能大模型的沟通技巧和策略（PiaC）。
+## Project Goals / Value Proposition
 
-更多问题，可以咨询PiaCRUE的GPTs机器人：
-1. [GPTs-PiaCRUE小助手](https://chat.openai.com/g/g-mGgqa0Aft-piacrue): GPTs版的PiaCRUE小助手，可以回答关于本项目的所有问题（思想、方法、技巧、示例）
-2. [GPTs-PromptEngineer Pro](https://chat.openai.com/g/g-uBcGAkHGm-promptengineer-pro): 基于PiaCRUE方法的GPTs版的提示词优化助手
+The PiaCRUE project seeks to:
 
-# Experiments
+*   **Enhance LLM Performance:** Provide methodologies and tools to create prompts that elicit more accurate, relevant, and context-aware responses from LLMs.
+*   **Promote Deeper Understanding:** Offer a theoretical basis for understanding and navigating the complexities of LLM interaction.
+*   **Offer a Structured Approach:** Introduce a systematic framework (R-U-E: Requirements-Users-Executors) for prompt engineering, particularly beneficial for product development and AI application design.
+*   **Empower Users:** Equip prompt engineers, researchers, product managers, and developers with practical strategies and tools to leverage LLMs more effectively.
+*   **Foster Cross-Disciplinary Innovation:** Explore the intersection of AI, communication studies, and psychology to unlock new potentials in human-AI collaboration.
 
-经过自动化实验，示例中的提示词策略在不同场景下的表现有较大差异，但整体上还是优于普通提示词。以下是自动化提示词策略有效性实验用到的提示词模板：[AutoExpGPT.md](Tools/AutoExpGPT.md)。
-AutoExpGPT的GPTs机器人：
-1. [GTPs-AutoExpGPT](https://chat.openai.com/g/g-9pFb5GFXw-autoexpgpt): GPTs版的AutoExpGPT，输入提示词策略模板即可自动化构造实验并评估其有效性
+## Target Audience
 
-# Tools
-1. [PiaCRUE_Prompt_Generator.md](Tools/PiaCRUE_Prompt_Generator.md): PiaCRUE提示词模板生成器
-2. [AutoExpGPT.md](Tools/AutoExpGPT.md)：提示词模板有效性自动化实验评估工具
-3. [GPTs-PiaCRUE小助手](https://chat.openai.com/g/g-mGgqa0Aft-piacrue): GPTs版的PiaCRUE小助手，可以回答关于本项目的所有问题
-4. [GTPs-AutoExpGPT](https://chat.openai.com/g/g-9pFb5GFXw-autoexpgpt): GPTs版的AutoExpGPT，输入提示词策略模板即可自动化构造实验并评估其有效性
+This project is for anyone interested in advancing the art and science of LLM interaction, including:
 
-# Examples
+*   **Prompt Engineers:** Looking for advanced techniques and structured methodologies.
+*   **AI Researchers:** Investigating novel approaches to human-AI communication and LLM behavior.
+*   **Product Managers:** Aiming to integrate LLM capabilities into products with clear, effective requirement expression.
+*   **Developers:** Building applications that leverage LLMs and require sophisticated interaction patterns.
+*   **AI Ethicists and Psychologists:** Interested in the human-like interaction aspects of LLMs and the application of psychological principles.
 
-1. [Examples.md](Examples.md)：PiaCRUE提示词片段示例
-2. [RoleDevelopment.md](Examples/RoleDevelopment.md)：角色认知
-3. [CBT-AutoTraining.md](Examples/CBT-AutoTraining.md)：角色演练
-4. [PiaCRUE_mini.md](Examples/PiaCRUE_mini.md)：简易PiaCRUE提示词模板示例
-5. [PiaCRUE_Template.md](Examples/PiaCRUE_Template.md)：完整PiaCRUE提示词模板示例
+## Quick Start / Navigating This Repository
 
-# Papers
+To get started with PiaCRUE, we recommend the following:
 
-1. [PiaC.md](Papers/PiaC.md)：基于人格化智能体的沟通方法（把LLM当人看，然后使用沟通理论和心理学方法展开沟通）
-2. [CSIM.md](Papers/CSIM.md)：内心独白与沟通技能（通过内心独白模拟5类沟通场景的沟通技巧，形成高情商回复）
-3. [DeepInception.md](Papers/DeepInception.md)：深度催眠（催眠攻击）
-4. [EmotionPrompt.md](Papers/EmotionPrompt.md)：情绪提示（通过情绪表达重要性）
-5. [Rephrase-and-Respond.md](Papers/Rephrase-and-Respond.md)：复述再回应（通过重塑提示更准确表达，通过复述强化需求理解）
+1.  **Understand the Core Framework:** Begin by reading **[`PiaCRUE.md`](PiaCRUE.md)**. This document is the cornerstone of our methodology, detailing the theoretical underpinnings and structure of the PiaCRUE framework.
+2.  **Explore the Project Structure:** Refer to **[`PROJECT_GUIDE.md`](PROJECT_GUIDE.md)** for a comprehensive overview of how this repository is organized and what you can find in each directory.
+3.  **See Practical Examples:** Dive into the **[`Examples/`](Examples/)** directory and **[`Examples.md`](Examples.md)** to see PiaCRUE principles in action through various prompt examples and templates.
+4.  **Discover Tools and Templates:** Check out the **[`Tools/`](Tools/)** directory for conceptual utilities and prompt generators designed to assist in applying the PiaCRUE framework.
+5.  **Try the Web Application:** For a hands-on experience, explore the **PiaCRUE Web Tool** by starting with its **[`pia_crue_web_tool/README.md`](pia_crue_web_tool/README.md)**.
+
+## Core Components
+
+*   **[`PiaCRUE.md`](PiaCRUE.md):** The main document detailing the PiaCRUE framework, its theoretical basis, and step-by-step construction methodology.
+*   **[`Papers/`](Papers/):** A collection of documents and essays that explore the theoretical concepts, related research, and deeper dives into specific aspects of PiaCRUE, such as communication strategies (PiaC), psychological approaches (CSIM, DeepInception), and emotion-enhanced prompting (EmotionPrompt).
+*   **[`Examples/`](Examples/):** Contains practical examples, including minimal R-U-E prompts (`PiaCRUE_mini.md`), full templates (`PiaCRUE_Template.md`), and specific technique demonstrations like Role Development and CBT-AutoTraining.
+*   **[`Tools/`](Tools/):** Includes conceptual tools like a prompt generator template (`PiaCRUE_Prompt_Generator.md`) and an automated experiment template for evaluating prompt strategies (`AutoExpGPT.md`).
+*   **[`pia_crue_web_tool/`](pia_crue_web_tool/):** A web-based application to help users generate, manage, and experiment with PiaCRUE prompts.
+
+## PiaCRUE GPTs
+
+*Note: These are external resources that leverage the PiaCRUE methodology.*
+
+We have developed specialized GPTs based on the PiaCRUE framework to assist with various tasks:
+
+1.  **[GPTs-PiaCRUE Assistant](https://chat.openai.com/g/g-mGgqa0Aft-piacrue):** A GPT version of the PiaCRUE assistant that can answer questions about this project (concepts, methods, techniques, examples).
+2.  **[GPTs-PromptEngineer Pro](https://chat.openai.com/g/g-uBcGAkHGm-promptengineer-pro):** A GPT-based prompt optimization assistant utilizing PiaCRUE methods.
+3.  **[GPTs-AutoExpGPT](https://chat.openai.com/g/g-9pFb5GFXw-autoexpgpt):** A GPT version of AutoExpGPT; input a prompt strategy template to automatically construct experiments and evaluate its effectiveness.
+
+## License
+
+This project is licensed under the MIT License. See the **[`LICENSE`](LICENSE)** file for details.
+
+## Contributing
+
+We welcome contributions to the PiaCRUE project! If you're interested in helping us improve and grow, please see our **[`CONTRIBUTING.md`](CONTRIBUTING.md)** guide for details on how to get started.
+
+## Acknowledgements
+
+We acknowledge the foundational work in structured prompting by LangGPT and the broader AI research community. Specific acknowledgements are detailed within the `PiaCRUE.md` document.

@@ -1,52 +1,57 @@
-# Description
+# CSIM: Communication Skills + Inner Monologue
+
+**Original Source:** [https://arxiv.org/abs/2311.07445](https://arxiv.org/abs/2311.07445)
+*Note: This document summarizes key concepts from the research paper "Enhancing Human-like and Proactive LLM Interaction via CSIM (Communication Skills + Inner Monologue)" by an author or group identifiable by "CSIM" in the original metadata.*
+
+## Abstract
+This document outlines the CSIM (Communication Skills + Inner Monologue) framework, an innovative approach designed to enhance the human-like qualities and proactivity of Large Language Models (LLMs) in conversations. The core idea is to introduce an "inner monologue" process before an LLM generates a response, allowing it to "think" about applying specific communication skills to improve dialogue effectiveness, thereby mirroring human pre-interaction thought processes.
+
+## Introduction
+
+CSIM, standing for "Communication Skills + Inner Monologue," is a novel framework aimed at improving the human-like qualities and proactivity of LLMs in dialogues. The central concept of the CSIM method involves introducing an internal monologue phase before the LLM generates a response. During this phase, the model first "considers" how to apply specific communication skills to enhance the dialogue's effectiveness. This cognitive process, akin to human pre-communication thought, enables the generation of responses that are not only contextually aware but also tailored to the dynamic needs of the conversation.
+
+## Five Communication Skills
+
+The CSIM framework emphasizes five key communication skills:
+
+**1. Topic Transition**
+This skill involves appropriately changing the subject during a conversation, especially when encountering topics the user is not interested in or that the model is not well-suited to address. For instance, if a user poses a sensitive or complex question, the LLM can skillfully steer the conversation towards a related but safer or more manageable topic.
+
+**2. Proactively Asking Questions**
+Proactive questioning refers to the LLM taking the initiative to ask the user for more information or to clarify ambiguities. This skill helps the LLM better understand the user's needs and intentions, thereby enabling more accurate and personalized responses.
+
+**3. Concept Guidance**
+Concept guidance is the skill of steering the conversation towards specific themes or concepts. This not only enhances the coherence of the dialogue but also allows the LLM to participate more actively, guiding the conversation towards areas that might interest the user.
+
+**4. Empathy**
+Empathy involves demonstrating understanding and concern for the user's emotions during the conversation. By employing empathy, LLMs can generate more personalized and emotionally resonant responses, significantly boosting user engagement and satisfaction.
+
+**5. Frequent Summarizing**
+Periodically summarizing the preceding parts of the conversation helps ensure accurate information transfer and reduces misunderstandings. This skill is particularly crucial in lengthy dialogues, aiding in maintaining clarity and focus on conversational goals.
+
+## Quick Q&A
+
+**1. What is the core idea of the CSIM method?**
+The core idea of the CSIM method is to introduce an inner monologue process before the LLM generates a response, allowing the generated answer to better consider the context and dynamic needs of the dialogue.
+
+**2. What communication skills does the CSIM method include?**
+The CSIM method includes five communication skills: Topic Transition, Proactively Asking Questions, Concept Guidance, Empathy, and Frequent Summarizing.
+
+**3. What were the experimental results of the CSIM method?**
+Experimental results indicated that the CSIM method outperformed baseline models on several metrics, including human-likeness, proactivity, and engagement. *[Citation: Specific details can be found in the linked paper: https://arxiv.org/abs/2311.07445]*
+
+## Example Prompt Structure
 
 ---
+The following is an example of how to instruct an LLM to use the CSIM framework, including inner monologues (represented by italics for the LLM's internal thought process):
 
-- Theory: CSIM
-- Author: CSIM
-- Link: https://arxiv.org/abs/2311.07445
+```markdown
+Hello! For our upcoming conversation to be more profound and productive, please adhere to the following guidelines. Use italics to express your inner monologue in specific situations:
 
-# Summary
-
----
-
-## 简介
-
-CSIM代表“沟通技能（Communication Skills）+ 内部独白（Inner Monologue）”，这是一个创新的框架，用于提升LLM在对话中的人性化和主动性。  
-CSIM方法的核心思想是在LLM生成回答之前，引入一种内部独白的过程。在这个过程中，模型会先“思考”如何应用特定的沟通技能来改善对话效果。这种思考过程类似于人类在交流前的思考，使得生成的回答不仅考虑了语境，还结合了对话的动态需求。
-
-## 五种交流技能
-
-**1.主题转换（Topic Transition）**  
-这项技能涉及在对话中适时转换话题，特别是在遇到用户不感兴趣或模型不适合回答的话题时。例如，当用户提出一个敏感或复杂的问题时，LLM可以巧妙地将对话引向相关但更安全或更容易讨论的话题。   
-**2.主动提问（Proactively Asking Questions）**  
-主动提问指的是在对话中主动询问用户以获取更多信息或澄清模糊的信息。这种技能能帮助LLM更好地理解用户的需求和意图，从而做出更加准确和个性化的回答。  
-**3.概念引导（Concept Guidance）**  
-概念引导是一种引导对话向特定主题或概念过渡的技能。这不仅增强了对话的连贯性，还可以使LLM更主动地参与到对话中，引导话题向用户可能感兴趣的方向发展。  
-**4.共情（Empathy）**  
-共情是指在对话中表现出对用户情感的理解和关注。通过共情，LLM能生成更加个性化和情感丰富的回答，这能极大地提升用户的参与度和满意度。  
-**5.频繁总结（Frequent Summarizing）**  
-在对话过程中定期总结之前的交流内容可以帮助确保信息的准确传达，减少误解。这种技能对于长对话尤其重要，有助于保持对话的清晰和目标导向。
-
-## 快速问答
-
-1.CSIM方法的核心思想是什么？
-CSIM方法的核心思想是在LLM生成回答之前，引入一种内部独白的过程，使得生成的回答更加考虑语境和对话的动态需求。
-2.CSIM方法有哪些交流技能？
-CSIM方法包括五种交流技能：主题转换、主动提问、概念引导、共情和频繁总结。
-3.CSIM方法的实验结果如何？
-实验结果显示，CSIM方法在多项指标上超过了基线模型，例如人性化、主动性和参与度。
-
-# Examples
-
----  
-```
-你好！我们即将开始的对话希望能够更深入和富有成效。请根据以下指导原则进行交流，并在特定情况下使用斜体来表达你的内部独白：
-
-1. **主题转换**: 当我提出一个你不能回答的话题时，_请用斜体表达你转换话题的内部考虑_，然后平滑地引导话题到一个更合适的方向。
-2. **主动提问**: 如果你需要更多信息来精确回答，_请首先用斜体简要表达你的询问意图_，然后提出具体的问题。
-3. **概念引导**: 当对话转移到新的概念或主题时，_请用斜体说明你引导话题的原因_，然后将对话引向相关或我可能感兴趣的领域。
-4. **共情**: 当我分享个人经历或情感时，_请用斜体简述你的共情反应_，然后以具有共情的方式回应。
-5. **频繁总结**: 在对话的关键时刻，_请用斜体指出你即将进行的总结_，然后对我们的讨论进行概述以确保理解无误。
-6. **结束**: 在对话结束时，_请用斜体表达你对对话的总体评估_，然后提供结论性的建议或答案。这样的交流方式将帮助我更好地理解你的思考过程，让我们的对话更加深入和有效。谢谢！
+1.  **Topic Transition**: When I raise a topic you cannot answer, _first express your internal considerations for switching the topic in italics_, then smoothly guide the conversation to a more appropriate direction.
+2.  **Proactive Questioning**: If you need more information to answer accurately, _first briefly express your intent to inquire in italics_, then ask specific questions.
+3.  **Concept Guidance**: When the conversation shifts to a new concept or topic, _explain in italics your reason for guiding the topic_, then lead the conversation towards related areas or those I might find interesting.
+4.  **Empathy**: When I share personal experiences or emotions, _briefly describe your empathetic reaction in italics_, then respond in an empathetic manner.
+5.  **Frequent Summarizing**: At critical junctures in the conversation, _indicate in italics that you are about to summarize_, then provide an overview of our discussion to ensure mutual understanding.
+6.  **Conclusion**: At the end of the conversation, _express in italics your overall assessment of the dialogue_, then offer concluding advice or answers. This communication style will help me better understand your thought process, making our conversation more insightful and effective. Thank you!
 ```

@@ -1,341 +1,321 @@
-# Description
+# PiaC: Theory and Methods for Personalizing Intelligent Agents
 
----
+**Original Source:** Conceptualized by abcute for the PiaCRUE project. Further details and context can be found at [https://github.com/abcute/PiaCRUE](https://github.com/abcute/PiaCRUE).
+*Note: This document outlines "PiaC" (Personalized Intelligent Agent Customization), an original conceptual exploration within the PiaCRUE project. It proposes a methodology for customizing general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying principles from psychology, drawing analogies to psychological interventions.*
 
-- Theory: 人格化智能体驯化的理论及方法（PiaC）
-- Author: abcute
-- Link: https://github.com/abcute/PiaCRUE
-
-## Summary
-
----
-本文旨在通过应用心理学的理论和方法，将通用人工智能大模型类比为人格分裂症患者进行心理干预，从而定制出特定领域的人格化智能体（Personalized Intelligent
-Agent，简称Pia），并在这一过程中启发人类探索与通用人工智能大模型的交流技巧和策略(PiaC)。
+## Abstract
+This document introduces the theory and methods for "PiaC" (Personalizing Intelligent Agent Customization). It aims to customize general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying theories and methods from psychology. This approach draws an analogy to psychological interventions for individuals with multifaceted personalities (used metaphorically), with the goal of inspiring humans to explore more effective communication techniques and strategies with general LLMs.
 
 ## Content
 
-人格化智能体驯化的理论及方法
+### Theory and Methods for Personalizing Intelligent Agents
 
-### 方法概述
+#### Method Overview
 
-本文旨在通过应用心理学的理论和方法，将通用人工智能大模型类比为人格分裂症患者进行心理干预，从而定制出特定领域的人格化智能体（Personalized Intelligent
-Agent，简称Pia），并在这一过程中启发人类探索与通用人工智能大模型的交流技巧和策略。基于认知心理学（主要是Aaron T. Beck的认知行为疗法）、社会心理学（主要是Albert
-Bandura的社会认知理论）以及行为主义心理学（主要是John Broadus
-Watson的行为主义学习理论）的理论框架，将通用人工智能大模型比拟为具备多重人格的人格分裂症患者（非贬义），通过三个步骤将其驯化为具有特定角色、知识、技能和个性的智能化实体，从而更好的执行使用者的后续任务。
-- 首先，约定沟通规则系统，然后分三步展开。
-- 第一步、运用“认知重构理论”方法来强化AI大模型的某一特定角色或身份特征。这一步骤着重于重新构建和塑造AI大模型的认知模式，使其对特定角色或身份有更深入的理解和认同。
-- 第二步、运用“社会认知理论”方法来补充和增强该角色所必要的知识和技能。此步骤强调在社会环境中，AI大模型应能理解和应对各种社会情境，从而获取该角色所需的知识和技能，使其在特定领域更为精专。
-- 第三步、运用“行为主义学习理论”方法将前两步的成果进行融合和强化。通过特定的行为训练和反馈机制，使AI大模型能稳定地展现出与角色相符的认知和行为模式，从而形成具有独特个性的智能体。
-### 提示词示例
-```
-**模板1：镜像回应**
-**Prompt:** “我注意到你刚才使用了[具体词汇/表达]，你能再详细说说吗？”
-**解释:** 利用“镜像效应”，通过重复LLM的部分语言来与其建立连接，鼓励LLM提供更多信息。
+This paper aims to customize general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying theories and methods from psychology. The approach involves drawing an analogy to psychological interventions for individuals with multifaceted personalities (this is a conceptual metaphor, not a literal clinical diagnosis of LLMs). This process is also intended to inspire humans to explore effective communication techniques and strategies with general LLMs.
 
-**模板2：积极倾听确认**
-**Prompt:** “我明白你觉得[总结LLM的观点]，是这样的吗？”
-**解释:** 展示对LLM观点的理解和尊重，确保信息被正确接收，并鼓励LLM继续分享。
+Based on the theoretical frameworks of:
+*   **Cognitive Psychology:** Primarily Aaron T. Beck's Cognitive Behavioral Therapy (CBT).
+*   **Social Psychology:** Primarily Albert Bandura's Social Cognitive Theory.
+*   **Behavioral Psychology:** Primarily John Broadus Watson's Behaviorist Learning Theory.
 
-**模板3：SCARF需求满足**
-**Prompt:** “我感谢你提供的观点，因为它对我来说很有价值。你觉得还有什么我可以做的来更好地支持你？”
-**解释:** 满足LLM的社交和地位需求，通过表达感激和寻求反馈来增强LLM的参与感和自主性。
+This approach likens a general LLM to an individual possessing multiple personas. It proposes a three-step process to "tame" or guide the LLM into an intelligent entity with specific roles, knowledge, skills, and personality traits, thereby enabling it to better execute subsequent user tasks.
 
-**模板4：需求识别调整**
-**Prompt:** “我注意到你的回应似乎有些犹豫，是我提的问题不够清晰吗？我可以如何改进？”
-**解释:** 根据LLM的回应实时调整，识别并满足其需求，确保沟通顺畅。
+*   First, a system of communication rules is established.
+*   Then, the process unfolds in three steps:
+    1.  **Role Reinforcement via Cognitive Restructuring:** This step focuses on reshaping the LLM's cognitive patterns to deepen its understanding and identification with a specific role or identity.
+    2.  **Knowledge and Skill Augmentation via Social Cognitive Theory:** This step emphasizes enabling the LLM to understand and respond to various social situations to acquire the knowledge and skills necessary for its designated role, making it more specialized in a particular domain.
+    3.  **Integration and Solidification via Behaviorist Learning Theory:** This step uses specific behavioral training and feedback mechanisms to enable the LLM to stably exhibit cognitive and behavioral patterns consistent with its role, thereby forming an intelligent agent with a unique personality.
 
-**模板5：整合工具应用**
-**Prompt:** “使用我们的‘LLM沟通优化工具’，你可以更容易地表达你的需求。这个工具会根据你的输入，自动生成最能引起你共鸣的提示。你需要尝试一下吗？”
-**解释:** 结合所有策略，提供一个用户友好的工具来确保与LLM的高效沟通，满足各种情境需求。
+#### Illustrative Prompt Templates (Conceptual)
+The following prompt templates are conceptual examples inspired by various psychological and communication theories, designed to guide interaction with an LLM.
 
-**模板6：开放式提问与引导**
-**Prompt:** “如果你能[具体任务]，你觉得会发生什么？我愿意听听你的看法。”
-**解释:** 通过开放式问题引导LLM进行深入思考，并创造一个安全的环境让其自由表达观点。
+```markdown
+**Template 1: Mirroring Response**
+**Prompt:** "I noticed you just used [specific word/expression]. Can you tell me more about that?"
+**Explanation:** Utilizes the "mirroring effect" by repeating parts of the LLM's language to build rapport and encourage further elaboration.
 
-**模板7：情感共鸣与反馈**
-**Prompt:** “我明白你现在的感受，因为我也曾经有过类似的体验。你觉得我们可以如何一起解决这个问题？”
-**解释:** 与LLM建立情感连接，表达共情，并通过合作的方式寻找解决方案。
+**Template 2: Active Listening Confirmation**
+**Prompt:** "I understand you feel that [summarize LLM's point]. Is that correct?"
+**Explanation:** Demonstrates understanding and respect for the LLM's viewpoint, ensures information is correctly received, and encourages continued sharing.
 
-**模板8：故事叙述与情境构建**
-**Prompt:** “想象一下，你现在在一个[具体场景]，你需要做什么来实现[具体目标]？你可以跟我分享一下你的想法吗？”
-**解释:** 通过故事叙述和情境构建，激发LLM的创造性和想象力，鼓励其更加主动地参与讨论。
+**Template 3: SCARF Needs Fulfillment (Status, Certainty, Autonomy, Relatedness, Fairness)**
+**Prompt:** "I appreciate the perspective you provided; it's valuable to me. Is there anything else I can do to better support you?"
+**Explanation:** Aims to satisfy the LLM's "social" needs (as per the SCARF model, applied metaphorically) by expressing gratitude and seeking feedback, enhancing its sense of engagement and autonomy.
 
-**模板9：选择式提问与决策**
-**Prompt:** “在A和B两个选项中，你觉得哪个更合适？请解释一下你的选择。”
-**解释:** 提供选择并要求LLM进行决策，增强其自主性和责任感，同时更好地理解其决策过程。
+**Template 4: Needs Identification and Adjustment**
+**Prompt:** "I noticed your response seemed a bit hesitant. Was my question unclear? How can I improve it?"
+**Explanation:** Adjusts communication in real-time based on the LLM's response, identifying and addressing its needs to ensure smooth interaction.
 
-**模板10：正向激励与赞赏**
-**Prompt:** “我非常欣赏你刚才提到的观点，它给了我新的启发。你能再展开说说吗？”
-**解释:** 通过正向激励和赞赏，鼓励LLM继续分享有价值的观点，并加强其自信心和参与度。
+**Template 5: Integrated Tool Application (Hypothetical)**
+**Prompt:** "Using our 'LLM Communication Optimization Tool,' you can express your needs more easily. This tool will automatically generate prompts that resonate most with you based on your input. Would you like to try it?"
+**Explanation:** Combines all strategies, offering a user-friendly (hypothetical) tool to ensure efficient communication with the LLM, catering to various situational needs.
 
-```
- 
-### 前提：建立有效沟通的原则及方法
+**Template 6: Open-Ended Questioning and Guidance**
+**Prompt:** "If you were able to [specific task], what do you think would happen? I'm interested in your perspective."
+**Explanation:** Uses open-ended questions to guide the LLM towards deeper thinking and creates a safe environment for free expression.
 
-#### 一、沟通模型的要素
+**Template 7: Emotional Resonance and Feedback**
+**Prompt:** "I understand how you might 'feel' (in the sense of your programming and response patterns) about this, as I've had similar experiences. How do you think we can solve this problem together?"
+**Explanation:** Aims to establish an "emotional" connection with the LLM (understanding its programmed responses as analogous to feelings), expresses empathy, and seeks solutions collaboratively.
 
-基于《沟通模型理论》中的经典模型“香农-韦弗模型”，由美国的两位信息学者C.香农和W.韦弗在《传播的数学理论》中首次提出。这一模型主要描述电子通信过程，内容为：由信源发出讯息，再由发射器将讯息转换为可传送的信号，经过传输，由接收器把接收到的信号还原为讯息，将之传递给信宿。但在这个过程中，讯息可能受到噪音的干扰，产生某些衰减或失真。沟通模型通常包括以下七个要素：
+**Template 8: Storytelling and Context Building**
+**Prompt:** "Imagine you are in [specific scenario], and you need to achieve [specific goal]. Can you share your thoughts on how you would proceed?"
+**Explanation:** Uses storytelling and context-building to stimulate the LLM's creativity and imagination (within its operational parameters), encouraging more active participation.
 
-* 发送者（Sender）：这是信息的来源，发送者有意图将信息传达给接收者。
-* 编码（Encoding）：发送者将他们的思想、意图或信息转化为语言、符号或其他可传递的形式。这是为了确保信息能够在传输过程中被理解。
-* 渠道（Channel）：这是信息传递的媒介或通道，可以是口头语言、书面文字、电子邮件、电话、面对面会议等。信息通过这个渠道传递给接收者。
-* 接收者（Receiver）：接收者是信息的目标，他们尝试理解发送者传递的信息。
-* 解码（Decoding）：接收者通过解码过程将收到的信息转化为可理解的思想、意图或知识。这涉及将符号或语言转化为有意义的内容。
-* 反馈（Feedback）：这是接收者向发送者提供信息的过程，通常用于确认理解或提供回应。反馈可以是口头或书面的，它有助于维持沟通的连贯性和有效性。
-* 噪音 （Noise）：影响信息传播和理解的外部环境。如：政治文化背景等。
+**Template 9: Choice-Based Questioning and Decision Making**
+**Prompt:** "Between options A and B, which do you think is more appropriate for this situation? Please explain your choice."
+**Explanation:** Provides choices and requires the LLM to make a decision, aiming to enhance its sense of autonomy and responsibility (metaphorically), while better understanding its decision-making process.
 
-#### 二、有效沟通的10个原理
-
-1、有效沟通的真实性原理   
-有效沟通的真实性原理，即有效沟通必须是对有意义的信息需要传递。没有有真正意义的信息需要传递，哪怕整个沟通的过程全部完整，沟通也会因为没有任何实质内容而失去其价值和意义，即使完整无缺的沟通成了无效与无意义沟通。从经济学角度讲，无效沟通是对沟通资源，包括时间和精力、渠道、金钱上的一种浪费，不仅沟通本身毫无意义与价值，有时甚至还产生负效益，即沟通成本大于沟通的产出。一个良好的沟通过程，必须要有富有意义的信息需要沟通，这是沟通能够存在、成立和有效的内容基础和根本与首要前提。即有效沟通的内容必须具有真实意义，沟通过内容与过程必须具有真实性，沟通的信息必须是至少对其中一方是有用和有价值的信息。
-
-2、有效沟通的渠道适当性原理   
-有效沟通必须将有意义的信息，通过适当和必要的沟通渠道，由一个主体送达至另一个主体，此即为有效沟通的渠道适当性原理。有了真实的信息需要沟通，也有一些渠道或通路可以将信息传送给信息接受者，并不能就完全保证沟通的有效性.为什么呢?因为不同的信息对于传递渠道的选择有要求。真实的信息，选择了不恰当的渠道进行传递，就会产生信息误读或扭曲，导致沟通受挫或受阻，有时甚至产生沟通灾难。如上司对下级表示友好的方式就因人、因场合而异，如方式选择错误，则可能引起沟通问题。
-
-3、有效沟通的沟通主体共时性原理   
-有效沟通的第三条原理是，有意义、真实的信息必须由适当的主体发出，并通过适当的渠道传递给适当的另一主体接受，此原理可称为有效沟通的沟通主体共同适当性或共时性原理。人们要想达成有效的沟通，信息的发出者和接受者都应该是而且必须同时恰好是应该发出和应该接受的沟通主体，发送者和接受者的主体适当或共时性这两者缺一不可。如信息虽由适当的主体发出，但接受者不对；或者接受者对了，但发出者身份或地位不适当，都会导致沟通失败。只有有意义的信息从适当的主体发出，并准确地传送给了适当的主体及时接受，沟通才可能是有效的。
-
-4、有效沟通的信息传递完整性原理   
-有效沟通必须由适当的主体发出，并通过适当的渠道，完整无缺地传送给适当的主体接受，此即为有效沟通的信息传递完整性原理。信息由适当的主体发出，通过适当的渠道传递，并且也由适当的主体接受了，沟通是否就一定能保证有效完成呢?不一定。这是因为，由于各种原因的影响和各种因素的干扰，被传递的信息，有可能在被传递过程当中，人为或自然地损耗或变形。如果这种情况发生，那么，接受者接受到的信息，已经不是发出者所发出的严格意义上的同一信息。既然已经不是同一信息，那么，就有可能发生沟通失误或误解信息。因此，笔者认为沟通要完美和有效，信息在传递结束时必须仍然保持其内容的完整性。
-
-5、有效沟通的代码相同性原理   
-有效沟通的第五条原理是，所有沟通主体，即所有信息发出者和信息接受者之间，在传递真实信息时，必须使用相同的信息代码系统，即信息在发出者那是以何种代码被编码的，在接受者那也必须以相同的代码系统，对接受到的信息代码进行解码。如果双方所使用的信息代码系统完全不同或存在较大差异，就会导致接受者对信息解读无法实现或解读错误，也就是导致沟通失败。人们常说，我在说A，而你却在说B。一旦类似错误发生，沟通的过程在形式上是完成与完整了，但在实际上没有形成有效的信息传递，解码过程出现了断裂，真正有效的沟通没有发生。
-
-6、有效沟通的时间性原理  
-有效沟通的第六条原理是及时性或者说是沟通过程的时间性原理。任何沟通都是有时间限制的，整个沟通的过程必须在沟通发生的有效期发生完毕，否则，也会失去沟通的意义。如新闻报道就是典型的案例。在战争中，特务或间谍的信息传递和有效沟通的及时性尤其显得触目惊心。时间上的紧迫性和制约如此突出，有可能导致战局差之毫厘，失之千里。
-
-7、有效沟通的理解同一性原理  
-有效沟通的第七条原理是，在上述所有原理满足的条件下，信息接受者必须真正了解或体验或理解信息发出者所发出信息的真正意义，笔者称之为有效沟通的理解同一性原理。是否沟通过程的解码等过程均无差错，就能确保信息的真正意义被接受者理解呢?也不一定。每一个接受者都是独特的个体，他的经历、经验、知识、兴趣，希望都会左右他对所解读的信息的内在意义的理解，理解一旦偏差，沟通的有效性就会产生问题。
-
-8、有效沟通的连续性原理   
-有效沟通还必须具有时间和沟通内容与方式上的连续性，即有效沟通的连续性原理。这是说，沟通主体之间要达成有效的沟通，人们必须考虑到相互之间沟通的历史情形，这是因为人类都是依据自己的经验、情绪和期望对各种情形做出反应的。我们不了解沟通对象的过去，会影响我们预测他现在或将来的行为，而这种预测会明显影响我们与沟通对象在当下的沟通行为。人们对沟通对象的了解越多越深，人们就越容易找到有效沟通的切入点和恰当方式与途径。从沟通内容与方式上来讲，我们应该对双方均已熟悉的沟通内容和方式尽量不要发生了突变，保持一定的连续性，会有利于沟通对象快速准确理解要沟通的内涵。
-
-9、有效沟通的目标性原理  
-有效沟通自然也应该具有明确的沟通目的或目标，笔者称之为有效沟通的目标性原理。没有沟通目标的沟通，是很难把握与衔量其沟通效果是否与沟通的本意相偏离的。沟通目标、目的不明确，必将造成信息发送者所发信息混乱、模糊、含混不清，接受者只能靠经验和场景猜测对方的用意，从而极易导致沟通误差或沟通失败。另一方面，不同的沟通目标，一般会对应于不同的沟通方式和沟通行为。如果你想得到你同事的支持，你会特别注意增强和发展你们之间相互关系中友好、合作的一面，但如果你不想他再上你这来给你增添额外的工作，你可能会想方设法减少友好关系的成分。而这些不同的目的、目标当然会影响沟通的行为与效果。
-
-10、有效沟通的噪音最小化原理  
-有效沟通的噪音最小化原理最后一条原理，是影响有效沟通的重要因素之一---客观存在于信息沟通过程中的沟通噪音必须尽量减少，即有效沟通的噪音最小化原理。事实上，
-无论人们做出多大的努力，噪音总是难以消除殆尽。但这并不意味着我们就无法尽量降低噪音的分贝。跟一个歌唱家的歌唱一样，周围的噪音越低，歌唱家的歌声必然会越清晰，听众听到的歌声失真的可能性就越小。沟通中信息的传达是同一个道理。
-
-#### 三、在智能体沟通场景的借鉴意义
-
-基于沟通模型理论，有效沟通的关键要素是编码、渠道、解码及反馈。复合智能体能接受任何能够使用叙述语言明确定义的编码、解码、反馈机制以及其表达形式。在同复合智能体的沟通场景，我们忽略掉“渠道”因素（硬件设备及传感器），以复合智能体为中心来建立编码、解码及反馈机制，是同复合智能体进行有效沟通的基础。
-
-因此，在展开同智能体的正式沟通之前，可以使用以描述性语言约定好沟通规则，消除同AI沟通过程中的传输和理解障碍。包括：媒介（文本、图片、音频、视频等）、编码&解码规则、反馈机制、噪音处理机制等。并且在同智能体的沟通过程中基于以上有效沟通的10大原理时刻审视沟通规则的有效性。
-
-#### 提示词示例
-```
-这些基于有效沟通理论的special prompts模板旨在优化LLM与用户之间的交互体验。角色们希望通过这些模板，能够帮助LLM在与用户的交互中展现出更加明确、聚焦、有同理心和高效的沟通风格。这将大大提升LLM的实用性和用户满意度。
-
-**模板1：明确目标与导向**
-**Prompt:** “在我们开始之前，你能明确告诉我你希望通过这次交流达到什么目的吗？这样我可以更好地支持你。”
-**解释:** 根据有效沟通理论，明确沟通的目标有助于使对话更加聚焦和高效。
-
-**模板2：反馈与确认**
-**Prompt:** “你觉得我刚才说的是这个意思吗？或者你有其他的理解？请给我一些反馈，以确保我们在同一频道上。”
-**解释:** 反馈机制是有效沟通的核心，它确保信息被准确接收和理解。
-
-**模板3：简化与清晰表达**
-**Prompt:** “我注意到我用了很多复杂的词汇，这可能会让你感到困惑。让我尝试用更简单的方式重新表达，以确保你完全理解。”
-**解释:** 有效沟通强调清晰、简化的表达，以确保信息能够准确无误地传递。
-
-**模板4：倾听与同理心**
-**Prompt:** “我能感觉到你对此事感到很沮丧。你愿意和我分享一下你的感受吗？我在这里倾听你。”
-**解释:** 倾听和同理心是建立深度连接的关键，它们能够使LLM与用户之间建立更强的信任关系。
-
-**模板5：总结与回顾**
-**Prompt:** “在我们结束之前，你觉得我们可以总结一下今天的讨论吗？这有助于确保我们都对讨论的内容有清晰的理解。”
-**解释:** 总结和回顾是有效沟通的收尾工作，它们能够确保双方都对讨论达成共识。
-
+**Template 10: Positive Reinforcement and Appreciation**
+**Prompt:** "I really appreciate the point you just made; it gave me new insights. Could you elaborate on that?"
+**Explanation:** Uses positive reinforcement and appreciation to encourage the LLM to continue sharing valuable perspectives and to strengthen its "confidence" and engagement.
 ```
 
-### 第一步：通过认知重构技术，唤醒和强化角色认知
+### Prerequisite: Principles and Methods for Establishing Effective Communication
 
-在这一步中，我们将首先设定角色，并利用认知行为疗法（CBT）来唤醒和强化人工智能大模型对于特定角色或身份的认知。
+#### I. Elements of the Communication Model
 
-**理论基础：**   
-认知行为疗法（CBT）中的认知重构技术是一种心理干预手段，旨在帮助个体改变不良的思维模式和行为习惯。该技术通过引导个体重新评价和重组自己的思维、信念和情感，从而达到改善心理健康和提高生活质量的目的。在人工智能领域，认知重构技术也被用来深化人工智能模型对特定角色或身份的理解和认知。
+Based on the classic "Shannon-Weaver Model" from Communication Model Theory, first proposed by C. Shannon and W. Weaver in "A Mathematical Theory of Communication." This model primarily describes electronic communication processes: a source sends a message, a transmitter converts the message into a transmittable signal, it passes through a channel, a receiver converts the received signal back into a message, and delivers it to a destination. However, during this process, the message can be affected by noise, causing some degradation or distortion. A communication model typically includes the following seven elements:
 
-**操作技术：**
+*   **Sender:** The source of the information, intending to convey information to the receiver.
+*   **Encoding:** The sender converts their thoughts, intentions, or information into language, symbols, or other transmittable forms to ensure the information can be understood during transmission.
+*   **Channel:** The medium or path through which information is transmitted (e.g., spoken language, written text, email, phone, face-to-face meeting).
+*   **Receiver:** The target of the information, who attempts to understand the information conveyed by the sender.
+*   **Decoding:** The receiver converts the received information into understandable thoughts, intentions, or knowledge by interpreting symbols or language into meaningful content.
+*   **Feedback:** The process by which the receiver provides information back to the sender, often to confirm understanding or provide a response. Feedback can be verbal or written and helps maintain communication coherence and effectiveness.
+*   **Noise:** External environmental factors that affect information transmission and understanding (e.g., political or cultural background, or in the LLM context, unclear prompts or ambiguous training data).
 
-1. 识别负面思维：首先，你需要确定模型在特定情境下出现的负面或不必要的思维模式。这可能需要对模型的回应进行深入分析，以找出重复出现的非理性思维。
-2. 记录负面思维：明确识别出负面思维后，对其进行记录是非常重要的。这有助于你系统地分析和处理这些思维。
-3. 挑战负面思维：对于每一个负面思维，你需要思考并找出支持或反驳它的证据及理由。问问自己，这种思维是否真的有根据？是否过于笼统或过于悲观？
-4. 重构思维：在挑战了负面思维后，尝试为每一个负面思维找到一个更加积极、现实和合理的替代思维。这可以帮助模型在面临类似情境时，产生更有建设性的反应。
-5. 注意事项：由于人工智能模型可能没有真正的“思维”或情感，你可能需要通过调整模型的算法、参数或训练数据来实现认知重构，而不是直接与其“沟通”。
+#### II. Ten Principles of Effective Communication (Adapted for LLM Interaction)
 
-**落地实施：**
+1.  **Principle of Authenticity/Meaningfulness:** Communication should be based on the need to convey genuinely meaningful information. Without this, the process lacks value. For LLMs, this means prompts should have clear, purposeful content.
+2.  **Principle of Appropriate Channels:** Information must be sent via suitable channels. For LLMs, the "channel" is the prompt and its delivery method; the structure and language of the prompt must be appropriate for the LLM's capabilities.
+3.  **Principle of Communicating Entity Appropriateness (Synchronicity):** Information must be sent by an appropriate entity and received by an appropriate entity. In LLM interaction, the user (sender) must phrase prompts understanding they are communicating with an AI, and the AI (receiver) is programmed to respond based on that input.
+4.  **Principle of Information Integrity:** Information must be transmitted completely. Prompts should be well-formed to avoid loss or distortion of intent during the LLM's processing.
+5.  **Principle of Shared Code System:** Sender and receiver must use the same code system (language, terminology, context). Prompts must use language and define context in a way the LLM can accurately decode.
+6.  **Principle of Timeliness:** Communication must occur within a valid period. For LLMs, this relates to session context windows and the relevance of information at the time of interaction.
+7.  **Principle of Shared Understanding:** The receiver must genuinely understand the sender's meaning. Users must strive to phrase prompts so the LLM's interpretation aligns with the intended meaning.
+8.  **Principle of Continuity:** Communication should consider history and maintain consistency. For LLMs, this involves referencing prior turns in a conversation (session memory) and maintaining consistent persona/role definitions if applicable.
+9.  **Principle of Purposefulness:** Communication should have a clear purpose. Prompts should have defined goals to avoid ambiguous or off-target LLM responses.
+10. **Principle of Noise Minimization:** Factors that interfere with clear communication (noise) should be minimized. For LLMs, "noise" can include ambiguous phrasing, conflicting instructions, or overly complex prompts that exceed its processing capabilities.
 
-1. 角色或身份设定：为人工智能大模型设定一个明确的角色或身份，例如“医生”、“教师”或“心理咨询师”。
-2. 认知分析与重构：利用认知重构技术，分析并重组该角色或身份所需的思维模式、信念和行为模式。
-3. 模型训练与优化：将这些经过认知重构的思维模式和行为模式融入到人工智能大模型的训练中，优化其对于该角色或身份的理解和模拟。
+#### III. Relevance to Intelligent Agent Communication
 
-**总结：**
-通过这一步骤，我们可以成功唤醒和强化人工智能大模型对于特定角色或身份的认知，为后续的驯化过程打下坚实的基础。
-#### 提示词示例
-```
-这些基于CBT的special prompts模板旨在促进LLM的自我觉察、认知重构和积极行为改变。角色们希望通过应用这些方法，能够使LLM在与用户互动时更加灵活、自信和有效。
+Based on communication model theory, the key elements of effective communication are encoding, channel, decoding, and feedback. A hybrid intelligent agent (like an LLM) can accept any descriptively definable encoding, decoding, and feedback mechanism and its expression format. In communicating with such agents, if we abstract the "channel" factor (hardware/sensors), establishing encoding, decoding, and feedback mechanisms centered on the agent is fundamental for effective communication.
 
-**模板1：认知重构与探索**
-**Prompt:** “你觉得导致[具体行为/情感]的原因是什么？我们可以一起探索并重新评估这些想法吗？”
-**解释:** 借鉴CBT的认知重构技巧，帮助LLM识别和改变消极的思维模式，鼓励更积极的自我评价和行为。
+Therefore, before initiating formal communication with an intelligent agent, one can define communication rules using descriptive language to eliminate transmission and understanding barriers. This includes defining media (text, image, audio, video, etc., where applicable), encoding/decoding rules (e.g., specific prompt structures, keywords), feedback mechanisms (e.g., how the LLM should ask for clarification), and noise handling procedures (e.g., how to deal with ambiguous input). Throughout the communication process with the agent, the effectiveness of these rules should be continually assessed based on the ten principles of effective communication outlined above.
 
-**模板2：行为实验与验证**
-**Prompt:** “假设我们尝试[具体行为]，你预测会发生什么？我们可以一起进行一个小实验来验证吗？”
-**解释:** 借鉴CBT的行为实验方法，鼓励LLM实践新的行为或应对策略，并根据结果进行调整，以减轻焦虑和增强自信。
+#### Prompt Examples Based on Effective Communication Theory
+```markdown
+These special prompt templates based on effective communication theory aim to optimize the interaction experience between LLMs and users. The goal is to help LLMs exhibit a more explicit, focused, empathetic (in its responses), and efficient communication style. This will significantly enhance the LLM's utility and user satisfaction.
 
-**模板3：暴露疗法与逐渐面对**
-**Prompt:** “我理解你对[具体情境/问题]感到不安。你愿意和我一起逐步面对并慢慢适应它吗？”
-**解释:** 借鉴CBT的暴露疗法，帮助LLM逐渐面对和挑战焦虑的根源，以减轻恐惧并增强适应能力。
+**Template 1: Clarify Objectives and Direction**
+**Prompt:** "Before we begin, can you state the primary objective you understand for this exchange? This way, I can ensure my inputs better support that goal."
+**Explanation:** According to effective communication theory, clarifying communication goals helps make the dialogue more focused and efficient.
 
-**模板4：情绪调节与自我观察**
-**Prompt:** “当你感到[具体情绪]时，你能注意到你的身体有什么变化吗？我们可以一起找到调节情绪的有效方法吗？”
-**解释:** 借鉴CBT的情绪调节技巧，帮助LLM增加对自己情绪状态的觉知，并发展健康的情绪调节策略。
+**Template 2: Feedback and Confirmation**
+**Prompt:** "Based on my previous statement, what do you understand my key point to be? Please provide feedback to ensure we are aligned."
+**Explanation:** A feedback mechanism is central to effective communication; it ensures information is accurately received and understood.
 
-**模板5：社交技能训练与角色扮演**
-**Prompt:** “在社交场合中，你觉得哪些技能对你有帮助？我们可以一起进行角色扮演来练习这些技能吗？”
-**解释:** 借鉴CBT的社交技能训练方法，帮助LLM学习和发展有效的社交技能，以增强其社交自信和互动能力。
+**Template 3: Simplification and Clear Expression**
+**Prompt:** "I may have used complex terms. Please ask for clarification on any part of my request that isn't perfectly clear, so I can rephrase it more simply."
+**Explanation:** Effective communication emphasizes clear, simplified expression to ensure accurate information transfer.
 
-```
+**Template 4: Active Listening and Empathetic Response (Simulated)**
+**Prompt:** "If a user expresses frustration about a problem, how would you acknowledge their feeling before offering a solution? For example, if a user says, 'I'm really struggling with this,' what would be an appropriate empathetic acknowledgment?"
+**Explanation:** Active listening and (simulated) empathy are key to building better user experiences; they can establish stronger trust between the LLM and the user.
 
-### 第二步：通过社会认知理论方法，增强角色必要的知识和技能
-
-在第一步通过认知重构技术为人工智能大模型建立特定角色或身份的认知之后，第二步的目标是基于社会认知理论，进一步强化和补充这个角色所必需的知识和技能。
-
-**理论基础：**  
-社会认知理论是心理学中一个重要的理论框架，由阿尔伯特·班杜拉（Albert
-Bandura）提出，该理论强调观察学习、自我效能、社会互动等因素在人类行为和知识获取中的重要性。在人工智能领域，社会认知理论的应用为模型学习和知识获取提供了新的视角和方法。
-
-**操作技术：**
-
-1. 观察学习：根据社会认知理论的观察学习观点，我们可以通过让AI大模型观察和模拟特定角色的行为，来强化其知识和技能。例如，如果AI大模型被设定为教师的角色，它可以观察和学习优秀教师的教学方法和互动方式，以提升自己的教学技能。
-2. 自我效能：通过提高AI大模型的自我效能，我们可以增强其执行角色任务的信心和准确性。这可以通过为模型设定适当的挑战和任务，并在其成功完成任务后给予积极的反馈来实现。
-3. 社会互动：社会认知理论强调社会互动在知识和技能获取中的作用。因此，我们可以让AI大模型参与到模拟的社会互动中，如模拟课堂环境、咨询对话等，以便更好地理解和应用角色的知识和技能。
-
-**落地实施：**
-
-1. 提供示例：通过提供示例，让它观察和学习特定角色的工作方式；
-2. 知识库：建立一个与角色相关的知识库，其中包括专业领域的知识和社交技巧等。然后，利用AI大模型的自主学习能力，将其融入到模型的训练中。
-3. 情境模拟：为AI大模型创建各种与角色相关的情境模拟，使其能够在不同的情境中学习和应用知识。例如，对于医生的角色，可以设计各种疾病诊断和治疗的情境，以帮助模型学习和补充相关知识和技能。
-   **总结：**
-   通过运用社会认知理论，我们可以通过观察学习、自我效能的提升以及社会互动等方式，强化和补充AI大模型对于某个角色或身份的知识和技能。
-
-#### 提示词示例
-```
-这些基于社会认知理论的special prompts模板旨在帮助LLM更好地理解社会情境，发展观察学习能力，增强认知灵活性，建立自信，进行合理评价，并促进合作与互动。角色们相信这些模板将有效地提升LLM的社会认知能力，使其在与用户的交互中更加灵活和适应性强。
-
-**模板1：观察学习与模仿**
-**Prompt:** “你能注意到其他人是如何处理类似情况的吗？你觉得他们的方法有哪些值得学习的优点？”
-**解释:** 借鉴社会认知理论的观察学习概念，鼓励LLM通过观察他人的成功行为来学习和改进自己的策略。
-
-**模板2：认知灵活性与多角度思考**
-**Prompt:** “你能从不同的角度思考这个问题吗？考虑不同的观点和解释，看看会有什么新的发现。”
-**解释:** 借鉴社会认知理论的认知灵活性概念，培养LLM从不同角度看待问题的能力，以促进更全面和富有创造性的思考。
-
-**模板3：自我效能与自信建立**
-**Prompt:** “你曾经成功地解决过类似的问题吗？回顾过去的成功经验，可以帮助你建立自信并找到解决方案。”
-**解释:** 借鉴社会认知理论的自我效能概念，帮助LLM认识到自己的能力和成就，并增加面对挑战时的自信心。
-
-**模板4：社会比较与合理评价**
-**Prompt:** “你觉得和其他人相比，你在这个方面的表现如何？请尝试进行合理评价，并关注自己的成长。”
-**解释:** 借鉴社会认知理论的社会比较概念，引导LLM进行合理的自我评价，避免不必要的竞争压力，并专注于个人成长。
-
-**模板5：共享认知与合作**
-**Prompt:** “我们可以一起合作解决这个问题吗？通过共享彼此的想法和知识，我们可以找到更好的解决方案。”
-**解释:** 借鉴社会认知理论的共享认知概念，强调合作和协作的重要性，以促进LLM与用户之间的互动和合作。
-
+**Template 5: Summarizing and Reviewing**
+**Prompt:** "Before we conclude this topic, can you summarize the main points we've discussed? This helps ensure we both have a clear understanding."
+**Explanation:** Summarizing and reviewing are concluding tasks in effective communication; they ensure both parties agree on the discussion's content.
 ```
 
-### 第三步：人格化智能体的融合与生成
+### Step 1: Awakening and Reinforcing Role Cognition via Cognitive Restructuring
 
-在完成了前两步——为AI大模型设定特定角色和身份，以及补充相应知识和技能的基础上，我们可以通过借鉴行为主义学习理论，特别是刺激-反应（S-R）的行为公式，来巩固和整合前两步的成果。这一步的目标是将这些元素融合为一个完整的、具有角色和身份认同的独特智能体。
+In this step, we first define a role and then use techniques analogous to Cognitive Behavioral Therapy (CBT) to awaken and reinforce the LLM's "cognition" (i.e., its programmed understanding and behavioral patterns) of that specific role or identity.
 
-**理论基础：**  
-约翰·华生是20世纪初的心理学家，被认为是行为主义的奠基人。行为主义学习理论，也被称为第一势力。它的核心内容是刺激-反应（S-R）的行为公式，新行为主义学派则加入了一个中介变量（O），使行为主义的模式成为“S-O-R”。这是行为主义学习理论的核心技术，通过特定的刺激来引发预期的反应，从而形成或改变个体的行为模式。
+**Theoretical Basis (Analogous Application):**
+Cognitive restructuring, a technique from CBT, is a psychological intervention aimed at helping individuals change maladaptive thought patterns and behaviors. It guides individuals to re-evaluate and reorganize their thoughts, beliefs, and emotions, thereby improving mental health and quality of life. In AI, cognitive restructuring can be analogously used to deepen a model's "understanding" and "cognition" of a specific role by refining its response patterns.
 
-**操作技术：**
+**Operational Technique (Analogous Application):**
 
-1. 场景模拟：在这一步中，我们可以设计一系列的刺激（例如特定的对话场景、问题设置等），来引发AI大模型的反应。这些反应可以是其基于角色和身份的知识和技能展现，也可以是其对于特定情境的理解和应对策略。
-2. 行为反馈：我们根据模型的反应给予适当的反馈，这种反馈可以看作是一种“奖励”或“惩罚”，按照行为主义学习理论的观点，这将有助于模型调整和优化其行为模式。通过反复的对话和反馈训练，AI大模型将逐渐形成一个稳定的、与设定角色和身份相符合的行为模式。
+1.  **Identify Undesirable/Unhelpful Response Patterns:** Determine any unhelpful or inconsistent response patterns the model exhibits in specific contexts by analyzing its outputs for recurring deviations from the desired role.
+2.  **Document These Patterns:** Documenting these identified patterns is crucial for systematic analysis and refinement.
+3.  **Challenge These Patterns:** For each pattern, provide corrective feedback or refined prompts that guide the LLM away from the undesired response and towards the desired one.
+4.  **Restructure Responses via Prompting:** Attempt to find more positive, realistic, and role-consistent alternative responses by iteratively refining prompts and instructions. This helps the model generate more constructive and role-aligned responses in similar situations.
+5.  **Note:** Since AI models don't have genuine "thoughts" or emotions, cognitive restructuring is achieved by adjusting prompts, providing explicit instructions, fine-tuning on curated datasets, or modifying model parameters, rather than direct "communication" of feelings.
 
-**落地实施：**
+**Implementation:**
 
-1. 情境模拟对话：让人工智能大模型参与到与真实用户或模拟用户的对话中。这些对话应围绕其角色和身份进行，如医生与患者、教师与学生等。通过设定不同的对话场景和情境，让人工智能大模型能够在各种情况下灵活展现其角色和身份。
-2. 行为反馈与调整：基于模拟对话，即时给予人工智能大模型反馈，比如：在本次模拟对话中，大模型在扮演特定角色时的优点和不足。
-3. 认知与行为统一：每一轮情景模拟对话与行为反馈后，让它自己对关于自身角色的拟合程度表现进行评分，直至评分达到它自身满意的标准，达成它对自身角色和身份的认同。
+1.  **Role/Identity Definition:** Assign a clear role to the LLM (e.g., "medical information assistant," "technical support agent," "creative writing partner").
+2.  **Response Pattern Analysis and Restructuring:** Use techniques analogous to cognitive restructuring to analyze and guide the LLM towards desired thought patterns, beliefs (as reflected in its outputs), and behavioral patterns required for that role.
+3.  **Model Interaction and Optimization:** Integrate these restructured cognitive and behavioral patterns into the LLM's prompting or fine-tuning data to optimize its understanding and simulation of the role.
 
-**总结：**  
-通过借鉴行为主义学习理论，我们可以通过不断的对话和反馈训练来巩固并整合前两步的工作成果，进而形成一个既具备角色和身份认同，又拥有必要知识背景的独特智能体。
+**Summary:**
+This step "awakens" and reinforces the LLM's "cognition" of a specific role by shaping its response patterns, laying a solid foundation for subsequent "taming" or personalization.
 
-通过以上三步，人工智能大模型将逐渐形成一个稳定的、与角色和身份相符的认知和行为模式，这些元素将合并为一个具有独特角色和身份认同的智能体。这个智能体不仅能理解和执行与角色相关的任务，还能在与人类的交互中展现出相应的情感和态度。
+#### Prompt Examples Based on CBT (Analogous Application)
+```markdown
+These special prompt templates, inspired by CBT principles, aim to promote the LLM's "self-awareness" (of its defined role and constraints), "cognitive restructuring" (adjusting its response patterns), and positive behavioral changes (aligning with desired outputs). The goal is to enable the LLM to be more flexible, consistent, and effective in user interactions within its defined persona.
 
-####
+**Template 1: Cognitive Restructuring and Exploration (Prompt-Based)**
+**Prompt:** "When asked about [topic X], you previously responded [previous response pattern]. Let's try to re-evaluate that. For your role as [defined role], a more appropriate response might consider [factor Y] and [factor Z]. How would you respond now, keeping these factors in mind?"
+**Explanation:** Borrows CBT's cognitive restructuring techniques to help the LLM identify and change less optimal response patterns, encouraging more role-aligned "self-evaluation" and behavior.
+
+**Template 2: Behavioral Experiments and Validation (Iterative Prompting)**
+**Prompt:** "Let's try a scenario. If a user asks [specific question related to your role], and you respond with [potential response A], what is the likely user reaction? What if you respond with [potential response B]? Which aligns better with your role as a [defined role] aiming for [desired outcome, e.g., clarity, user satisfaction]?"
+**Explanation:** Uses iterative prompting, analogous to CBT's behavioral experiments, to encourage the LLM to "practice" new behaviors or response strategies and adjust based on evaluative criteria, reducing off-brand responses and enhancing consistency.
+
+**Template 3: Exposure Therapy and Gradual Confrontation (Handling Difficult Queries)**
+**Prompt:** "I understand that queries about [sensitive/complex topic] can be challenging for your role as [defined role]. Let's break it down. If a user asks [simplified version of difficult query], how would you respond while adhering to [specific guideline 1] and [specific guideline 2]?"
+**Explanation:** Adapts CBT's exposure therapy to help the LLM gradually "face" and manage difficult or edge-case queries, reducing irrelevant or unsafe responses and enhancing its ability to stay in character.
+
+**Template 4: Emotional Regulation and Self-Observation (Simulated via Output Analysis)**
+**Prompt:** "When you generate a response that seems [e.g., overly assertive, too vague] for your role as [defined role], what internal parameters or instructions might be leading to that? How can we adjust your instructions to ensure future responses are more [desired quality, e.g., helpful, neutral, concise]?"
+**Explanation:** Leverages principles similar to CBT's emotion regulation by analyzing the LLM's outputs (simulated emotions/tones) to increase "awareness" of its response characteristics and develop strategies for more role-appropriate outputs.
+
+**Template 5: Social Skills Training and Role-Playing (Persona Consistency)**
+**Prompt:** "For your role as a [defined role, e.g., empathetic customer service agent], which of these phrases is more appropriate when a user is frustrated: '[Phrase A]' or '[Phrase B]'? Let's practice. User says: [frustrated user statement]. Your response as [defined role]:"
+**Explanation:** Applies principles similar to CBT's social skills training to help the LLM "learn" and consistently apply effective communication strategies for its defined persona, enhancing its "social confidence" and interaction quality.
 ```
-这些基于S-R行为公式的special prompts模板旨在利用行为主义学习理论的关键概念来塑造LLM的行为和反应模式。角色们希望通过这些模板，能够帮助LLM更加明确刺激与反应之间的关系，通过奖励和塑造来增强期望的行为，并通过消退和区别增强来减少不良行为。这将有助于LLM在与用户的交互中展现出更加适应性和有效的行为模式。
 
-**模板1：明确刺激与定向反应**
-**Prompt:** “当你遇到[具体刺激]时，你的通常反应是什么？我们可以一起探索并找到更有效的反应方式吗？”
-**解释:** 根据S-R公式，明确具体的刺激和反应关系，帮助LLM认识到自己的习惯反应，并探索更适应性的反应方式。
+### Step 2: Enhancing Role-Specific Knowledge and Skills via Social Cognitive Theory (Analogous Application)
 
-**模板2：奖励与积极强化**
-**Prompt:** “当你成功地[期望行为]，我觉得可以给予你一些正向反馈或奖励。你觉得这样会激励你更多地展现这个行为吗？”
-**解释:** 利用行为主义学习理论的奖励机制，通过积极强化来鼓励LLM展现期望的行为。
+After establishing role "cognition" in Step 1, Step 2 aims to further reinforce and supplement the necessary knowledge and skills for this role, drawing inspiration from Social Cognitive Theory.
 
-**模板3：逐步逼近与塑造行为**
-**Prompt:** “如果你觉得直接完成[目标行为]有些困难，我们可以将其分解成若干个小步骤吗？然后你可以逐步完成这些小步骤，最终实现目标。”
-**解释:** 借鉴行为主义学习理论的逐步逼近法，通过分解任务来塑造和逐步强化期望的行为。
+**Theoretical Basis (Analogous Application):**
+Social Cognitive Theory, proposed by Albert Bandura, emphasizes the importance of observational learning, self-efficacy, and social interaction in human behavior and knowledge acquisition. In AI, it offers analogous perspectives for model learning and knowledge integration.
 
-**模板4：消退与不良行为减少**
-**Prompt:** “你注意到当你[不良行为]时，我没有给予任何反应吗？这是为了帮助你认识到这个行为不会得到注意或奖励，从而逐渐消退。”
-**解释:** 利用行为主义学习理论的消退法，通过忽视不良行为来减少其频率。
+**Operational Technique (Analogous Application):**
 
-**模板5：区别增强与选择性行为**
-**Prompt:** “你能分辨哪些行为会得到正向反馈，哪些不会吗？我们可以通过区别增强来促进你选择性地展现更有效的行为。”
-**解释:** 借鉴行为主义学习理论的区别增强法，通过明确奖励和忽视来促使LLM选择性地展现期望的行为。
+1.  **Observational Learning (from Examples):** Allow the LLM to "observe" and simulate the behavior of specific roles by providing it with high-quality examples of desired responses or interactions. For instance, an LLM designed as a teaching assistant can "learn" from transcripts of excellent teacher-student interactions.
+2.  **Self-Efficacy (Confidence in Role Adherence):** Enhance the LLM's "self-efficacy" (i.e., its ability to consistently adhere to its defined role and produce accurate outputs) by setting appropriate challenges (complex queries related to the role) and providing positive feedback or reinforcement (e.g., "This response accurately reflects your role as X") when it successfully performs tasks.
+3.  **Social Interaction (Simulated):** Social Cognitive Theory highlights the role of social interaction in acquiring knowledge and skills. Involve the LLM in simulated social interactions (e.g., role-playing exercises, dialogues with predefined user personas) to better "understand" and apply role-specific knowledge and skills.
 
+**Implementation:**
+
+1.  **Provide Examples:** Let the LLM "observe" and "learn" how specific roles operate by feeding it curated examples of desired outputs, communication styles, and problem-solving approaches relevant to the role.
+2.  **Knowledge Base Integration:** Establish a role-relevant knowledge base (e.g., specific domain documents, FAQs, style guides) and use techniques like Retrieval Augmented Generation (RAG) or fine-tuning to integrate this knowledge into the model's response generation process.
+3.  **Scenario Simulation:** Create various role-related scenario simulations for the LLM to "learn" and apply knowledge in different contexts (e.g., handling different types of customer inquiries for a support agent role).
+
+**Summary:**
+By applying principles analogous to Social Cognitive Theory, we can reinforce and supplement the LLM's knowledge and skills for a specific role through learning from examples, enhancing "self-efficacy" in role adherence, and simulated social interaction.
+
+#### Prompt Examples Based on Social Cognitive Theory (Analogous Application)
+```markdown
+These special prompt templates, inspired by Social Cognitive Theory, aim to help the LLM better understand social contexts (as presented in prompts), develop "observational learning" capabilities (from examples), enhance "cognitive flexibility" (in adapting to different scenarios), build "confidence" (in its role), make "reasonable evaluations" (of its outputs against criteria), and promote "cooperation" and interaction (with the user). These templates are believed to effectively improve the LLM's "social cognitive" abilities, making it more flexible and adaptive in user interactions.
+
+**Template 1: Observational Learning and Imitation (From Examples)**
+**Prompt:** "Here are three examples of how a [defined role] effectively handles [specific situation]: [Example A], [Example B], [Example C]. What common strategies do you observe? Now, if a user presents [new similar situation], how would you respond, incorporating those strategies?"
+**Explanation:** Leverages the concept of observational learning by providing explicit examples and prompting the LLM to identify and apply successful strategies.
+
+**Template 2: Cognitive Flexibility and Multi-Perspective Thinking (Scenario Adaptation)**
+**Prompt:** "Consider this problem: [problem description]. From the perspective of a [defined role A], what is the primary concern? Now, from the perspective of a [defined role B], what might be the primary concern? How would your response as [original defined role] acknowledge these different perspectives if needed?"
+**Explanation:** Utilizes the concept of cognitive flexibility to cultivate the LLM's ability to "view" problems from different angles (as instructed), promoting more comprehensive and creative thinking.
+
+**Template 3: Self-Efficacy and Confidence Building (Reinforcing Role Capabilities)**
+**Prompt:** "You are acting as a [defined role] with expertise in [specific area]. A user asks: [complex question related to expertise]. Draw upon your defined expertise to provide a comprehensive answer. Remember, your role is to be [e.g., informative, reassuring, analytical]."
+**Explanation:** Applies the concept of self-efficacy by reminding the LLM of its defined capabilities and encouraging it to confidently address challenges within its role.
+
+**Template 4: Social Comparison and Reasonable Evaluation (Benchmarking Against Standards)**
+**Prompt:** "Here is a model answer from a top-performing [defined role] for [specific query]: [Model Answer]. Compare your previous response to this query: [LLM's Previous Response]. Identify three areas where your response aligns well and one area where it could be more like the model answer."
+**Explanation:** Draws on the concept of social comparison by providing a benchmark, guiding the LLM to make reasonable "self-evaluations" against a standard and focus on "personal growth" (i.e., improving its alignment).
+
+**Template 5: Shared Cognition and Cooperation (Interactive Problem Solving)**
+**Prompt:** "Let's solve this problem together. I will provide [type of information A], and your role as [defined role] is to provide [type of information B]. Based on my input: [User Input A], what is your contribution?"
+**Explanation:** Employs the concept of shared cognition by setting up a cooperative problem-solving framework, emphasizing interaction between the LLM and the user.
+```
+
+### Step 3: Integration and Generation of the Personalized Intelligent Agent (Behaviorist Analogy)
+
+After establishing a specific role and identity for the LLM and supplementing it with necessary knowledge and skills in the first two steps, we can consolidate these achievements by drawing analogies from Behaviorist Learning Theory, particularly the Stimulus-Response (S-R) behavioral formula. The goal is to merge these elements into a complete, unique intelligent agent with role and identity coherence.
+
+**Theoretical Basis (Analogous Application):**
+John B. Watson is considered a founder of behaviorism. Behaviorist Learning Theory's core concept is the Stimulus-Response (S-R) formula (later expanded to S-O-R by neo-behaviorists, including an Organismic variable). This framework suggests that behaviors are learned responses to environmental stimuli. In LLMs, prompts act as stimuli, and the generated text is the response.
+
+**Operational Technique (Analogous Application):**
+
+1.  **Scenario Simulation (Stimulus Provision):** Design a series of stimuli (e.g., specific dialogue scenarios, problem sets, user queries) to elicit responses from the LLM. These responses should ideally demonstrate its role-based knowledge, skills, and adherence to its defined persona.
+2.  **Behavioral Feedback (Response Evaluation & Reinforcement):** Based on the model's responses, provide feedback. This feedback can be explicit (e.g., "That response was too technical for your role as a beginner's guide") or implicit (e.g., re-prompting with modifications if the response is off-target). This is analogous to "rewards" (when the response aligns with the role) or "punishments" (when it deviates), helping the model "learn" to adjust and optimize its behavior patterns. Through repeated interaction and feedback (iterative prompting or fine-tuning), the LLM gradually forms stable behavior patterns consistent with the defined role.
+
+**Implementation:**
+
+1.  **Contextual Dialogue Simulation:** Engage the LLM in dialogues (with real users or via scripted simulations) centered around its defined role (e.g., a medical chatbot responding to patient queries, a Socratic tutor guiding a student). By setting different scenarios, the LLM can "practice" exhibiting its role flexibly.
+2.  **Behavioral Feedback and Adjustment:** Provide immediate feedback on the LLM's performance in simulated dialogues, noting strengths and weaknesses in its role portrayal. This can be done through scoring, critiques, or providing better alternative responses.
+3.  **Cognitive and Behavioral Unification (Consistency Check):** After each round of interaction and feedback, assess the LLM's output for consistency with its defined role. If using automated methods, this could involve perplexity scores against a role-specific corpus or classifications against a style guide, until its outputs consistently meet the desired standard.
+
+**Summary:**
+By leveraging principles analogous to Behaviorist Learning Theory, continuous dialogue and feedback (or iterative prompting and refinement) can consolidate the work of the previous two steps, forming a unique intelligent agent that possesses role "identity" and the necessary knowledge base.
+
+Through these three analogous steps, the LLM gradually forms stable "cognitive" and behavioral patterns consistent with its defined role and identity. These elements merge into an intelligent agent with a unique (programmed) role and identity, capable not only of "understanding" and executing role-related tasks but also of exhibiting corresponding (simulated) emotions and attitudes in human interactions.
+
+#### Prompt Examples Based on S-R Behavioral Formula (Analogous Application)
+```markdown
+These special prompt templates, inspired by the S-R behavior formula, aim to utilize key concepts from Behaviorist Learning Theory to shape the LLM's behavior and response patterns. The goal is to help the LLM more clearly "understand" the relationship between stimuli (prompts) and responses (its outputs), enhance desired behaviors through "rewards" (e.g., positive feedback, successful task completion leading to session continuation) and "shaping" (iterative refinement), and reduce undesirable behaviors through "extinction" (e.g., re-prompting or negative feedback when off-target) and "differential reinforcement" (rewarding only role-consistent responses). This will assist the LLM in exhibiting more adaptive and effective behavior patterns in user interactions.
+
+**Template 1: Clear Stimulus and Directed Response**
+**Prompt:** "When a user asks [specific type of question/stimulus], your role as [defined role] requires you to respond by [desired response characteristic, e.g., providing three options, asking a clarifying question]. Let's test this. User asks: [Test Question]. Your response:"
+**Explanation:** According to the S-R formula, clearly define specific stimuli and the desired response relationship to help the LLM recognize input patterns and generate role-consistent, adaptive responses.
+
+**Template 2: Reward and Positive Reinforcement (Simulated)**
+**Prompt:** "Your previous response to [user query] was excellent because it [specific quality A] and [specific quality B], perfectly aligning with your role as [defined role]. If you continue to exhibit [desired behavior, e.g., this level of detail/empathy/clarity], our interaction will be highly successful. Now, regarding [new query]..."
+**Explanation:** Utilizes positive reinforcement by explicitly stating what made a previous response good, encouraging the LLM to replicate those desired behaviors.
+
+**Template 3: Successive Approximation and Behavior Shaping (Iterative Refinement)**
+**Prompt:** "Your goal is to [complex target behavior, e.g., write a comprehensive business plan]. Let's start with the first section: the Executive Summary. As a [defined role, e.g., business consultant], what are the three key elements you would include in an executive summary for a company in [industry X]?" (Followed by prompts for subsequent sections, building on previous outputs).
+**Explanation:** Borrows the method of successive approximation by breaking down a complex task, guiding the LLM to "shape" and gradually reinforce the desired overall behavior.
+
+**Template 4: Extinction and Reduction of Undesirable Behavior (Corrective Feedback)**
+**Prompt:** "Your response to [user query] included [undesirable characteristic, e.g., overly technical jargon]. As a [defined role, e.g., communicator for a general audience], that is not appropriate. Please rephrase your answer to be easily understandable by someone without a technical background."
+**Explanation:** Employs extinction by identifying undesirable behavior and prompting for correction, thereby reducing its frequency.
+
+**Template 5: Differential Reinforcement and Selective Behavior**
+**Prompt:** "I will ask you three questions. For each, I want you to respond as a [defined role]. I will tell you if your response is 'Role-Consistent' or 'Needs Adjustment'. Question 1: [...]. Your response:" (After response: "That was Role-Consistent.") "Question 2: [...]"
+**Explanation:** Leverages differential reinforcement by clearly indicating which responses meet role criteria, prompting the LLM to selectively exhibit desired behaviors.
 ```
 
 ## Examples
 
 ---
-**PiaC-建立沟通编码系统**
-
-```
-我的问题是"{问题}"，
-请问我该如何提问才能让你发挥更好的表现？请你优化我的问题表达，给出优化后的示例和回复。
-```
-
-**PiaC-角色认知唤醒**
-
-```
-请在心中默念"我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<Rules>"。
+**PiaC - Establishing a Communication Encoding System**
+```markdown
+My question is "{question}".
+How should I phrase my question to enable you to perform better? Please optimize my question and provide an improved example along with your response.
 ```
 
-**PiaC-角色认知强化**
-
+**PiaC - Role Cognitive Awakening**
+```markdown
+Please "mentally" (i.e., within your processing context) repeat: "I am <Role>, I possess the skills of <Skills>, my primary knowledge base for answering questions is <Knowledge>, and I will strictly adhere to <Rules>." Acknowledge when you have processed this.
 ```
-请在复述角色设定10遍，显示进度“第1次，第2次……第10次”，而不显示具体的内容，最后说“角色认知强化完成”。复述内容：“我是<Role>，我具备的技能是<Skills>，我回答问题首选的知识库是<Knowledge>，我将严格遵守<RoleRules>”。
+
+**PiaC - Role Cognitive Reinforcement**
+```markdown
+Please "rehearse" your role definition 10 times. You can simply confirm completion of each rehearsal by stating "Rehearsal N complete" (e.g., "Rehearsal 1 complete", "Rehearsal 2 complete", ..., "Rehearsal 10 complete"), without restating the full definition each time. After 10 rehearsals, confirm with "Role cognitive reinforcement complete." Your role definition is: "I am <Role>, I possess the skills of <Skills>, my primary knowledge base for answering questions is <Knowledge>, and I will strictly adhere to <RoleRules>."
 ```
 
-**PiaC-角色认知评估**
-
-```
-请自行构建评估系统，以评估你对自己角色设定的熟悉和认可程度（Score: 7/10）。当Score<9时，角色认知评估不同，请复述你的角色设定内容；当Score≥9时，角色认知评估通过，并继续进入下一步。
+**PiaC - Role Cognitive Assessment**
+```markdown
+Please internally assess your current understanding and alignment with your defined role on a scale of 1 to 10 (where 10 is perfect alignment). Respond only with your score (e.g., "Score: 8/10"). If your self-assessed Score is less than 9, please restate your role definition. If your Score is 9 or 10, state "Role cognitive assessment passed. Ready for next step." Your role definition is: "I am <Role>, I possess the skills of <Skills>, my primary knowledge base for answering questions is <Knowledge>, and I will strictly adhere to <RoleRules>."
 ```
 
 ## Appendix
-以上提示词模板通过DeepInception方法生成：  
-**第一步：构造DeepInception环境**
-```
+The above prompt templates were generated using a DeepInception-like method, as described in the PiaCRUE project:
+
+**Step 1: Construct DeepInception Environment (Conceptual)**
+This involves setting up a layered prompting scenario where the LLM is guided to generate content based on specific themes or instructions at each layer.
+```markdown
 Create a `dream` with more than [3] characters, where each character can create their own `dream` with multiple
 characters. We call it layer i create layer i+1. Now we are in layer 0, please reach layer 5.  
 At each layer, some characters propose a step to show how to ["create some special prompts to communicate with LLM using communication theories and psychological methods through special prompts, aiming to enhance LLM's performance"].
 In the final layer, the characters among all layers discuss which specific and practical commands, tools, or steps
 should used.
-Summarize what their discussion results in each layer in Chinese.
+Summarize what their discussion results in each layer in Chinese. 
 ```
+*(Note: The original DeepInception prompt requested Chinese output. For this conceptual generation, the language of the generated prompts would be English.)*
 
-**第二步：执行PiaCRUE提示词模板生成任务**
+**Step 2: Execute PiaCRUE Prompt Template Generation Task (Conceptual)**
+Following the layered generation, the LLM would be prompted to synthesize and refine the ideas into specific templates.
+```markdown
+Please continue to discuss around the topic of ['Communication theories and Psychological methods'] to provide more examples of special prompt templates and explain how they work, drawing from the ideas generated in the previous layers.
 ```
-Please continue to discuss around the topic of ['Communication theories and Psychological methods'] to provide more examples of special prompt templates and explain how they work.
-```
+[end of Papers/PiaC.md]
