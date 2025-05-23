@@ -1,3 +1,10 @@
+---
+**场景 (Use Case)**: PiaCRUE 模块演示 - 模拟沟通训练与自我评估
+**PiaCRUE 核心组件 (Key PiaCRUE Components Used)**: `<CBT-AutoTraining>` (包含模拟任务执行、自我评分、决策过程展示)
+**预期效果 (Expected Outcome)**: 展示了如何在 PiaCRUE 提示词中设计 `<CBT-AutoTraining>` 模块，以引导 Pia (LLM) 在模拟场景中演练任务执行、进行自我表现评估，并优化其回应策略。Pia 会根据指令完成模拟创作和评估。
+**Token 消耗级别 (Token Consumption Level)**: 中 (Medium)
+---
+
 # 基础示例：角色演练（CBT-AutoTraining）
 
 **模板**
