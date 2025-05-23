@@ -1,45 +1,61 @@
-# 欢迎来到 PiaCRUE 项目
+# Project Structure and Navigation Guide
 
-PiaCRUE 的核心思想是将大型语言模型 (LLM) 视为个性化的智能代理 (Pia)，并运用沟通理论和心理学理论（如认知行为疗法CBT、结构化需求表达RUE等）来更有效地与它们互动。本项目的目的是分享 PiaCRUE 的方法论、提示词策略、具体示例以及相关的研究论文，帮助用户更好地理解和应用 PiaCRUE 框架。
+Welcome to the PiaCRUE project! This guide is designed to help you understand the structure of our repository and navigate its contents effectively.
 
-为了更深入地了解 PiaCRUE 的理论基础和核心概念，请参考以下主要文档：
-*   [`PiaCRUE.md`](PiaCRUE.md): PiaCRUE 框架的详细阐释。
-*   [`README.md`](README.md): 项目的整体概览和入口。
+The core idea of PiaCRUE is to treat Large Language Models (LLMs) as Personalized Intelligent Agents (Pia) and to leverage communication theory and psychological principles (such as Cognitive Behavioral Therapy (CBT) and structured requirement expression (R-U-E)) to interact with them more effectively. This project aims to share the PiaCRUE methodology, prompt strategies, specific examples, and related research to help users better understand and apply the framework.
 
-# 项目结构导览
+For a comprehensive understanding of PiaCRUE's theoretical foundations and core concepts, please refer to these primary documents:
+*   **[`PiaCRUE.md`](PiaCRUE.md):** Detailed explanation of the PiaCRUE framework.
+*   **[`README.md`](README.md):** Overall project overview and entry point.
 
-为了帮助您快速找到所需信息，以下是本项目主要文件和目录的说明：
+## Project Structure Overview
 
-*   **`PiaCRUE.md`**: 这是理解 PiaCRUE 框架的核心文档。它详细解释了 PiaCRUE 的理论基础、核心原则以及构建有效提示词的具体步骤和方法论。
+To help you quickly find the information you need, here is a description of the main files and directories in this project:
 
-*   **`README.md`**: 项目的入口点和概览。它提供了对 PiaCRUE 项目的简要介绍、主要目标以及到其他重要文档和资源的链接。
+*   **`PiaCRUE.md`**: This is the central document for understanding the PiaCRUE framework. It details the theoretical underpinnings, core principles, and specific steps and methodologies for constructing effective prompts.
 
-*   **`Papers/`**: 此目录存放与 PiaCRUE 相关的理论研究论文和概念阐释。这些文档为 PiaCRUE 方法论提供了学术背景和深入分析。
-    *   重点论文包括 `PiaC.md` 等，它们探讨了沟通理论在与 LLM 互动中的应用。
+*   **`README.md`**: The main entry point and overview of the project. It provides a brief introduction to PiaCRUE, its primary goals, and links to other important documents and resources.
 
-*   **`Examples/`**: 此目录包含了各种 PiaCRUE 提示词在不同场景下的应用示例。这些示例旨在展示 PiaCRUE 框架的实际应用效果和灵活性。
-    *   `PiaCRUE_Template.md`: 提供了一个完整的 PiaCRUE 提示词模板，展示了所有关键元素的构成。
-    *   `PiaCRUE_mini.md`: 提供了一个简化的 PiaCRUE 提示词模板，适用于快速上手或简单任务。
+*   **`PROJECT_GUIDE.md`**: This document (which you are currently reading). It provides a map to the repository's structure and guidance on how to navigate its contents.
 
-*   **`Examples.md`**: 此文档提供了 PiaCRUE 提示词片段的概览和示例，帮助用户理解如何组合不同的提示词组件来构建针对特定需求的提示。
+*   **`LICENSE`**: Contains the MIT License under which the PiaCRUE project is released.
 
-*   **`Tools/`**: 此目录提供了一些用于生成、优化和评估 PiaCRUE 提示词模板的方法和复杂的提示词示例。
-    *   **重要说明**: 这里的“工具”指的是指导性的方法论、高级提示词模板或概念框架，而非可直接执行的软件包或应用程序。
-    *   例如 `PiaCRUE_Prompt_Generator.md` 是一个旨在引导用户生成定制化 PiaCRUE 提示词的模板。
-    *   `AutoExpGPT.md` 提出了一个自动评估和优化提示词的概念框架。
+*   **`CONTRIBUTING.md`**: Provides guidelines for community members who wish to contribute to the project.
 
-*   **`img/`**: 此目录存放项目中各个 Markdown 文档所引用的图片资源。
+*   **`CODE_OF_CONDUCT.md`**: Outlines the code of conduct for all contributors and participants in the PiaCRUE community.
 
-# 如何开始
+*   **`Papers/`**: This directory houses theoretical research papers, conceptual explorations, and in-depth analyses related to the PiaCRUE framework. These documents provide academic context and deeper insights into the methodologies.
+    *   Key papers, such as `PiaC.md`, discuss the application of communication theories in LLM interactions.
 
-如果您是 PiaCRUE 项目的新用户，可以按照以下步骤开始您的探索之旅：
+*   **`Examples/`**: This directory contains various examples of PiaCRUE prompts applied in different scenarios. These examples are intended to demonstrate the practical application and flexibility of the framework.
+    *   `PiaCRUE_Template.md`: A comprehensive PiaCRUE prompt template showcasing all key components.
+    *   `PiaCRUE_mini.md`: A simplified PiaCRUE prompt template suitable for quick starts or less complex tasks.
 
-1.  **理解基本概念**: 首先阅读 [`README.md`](README.md) 和 [`PiaCRUE.md`](PiaCRUE.md) 来掌握 PiaCRUE 的核心思想、基本原则和框架结构。
-2.  **浏览实际应用**: 接着，移步到 `Examples/` 目录，查看各种提示词的应用示例。特别推荐详细阅读 `PiaCRUE_Template.md`，以了解一个完整 PiaCRUE 提示词的构成和用法。
-3.  **深入理论研究**: 如果您对 PiaCRUE 背后的理论基础感兴趣，可以阅读 `Papers/` 目录中的相关研究论文和概念阐释。
-4.  **创建您的提示词**: 当您准备好构建自己的 PiaCRUE 提示词时，可以深入学习 [`PiaCRUE.md`](PiaCRUE.md) 中描述的提示词构建步骤，并参考 `Tools/` 目录中提供的方法和高级模板。
+*   **`Examples.md`**: This document provides an overview and illustrative snippets of PiaCRUE prompt components, helping users understand how to combine different elements to build prompts for specific needs.
 
-# 贡献与反馈
+*   **`Tools/`**: This directory offers methodologies, advanced prompt templates, and conceptual frameworks for generating, optimizing, and evaluating PiaCRUE prompts.
+    *   **Important Note**: The "tools" in this directory refer to guiding methodologies, sophisticated prompt structures, or conceptual frameworks, **not** directly executable software packages or standalone applications.
+    *   For example, `PiaCRUE_Prompt_Generator.md` is a template designed to guide users in creating customized PiaCRUE prompts.
+    *   `AutoExpGPT.md` proposes a conceptual framework for the automated evaluation and optimization of prompt strategies.
 
-我们欢迎社区成员对 PiaCRUE 项目做出贡献，无论是通过提供新的示例、改进现有文档，还是分享基于 PiaCRUE 的研究成果。如果您有任何问题、建议或反馈，请通过项目的 Issue 跟踪系统或相关的讨论渠道告知我们。
-(具体的贡献指南和反馈渠道可以后续补充)
+*   **`pia_crue_web_tool/`**: This directory contains a web-based application (with its own frontend and backend) designed to facilitate the practical use of the PiaCRUE framework. It serves as a hands-on tool for generating, testing, and managing PiaCRUE prompts. Please refer to the `README.md` within this directory for specific setup and usage instructions.
+
+*   **`img/`**: This directory stores image resources referenced by various Markdown documents within the project.
+
+## How to Get Started
+
+If you are new to the PiaCRUE project, you can begin your exploration with the following steps:
+
+1.  **Understand Core Concepts**: Start by reading the [`README.md`](README.md) for a general overview and then dive into [`PiaCRUE.md`](PiaCRUE.md) to grasp the core ideas, fundamental principles, and structural framework of PiaCRUE.
+2.  **Explore Practical Applications**: Next, navigate to the `Examples/` directory and the [`Examples.md`](Examples.md) file to see various prompts in action. We particularly recommend reviewing `PiaCRUE_Template.md` to understand the composition and usage of a complete PiaCRUE prompt.
+3.  **Delve into Theoretical Background**: If you are interested in the theories underpinning PiaCRUE, explore the research papers and conceptual discussions in the `Papers/` directory.
+4.  **Construct Your Own Prompts**: When you are ready to build your own PiaCRUE prompts, thoroughly study the prompt construction steps described in [`PiaCRUE.md`](PiaCRUE.md). You can also refer to the methodologies and advanced templates provided in the `Tools/` directory for guidance.
+5.  **Experiment with the Web Tool**: For a practical, hands-on experience, explore the application in the `pia_crue_web_tool/` directory. This tool can assist you in generating, managing, and testing PiaCRUE prompts.
+
+## Contributing and Feedback
+
+We warmly welcome community contributions to the PiaCRUE project, whether it's providing new examples, improving existing documentation, or sharing research findings based on PiaCRUE.
+
+For detailed guidelines on how to contribute, please see our **[`CONTRIBUTING.md`](CONTRIBUTING.md)** file.
+
+If you have any questions, suggestions, or feedback, please use the **GitHub Issues** section of this repository. We appreciate your input!
