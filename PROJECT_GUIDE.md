@@ -38,10 +38,7 @@ To help you quickly find the information you need, here is a description of the 
 *   **`Papers/`**: This directory houses theoretical research papers, conceptual explorations, and in-depth analyses related to the PiaAGI framework and its AGI aspirations. These documents provide academic context and deeper insights into the methodologies.
     *   Key papers discuss the application of communication theories, psychological models, and ethical considerations relevant to building AGI.
 
-*   **`Examples/`**: This directory contains various examples of foundational R-U-E PiaAGI prompts applied in different scenarios. More advanced, AGI-centric examples demonstrating cognitive configuration and developmental scaffolding are now primarily integrated into `PiaAGI.md` (Section 7).
-    *   The templates here (`PiaCRUE_Template.md`, `PiaCRUE_mini.md`) illustrate the basic structure that has evolved into the more comprehensive AGI guiding prompts.
-
-*   **`Examples.md`**: This document provides an overview and illustrative snippets of foundational PiaAGI prompt components. For AGI-specific prompt structures, refer to the Appendix in `PiaAGI.md` and the `PiaPES` tools.
+*   **`Examples/`**: This directory contains various practical examples related to PiaAGI principles and foundational R-U-E prompting. The primary, fully documented foundational examples ('Viral Xiaohongshu Post Copywriting Expert,' 'PoetActor' examples) have been moved to **Appendix A of `PiaAGI.md`**. AGI-specific examples are detailed within the main body of `PiaAGI.md` (Section 7). The `Examples/` directory may still contain other illustrative scenarios or simpler templates like `PiaCRUE_Template.md` and `PiaCRUE_mini.md`.
 
 *   **`Tools/` (Legacy Conceptual Directory)**: This directory previously offered methodologies and advanced prompt templates. Its role is now largely superseded by the more comprehensive and implementation-focused `PiaAGI_Research_Tools/` directory. It may still contain legacy conceptual documents like `AutoExpGPT.md`.
 
@@ -60,7 +57,7 @@ If you are new to the PiaAGI project and interested in its AGI research aspects,
     *   Study the design documents for PiaSE, PiaCML, PiaAVT, and PiaPES to understand their intended roles in AGI research.
     *   Examine the **PiaPES Prompt Templating Engine MVP** in `PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py` and its `USAGE.md` for a practical starting point in programmatic prompt construction.
 4.  **Delve into Theoretical Background**: If you are interested in the deeper theories underpinning PiaAGI, explore the research papers and conceptual discussions in the `Papers/` directory.
-5.  **Understand Foundational Prompting (Optional):** For context on the evolution of PiaAGI, you can explore the simpler R-U-E examples in the `Examples/` directory and the `pia_crue_web_tool/`.
+5.  **Understand Foundational Prompting (Optional):** For context on the evolution of PiaAGI, you can explore the foundational R-U-E examples in **Appendix A of `PiaAGI.md`**, other illustrative examples in the `Examples/` directory, and the `pia_crue_web_tool/`.
 
 ## Contributing and Feedback
 
