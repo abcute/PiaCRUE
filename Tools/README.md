@@ -1,12 +1,20 @@
-# Conceptual Tools and Advanced Templates
+# Legacy Conceptual Tools and Methodologies
 
-This directory contains conceptual tools, methodologies, and advanced prompt templates that complement the PiaCRUE framework. These are designed to guide users in generating, evaluating, and refining their prompts based on PiaCRUE principles.
+**This directory is now considered LEGACY and contains conceptual and methodological documents from earlier phases of the PiaAGI project.**
 
-**Important Note:** The items in this directory are **not** executable software packages or standalone applications. They are guiding frameworks, detailed methodologies, and sophisticated prompt structures intended for study and adaptation.
+While these documents offer insights into the project's evolution, for the most current and practical tools, AGI-focused methodologies, and prompt templates, please refer to:
 
-## Available Tools and Templates:
+*   **Main AGI Framework & Prompt Templates:** **[`PiaAGI.md`](../PiaAGI.md)** (especially Appendix B for the Guiding Prompt Template)
+*   **Current Research Tools & Implementations:** **[`PiaAGI_Research_Tools/`](../PiaAGI_Research_Tools/)** directory.
 
-*   **[`AutoExpGPT.md`](AutoExpGPT.md):** Outlines a conceptual framework and methodology for the automated experimentation and evaluation of prompt strategy effectiveness.
-*   **[`PiaCRUE_Prompt_Generator.md`](PiaCRUE_Prompt_Generator.md):** Provides a structured template and guiding principles to help users generate custom PiaCRUE-compliant prompts.
+**Important Note:** The items in this directory are **not** executable software packages or standalone applications. They are guiding frameworks, detailed methodologies, and sophisticated prompt structures intended for archival study and adaptation.
 
-Please refer to each document for detailed explanations of the methodology and how to apply it.
+## Legacy Documents Retained:
+
+*   **[`AutoExpGPT.md`](AutoExpGPT.md):** Outlines a conceptual framework and methodology for the automated experimentation and evaluation of prompt strategy effectiveness. This is retained for its methodological insights.
+
+*   **[`PiaAGI_Prompt_Generator.md`](PiaAGI_Prompt_Generator.md):** Describes a conceptual methodology for generating PiaAGI prompt templates using a "DeepInception-like" approach.
+    *   **Note:** For a comprehensive, ready-to-use AGI prompt template, please see **Appendix B of [`PiaAGI.md`](../PiaAGI.md)**.
+    *   For current programmatic prompt engineering tools and suites, please explore the **[`PiaAGI_Research_Tools/PiaPES/`](../PiaAGI_Research_Tools/PiaPES/)** directory.
+
+Please refer to each document for detailed explanations of its conceptual methodology.
