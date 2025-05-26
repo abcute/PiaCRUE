@@ -1,60 +1,70 @@
 # Project Structure and Navigation Guide
 
-Welcome to the PiaCRUE project! This guide is designed to help you understand the structure of our repository and navigate its contents effectively.
+Welcome to the PiaAGI project! This guide is designed to help you understand the structure of our repository and navigate its contents effectively as we pursue our **upgraded AGI research vision**.
 
-The core idea of PiaCRUE is to treat Large Language Models (LLMs) as Personalized Intelligent Agents (Pia) and to leverage communication theory and psychological principles (such as Cognitive Behavioral Therapy (CBT) and structured requirement expression (R-U-E)) to interact with them more effectively. This project aims to share the PiaCRUE methodology, prompt strategies, specific examples, and related research to help users better understand and apply the framework.
+The core idea of PiaAGI is to develop **Artificial General Intelligence (AGI)** by architecting **Personalized Intelligent Agents (Pia)** based on a **psycho-cognitively plausible framework**. This involves leveraging communication theory, deep psychological principles (such as cognitive architectures, developmental psychology, motivation, emotion, and personality modeling), advanced LLM technology, and agent-based systems. The project aims to share the comprehensive PiaAGI methodology, its AGI-focused cognitive architecture, prompt strategies for advanced agent guidance, developmental scaffolding techniques, practical examples, and a suite of research tools to help users understand, build, and experiment within this AGI framework.
 
-For a comprehensive understanding of PiaCRUE's theoretical foundations and core concepts, please refer to these primary documents:
-*   **[`PiaCRUE.md`](PiaCRUE.md):** Detailed explanation of the PiaCRUE framework.
-*   **[`README.md`](README.md):** Overall project overview and entry point.
+For a comprehensive understanding of PiaAGI's theoretical foundations, AGI architecture, and core concepts, please refer to these primary documents:
+*   **[`PiaAGI.md`](PiaAGI.md):** The extensively revised and detailed explanation of the PiaAGI framework for AGI development.
+*   **[`README.md`](README.md):** Overall project overview, AGI vision, and entry point.
 
 ## Project Structure Overview
 
 To help you quickly find the information you need, here is a description of the main files and directories in this project:
 
-*   **`PiaCRUE.md`**: This is the central document for understanding the PiaCRUE framework. It details the theoretical underpinnings, core principles, and specific steps and methodologies for constructing effective prompts.
+*   **`PiaAGI.md`**: This is the central document for understanding the PiaAGI framework. It details the theoretical underpinnings (Psychology, LLMs, and Agent technology for AGI), the psycho-cognitive architecture (Section 4), developmental stages (Section 3.2.1), core psychological principles for AGI functionality (Section 3), and specific methodologies for constructing Guiding Prompts and Developmental Scaffolding for AGI agents (Sections 5 & 6).
 
-*   **`README.md`**: The main entry point and overview of the project. It provides a brief introduction to PiaCRUE, its primary goals, and links to other important documents and resources.
+*   **`README.md`**: The main entry point and overview of the project. It provides a concise introduction to PiaAGI's AGI research vision, its cross-disciplinary nature, and links to other important documents and resources, including the new research tools.
 
-*   **`PROJECT_GUIDE.md`**: This document (which you are currently reading). It provides a map to the repository's structure and guidance on how to navigate its contents.
+*   **`PROJECT_GUIDE.md`**: This document (which you are currently reading). It provides a map to the repository's structure and guidance on how to navigate its contents, reflecting the project's AGI focus.
 
-*   **`LICENSE`**: Contains the MIT License under which the PiaCRUE project is released.
+*   **`LICENSE`**: Contains the MIT License under which the PiaAGI project is released.
 
-*   **`CONTRIBUTING.md`**: Provides guidelines for community members who wish to contribute to the project.
+*   **`CONTRIBUTING.md`**: Provides guidelines for community members who wish to contribute to the project, particularly in areas advancing AGI research.
 
-*   **`CODE_OF_CONDUCT.md`**: Outlines the code of conduct for all contributors and participants in the PiaCRUE community.
+*   **`CODE_OF_CONDUCT.md`**: Outlines the code of conduct for all contributors and participants in the PiaAGI community.
 
-*   **`Papers/`**: This directory houses theoretical research papers, conceptual explorations, and in-depth analyses related to the PiaCRUE framework. These documents provide academic context and deeper insights into the methodologies.
-    *   Key papers, such as `PiaC.md`, discuss the application of communication theories in LLM interactions.
+*   **`PiaAGI_Research_Tools/`**: This **new directory** is central to the project's AGI research toolkit. It contains:
+    *   **Conceptual Design Documents:** Detailed Markdown files for a suite of Python-based tools envisioned to support AGI research within the PiaAGI framework:
+        *   `PiaAGI_Simulation_Environment.md` (PiaSE): For creating dynamic environments to test and develop PiaAGI agents.
+        *   `PiaAGI_Cognitive_Module_Library.md` (PiaCML): For building and experimenting with implementations of PiaAGI's cognitive modules.
+        *   `PiaAGI_Agent_Analysis_Visualization_Toolkit.md` (PiaAVT): For logging, analyzing, and visualizing agent behavior and internal cognitive states.
+        *   `PiaAGI_Prompt_Engineering_Suite.md` (PiaPES): For designing, managing, and evaluating complex Guiding Prompts and Developmental Scaffolding curricula.
+    *   **`PiaPES/` sub-directory:** Houses implementations related to the Prompt Engineering Suite.
+        *   `prompt_engine_mvp.py`: A Minimal Viable Product (MVP) of the PiaAGI Prompt Templating Engine, allowing for programmatic construction and rendering of PiaAGI prompts.
+        *   `USAGE.md`: Instructions and examples for using the `prompt_engine_mvp.py`.
+    *   The main `README.md` in this directory provides an overview of these tools. Researchers and developers interested in practical implementations and experimentation should focus here.
 
-*   **`Examples/`**: This directory contains various examples of PiaCRUE prompts applied in different scenarios. These examples are intended to demonstrate the practical application and flexibility of the framework.
-    *   `PiaCRUE_Template.md`: A comprehensive PiaCRUE prompt template showcasing all key components.
-    *   `PiaCRUE_mini.md`: A simplified PiaCRUE prompt template suitable for quick starts or less complex tasks.
+*   **`Papers/`**: This directory houses theoretical research papers, conceptual explorations, and in-depth analyses related to the PiaAGI framework and its AGI aspirations. These documents provide academic context and deeper insights into the methodologies.
+    *   Key papers discuss the application of communication theories, psychological models, and ethical considerations relevant to building AGI.
 
-*   **`Examples.md`**: This document provides an overview and illustrative snippets of PiaCRUE prompt components, helping users understand how to combine different elements to build prompts for specific needs.
+*   **`Examples/`**: This directory contains various examples of foundational R-U-E PiaAGI prompts applied in different scenarios. More advanced, AGI-centric examples demonstrating cognitive configuration and developmental scaffolding are now primarily integrated into `PiaAGI.md` (Section 7).
+    *   The templates here (`PiaCRUE_Template.md`, `PiaCRUE_mini.md`) illustrate the basic structure that has evolved into the more comprehensive AGI guiding prompts.
 
-*   **`Tools/`**: This directory offers methodologies, advanced prompt templates, and conceptual frameworks for generating, optimizing, and evaluating PiaCRUE prompts.
-    *   **Important Note**: The "tools" in this directory refer to guiding methodologies, sophisticated prompt structures, or conceptual frameworks, **not** directly executable software packages or standalone applications.
-    *   For example, `PiaCRUE_Prompt_Generator.md` is a template designed to guide users in creating customized PiaCRUE prompts.
-    *   `AutoExpGPT.md` proposes a conceptual framework for the automated evaluation and optimization of prompt strategies.
+*   **`Examples.md`**: This document provides an overview and illustrative snippets of foundational PiaAGI prompt components. For AGI-specific prompt structures, refer to the Appendix in `PiaAGI.md` and the `PiaPES` tools.
 
-*   **`pia_crue_web_tool/`**: This directory contains a web-based application (with its own frontend and backend) designed to facilitate the practical use of the PiaCRUE framework. It serves as a hands-on tool for generating, testing, and managing PiaCRUE prompts. Please refer to the `README.md` within this directory for specific setup and usage instructions.
+*   **`Tools/` (Legacy Conceptual Directory)**: This directory previously offered methodologies and advanced prompt templates. Its role is now largely superseded by the more comprehensive and implementation-focused `PiaAGI_Research_Tools/` directory. It may still contain legacy conceptual documents like `AutoExpGPT.md`.
+
+*   **`pia_crue_web_tool/`**: This directory contains a web-based application (with its own frontend and backend) designed to facilitate the practical use of the foundational PiaAGI (PiaCRUE) prompting framework. It serves as a hands-on tool for generating, testing, and managing these earlier-stage prompts.
 
 *   **`img/`**: This directory stores image resources referenced by various Markdown documents within the project.
 
-## How to Get Started
+## How to Get Started with PiaAGI for AGI Development
 
-If you are new to the PiaCRUE project, you can begin your exploration with the following steps:
+If you are new to the PiaAGI project and interested in its AGI research aspects, you can begin your exploration with the following steps:
 
-1.  **Understand Core Concepts**: Start by reading the [`README.md`](README.md) for a general overview and then dive into [`PiaCRUE.md`](PiaCRUE.md) to grasp the core ideas, fundamental principles, and structural framework of PiaCRUE.
-2.  **Explore Practical Applications**: Next, navigate to the `Examples/` directory and the [`Examples.md`](Examples.md) file to see various prompts in action. We particularly recommend reviewing `PiaCRUE_Template.md` to understand the composition and usage of a complete PiaCRUE prompt.
-3.  **Delve into Theoretical Background**: If you are interested in the theories underpinning PiaCRUE, explore the research papers and conceptual discussions in the `Papers/` directory.
-4.  **Construct Your Own Prompts**: When you are ready to build your own PiaCRUE prompts, thoroughly study the prompt construction steps described in [`PiaCRUE.md`](PiaCRUE.md). You can also refer to the methodologies and advanced templates provided in the `Tools/` directory for guidance.
-5.  **Experiment with the Web Tool**: For a practical, hands-on experience, explore the application in the `pia_crue_web_tool/` directory. This tool can assist you in generating, managing, and testing PiaCRUE prompts.
+1.  **Grasp the AGI Vision and Core Framework**: Start by reading the main project [`README.md`](README.md) for a general overview of the AGI focus. Then, dedicate significant time to **[`PiaAGI.md`](PiaAGI.md)** to understand the core psycho-cognitive architecture (Section 4), the integrated psychological principles for AGI (Section 3), the concept of developmental stages (Section 3.2.1), and the advanced methodology for Guiding Prompts and Developmental Scaffolding (Sections 5 & 6).
+2.  **Explore AGI-Centric Examples**: Review the advanced use cases in **[`PiaAGI.md`](PiaAGI.md) (Section 7)** which illustrate how the framework and prompting methodologies are applied to configure and guide agents with AGI-level capabilities.
+3.  **Investigate the Research Toolkit**: Navigate to the **[`PiaAGI_Research_Tools/`](PiaAGI_Research_Tools/)** directory.
+    *   Read the `README.md` there for an overview of the conceptualized Python tools.
+    *   Study the design documents for PiaSE, PiaCML, PiaAVT, and PiaPES to understand their intended roles in AGI research.
+    *   Examine the **PiaPES Prompt Templating Engine MVP** in `PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py` and its `USAGE.md` for a practical starting point in programmatic prompt construction.
+4.  **Delve into Theoretical Background**: If you are interested in the deeper theories underpinning PiaAGI, explore the research papers and conceptual discussions in the `Papers/` directory.
+5.  **Understand Foundational Prompting (Optional):** For context on the evolution of PiaAGI, you can explore the simpler R-U-E examples in the `Examples/` directory and the `pia_crue_web_tool/`.
 
 ## Contributing and Feedback
 
-We warmly welcome community contributions to the PiaCRUE project, whether it's providing new examples, improving existing documentation, or sharing research findings based on PiaCRUE.
+We warmly welcome community contributions to the PiaAGI project, particularly those that advance its AGI research goals, help implement the research tools, or refine the cognitive architecture and developmental methodologies.
 
 For detailed guidelines on how to contribute, please see our **[`CONTRIBUTING.md`](CONTRIBUTING.md)** file.
 
