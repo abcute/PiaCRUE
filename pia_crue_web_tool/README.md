@@ -43,4 +43,4 @@ This project is a web application with a Python Flask backend and a React fronte
 
 ---
 
-PiaCRUE - Personalized Intelligent Agent via Communicational Reasoning and UnErtaking.
+PiaAGI - Personalized Intelligent Agent via Communicational Reasoning and UnErtaking, with a focus on AGI.

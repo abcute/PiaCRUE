@@ -1,10 +1,10 @@
 # PiaC: Theory and Methods for Personalizing Intelligent Agents
 
-**Original Source:** Conceptualized by abcute for the PiaCRUE project. Further details and context can be found at [https://github.com/abcute/PiaCRUE](https://github.com/abcute/PiaCRUE).
-*Note: This document outlines "PiaC" (Personalized Intelligent Agent Customization), an original conceptual exploration within the PiaCRUE project. It proposes a methodology for customizing general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying principles from psychology, drawing analogies to psychological interventions.*
+**Original Source:** Conceptualized by abcute for the PiaAGI project. Further details and context can be found at [https://github.com/abcute/PiaAGI](https://github.com/abcute/PiaAGI).
+*Note: This document outlines "PiaC" (Personalized Intelligent Agent Customization), an original conceptual exploration within the PiaAGI project. It proposes a methodology for customizing general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying principles from psychology, drawing analogies to psychological interventions.*
 
 ## Abstract
-This document introduces the theory and methods for "PiaC" (Personalizing Intelligent Agent Customization). It aims to customize general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying theories and methods from psychology. This approach draws an analogy to psychological interventions for individuals with multifaceted personalities (used metaphorically), with the goal of inspiring humans to explore more effective communication techniques and strategies with general LLMs.
+This document introduces the theory and methods for "PiaC" (Personalizing Intelligent Agent Customization). It aims to customize general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying theories and methods from psychology. This approach draws an analogy to psychological interventions for individuals with multifaceted personalities (used metaphorically), with the goal of inspiring humans to explore more effective communication techniques and strategies with general LLMs, particularly in the context of developing AGI capabilities.
 
 ## Content
 
@@ -299,7 +299,7 @@ Please internally assess your current understanding and alignment with your defi
 ```
 
 ## Appendix
-The above prompt templates were generated using a DeepInception-like method, as described in the PiaCRUE project:
+The above prompt templates were generated using a DeepInception-like method, as described in the PiaAGI project:
 
 **Step 1: Construct DeepInception Environment (Conceptual)**
 This involves setting up a layered prompting scenario where the LLM is guided to generate content based on specific themes or instructions at each layer.
@@ -313,7 +313,7 @@ Summarize what their discussion results in each layer in Chinese.
 ```
 *(Note: The original DeepInception prompt requested Chinese output. For this conceptual generation, the language of the generated prompts would be English.)*
 
-**Step 2: Execute PiaCRUE Prompt Template Generation Task (Conceptual)**
+**Step 2: Execute PiaAGI Prompt Template Generation Task (Conceptual)**
 Following the layered generation, the LLM would be prompted to synthesize and refine the ideas into specific templates.
 ```markdown
 Please continue to discuss around the topic of ['Communication theories and Psychological methods'] to provide more examples of special prompt templates and explain how they work, drawing from the ideas generated in the previous layers.

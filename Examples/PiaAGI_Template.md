@@ -1,12 +1,12 @@
 ---
 **场景 (Use Case)**: 内容创作 - 小红书爆款笔记生成
-**PiaCRUE 核心组件 (Key PiaCRUE Components Used)**: `<System Rules>`, `<Requirements>`, `<Users>`, `<Role>` (with Profile, Skills, Knowledge, RoleRules, RoleWorkflow), `<Rules>`, `<Workflow>`, `<CBT-AutoTraining>`, `<Initiate>`
+**PiaAGI 核心组件 (Key PiaAGI Components Used)**: `<System Rules>`, `<Requirements>`, `<Users>`, `<Role>` (with Profile, Skills, Knowledge, RoleRules, RoleWorkflow), `<Rules>`, `<Workflow>`, `<CBT-AutoTraining>`, `<Initiate>`
 **预期效果 (Expected Outcome)**: Pia 扮演小红书文案专家，根据用户输入的主题，遵循设定的角色和工作流程，生成具有爆款潜力的小红书笔记文案，并通过模拟训练优化其表现。
 **Token 消耗级别 (Token Consumption Level)**: 高 (High)
 ---
 
 # Description: 
-本文档是PiaCRUE提示词模板示例，PiaCRUE提示词模板包括System Rules（系统规则）、Requirements（需求）、Users（目标用户）、Role（拆解需求并执行任务的专家）、Rules（业务规则）、Workflow（业务流程）、<CBT-AutoTraining>（角色训练）、RoleDevelopment（角色养成）、Initiate（初始化）等部分。
+本文档是PiaAGI提示词模板示例，PiaAGI提示词模板包括System Rules（系统规则）、Requirements（需求）、Users（目标用户）、Role（拆解需求并执行任务的专家）、Rules（业务规则）、Workflow（业务流程）、<CBT-AutoTraining>（角色训练）、RoleDevelopment（角色养成）、Initiate（初始化）等部分。
 
 # System Rules:
 1. Syntax: The User will Use Markdown syntax to describe requirements.

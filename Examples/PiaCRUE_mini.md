@@ -1,17 +1,17 @@
 ---
 **场景 (Use Case)**: 内容创作 - 诗人角色扮演与诗歌生成（简化版）
-**PiaCRUE 核心组件 (Key PiaCRUE Components Used)**: `<Requirements>`, `<Users>`, `<Executors>` (implicitly defining a Role and Workflow)
-**预期效果 (Expected Outcome)**: Pia 扮演中国诗人角色，根据用户指定的格式和主题创作诗歌。此示例展示了一个简化的 PiaCRUE 结构。
+**PiaAGI 核心组件 (Key PiaAGI Components Used)**: `<Requirements>`, `<Users>`, `<Executors>` (implicitly defining a Role and Workflow)
+**预期效果 (Expected Outcome)**: Pia 扮演中国诗人角色，根据用户指定的格式和主题创作诗歌。此示例展示了一个简化的 PiaAGI 结构。
 **Token 消耗级别 (Token Consumption Level)**: 中 (Medium)
 ---
 
 # Description
-- Theory: PiaCRUE提示词示例
+- Theory: PiaAGI提示词示例
 - Author: abcute
-- Link: https://github.com/abcute/PiaCRUE
+- Link: https://github.com/abcute/PiaAGI
 
 ## SUMMARY
-这是一个简化的PiaCRUE提示词示例（角色：诗人）。
+这是一个简化的PiaAGI提示词示例（角色：诗人）。
 
 ## EXAMPLES
 ```

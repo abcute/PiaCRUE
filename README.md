@@ -1,54 +1,59 @@
-# PiaCRUE: A Framework for Enhanced LLM Interaction
+# PiaAGI: A Psycho-Cognitive Framework for Developing Artificial General Intelligence
 
-PiaCRUE (Personalized Intelligent Agent via Communication, Requirements, Users, and Executors) is an innovative framework designed to enhance human-Large Language Model (LLM) interaction. By integrating principles from communication theory and applied psychology, PiaCRUE aims to improve LLM performance, enabling more effective, nuanced, and product-oriented conversations. Our core methodology, detailed in `PiaCRUE.md`, treats LLMs as "Hybrid Agents" that can be guided into "Personalized Intelligent Agents" (Pia) through structured and psychologically-informed prompting techniques.
+PiaAGI (Personalized Intelligent Agent for AGI) is an advanced, **cross-disciplinary framework** aimed at the research and development of Artificial General Intelligence (AGI). It significantly evolves from earlier LLM interaction enhancement methodologies by proposing a **psycho-cognitively plausible architecture** for AGI. PiaAGI integrates deep principles from psychology (cognitive, developmental, personality, social), communication theory, LLM technology, and agent-based systems to foster agents with greater autonomy, adaptability, and ethically-informed behavior. Our core methodology, **comprehensively detailed in the revised `PiaAGI.md`**, outlines how "Personalized Intelligent Agents" (Pias) can be developed through structured prompting and developmental scaffolding, serving as a pathway towards AGI.
 
-## Project Goals / Value Proposition
+## Project Vision & AGI Ambition
 
-The PiaCRUE project seeks to:
+The PiaAGI project is dedicated to:
 
-*   **Enhance LLM Performance:** Provide methodologies and tools to create prompts that elicit more accurate, relevant, and context-aware responses from LLMs.
-*   **Promote Deeper Understanding:** Offer a theoretical basis for understanding and navigating the complexities of LLM interaction.
-*   **Offer a Structured Approach:** Introduce a systematic framework (R-U-E: Requirements-Users-Executors) for prompt engineering, particularly beneficial for product development and AI application design.
-*   **Empower Users:** Equip prompt engineers, researchers, product managers, and developers with practical strategies and tools to leverage LLMs more effectively.
-*   **Foster Cross-Disciplinary Innovation:** Explore the intersection of AI, communication studies, and psychology to unlock new potentials in human-AI collaboration.
+*   **Architecting AGI Systems:** Moving beyond task-specific AI, PiaAGI provides a theoretical and practical blueprint for building agents with more general cognitive capabilities, as detailed in the PiaAGI Cognitive Architecture (see `PiaAGI.md`, Section 4).
+*   **Fostering Deep Psychological Integration:** Systematically embedding models of memory, learning, motivation, emotion, personality, and developmental stages into agent design to achieve more robust and human-like intelligence (see `PiaAGI.md`, Section 3).
+*   **Enabling Structured AGI Development:** Introducing a comprehensive methodology for configuring, guiding, and evaluating AGI agents through their developmental trajectory using "Guiding Prompts" and "Developmental Scaffolding" (see `PiaAGI.md`, Sections 5 & 6).
+*   **Promoting Ethical and Value-Aligned AGI:** Integrating ethical reasoning and value alignment as core components of the agent's Self-Model and decision-making processes (see `PiaAGI.md`, Sections 3.1.3, 4.1.10, 8.2).
+*   **Facilitating Cross-Disciplinary AGI Research:** Providing a common framework for AI researchers, psychologists, cognitive scientists, philosophers, and ethicists to collaborate on the multifaceted challenges of AGI.
+*   **Developing Practical Tools for AGI Research:** Offering a suite of conceptual and implemented tools to support the design, simulation, analysis, and iteration of PiaAGI agents (see `PiaAGI_Research_Tools/`).
 
 ## Target Audience
 
-This project is for anyone interested in advancing the art and science of LLM interaction, including:
+This project is for anyone committed to the rigorous and ethical pursuit of Artificial General Intelligence, including:
 
-*   **Prompt Engineers:** Looking for advanced techniques and structured methodologies.
-*   **AI Researchers:** Investigating novel approaches to human-AI communication and LLM behavior.
-*   **Product Managers:** Aiming to integrate LLM capabilities into products with clear, effective requirement expression.
-*   **Developers:** Building applications that leverage LLMs and require sophisticated interaction patterns.
-*   **AI Ethicists and Psychologists:** Interested in the human-like interaction aspects of LLMs and the application of psychological principles.
+*   **AGI Researchers & Cognitive Architects:** Seeking novel frameworks and tools for designing, building, and testing AGI systems with rich internal cognitive models.
+*   **AI Developers & Engineers:** Interested in implementing and experimenting with psychologically-inspired agent architectures and advanced prompting techniques.
+*   **Psychologists & Cognitive Scientists:** Wishing to explore computational instantiations of psychological theories and contribute to AGI models that reflect human cognition.
+*   **AI Ethicists & Philosophers:** Investigating value alignment, machine ethics, consciousness, and the societal implications of advanced AGI.
+*   **Product Managers & Visionaries:** Aiming to conceptualize and develop future products and services that will leverage true AGI capabilities.
 
 ## Quick Start / Navigating This Repository
 
-To get started with PiaCRUE, we recommend the following:
+To engage with the PiaAGI project, we recommend the following:
 
-1.  **Understand the Core Framework:** Begin by reading **[`PiaCRUE.md`](PiaCRUE.md)**. This document is the cornerstone of our methodology, detailing the theoretical underpinnings and structure of the PiaCRUE framework.
-2.  **Explore the Project Structure:** Refer to **[`PROJECT_GUIDE.md`](PROJECT_GUIDE.md)** for a comprehensive overview of how this repository is organized and what you can find in each directory.
-3.  **See Practical Examples:** Dive into the **[`Examples/`](Examples/)** directory and **[`Examples.md`](Examples.md)** to see PiaCRUE principles in action through various prompt examples and templates.
-4.  **Discover Tools and Templates:** Check out the **[`Tools/`](Tools/)** directory for conceptual utilities and prompt generators designed to assist in applying the PiaCRUE framework.
-5.  **Try the Web Application:** For a hands-on experience, explore the **PiaCRUE Web Tool** by starting with its **[`pia_crue_web_tool/README.md`](pia_crue_web_tool/README.md)**.
+1.  **Understand the Core AGI Framework:** Begin by thoroughly reading **[`PiaAGI.md`](PiaAGI.md)**. This extensively revised document is the cornerstone of our AGI methodology, detailing the theoretical underpinnings, the psycho-cognitive architecture, developmental stages, and the advanced prompting/scaffolding techniques.
+2.  **Explore the Project Structure:** Refer to **[`PROJECT_GUIDE.md`](PROJECT_GUIDE.md)** for a comprehensive overview of how this repository is organized and what you can find in each directory, including the new research tools.
+3.  **Review AGI-Centric Examples:** Dive into the AGI use case examples in **[`PiaAGI.md`](PiaAGI.md) (Section 7)** to see how the framework is applied to complex AGI scenarios. Simpler examples demonstrating foundational R-U-E principles can be found in `Examples/`.
+4.  **Discover AGI Research Tools:** Explore the **[`PiaAGI_Research_Tools/`](PiaAGI_Research_Tools/)** directory. This new section contains:
+    *   Conceptual design documents for a suite of Python-based tools:
+        *   **PiaSE (PiaAGI Simulation Environment):** For testing agents in dynamic environments.
+        *   **PiaCML (PiaAGI Cognitive Module Library):** For constructing agent cognitive modules.
+        *   **PiaAVT (PiaAGI Agent Analysis & Visualization Toolkit):** For analyzing agent behavior and internal states.
+        *   **PiaPES (PiaAGI Prompt Engineering Suite):** For designing Guiding Prompts and Developmental Scaffolding.
+    *   An initial **MVP (Minimal Viable Product)** implementation for the **PiaPES Prompt Templating Engine** located in `PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py` with its `USAGE.md`.
+5.  **Utilize the Web Application:** For a hands-on experience with the foundational R-U-E prompting, explore the **PiaAGI Web Tool** (legacy PiaCRUE) by starting with its **[`pia_crue_web_tool/README.md`](pia_crue_web_tool/README.md)**.
 
 ## Core Components
 
-*   **[`PiaCRUE.md`](PiaCRUE.md):** The main document detailing the PiaCRUE framework, its theoretical basis, and step-by-step construction methodology.
-*   **[`Papers/`](Papers/):** A collection of documents and essays that explore the theoretical concepts, related research, and deeper dives into specific aspects of PiaCRUE, such as communication strategies (PiaC), psychological approaches (CSIM, DeepInception), and emotion-enhanced prompting (EmotionPrompt).
-*   **[`Examples/`](Examples/):** Contains practical examples, including minimal R-U-E prompts (`PiaCRUE_mini.md`), full templates (`PiaCRUE_Template.md`), and specific technique demonstrations like Role Development and CBT-AutoTraining.
-*   **[`Tools/`](Tools/):** Includes conceptual tools like a prompt generator template (`PiaCRUE_Prompt_Generator.md`) and an automated experiment template for evaluating prompt strategies (`AutoExpGPT.md`).
-*   **[`pia_crue_web_tool/`](pia_crue_web_tool/):** A web-based application to help users generate, manage, and experiment with PiaCRUE prompts.
+*   **[`PiaAGI.md`](PiaAGI.md):** The main, extensively revised document detailing the PiaAGI framework, its psycho-cognitive architecture for AGI, developmental principles, ethical considerations, and advanced methodology for guiding AGI development.
+*   **[`PiaAGI_Research_Tools/`](PiaAGI_Research_Tools/):** Contains conceptual designs for a suite of Python-based tools supporting AGI research within the PiaAGI framework (PiaSE, PiaCML, PiaAVT, PiaPES) and initial MVP implementations (e.g., PiaPES Prompt Templating Engine).
+*   **[`Papers/`](Papers/):** A collection of documents exploring theoretical concepts and related research relevant to PiaAGI's AGI focus.
+*   **[`Examples/`](Examples/):** Contains practical examples of foundational R-U-E prompting. AGI-specific examples are now primarily within `PiaAGI.md`.
+*   **[`pia_crue_web_tool/`](pia_crue_web_tool/):** The legacy web-based application for foundational R-U-E prompt generation.
 
-## PiaCRUE GPTs
+## PiaAGI GPTs
 
-*Note: These are external resources that leverage the PiaCRUE methodology.*
+*Note: These are external resources that leverage PiaAGI principles.*
 
-We have developed specialized GPTs based on the PiaCRUE framework to assist with various tasks:
-
-1.  **[GPTs-PiaCRUE Assistant](https://chat.openai.com/g/g-mGgqa0Aft-piacrue):** A GPT version of the PiaCRUE assistant that can answer questions about this project (concepts, methods, techniques, examples).
-2.  **[GPTs-PromptEngineer Pro](https://chat.openai.com/g/g-uBcGAkHGm-promptengineer-pro):** A GPT-based prompt optimization assistant utilizing PiaCRUE methods.
-3.  **[GPTs-AutoExpGPT](https://chat.openai.com/g/g-9pFb5GFXw-autoexpgpt):** A GPT version of AutoExpGPT; input a prompt strategy template to automatically construct experiments and evaluate its effectiveness.
+1.  **[GPTs-PiaAGI Assistant](https://chat.openai.com/g/g-mGgqa0Aft-piacrue):** A GPT assistant trained on the PiaAGI framework, capable of answering questions about its concepts, methodologies, and AGI development approach.
+2.  **[GPTs-PromptEngineer Pro](https://chat.openai.com/g/g-uBcGAkHGm-promptengineer-pro):** A GPT-based prompt optimization assistant.
+3.  **[GPTs-AutoExpGPT](https://chat.openai.com/g/g-9pFb5GFXw-autoexpgpt):** A GPT for designing automated experiments to evaluate prompt strategies.
 
 ## License
 
@@ -56,8 +61,8 @@ This project is licensed under the MIT License. See the **[`LICENSE`](LICENSE)**
 
 ## Contributing
 
-We welcome contributions to the PiaCRUE project! If you're interested in helping us improve and grow, please see our **[`CONTRIBUTING.md`](CONTRIBUTING.md)** guide for details on how to get started.
+We enthusiastically welcome contributions to the PiaAGI project, particularly those that advance its AGI research goals! If you're interested, please see our **[`CONTRIBUTING.md`](CONTRIBUTING.md)** guide.
 
 ## Acknowledgements
 
-We acknowledge the foundational work in structured prompting by LangGPT and the broader AI research community. Specific acknowledgements are detailed within the `PiaCRUE.md` document.
+We acknowledge the foundational work in structured prompting by LangGPT and the broader AI, psychology, and cognitive science research communities. Specific acknowledgements are detailed within the `PiaAGI.md` document (Section 12).
