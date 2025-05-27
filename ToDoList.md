@@ -52,3 +52,14 @@
 - [ ] Conduct a survey and report on existing Python libraries and frameworks that could be suitable for implementing key aspects of the PiaAGI cognitive architecture (e.g., for probabilistic reasoning, knowledge representation, symbolic AI, agent simulation, multi-agent systems).
 - [ ] Begin drafting specific computational models for the **Motivational System (Section 3.3 and 4.1.6)**, focusing on how intrinsic goals (e.g., curiosity, competence) could be mathematically formulated and algorithmically implemented to drive agent behavior.
 - [ ] Design a conceptual framework for the **Architectural Maturation (Section 3.2.1)** process, detailing how specific learning experiences or developmental milestones might trigger changes in module capacities or inter-module connectivity.
+- [x] Create `PiaAGI_Hub/cognitive_module_library/` directory.
+- [x] Define Abstract Base Class `BaseMemoryModule` in `PiaAGI_Hub/cognitive_module_library/base_memory_module.py`.
+- [x] Define Interface `LongTermMemoryModule` in `PiaAGI_Hub/cognitive_module_library/long_term_memory_module.py`.
+- [x] Define Interface `WorkingMemoryModule` in `PiaAGI_Hub/cognitive_module_library/working_memory_module.py`.
+- [x] Add `README.md` to `PiaAGI_Hub/cognitive_module_library/`.
+- [ ] CML: Define Interface for `PerceptionModule` in `PiaAGI_Hub/cognitive_module_library/perception_module.py` (Ref PiaAGI.md Sections 4.1.1, 4.3).
+- [ ] CML: Define Interface for `MotivationalSystemModule` in `PiaAGI_Hub/cognitive_module_library/motivational_system_module.py` (Ref PiaAGI.md Sections 3.3, 4.1.6).
+- [ ] CML: Define Interface for `EmotionModule` in `PiaAGI_Hub/cognitive_module_library/emotion_module.py` (Ref PiaAGI.md Sections 3.4, 4.1.7).
+- [ ] CML: Define Interface for `PlanningAndDecisionMakingModule` in `PiaAGI_Hub/cognitive_module_library/planning_decision_making_module.py` (Ref PiaAGI.md Sections 4.1.8, 4.4).
+- [ ] CML: Define Interface for `SelfModelModule` in `PiaAGI_Hub/cognitive_module_library/self_model_module.py` (Ref PiaAGI.md Section 4.1.10).
+```
