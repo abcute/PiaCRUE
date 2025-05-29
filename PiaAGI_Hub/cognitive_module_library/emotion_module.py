@@ -250,4 +250,4 @@ if __name__ == '__main__':
     emotion_system.regulate_emotion("response_modulation", {'emotion': 'fear', 'desired_intensity_change': -0.3})
     print(f"Status after regulation: {emotion_system.get_status()}")
 
-```
+

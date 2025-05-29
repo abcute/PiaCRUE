@@ -263,4 +263,3 @@ if __name__ == '__main__':
     print(f"Status after task completion: {motivation_system.get_status()}")
     print(f"Goal 'complete_assigned_task_1' status: {motivation_system.get_goal_status('complete_assigned_task_1')}")
 
-```

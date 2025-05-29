@@ -298,4 +298,3 @@ if __name__ == '__main__':
     print(f"Cognitive Load: {self_model.get_cognitive_load_assessment()}")
     print(f"Final status: {self_model.get_status()}")
 
-```
