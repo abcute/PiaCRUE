@@ -60,6 +60,6 @@
 - [x] CML: Define Interface for `PerceptionModule` in `PiaAGI_Hub/cognitive_module_library/perception_module.py` (Ref PiaAGI.md Sections 4.1.1, 4.3).
 - [x] CML: Define Interface for `MotivationalSystemModule` in `PiaAGI_Hub/cognitive_module_library/motivational_system_module.py` (Ref PiaAGI.md Sections 3.3, 4.1.6).
 - [x] CML: Define Interface for `EmotionModule` in `PiaAGI_Hub/cognitive_module_library/emotion_module.py` (Ref PiaAGI.md Sections 3.4, 4.1.7).
-- [x] CML: Define Interface for `PlanningAndDecisionMakingModule` in `PiaAGI_Hub/cognitive_module_library/planning_and_decision_making_module.py` (Ref PiaAGI.md Sections 4.1.8, 4.4).
+- [x] CML: Define Interface for `PlanningAndDecisionMakingModule` in `PiaAGI_Hub/cognitive_module_library/planning_decision_making_module.py` (Ref PiaAGI.md Sections 4.1.8, 4.4).
 - [x] CML: Define Interface for `SelfModelModule` in `PiaAGI_Hub/cognitive_module_library/self_model_module.py` (Ref PiaAGI.md Section 4.1.10).
 ```
