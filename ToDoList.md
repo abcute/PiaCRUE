@@ -62,4 +62,12 @@
 - [x] CML: Define Interface for `EmotionModule` in `PiaAGI_Hub/cognitive_module_library/emotion_module.py` (Ref PiaAGI.md Sections 3.4, 4.1.7).
 - [x] CML: Define Interface for `PlanningAndDecisionMakingModule` in `PiaAGI_Hub/cognitive_module_library/planning_decision_making_module.py` (Ref PiaAGI.md Sections 4.1.8, 4.4).
 - [x] CML: Define Interface for `SelfModelModule` in `PiaAGI_Hub/cognitive_module_library/self_model_module.py` (Ref PiaAGI.md Section 4.1.10).
+
+## CML Next Steps
+- [ ] CML: Implement basic functionality for PerceptionModule.
+- [ ] CML: Implement basic functionality for MotivationalSystemModule.
+- [ ] CML: Implement basic functionality for EmotionModule.
+- [ ] CML: Implement basic functionality for PlanningAndDecisionMakingModule.
+- [ ] CML: Implement basic functionality for SelfModelModule.
+- [ ] CML: Develop example usage of combined CML modules demonstrating basic interactions.
 ```
