@@ -24,7 +24,7 @@ class TestBasicGridAgent(unittest.TestCase):
         self.goal_pos = (5, 5)
         self.goal_oriented_agent = BasicGridAgent(policy="goal_oriented", goal=self.goal_pos)
         self.goal_oriented_agent.set_id("GoalTestAgent")
-        
+
         self.valid_actions = ["N", "S", "E", "W", "Stay"]
 
     def test_initialization(self):
@@ -36,7 +36,7 @@ class TestBasicGridAgent(unittest.TestCase):
         self.assertEqual(self.goal_oriented_agent.policy, "goal_oriented")
         self.assertEqual(self.goal_oriented_agent.goal, self.goal_pos)
         self.assertEqual(self.goal_oriented_agent.get_id(), "GoalTestAgent")
-        
+
         # Test warning for goal_oriented without goal
         no_goal_agent = BasicGridAgent(policy="goal_oriented") # Should print warning
         self.assertEqual(no_goal_agent.policy, "goal_oriented") # Policy remains
@@ -91,9 +91,9 @@ class TestBasicGridAgent(unittest.TestCase):
             mock_obs = {"agent_position": current_pos, "grid_view": [[]]} # Grid view not used by basic agent
             self.goal_oriented_agent.perceive(mock_obs)
             action = self.goal_oriented_agent.act()
-            self.assertIn(action, expected_actions, 
+            self.assertIn(action, expected_actions,
                           f"For pos {current_pos} to goal {self.goal_pos}, action {action} not in {expected_actions}")
-            
+
     def test_action_selection_goal_oriented_no_goal(self):
         """Test goal-oriented agent acts randomly if no goal is set."""
         agent = BasicGridAgent(policy="goal_oriented", goal=None)
@@ -111,14 +111,14 @@ class TestBasicGridAgent(unittest.TestCase):
         for _ in range(10):
             action = agent.act()
             self.assertIn(action, self.valid_actions)
-            
+
     def test_action_selection_bad_observation(self):
         """Test agent acts randomly if observation format is unexpected."""
         agent = BasicGridAgent()
         agent.set_id("BadObsAgent")
-        
+
         # Missing 'agent_position'
-        agent.perceive(observation={"grid_only": [[]]}) 
+        agent.perceive(observation={"grid_only": [[]]})
         for _ in range(5):
             action = agent.act()
             self.assertIn(action, self.valid_actions)

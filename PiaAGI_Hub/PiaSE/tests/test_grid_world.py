@@ -26,8 +26,10 @@ class TestGridWorld(unittest.TestCase):
             width=self.width,
             height=self.height,
             walls=self.walls,
-            agent_start_positions=self.agent_start_positions
+            agent_start_positions=self.agent_start_positions,
+            goal_position=(self.width - 1, self.height - 1) # Explicitly set goal
         )
+        self.goal_pos = (self.width - 1, self.height - 1)
         # Add an agent that wasn't in the initial start positions for some tests
         self.grid_world.add_agent("agent3", (5,5))
 
@@ -56,28 +58,28 @@ class TestGridWorld(unittest.TestCase):
         """Test valid agent movements."""
         # Agent1 starts at (0,0)
         # Move South to (0,1)
-        obs, reward = self.grid_world.step("agent1", "S")
+        obs, reward, done, info = self.grid_world.step("agent1", "S")
         self.assertEqual(self.grid_world.agent_positions["agent1"], (0, 1))
         self.assertEqual(obs["agent_position"], (0, 1))
-        self.assertEqual(reward, 0.0)
+        # self.assertEqual(reward, 0.0) # Reward is now -0.1 for normal move
 
         # Move East to (1,1)
-        obs, reward = self.grid_world.step("agent1", "E")
+        obs, reward, done, info = self.grid_world.step("agent1", "E")
         self.assertEqual(self.grid_world.agent_positions["agent1"], (1, 1))
         self.assertEqual(obs["agent_position"], (1, 1))
 
         # Move North to (1,0)
-        obs, reward = self.grid_world.step("agent1", "N")
+        obs, reward, done, info = self.grid_world.step("agent1", "N")
         self.assertEqual(self.grid_world.agent_positions["agent1"], (1, 0))
         self.assertEqual(obs["agent_position"], (1, 0))
 
         # Move West to (0,0)
-        obs, reward = self.grid_world.step("agent1", "W")
+        obs, reward, done, info = self.grid_world.step("agent1", "W")
         self.assertEqual(self.grid_world.agent_positions["agent1"], (0, 0))
         self.assertEqual(obs["agent_position"], (0, 0))
-        
+
         # Stay
-        obs, reward = self.grid_world.step("agent1", "Stay")
+        obs, reward, done, info = self.grid_world.step("agent1", "Stay")
         self.assertEqual(self.grid_world.agent_positions["agent1"], (0, 0))
         self.assertEqual(obs["agent_position"], (0, 0))
 
@@ -107,14 +109,14 @@ class TestGridWorld(unittest.TestCase):
         # Move agent2 to (1,2) next to wall (2,2)
         self.grid_world.agent_positions["agent2"] = (1,2)
         # Try to move East into wall (2,2)
-        obs, _ = self.grid_world.step("agent2", "E") # Action to (2,2) - wall
+        obs, reward, done, info = self.grid_world.step("agent2", "E") # Action to (2,2) - wall
         self.assertEqual(self.grid_world.agent_positions["agent2"], (1, 2)) # Should not move
         self.assertEqual(obs["agent_position"], (1,2))
 
         # Move agent2 to (2,1) above wall (2,2)
         self.grid_world.agent_positions["agent2"] = (2,1)
         # Try to move South into wall (2,2)
-        obs, _ = self.grid_world.step("agent2", "S") # Action to (2,2) - wall
+        obs, reward, done, info = self.grid_world.step("agent2", "S") # Action to (2,2) - wall
         self.assertEqual(self.grid_world.agent_positions["agent2"], (2, 1)) # Should not move
         self.assertEqual(obs["agent_position"], (2,1))
 
@@ -130,7 +132,7 @@ class TestGridWorld(unittest.TestCase):
         self.assertEqual(len(observation["grid_view"]), self.height)
         self.assertEqual(len(observation["grid_view"][0]), self.width)
         # Check if grid_view is a copy
-        observation["grid_view"][0][0] = 99 
+        observation["grid_view"][0][0] = 99
         self.assertNotEqual(self.grid_world.grid[0][0], 99, "grid_view should be a copy, not a direct reference.")
 
 
@@ -168,7 +170,7 @@ class TestGridWorld(unittest.TestCase):
         self.grid_world.step("agent1", "S")
         self.grid_world.step("agent2", "S")
         self.grid_world.step("agent3", "N") # agent3 started at (5,5)
-        
+
         self.assertNotEqual(self.grid_world.agent_positions["agent1"], self.agent_start_positions["agent1"])
         self.assertNotEqual(self.grid_world.agent_positions["agent2"], self.agent_start_positions["agent2"])
         self.assertNotEqual(self.grid_world.agent_positions["agent3"], (5,5)) # original start for agent3 via add_agent
@@ -195,6 +197,91 @@ class TestGridWorld(unittest.TestCase):
         """Test scenario where no valid cell exists for an agent."""
         with self.assertRaises(Exception):
             GridWorld(width=1, height=1, walls=[(0,0)], agent_start_positions={"a1": (0,0)})
+
+    def test_rewards_and_done_at_goal(self):
+        """Test reward and done flag when agent reaches the goal."""
+        agent_id = "agent1"
+        # Manually place agent next to goal for a direct move
+        # Goal is (9,7)
+        self.grid_world.agent_positions[agent_id] = (self.goal_pos[0] - 1, self.goal_pos[1]) # (8,7)
+        self.grid_world.agent_start_positions[agent_id] = (self.goal_pos[0] - 1, self.goal_pos[1]) # Update start for consistency if reset happens
+
+        obs, reward, done, info = self.grid_world.step(agent_id, "E") # Move to goal (9,7)
+
+        self.assertEqual(self.grid_world.agent_positions[agent_id], self.goal_pos)
+        self.assertEqual(reward, 10.0, "Reward should be +10.0 for reaching goal.")
+        self.assertTrue(done, "Done should be True when goal is reached.")
+
+    def test_rewards_for_wall_hit(self):
+        """Test reward for hitting a wall."""
+        agent_id = "agent2" # Starts at (1,1)
+        # Wall at (2,2)
+        self.grid_world.agent_positions[agent_id] = (2,1) # Position agent next to wall (2,2)
+        self.grid_world.agent_start_positions[agent_id] = (2,1)
+
+        obs, reward, done, info = self.grid_world.step(agent_id, "S") # Attempt to move into wall (2,2)
+
+        self.assertEqual(self.grid_world.agent_positions[agent_id], (2,1)) # Position should not change
+        self.assertEqual(reward, -1.0, "Reward should be -1.0 for hitting a wall.")
+        self.assertFalse(done, "Done should be False if wall hit and not at goal.")
+
+    def test_rewards_for_boundary_hit(self):
+        """Test reward for hitting a boundary."""
+        agent_id = "agent1" # Starts at (0,0) by default in setUp or after reset
+        self.grid_world.reset(agent_id) # Ensure agent1 is at (0,0)
+
+        obs, reward, done, info = self.grid_world.step(agent_id, "N") # Attempt to move North from (0,0)
+
+        self.assertEqual(self.grid_world.agent_positions[agent_id], (0,0)) # Position should not change
+        self.assertEqual(reward, -1.0, "Reward should be -1.0 for hitting a boundary.")
+        self.assertFalse(done, "Done should be False if boundary hit.")
+
+    def test_rewards_for_normal_move(self):
+        """Test reward for a valid move not reaching the goal."""
+        agent_id = "agent1" # Starts at (0,0)
+        self.grid_world.reset(agent_id)
+
+        # Ensure this move does not land on the goal
+        next_pos = (0,1)
+        if next_pos == self.goal_pos: # If goal is (0,1) in a tiny grid, this test needs adjustment
+            self.skipTest("Goal position interferes with normal move test, try larger grid or different goal for this test.")
+
+        obs, reward, done, info = self.grid_world.step(agent_id, "S") # Move to (0,1)
+
+        self.assertEqual(self.grid_world.agent_positions[agent_id], next_pos)
+        self.assertEqual(reward, -0.1, "Reward should be -0.1 for a normal valid move.")
+        self.assertFalse(done, "Done should be False for a normal move not reaching goal.")
+
+    def test_rewards_for_stay_action(self):
+        """Test reward for 'Stay' action when not at goal."""
+        agent_id = "agent1"
+        self.grid_world.reset(agent_id) # agent1 at (0,0)
+
+        if (0,0) == self.goal_pos:
+             self.skipTest("Agent starts at goal, cannot test 'Stay' reward for non-goal state.")
+
+        obs, reward, done, info = self.grid_world.step(agent_id, "Stay")
+        self.assertEqual(self.grid_world.agent_positions[agent_id], (0,0))
+        self.assertEqual(reward, -0.05, "Reward should be -0.05 for 'Stay' action when not at goal.")
+        self.assertFalse(done)
+
+
+    def test_is_done_method(self):
+        """Explicitly test the is_done() method."""
+        agent_id = "agent1"
+        self.grid_world.reset(agent_id)
+        self.assertFalse(self.grid_world.is_done(agent_id), "is_done should be False when not at goal.")
+
+        # Move agent to goal
+        self.grid_world.agent_positions[agent_id] = self.goal_pos
+        self.assertTrue(self.grid_world.is_done(agent_id), "is_done should be True when at goal.")
+
+        # Move agent away from goal
+        self.grid_world.agent_positions[agent_id] = (0,0)
+        self.assertFalse(self.grid_world.is_done(agent_id), "is_done should be False when moved away from goal.")
+
+        # Test with an agent ID not in agent_positions (should be False)
+        self.assertFalse(self.grid_world.is_done("unknown_agent"), "is_done should be False for unknown agent.")
 
 
 if __name__ == '__main__':

@@ -11,12 +11,25 @@ class GridWorld(Environment):
                  width: int,
                  height: int,
                  walls: Optional[List[Tuple[int, int]]] = None,
-                 agent_start_positions: Optional[Dict[str, Tuple[int, int]]] = None):
+                 agent_start_positions: Optional[Dict[str, Tuple[int, int]]] = None,
+                 goal_position: Optional[Tuple[int, int]] = None):
         if width <= 0 or height <= 0:
             raise ValueError("Grid width and height must be positive integers.")
         self.width = width
         self.height = height
+        self.goal_position = goal_position if goal_position is not None else (width - 1, height - 1)
+
+        # Ensure goal_position is valid and not a wall, if specified
+        if self.goal_position[0] < 0 or self.goal_position[0] >= self.width or \
+           self.goal_position[1] < 0 or self.goal_position[1] >= self.height:
+            print(f"Warning: Goal position {self.goal_position} is outside grid boundaries. Defaulting to ({width-1}, {height-1}).")
+            self.goal_position = (width - 1, height - 1)
+
         self.grid: List[List[int]] = [[0 for _ in range(width)] for _ in range(height)] # 0 for empty, 1 for wall
+
+        if self.grid[self.goal_position[1]][self.goal_position[0]] == 1: # Check if default/chosen goal is a wall
+             print(f"Warning: Goal position {self.goal_position} is a wall. This might be an impossible task.")
+
 
         self.walls: List[Tuple[int, int]] = []
         if walls:
@@ -24,7 +37,7 @@ class GridWorld(Environment):
 
         self.agent_positions: Dict[str, Tuple[int, int]] = {}
         self.agent_start_positions: Dict[str, Tuple[int, int]] = agent_start_positions if agent_start_positions is not None else {}
-        
+
         # Initialize agents to their start positions or a default (0,0) if not specified
         # This part might be better handled by a separate agent registration in the engine
         # For now, we'll use it to ensure agents have a starting point if defined at construction
@@ -161,10 +174,26 @@ class GridWorld(Environment):
 
 
         observation = self.get_observation(agent_id)
-        reward = 0.0 # Conceptual reward, can be expanded later
 
-        # print(f"GridWorld: Agent {agent_id} action '{action}'. New pos: {self.agent_positions[agent_id]}. Reward: {reward}")
-        return observation, reward
+        current_pos_after_move = self.agent_positions[agent_id]
+        reward = -0.1  # Cost for any valid move
+        done = False
+        info = {}
+
+        if not self._is_valid_position(new_x, new_y) or self.grid[new_y][new_x] == 1:
+            # Agent attempted to move into a wall or off the grid
+            reward = -1.0
+        elif current_pos_after_move == self.goal_position:
+            reward = 10.0
+            done = True
+
+        # If action was 'Stay' and agent is not at goal, slightly less penalty than moving to non-goal
+        if action == "Stay" and not done:
+            reward = -0.05
+
+
+        observation = self.get_observation(agent_id)
+        return observation, reward, done, info
 
     def get_observation(self, agent_id: str) -> Dict[str, Any]:
         """
@@ -221,7 +250,16 @@ class GridWorld(Environment):
         """
         # This could be expanded, e.g., if agent reaches a goal, or max steps reached.
         # The 'agent_id' parameter allows for agent-specific 'done' conditions.
+        agent_pos = self.agent_positions.get(agent_id)
+        if agent_pos and agent_pos == self.goal_position:
+            return True
         return False
+
+    def get_action_space(self) -> list:
+        """
+        Returns the list of possible actions in this GridWorld environment.
+        """
+        return ["N", "S", "E", "W", "Stay"]
 
     def add_agent(self, agent_id: str, start_position: Optional[Tuple[int, int]] = None) -> None:
         """
@@ -268,9 +306,11 @@ if __name__ == '__main__':
     # Initialize with some walls and specific agent start positions
     walls_list = [(1,1), (1,2), (2,1)]
     agent_starts = {"agent1": (0,0), "agent2": (2,2)}
-    
+    goal = (3,3) # Define a goal
+
     try:
-        gw = GridWorld(width=4, height=4, walls=walls_list, agent_start_positions=agent_starts)
+        gw = GridWorld(width=4, height=4, walls=walls_list, agent_start_positions=agent_starts, goal_position=goal)
+        print(f"GridWorld created with goal: {gw.goal_position}")
     except ValueError as e:
         print(f"Error during GridWorld init: {e}")
         exit()
@@ -282,63 +322,109 @@ if __name__ == '__main__':
     print(gw.get_observation("agent1"))
 
     print("\nTaking some steps for agent1:")
-    actions = ["S", "E", "E", "N", "W", "Stay"]
-    for action in actions:
-        obs, reward = gw.step("agent1", action)
-        print(f"Action: {action}, New Pos: {obs['agent_position']}, Reward: {reward}")
-        # print(f"Grid view: {obs['grid_view']}") # Can be verbose
+    actions = ["S", "E", "E", "S"] # Path towards goal (3,3) for agent1 from (0,0) -> (0,1) -> (1,1) -> (2,1) -> (2,2) -> (3,2) -> (3,3)
+                                    # Correct path: S, E, E, S, S, E
+    # Corrected actions to reach (3,3) from (0,0) in a 4x4 grid with no new walls on path
+    # (0,0) -> S (0,1) -> S (0,2) -> S (0,3) -> E (1,3) -> E (2,3) -> E (3,3)
+    actions_to_goal = ["S","S","S","E","E","E"]
+
+
+    for action_idx, action in enumerate(actions_to_goal):
+        if gw.is_done("agent1"):
+            print(f"Agent1 reached goal at step {action_idx}!")
+            break
+        obs, reward, done, info = gw.step("agent1", action)
+        print(f"Action: {action}, New Pos: {obs['agent_position']}, Reward: {reward:.2f}, Done: {done}")
+        if done:
+            print(f"Agent1 reached goal {gw.goal_position}!")
+            break
+    else: # If loop finishes without break
+        if not gw.is_done("agent1"):
+             print(f"Agent1 did not reach goal. Final position: {gw.agent_positions['agent1']}")
+
 
     print("\nFinal state for agent1:")
     print(gw.get_observation("agent1"))
 
     print("\nResetting agent1:")
-    gw.reset("agent1")
-    print(gw.get_observation("agent1"))
-    
+    initial_obs_agent1 = gw.reset("agent1") # reset returns initial observation
+    print(f"Agent1 position after reset: {initial_obs_agent1['agent_position']}")
+    print(f"Is agent1 done after reset? {gw.is_done('agent1')}") # Should be false unless start is goal
+
     print("\nAdding a new agent 'agent3' at (3,0)")
     gw.add_agent("agent3", (3,0))
     print(gw.get_observation("agent3"))
-    obs, reward = gw.step("agent3", "S")
-    print(f"Agent3 Action: S, New Pos: {obs['agent_position']}, Reward: {reward}")
+    obs, reward, done, info = gw.step("agent3", "S") # Move to (3,1)
+    print(f"Agent3 Action: S, New Pos: {obs['agent_position']}, Reward: {reward:.2f}, Done: {done}")
+    obs, reward, done, info = gw.step("agent3", "S") # Move to (3,2)
+    print(f"Agent3 Action: S, New Pos: {obs['agent_position']}, Reward: {reward:.2f}, Done: {done}")
+    obs, reward, done, info = gw.step("agent3", "S") # Move to (3,3) - THE GOAL!
+    print(f"Agent3 Action: S, New Pos: {obs['agent_position']}, Reward: {reward:.2f}, Done: {done}")
+    if done:
+        print(f"Agent3 reached goal {gw.goal_position}!")
 
 
     print("\nResetting all agents:")
-    gw.reset()
+    initial_state_after_reset = gw.reset() # Reset all returns observation of first agent or overall state
     print("State after global reset:")
-    print(gw.get_state())
+    print(initial_state_after_reset) # This might be obs of agent1 or full state
+    print(f"Agent1 pos: {gw.agent_positions['agent1']}, Agent2 pos: {gw.agent_positions['agent2']}, Agent3 pos: {gw.agent_positions['agent3']}")
+
 
     print("\nTrying to move agent2 into a wall:")
     # agent2 starts at (2,2). Wall at (1,2) and (2,1)
+    gw.reset("agent2") # ensure agent2 is at (2,2)
     print(f"Agent2 current pos: {gw.get_observation('agent2')['agent_position']}")
-    obs_a2, _ = gw.step("agent2", "N") # try to move to (2,1) which is a wall
-    print(f"Agent2 tried N. New pos: {obs_a2['agent_position']}") # Should be (2,2)
-    obs_a2, _ = gw.step("agent2", "W") # try to move to (1,2) which is a wall
-    print(f"Agent2 tried W. New pos: {obs_a2['agent_position']}") # Should be (2,2)
-    obs_a2, _ = gw.step("agent2", "S") # try to move to (2,3) which is valid
-    print(f"Agent2 tried S. New pos: {obs_a2['agent_position']}") # Should be (2,3)
+    obs_a2, reward_a2, done_a2, _ = gw.step("agent2", "N") # try to move to (2,1) which is a wall
+    print(f"Agent2 tried N. New pos: {obs_a2['agent_position']}, Reward: {reward_a2:.2f}") # Should be (2,2), reward -1.0
+    obs_a2, reward_a2, done_a2, _ = gw.step("agent2", "W") # try to move to (1,2) which is a wall
+    print(f"Agent2 tried W. New pos: {obs_a2['agent_position']}, Reward: {reward_a2:.2f}") # Should be (2,2), reward -1.0
+    obs_a2, reward_a2, done_a2, _ = gw.step("agent2", "S") # try to move to (2,3) which is valid
+    print(f"Agent2 tried S. New pos: {obs_a2['agent_position']}, Reward: {reward_a2:.2f}") # Should be (2,3), reward -0.1
 
 
-    print("\n--- GridWorld Example with no initial agent positions ---")
-    gw_no_agents = GridWorld(width=3, height=3)
+    print("\n--- GridWorld Example with no initial agent positions (and default goal) ---")
+    gw_no_agents = GridWorld(width=3, height=3) # Goal will be (2,2)
+    print(f"Goal for gw_no_agents: {gw_no_agents.goal_position}")
     print(f"Initial state (no agents): {gw_no_agents.get_state()}")
     # Add agent after construction
-    gw_no_agents.add_agent("agent_new", (1,1))
+    gw_no_agents.add_agent("agent_new", (0,0))
     print(f"State after adding agent: {gw_no_agents.get_state()}")
-    obs_new, _ = gw_no_agents.step("agent_new", "N")
-    print(f"Agent_new tried N. New pos: {obs_new['agent_position']}")
+    obs_new, reward_new, done_new, _ = gw_no_agents.step("agent_new", "E") # (1,0)
+    print(f"Agent_new action E. Pos: {obs_new['agent_position']}, Reward: {reward_new:.2f}, Done: {done_new}")
+    obs_new, reward_new, done_new, _ = gw_no_agents.step("agent_new", "E") # (2,0)
+    print(f"Agent_new action E. Pos: {obs_new['agent_position']}, Reward: {reward_new:.2f}, Done: {done_new}")
+    obs_new, reward_new, done_new, _ = gw_no_agents.step("agent_new", "S") # (2,1)
+    print(f"Agent_new action S. Pos: {obs_new['agent_position']}, Reward: {reward_new:.2f}, Done: {done_new}")
+    obs_new, reward_new, done_new, _ = gw_no_agents.step("agent_new", "S") # (2,2) - Goal!
+    print(f"Agent_new action S. Pos: {obs_new['agent_position']}, Reward: {reward_new:.2f}, Done: {done_new}")
+    if done_new:
+        print("Agent_new reached the goal!")
 
 
     print("\n--- GridWorld Example with agent starting on a wall (should fallback) ---")
     # (1,1) is a wall
-    gw_bad_start = GridWorld(width=3, height=3, walls=[(1,1)], agent_start_positions={"a1": (1,1)})
+    gw_bad_start = GridWorld(width=3, height=3, walls=[(1,1)], agent_start_positions={"a1": (1,1)}, goal_position=(2,2))
     print(f"State for gw_bad_start: {gw_bad_start.get_state()}") # a1 should be at (0,0) or other fallback
-    obs_bad, _ = gw_bad_start.step("a1", "S")
-    print(f"a1 tried S. New pos: {obs_bad['agent_position']}")
+    obs_bad, reward_bad, _, _ = gw_bad_start.step("a1", "S")
+    print(f"a1 tried S. New pos: {obs_bad['agent_position']}, Reward: {reward_bad:.2f}")
 
-    print("\n--- GridWorld Example: All cells are walls ---")
+    print("\n--- GridWorld Example: All cells are walls (goal cannot be placed without wall) ---")
     try:
+        # Goal will default to (1,0), which is a wall.
         gw_all_walls = GridWorld(width=2, height=1, walls=[(0,0), (1,0)], agent_start_positions={"a1": (0,0)})
-    except Exception as e:
+        print(f"gw_all_walls goal: {gw_all_walls.goal_position}") # Should show warning about goal on wall
+    except Exception as e: # This might not raise error on init, but agent can't be placed
         print(f"Caught expected error for all-wall grid: {e}")
+
+
+    print("\n--- GridWorld Example: Goal is a wall ---")
+    gw_goal_on_wall = GridWorld(width=3, height=3, walls=[(1,1)], goal_position=(1,1))
+    # Should print a warning that goal is on a wall.
+    print(f"gw_goal_on_wall initialized. Goal: {gw_goal_on_wall.goal_position}")
+    gw_goal_on_wall.add_agent("player1", (0,1))
+    obs_player1, reward_player1, done_player1, _ = gw_goal_on_wall.step("player1", "E") # Try to move to goal (1,1)
+    print(f"Player1 action E. Pos: {obs_player1['agent_position']}, Reward: {reward_player1:.2f}, Done: {done_player1}")
+    # Reward should be -1 (hit wall), done should be False.
 
     print("--- GridWorld Example End ---")
