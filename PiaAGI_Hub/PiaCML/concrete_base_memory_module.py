@@ -38,33 +38,98 @@ class ConcreteBaseMemoryModule(BaseMemoryModule):
 
     def retrieve(self, query: dict, criteria: dict = None) -> list[dict]:
         """
-        Retrieves information based on a query.
-        This is a simple implementation:
+        Retrieves information based on a query and/or criteria.
         - If 'id' is in the query, it retrieves by ID.
         - If 'concept' is in the query (within 'info'), it retrieves items matching that concept.
-        - Otherwise, it returns all stored items if the query is empty or not recognized.
-        Criteria are not used in this basic version.
+        - If 'match_context' is in criteria, it filters items based on context matching.
+        - If query is empty and no context criteria, returns all stored items.
+        - Otherwise, returns items matching any of the above.
         """
         print(f"ConcreteBaseMemoryModule: Retrieving with query: {query}, criteria: {criteria}")
         results = []
-        if not query: # Return all if query is empty
+
+        # Initial check for empty query and no specific criteria
+        if not query and not (criteria and 'match_context' in criteria):
+            print("ConcreteBaseMemoryModule: Empty query and no context criteria, returning all items.")
             return list(self._storage.values())
 
+        # ID-based query has highest precedence
         query_id = query.get('id')
         if query_id and query_id in self._storage:
-            return [self._storage[query_id]]
-
-        query_concept = query.get('concept')
-        if query_concept:
-            for item_id, item_data in self._storage.items():
-                if item_data['info'].get('concept') == query_concept:
-                    results.append(item_data)
+            # If ID matches, this is usually the only result expected.
+            # However, context criteria might still apply if specified.
+            item = self._storage[query_id]
+            match_context_criteria = criteria.get('match_context') if criteria else None
+            if match_context_criteria:
+                context_match = True
+                if item.get('ctx'):
+                    for key, value in match_context_criteria.items():
+                        if item['ctx'].get(key) != value:
+                            context_match = False
+                            break
+                else: # No context in item, cannot match context criteria
+                    context_match = False
+                if context_match:
+                    results.append(item)
+            else: # No context criteria, ID match is enough
+                results.append(item)
             return results
 
-        # Fallback: if query is not recognized for specific fields, and not empty, return nothing or all?
-        # For now, let's return empty if specific query fields don't match.
-        # If you want to return all when a query is present but not matched, change the logic here.
-        print(f"ConcreteBaseMemoryModule: Query type not specifically handled or no matches for query: {query}")
+
+        # Concept-based query or context-based filtering
+        # If an ID query was processed and returned, this part might be skipped
+        # unless we want to accumulate results from different query types (not typical for this model).
+
+        # Iterate once through all items if not already returned by ID query.
+        items_to_check = list(self._storage.values())
+
+        query_concept = query.get('concept')
+        match_context_criteria = criteria.get('match_context') if criteria else None
+
+        if query_concept or match_context_criteria:
+            for item_data in items_to_check:
+                passes_concept_query = False
+                if query_concept:
+                    if item_data['info'].get('concept') == query_concept:
+                        passes_concept_query = True
+                else: # No concept query, so it implicitly passes this part of the check
+                    passes_concept_query = True
+
+                passes_context_criteria = False
+                if match_context_criteria:
+                    context_match = True
+                    if item_data.get('ctx'):
+                        for key, value in match_context_criteria.items():
+                            if item_data['ctx'].get(key) != value:
+                                context_match = False
+                                break
+                    else: # No context in item, cannot match context criteria
+                        context_match = False
+                    if context_match:
+                        passes_context_criteria = True
+                else: # No context criteria, so it implicitly passes this part of the check
+                    passes_context_criteria = True
+
+                # Item must pass both (if specified)
+                if passes_concept_query and passes_context_criteria:
+                    if item_data not in results: # Avoid duplicates if ID query was also somehow relevant
+                         results.append(item_data)
+
+            if results: # If any concept or context match found
+                return results
+
+        # Fallback for non-empty query that didn't match ID, concept, or context criteria
+        if query: # but not (query_id or query_concept or match_context_criteria made it here)
+             print(f"ConcreteBaseMemoryModule: Query {query} with criteria {criteria} did not match any items via ID, concept, or context.")
+             return [] # Return empty if specific query fields or context don't match
+
+        # If query was empty but there WERE context criteria that didn't match anything
+        if not query and match_context_criteria and not results:
+            print(f"ConcreteBaseMemoryModule: Context criteria {match_context_criteria} did not match any items.")
+            return []
+
+        # Should be covered by the first check, but as a safeguard:
+        print(f"ConcreteBaseMemoryModule: Unhandled query/criteria case or no matches. Query: {query}, Criteria: {criteria}")
         return []
 
 

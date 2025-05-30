@@ -127,6 +127,76 @@ This section lists available concrete implementations of the abstract module int
         *   `get_module_status`: Reports active dialogues and conceptual strategies.
     *   **Usage:** Suitable for simple task-oriented dialogue simulations or as a foundation for more sophisticated conversational AI components.
 
+7.  **[`ConcreteLongTermMemoryModule`](concrete_long_term_memory_module.py)** ([Tests](tests/test_concrete_long_term_memory_module.py)):
+    *   **Implements:** `BaseLongTermMemoryModule` (and by extension `BaseMemoryModule`)
+    *   **Purpose:** Provides a concrete implementation for LTM, differentiating between episodic, semantic, and procedural memory by using an internal `ConcreteBaseMemoryModule` and tagging data with an `ltm_type` in its context.
+    *   **Functionality:**
+        *   Implements `store_<type>`, `retrieve_<type>` methods for episodic, semantic, and procedural memories.
+        *   Delegates basic store, retrieve, delete operations to the internal `ConcreteBaseMemoryModule`, adding `ltm_type` context.
+        *   Tracks basic stats for each subcomponent (items stored, queries made).
+        *   Includes placeholder for `manage_ltm_subcomponents`.
+    *   **Usage:** Suitable for simulations needing distinct LTM functionalities and provides a clear example of composing memory modules. Assumes the underlying `ConcreteBaseMemoryModule`'s `retrieve` method can filter based on context criteria for typed retrievals.
+
+8.  **[`ConcreteWorkingMemoryModule`](concrete_working_memory_module.py)** ([Tests](tests/test_concrete_working_memory_module.py)):
+    *   **Implements:** `BaseWorkingMemoryModule` (and by extension `BaseMemoryModule`)
+    *   **Purpose:** Provides a basic concrete implementation for Working Memory. It manages a capacity-limited list of items with unique WM-specific IDs and salience values.
+    *   **Functionality:**
+        *   Adapts `store`, `retrieve`, `delete_memory` from `BaseMemoryModule` for a transient, ID-based workspace.
+        *   Implements `add_item_to_workspace`, `remove_item_from_workspace`, `get_workspace_contents`.
+        *   Manages `set_active_focus` and `get_active_focus` on items within the workspace.
+        *   `manage_workspace_capacity_and_coherence` enforces capacity by removing least salient items.
+        *   `handle_forgetting` includes a conceptual 'decay_salience' strategy.
+    *   **Usage:** Suitable for simulations requiring a basic, capacity-aware cognitive workspace with item salience and focus mechanisms.
+
+9.  **[`ConcretePerceptionModule`](concrete_perception_module.py)** ([Tests](tests/test_concrete_perception_module.py)):
+    *   **Implements:** `BasePerceptionModule`
+    *   **Purpose:** Provides a basic concrete implementation of `BasePerceptionModule`. It performs simple keyword spotting on text inputs and wraps dictionary inputs.
+    *   **Functionality:**
+        *   `process_sensory_input`: For "text" modality, identifies predefined keywords for conceptual entities (apple, ball, user, Pia) and actions (give, see, greet). For "dict_mock" modality, it wraps the input dictionary. Other modalities are marked unsupported.
+        *   `get_module_status`: Reports supported modalities and processing log count.
+    *   **Usage:** Suitable for simulations requiring very basic NLU or mock sensory input processing, or as a template for integrating more sophisticated perception tools.
+
+10. **[`ConcreteMotivationalSystemModule`](concrete_motivational_system_module.py)** ([Tests](tests/test_concrete_motivational_system_module.py)):
+    *   **Implements:** `BaseMotivationalSystemModule`
+    *   **Purpose:** Provides a basic concrete implementation for managing goals. It maintains a list of goals with types, priorities, and statuses.
+    *   **Functionality:**
+        *   `manage_goals`: Allows adding, removing, and updating the status of goals. Goals are sorted by priority.
+        *   `get_active_goals`: Retrieves active goals, optionally filtered by count (N) and minimum priority.
+        *   `update_motivation_state`: Placeholder for updating conceptual overall drive/focus.
+        *   `get_module_status`: Reports total goals, counts by status, and current conceptual motivation state.
+    *   **Usage:** Suitable for simulations requiring explicit goal management and prioritization, or as a base for more complex motivational dynamics.
+
+11. **[`ConcreteEmotionModule`](concrete_emotion_module.py)** ([Tests](tests/test_concrete_emotion_module.py)):
+    *   **Implements:** `BaseEmotionModule`
+    *   **Purpose:** Provides a basic concrete implementation of `BaseEmotionModule`. It uses a VAD (Valence, Arousal, Dominance) model for internal emotional state and simple rule-based appraisal.
+    *   **Functionality:**
+        *   `appraise_situation`: Updates VAD state based on simplified rules for event types like goal status changes or novel external events. Maps VAD to a categorical emotion.
+        *   `get_current_emotion`: Returns current VAD state and mapped categorical emotion.
+        *   `express_emotion`: Returns a dictionary representing the current emotion for expression (conceptual).
+        *   `get_module_status`: Reports current VAD state, categorical emotion, and appraisal log count.
+    *   **Usage:** Suitable for simulations requiring a basic emotion model that reacts to events and can provide an internal emotional context to other modules.
+
+12. **[`ConcretePlanningAndDecisionMakingModule`](concrete_planning_decision_making_module.py)** ([Tests](tests/test_concrete_planning_decision_making_module.py)):
+    *   **Implements:** `BasePlanningAndDecisionMakingModule`
+    *   **Purpose:** Provides a basic concrete implementation for planning and decision making. It uses predefined plan templates and simple scoring for evaluation.
+    *   **Functionality:**
+        *   `create_plan`: Selects a plan from internal templates based on goal description or generates a default plan.
+        *   `evaluate_plan`: Scores plans based on step count, conceptual risk, and ethical flags.
+        *   `select_action_or_plan`: Chooses the plan with the highest score from a list of evaluations.
+        *   `get_module_status`: Reports counts of templates, evaluated plans, and the last selected plan ID.
+    *   **Usage:** Suitable for simulations requiring simple, template-based planning and decision logic, or as a foundation for more sophisticated planning algorithms.
+
+13. **[`ConcreteSelfModelModule`](concrete_self_model_module.py)** ([Tests](tests/test_concrete_self_model_module.py)):
+    *   **Implements:** `BaseSelfModelModule`
+    *   **Purpose:** Provides a basic concrete implementation for the Self-Model. It manages a dictionary of self-attributes and a predefined list of ethical rules.
+    *   **Functionality:**
+        *   `get_self_representation`: Retrieves all or specific parts of the agent's attributes (e.g., capabilities, limitations, operational state, personality).
+        *   `update_self_representation`: Modifies existing attributes or adds new ones. Handles basic list and dictionary merging for specific known attributes.
+        *   `evaluate_self_performance`: Placeholder that logs performance evaluation requests.
+        *   `get_ethical_framework`: Returns a predefined list of ethical principles.
+        *   `get_module_status`: Reports current operational state, confidence, and counts of ethical rules/performance logs.
+    *   **Usage:** Suitable for simulations requiring a basic representation of an agent's understanding of itself, its capabilities, and its ethical guidelines.
+
 ## Future Development
 
 The CML will be expanded to include interfaces and foundational implementations for other core PiaAGI cognitive modules, such as:
