@@ -33,7 +33,7 @@ To engage with the PiaAGI project, we recommend the following:
 4.  **Discover AGI Research Tools:** Explore the **[`PiaAGI_Hub/`](PiaAGI_Hub/)** directory. This new section contains:
     *   Conceptual design documents for a suite of Python-based tools:
         *   **PiaSE (PiaAGI Simulation Environment):** For testing agents in dynamic environments.
-        *   **PiaCML (PiaAGI Cognitive Module Library):** For constructing agent cognitive modules. This library now includes defined interfaces for core modules such as Perception, Motivation, Emotion, Planning, Self-Model, and various memory systems. More details can be found in the [PiaAGI_Hub/cognitive_module_library/README.md](PiaAGI_Hub/cognitive_module_library/README.md).
+        *   **PiaCML (PiaAGI Cognitive Module Library):** For constructing agent cognitive modules. This library now includes defined interfaces for core modules such as Perception, Motivation, Emotion, Planning, Self-Model, and various memory systems. More details can be found in the [PiaAGI_Hub/PiaCML/README.md](PiaAGI_Hub/PiaCML/README.md).
         *   **PiaAVT (PiaAGI Agent Analysis & Visualization Toolkit):** For analyzing agent behavior and internal states.
         *   **PiaPES (PiaAGI Prompt Engineering Suite):** For designing Guiding Prompts and Developmental Scaffolding.
     *   An initial **MVP (Minimal Viable Product)** implementation for the **PiaPES Prompt Templating Engine** located in `PiaAGI_Hub/PiaPES/prompt_engine_mvp.py` with its `USAGE.md`.

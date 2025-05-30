@@ -47,6 +47,14 @@ This initial version of the CML provides abstract base classes for the following
     *   **Purpose:** Maintains a dynamic representation of the AGI itself, including its capabilities, limitations, internal states, interaction history, performance, and ethical framework. Crucial for metacognition, self-awareness, and self-improvement.
     *   **PiaAGI.md Sections:** 4.1.10 (Self-Model Module).
 
+9.  **`learning_module.py` (`BaseLearningModule`)**:
+    *   **Purpose:** Responsible for acquiring new knowledge and skills, adapting existing representations, and improving performance over time. It encompasses various learning paradigms and interacts with multiple cognitive modules.
+    *   **PiaAGI.md Sections:** 3.1.3 (Learning Theories and Mechanisms for AGI), 4.1.5 (Learning Module(s)).
+
+10. **`behavior_generation_module.py` (`BaseBehaviorGenerationModule`)**:
+    *   **Purpose:** Translates abstract action selections or plans into concrete, executable behaviors, such as linguistic output (via Communication Module), tool use, or physical actions.
+    *   **PiaAGI.md Sections:** 4.1.9 (Behavior Generation Module (Action Execution)).
+
 ## Concrete Implementations
 
 This section lists available concrete implementations of the abstract module interfaces.
@@ -66,8 +74,6 @@ This section lists available concrete implementations of the abstract module int
 
 The CML will be expanded to include interfaces and foundational implementations for other core PiaAGI cognitive modules, such as:
 *   Attention Module (potentially integrated more deeply with Perception and Working Memory)
-*   Learning Module(s) (various types, e.g., reinforcement, supervised, unsupervised)
-*   Behavior Generation Module
 *   Theory of Mind (ToM) / Social Cognition Module
 *   Communication Module (for language processing and generation)
 *   World Model (though this might be more of a data structure and service used by many modules)
