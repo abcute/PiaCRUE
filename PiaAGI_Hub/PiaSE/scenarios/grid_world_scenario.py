@@ -23,27 +23,46 @@ if project_root_dir not in sys.path:
 
 from PiaAGI_Hub.PiaSE.core_engine.basic_engine import BasicSimulationEngine
 from PiaAGI_Hub.PiaSE.environments.grid_world import GridWorld
-from PiaAGI_Hub.PiaSE.agents.basic_grid_agent import BasicGridAgent
+# from PiaAGI_Hub.PiaSE.agents.basic_grid_agent import BasicGridAgent # Comment out or remove if only using QLearningAgent
+from PiaAGI_Hub.PiaSE.agents.q_learning_agent import QLearningAgent
 from PiaAGI_Hub.PiaSE.core_engine.interfaces import PiaSEEvent
 
 def run_grid_world_scenario():
     """
-    Sets up and runs a simple scenario in the GridWorld environment
-    with BasicGridAgents and a BasicSimulationEngine.
+    Sets up and runs a scenario in the GridWorld environment
+    with a QLearningAgent and a BasicSimulationEngine.
     """
-    print("--- Starting Grid World Scenario ---")
+    print("--- Starting Grid World Q-Learning Scenario ---")
 
     # 1. Instantiate Environment
     print("\n[SCENARIO] Initializing GridWorld environment...")
-    walls = [(1, 0), (1, 1), (1, 2), (5, 5), (5, 6), (6, 5), (6,6)]
-    # Define agent start positions for the environment, so it knows where to place them on reset/init
-    agent_initial_positions = {
-        "Agent_Random": (0, 0),
-        "Agent_GoalSeeker": (0, 4)
-    }
-    grid_environment = GridWorld(width=10, height=10, walls=walls, agent_start_positions=agent_initial_positions)
-    print(f"[SCENARIO] GridWorld created. Size: {grid_environment.width}x{grid_environment.height}. Walls at: {grid_environment.walls}")
-    print(f"[SCENARIO] Initial agent positions in environment config: {grid_environment.agent_start_positions}")
+    grid_width = 5
+    grid_height = 5
+    # Define a goal position for the Q-learning agent
+    goal = (grid_width - 1, grid_height - 1) # e.g., bottom-right corner
+    walls = [(1,1), (1,2), (2,1), (3,3)] # Some walls
+    start_pos_q_agent = (0,0)
+
+    # Ensure goal is not a wall
+    if goal in walls:
+        print(f"[SCENARIO] Error: Goal position {goal} is a wall. Scenario cannot proceed logically.")
+        return
+
+    # Ensure start position is not a wall
+    if start_pos_q_agent in walls:
+        print(f"[SCENARIO] Error: Start position {start_pos_q_agent} for Q-agent is a wall. Scenario cannot proceed logically.")
+        return
+
+
+    grid_environment = GridWorld(
+        width=grid_width,
+        height=grid_height,
+        walls=walls,
+        goal_position=goal,
+        agent_start_positions={"q_agent_1": start_pos_q_agent} # Define start for the Q-agent
+    )
+    print(f"[SCENARIO] GridWorld created. Size: {grid_width}x{grid_height}. Goal: {goal}. Walls: {walls}")
+    print(f"[SCENARIO] Q-Agent start position: {start_pos_q_agent}")
 
 
     # 2. Instantiate Simulation Engine
@@ -51,45 +70,31 @@ def run_grid_world_scenario():
     engine = BasicSimulationEngine(environment=grid_environment)
     print("[SCENARIO] BasicSimulationEngine created.")
 
-    # 3. Instantiate Agents
-    print("\n[SCENARIO] Creating agents...")
-    agent1_id = "Agent_Random"
-    agent1 = BasicGridAgent(policy="random")
-    # agent1.set_id(agent1_id) # Engine will call set_id upon registration
+    # 3. Instantiate QLearningAgent
+    print("\n[SCENARIO] Creating QLearningAgent...")
+    q_agent_id = "q_agent_1"
+    # exploration_rate can be higher initially, e.g., 0.5, and then decayed over time.
+    # For a fixed number of steps, a moderate value like 0.1-0.2 might be okay.
+    q_agent = QLearningAgent(learning_rate=0.1, discount_factor=0.9, exploration_rate=0.2, default_q_value=0.0)
+    print(f"[SCENARIO] Agent '{q_agent_id}' created with lr={q_agent.lr}, gamma={q_agent.gamma}, epsilon={q_agent.epsilon}")
 
-    agent2_id = "Agent_GoalSeeker"
-    # Goal for Agent_GoalSeeker, e.g., bottom-right corner
-    # Ensure goal is not a wall, or agent might get stuck based on simple logic
-    goal_pos = (grid_environment.width - 1, grid_environment.height - 1) 
-    if grid_environment.grid[goal_pos[1]][goal_pos[0]] == 1: # if goal is a wall
-        print(f"[SCENARIO] Warning: Chosen goal {goal_pos} is a wall. Agent may not reach it.")
-    agent2 = BasicGridAgent(policy="goal_oriented", goal=goal_pos)
-    # agent2.set_id(agent2_id) # Engine will call set_id
-
-    print(f"[SCENARIO] Agent '{agent1_id}' created with policy: {agent1.policy}")
-    print(f"[SCENARIO] Agent '{agent2_id}' created with policy: {agent2.policy}, goal: {agent2.goal}")
-
-    # 4. Register Agents with the Engine
-    print("\n[SCENARIO] Registering agents with the engine...")
-    engine.register_agent(agent1_id, agent1)
-    engine.register_agent(agent2_id, agent2)
+    # 4. Register QLearningAgent with the Engine
+    print("\n[SCENARIO] Registering QLearningAgent with the engine...")
+    engine.register_agent(q_agent_id, q_agent)
     print(f"[SCENARIO] Agents registered. Current agents in engine: {list(engine.agents.keys())}")
-    
-    # Ensure agent positions are correctly set in the environment after registration
-    # The GridWorld init already uses agent_start_positions if provided.
-    # If agents were added to the engine without pre-defining in GridWorld's agent_start_positions,
-    # we might need to call grid_environment.add_agent() or ensure engine.initialize() handles it.
-    # Our BasicSimulationEngine.initialize calls environment.reset(), which should handle agent placement.
 
-    # 5. Initialize the Engine (e.g., reset environment, setup agents)
-    print("\n[SCENARIO] Initializing the simulation engine (calls environment.reset)...")
-    engine.initialize() # This calls environment.reset()
+    # 5. Initialize the Engine
+    # This will now also call agent.initialize_q_table() and agent.perceive() for the QLearningAgent
+    # using the logic added to BasicSimulationEngine.initialize()
+    print("\n[SCENARIO] Initializing the simulation engine (calls env.reset, agent.perceive, agent.initialize_q_table)...")
+    engine.initialize()
     print("[SCENARIO] Engine initialized.")
     print(f"[SCENARIO] Environment state after init: {engine.get_environment_state()}")
+    print(f"[SCENARIO] Q-Agent initial Q-table for state {q_agent.current_state}: {q_agent.q_table.get(q_agent.current_state)}")
 
 
-    # 6. Run the Simulation
-    num_simulation_steps = 20
+    # 6. Run the Simulation for more steps to allow for learning
+    num_simulation_steps = 2000 # Increased steps for Q-learning
     print(f"\n[SCENARIO] Running simulation for {num_simulation_steps} steps...")
     engine.run_simulation(num_steps=num_simulation_steps)
     print("\n[SCENARIO] Simulation finished.")
@@ -98,22 +103,50 @@ def run_grid_world_scenario():
     print("\n[SCENARIO] Final environment state:")
     final_state = engine.get_environment_state()
     print(final_state)
-    for agent_id in engine.agents.keys():
-        print(f"Agent '{agent_id}' final position: {final_state['all_agent_positions'].get(agent_id)}")
-        if agent_id == agent2_id and agent2.goal:
-             if final_state['all_agent_positions'].get(agent_id) == agent2.goal:
-                 print(f"Agent '{agent_id}' successfully reached its goal {agent2.goal}!")
-             else:
-                 print(f"Agent '{agent_id}' did not reach its goal {agent2.goal}. Final position: {final_state['all_agent_positions'].get(agent_id)}")
+    print(f"Agent '{q_agent_id}' final position: {final_state['all_agent_positions'].get(q_agent_id)}")
+    if final_state['all_agent_positions'].get(q_agent_id) == goal:
+        print(f"Agent '{q_agent_id}' successfully reached its goal {goal}!")
+    else:
+        print(f"Agent '{q_agent_id}' did not reach its goal {goal}. Final position: {final_state['all_agent_positions'].get(q_agent_id)}")
+
+    # Print Q-table information
+    print("\n--- Q-Learning Agent's Q-Table (sample) ---")
+    q_table_sample_count = 0
+    for state, actions in list(q_agent.q_table.items()):
+        if q_table_sample_count >= 10: # Print for first 10 states with non-default values
+            # Check if any action has a non-default Q-value
+            if any(q_val != q_agent.default_q for q_val in actions.values()):
+                 print(f"State {state}:")
+                 for action, q_val in actions.items():
+                     if q_val != q_agent.default_q : # Only print actions that were updated
+                         print(f"  Action {action}: {q_val:.3f}")
+                 q_table_sample_count +=1
+            if q_table_sample_count > 25: # Hard limit on total states printed to avoid excessive output
+                print("... (output truncated, many states in Q-table)")
+                break
+        else: # Print first few states regardless of values
+            print(f"State {state}:")
+            for action, q_val in actions.items():
+                print(f"  Action {action}: {q_val:.3f}")
+            q_table_sample_count += 1
 
 
-    # Example of posting an event
-    print("\n[SCENARIO] Posting a sample event...")
-    sample_event = PiaSEEvent() # Assuming PiaSEEvent can be generic
-    # If PiaSEEvent has attributes: sample_event = PiaSEEvent(type="scenario_end", data={"message": "Simulation cycle complete"})
-    engine.post_event(sample_event)
+    # Example of Q-values for states near the goal
+    # Note: State representation in Q-table is agent's position tuple, e.g., (x,y)
+    if goal in q_agent.q_table:
+       print(f"\nQ-values for goal state {goal}: {q_agent.q_table[goal]}")
 
-    print("\n--- Grid World Scenario Finished ---")
+    # Example: print Q-values for state (0,0) if it exists
+    if (0,0) in q_agent.q_table:
+        print(f"Q-values for start state (0,0): {q_agent.q_table[(0,0)]}")
+
+
+    # Example of posting an event (optional)
+    # print("\n[SCENARIO] Posting a sample event...")
+    # sample_event = PiaSEEvent()
+    # engine.post_event(sample_event)
+
+    print("\n--- Grid World Q-Learning Scenario Finished ---")
 
 if __name__ == '__main__':
     run_grid_world_scenario()

@@ -75,6 +75,11 @@ class Environment(ABC):
         """Checks if the simulation or the agent's task is completed."""
         pass
 
+    @abstractmethod
+    def get_action_space(self) -> list:
+        """Gets the list of possible actions in the environment."""
+        pass
+
 class AgentInterface(ABC):
     """
     Abstract base class for an agent.
@@ -111,4 +116,19 @@ class AgentInterface(ABC):
         Allows the agent to learn from feedback received after an action.
         (e.g., reward, new state information)
         """
+        pass
+
+    @abstractmethod
+    def initialize_q_table(self, state: any, action_space: list):
+        """Initializes or re-initializes the Q-table for the agent."""
+        pass
+
+    @abstractmethod
+    def get_q_value(self, state: any, action: any) -> float:
+        """Retrieves the Q-value for a given state-action pair."""
+        pass
+
+    @abstractmethod
+    def update_q_value(self, state: any, action: any, reward: float, next_state: any, learning_rate: float, discount_factor: float, action_space: list):
+        """Updates the Q-value for a state-action pair using the Q-learning formula."""
         pass

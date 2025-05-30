@@ -15,8 +15,12 @@ Refer to the main PiaAGI documentation and [`PiaAGI_Hub/PiaAGI_Simulation_Enviro
 
 The components implemented in this initial phase include:
 - Core interfaces (`PiaSEEvent`, `SimulationEngine`, `Environment`, `AgentInterface`)
+- Updates to core interfaces to support learning agents.
 - A `BasicSimulationEngine`
 - A `GridWorld` environment
+- Modifications to `GridWorld` to support rewards and goal-oriented tasks.
 - A `BasicGridAgent`
+- A `QLearningAgent` capable of learning in GridWorld.
 - An example `grid_world_scenario.py`
 - Unit tests for `GridWorld` and `BasicGridAgent`.
+- Unit tests for `QLearningAgent`.

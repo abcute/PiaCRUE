@@ -26,7 +26,7 @@ class BasicGridAgent(AgentInterface):
 
         if self.policy == "goal_oriented" and self.goal is None:
             print(f"Warning: BasicGridAgent policy is 'goal_oriented' but no goal was provided. Agent will act randomly.")
-        
+
         self.available_actions = ["N", "S", "E", "W", "Stay"]
         print(f"BasicGridAgent '{self.agent_id}' initialized with policy: {self.policy}, goal: {self.goal}")
 
@@ -68,7 +68,7 @@ class BasicGridAgent(AgentInterface):
         if not isinstance(self.current_observation, dict) or 'agent_position' not in self.current_observation:
             print(f"Warning: Agent '{self.agent_id}' received an unexpected observation format: {self.current_observation}. Acting randomly.")
             return random.choice(self.available_actions)
-            
+
         current_pos: Tuple[int, int] = self.current_observation['agent_position']
 
         if self.policy == "goal_oriented" and self.goal:
@@ -90,14 +90,14 @@ class BasicGridAgent(AgentInterface):
                     return "N"
             elif dx == 0 and dy == 0: # Agent is at the goal
                 return "Stay" # Or some other action indicating goal reached
-            
+
             # If dx == dy and not zero, can choose randomly or prioritize one axis
             # For simplicity, let's prioritize E/W then N/S if equally distant
             if dx > 0: return "E"
             if dx < 0: return "W"
             if dy > 0: return "S"
             if dy < 0: return "N"
-            
+
             return "Stay" # Should ideally not be reached if goal is not current_pos
 
         # Default to random policy if not goal-oriented or goal not set/reached
@@ -109,9 +109,13 @@ class BasicGridAgent(AgentInterface):
         For this basic agent, it just prints the feedback.
 
         Args:
-            feedback (Any): Feedback from the environment (e.g., new state, reward).
+            feedback (Any): Feedback from the environment. For BasicGridAgent, this is not used for learning.
+                            It might be a tuple like (reward, new_observation) from the engine.
         """
-        print(f"Agent '{self.agent_id}' received feedback: {feedback}")
+        # BasicGridAgent does not learn from rewards in this version.
+        # It can optionally print the feedback if needed for debugging.
+        # print(f"Agent '{self.agent_id}' received feedback: {feedback}")
+        pass
 
 if __name__ == '__main__':
     # Example Usage:
@@ -125,7 +129,7 @@ if __name__ == '__main__':
     # Simulate perception
     mock_obs_random = {"agent_position": (0, 0), "grid_view": [[0,0],[0,0]]}
     random_agent.perceive(mock_obs_random)
-    
+
     # Simulate a few actions
     print(f"\n{random_agent.get_id()} (Random Policy) actions:")
     for _ in range(5):
@@ -155,19 +159,19 @@ if __name__ == '__main__':
     for i in range(8): # Max steps to reach goal in 3,3 (or stay if reached)
         action = goal_agent.act()
         print(f"Step {i+1}: Position {mock_obs_goal['agent_position']}, Action: {action}")
-        
+
         current_x, current_y = mock_obs_goal["agent_position"]
         if action == "N": mock_obs_goal["agent_position"] = (current_x, current_y - 1)
         elif action == "S": mock_obs_goal["agent_position"] = (current_x, current_y + 1)
         elif action == "E": mock_obs_goal["agent_position"] = (current_x + 1, current_y)
         elif action == "W": mock_obs_goal["agent_position"] = (current_x - 1, current_y)
-        
+
         goal_agent.perceive(mock_obs_goal) # Agent perceives new position
 
         if mock_obs_goal["agent_position"] == goal_agent.goal and action == "Stay":
             print(f"Goal {goal_agent.goal} reached!")
             break
-    
+
     # Test learn method
     goal_agent.learn("Achieved goal with 100 points.")
 
