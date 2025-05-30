@@ -1,0 +1,28 @@
+[DEFAULT]
+# Default LLM provider and settings
+# Options for LLM_PROVIDER: OpenAI, Anthropic, HuggingFace_Hub, Custom_API, etc.
+LLM_PROVIDER = OpenAI
+DEFAULT_MODEL_NAME = gpt-3.5-turbo
+
+[OpenAI]
+API_KEY = YOUR_OPENAI_API_KEY_HERE
+# Optional: Specify a default model for OpenAI, overrides DEFAULT_MODEL_NAME if LLM_PROVIDER is OpenAI
+# MODEL_NAME = gpt-4o
+# ORGANISATION_ID = YOUR_OPENAI_ORG_ID_IF_APPLICABLE
+
+[Anthropic]
+API_KEY = YOUR_ANTHROPIC_API_KEY_HERE
+# Optional: Specify a default model for Anthropic
+# MODEL_NAME = claude-3-opus-20240229
+
+[HuggingFace_Hub]
+# For models hosted on Hugging Face Hub, typically uses an API token
+API_TOKEN = YOUR_HUGGINGFACE_API_TOKEN_HERE
+# Example REPO_ID for a specific model:
+# REPO_ID = google/flan-t5-xxl
+
+[Custom_API]
+# For a self-hosted or other custom LLM API
+API_ENDPOINT_URL = YOUR_CUSTOM_API_URL_HERE
+API_KEY = YOUR_CUSTOM_API_KEY_IF_NEEDED
+# MODEL_NAME = your_model_identifier_for_custom_api

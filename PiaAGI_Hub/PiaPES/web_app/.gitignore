@@ -1,0 +1,11 @@
+# Ignore user-specific LLM configuration
+llm_config.ini
+
+# Ignore prompt files created by users, unless they are examples
+# It's generally better to manage actual prompt data outside the repo or
+# in a dedicated data store if they are not meant to be versioned with the code.
+# For this MVP, users might store them here, so we provide an example of ignoring them.
+# prompt_files/*.json
+# !prompt_files/example_*.json
+# prompt_files/*.curriculum.json
+# !prompt_files/my_test_*.curriculum.json

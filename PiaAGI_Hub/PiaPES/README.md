@@ -84,21 +84,6 @@ or from within the `PiaAGI_Hub/PiaPES` directory:
 python -m unittest discover tests
 ```
 
-## Roadmap / Future Development
-
-The `prompt_engine_mvp.py` script is the first step towards a more comprehensive PiaAGI Prompt Engineering Suite. The broader conceptual design, including features like a dedicated Prompt Editor/IDE, Cognitive Configuration GUI, advanced version control integration, a Prompt Evaluation Module, and enhanced Collaboration Features, is detailed in the main PiaPES design document.
-
-## Links
-
-*   **Detailed MVP Usage:** [PiaAGI_Hub/PiaPES/USAGE.md](./USAGE.md)
-*   **Full Conceptual Design for PiaPES:** [PiaAGI_Hub/PiaAGI_Prompt_Engineering_Suite.md](../PiaAGI_Prompt_Engineering_Suite.md)
-*   **Unit Tests:** [PiaAGI_Hub/PiaPES/tests/](./tests/)
-
----
-
-This README provides an overview of the PiaPES MVP. We encourage users to explore the `prompt_engine_mvp.py` script and the detailed `USAGE.md` for practical application.
-
-
 ## Web Interface (MVP)
 
 A basic Model-View-Controller (MVC) style web interface is available to provide a user-friendly way to interact with some of the core functionalities of the PiaPES `prompt_engine_mvp.py`.
@@ -107,6 +92,8 @@ A basic Model-View-Controller (MVC) style web interface is available to provide 
 The web interface aims to simplify the creation, viewing, editing, and management of PiaAGI prompts for users who may prefer a graphical interface.
 
 ### Running the Web Application
+*(For detailed setup, see the "PiaPES WebApp Deployment Guide" section below.)*
+
 1.  Navigate to the web application directory:
     ```bash
     cd PiaAGI_Hub/PiaPES/web_app
@@ -161,7 +148,7 @@ The web interface aims to simplify the creation, viewing, editing, and managemen
     *   **Important:** Step editing (adding, removing, or modifying existing steps) for an existing curriculum is **not** supported via this specific edit metadata form; steps are preserved as is. Full step management requires editing the JSON file directly or deleting and recreating the curriculum via the UI.
 
 ### Storage
-Prompt files managed by this web interface are stored as `.json` files in the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory.
+Prompt and curriculum files managed by this web interface are stored as `.json` or `.curriculum.json` files in the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory.
 
 ### Running Web Application Tests
 Unit and integration tests for the Flask backend are located in `PiaAGI_Hub/PiaPES/web_app/tests/`. To run them:
@@ -173,3 +160,97 @@ Unit and integration tests for the Flask backend are located in `PiaAGI_Hub/PiaP
 
 ### Further Design Details
 For more detailed information on the conceptual design of this web interface, including API endpoints and page mockups, refer to the [PiaPES Web Interface Design Document](./web_interface_design.md).
+
+---
+
+## PiaPES WebApp Deployment Guide
+
+### Introduction
+This guide provides instructions to run the PiaPES WebApp locally for development and testing purposes.
+
+### Prerequisites
+*   Python 3.7+
+*   Git (for cloning the repository, if you haven't already)
+*   Access to a command line/terminal.
+
+### Setup Steps
+
+1.  **Clone the Repository (if not already done):**
+    If you don't have the project, clone it from its source:
+    ```bash
+    git clone <repository_url>
+    cd <path_to_PiaAGI_repository_root>/PiaAGI_Hub/PiaPES/web_app/
+    ```
+    If you already have the repository, navigate to the web application's directory:
+    ```bash
+    cd <path_to_PiaAGI_repository_root>/PiaAGI_Hub/PiaPES/web_app/
+    ```
+    *(Ensure `<path_to_PiaAGI_repository_root>` is replaced with the actual path to the root of the cloned PiaAGI project).*
+
+2.  **Create a Python Virtual Environment:**
+    It's highly recommended to use a virtual environment to manage dependencies. From within the `PiaAGI_Hub/PiaPES/web_app/` directory:
+    ```bash
+    python -m venv venv
+    ```
+
+3.  **Activate the Virtual Environment:**
+    *   On Windows:
+        ```bash
+        venv\Scripts\activate
+        ```
+    *   On macOS and Linux:
+        ```bash
+        source venv/bin/activate
+        ```
+    You should see `(venv)` at the beginning of your terminal prompt.
+
+4.  **Install Dependencies:**
+    Make sure you are still in the `PiaAGI_Hub/PiaPES/web_app/` directory where `requirements.txt` is located.
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+### Running the Web Application
+
+1.  Ensure your virtual environment is activated and you are in the `PiaAGI_Hub/PiaPES/web_app/` directory.
+2.  Run the Flask application:
+    ```bash
+    python app.py
+    ```
+3.  You should see output similar to this in your terminal:
+    ```
+     * Serving Flask app 'app'
+     * Debug mode: on
+     * Running on http://127.0.0.1:5001/ (Press CTRL+C to quit)
+    ```
+4.  Open your web browser and navigate to `http://127.0.0.1:5001/`.
+
+### Using the Application
+*   The application's dashboard will show lists of prompts and curricula.
+*   Prompt and curriculum files are stored as `.json` (for prompts) or `.curriculum.json` (for curricula) files in the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory. The application will list any compatible files found there.
+*   You can create new prompts and curricula using the web interface. These will be saved into the `prompt_files/` directory.
+*   For more details on using the features, refer to the "Basic Usage" section under "Web Interface (MVP)" above.
+
+### Stopping the Application
+*   To stop the Flask development server, go to the terminal where it's running and press `Ctrl+C`.
+
+### Troubleshooting
+*   **Import Errors for `prompt_engine_mvp`:** If you encounter import errors related to `prompt_engine_mvp` when running `python app.py`, ensure:
+    1.  You are running the command from the `PiaAGI_Hub/PiaPES/web_app/` directory.
+    2.  The `prompt_engine_mvp.py` file is located at `PiaAGI_Hub/PiaPES/prompt_engine_mvp.py`.
+    The `app.py` script includes logic to modify `sys.path` to correctly locate `prompt_engine_mvp.py` relative to its own position. This should generally handle imports correctly when `app.py` is run directly from its directory. If running from a different context or if `PiaAGI_Hub` is not in your `PYTHONPATH`, issues might arise.
+
+## Roadmap / Future Development
+
+The `prompt_engine_mvp.py` script is the first step towards a more comprehensive PiaAGI Prompt Engineering Suite. The broader conceptual design, including features like a dedicated Prompt Editor/IDE, Cognitive Configuration GUI, advanced version control integration, a Prompt Evaluation Module, and enhanced Collaboration Features, is detailed in the main PiaPES design document.
+
+## Links
+
+*   **Detailed MVP Usage:** [PiaAGI_Hub/PiaPES/USAGE.md](./USAGE.md)
+*   **Full Conceptual Design for PiaPES:** [PiaAGI_Hub/PiaAGI_Prompt_Engineering_Suite.md](../PiaAGI_Prompt_Engineering_Suite.md)
+*   **Unit Tests (Prompt Engine):** [PiaAGI_Hub/PiaPES/tests/](./tests/)
+*   **Web Interface Design Document:** [PiaAGI_Hub/PiaPES/web_interface_design.md](./web_interface_design.md)
+
+---
+
+This README provides an overview of the PiaPES MVP. We encourage users to explore the `prompt_engine_mvp.py` script and the detailed `USAGE.md` for practical application.

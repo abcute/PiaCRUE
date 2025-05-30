@@ -4,39 +4,42 @@
 {% block content %}
     <h1>{{ form_title|default('Curriculum Form') }}</h1>
     <form id="curriculumForm">
-        <input type="hidden" id="form_mode" name="form_mode" value="{{ form_mode|default('create') }}">
-        <input type="hidden" id="current_filename" name="current_filename" value="{{ current_filename|default('') }}">
+        <fieldset>
+            <legend>Curriculum Metadata</legend>
+            <input type="hidden" id="form_mode" name="form_mode" value="{{ form_mode|default('create') }}">
+            <input type="hidden" id="current_filename" name="current_filename" value="{{ current_filename|default('') }}">
 
-        <div>
-            <label for="filename">Filename (must end with .curriculum.json):</label>
-            <input type="text" id="filename" name="filename" value="{{ curriculum_data.filename if curriculum_data else '' }}" required {% if form_mode == 'edit' %}readonly{% endif %}>
-            {% if form_mode == 'edit' %}<small>Filename cannot be changed during edit.</small>{% endif %}
-        </div>
+            <div>
+                <label for="filename">Filename (must end with .curriculum.json):</label>
+                <input type="text" id="filename" name="filename" value="{{ curriculum_data.filename if curriculum_data else '' }}" required {% if form_mode == 'edit' %}readonly{% endif %}>
+                {% if form_mode == 'edit' %}<small>Filename cannot be changed during edit.</small>{% else %}<small>This will be the name of the new file.</small>{% endif %}
+            </div>
 
-        <div>
-            <label for="name">Curriculum Name:</label>
-            <input type="text" id="name" name="name" value="{{ curriculum_data.name if curriculum_data else '' }}" required>
-        </div>
+            <div>
+                <label for="name">Curriculum Name:</label>
+                <input type="text" id="name" name="name" value="{{ curriculum_data.name if curriculum_data else '' }}" required>
+            </div>
 
-        <div>
-            <label for="description">Description:</label>
-            <textarea id="description" name="description" rows="3">{{ curriculum_data.description if curriculum_data else '' }}</textarea>
-        </div>
+            <div>
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" rows="3">{{ curriculum_data.description if curriculum_data else '' }}</textarea>
+            </div>
 
-        <div>
-            <label for="target_developmental_stage">Target Developmental Stage:</label>
-            <input type="text" id="target_developmental_stage" name="target_developmental_stage" value="{{ curriculum_data.target_developmental_stage if curriculum_data else '' }}">
-        </div>
+            <div>
+                <label for="target_developmental_stage">Target Developmental Stage:</label>
+                <input type="text" id="target_developmental_stage" name="target_developmental_stage" value="{{ curriculum_data.target_developmental_stage if curriculum_data else '' }}">
+            </div>
 
-        <div>
-            <label for="version">Version:</label>
-            <input type="text" id="version" name="version" value="{{ curriculum_data.version if curriculum_data else '' }}">
-        </div>
+            <div>
+                <label for="version">Version:</label>
+                <input type="text" id="version" name="version" value="{{ curriculum_data.version if curriculum_data else '' }}">
+            </div>
 
-        <div>
-            <label for="author">Author:</label>
-            <input type="text" id="author" name="author" value="{{ curriculum_data.author if curriculum_data else '' }}">
-        </div>
+            <div>
+                <label for="author">Author:</label>
+                <input type="text" id="author" name="author" value="{{ curriculum_data.author if curriculum_data else '' }}">
+            </div>
+        </fieldset>
 
         <hr>
         <h2>Curriculum Steps</h2>
