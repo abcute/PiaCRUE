@@ -1,4 +1,16 @@
 # PiaAGI_Hub/PiaAVT/analyzers/basic_analyzer.py
+"""
+Provides fundamental analysis tools for log data within the PiaAVT toolkit.
+
+This module defines the `BasicAnalyzer` class, which offers methods to filter,
+summarize, and extract insights from lists of log entries. It supports common
+operations such as calculating descriptive statistics, generating time series,
+and counting unique values for specified fields in the log data.
+
+The definitions for `LogEntry` and `DEFAULT_TIMESTAMP_FORMAT` are assumed to be
+consistent with those in `core.logging_system`. For standalone use or testing,
+they are redefined here if not directly importable.
+"""
 from typing import List, Dict, Any, Optional, Union, Tuple
 from collections import Counter
 import statistics
@@ -8,16 +20,35 @@ from datetime import datetime
 # If core.logging_system.LogEntry is accessible, import it, otherwise redefine for clarity
 # from PiaAGI_Hub.PiaAVT.core.logging_system import LogEntry, DEFAULT_TIMESTAMP_FORMAT
 # For now, let's redefine for modularity in this step:
-LogEntry = Dict[str, Any]
-DEFAULT_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+LogEntry = Dict[str, Any] # Should match the definition in core.logging_system
+DEFAULT_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # Should match the definition in core.logging_system
 
 
 class BasicAnalyzer:
     """
     Provides basic analysis capabilities for PiaAVT log data.
+
+    This analyzer takes a list of log entries (assumed to be dictionaries)
+    and offers methods to filter them, calculate descriptive statistics on
+    numeric fields, extract time series data, and count unique values.
+    It handles string-based timestamps and can access nested data within
+    the 'data' field of log entries.
+
+    Attributes:
+        log_data (List[LogEntry]): The list of log entries this analyzer instance operates on.
     """
 
     def __init__(self, log_data: List[LogEntry]):
+        """
+        Initializes the BasicAnalyzer with a list of log entries.
+
+        Args:
+            log_data (List[LogEntry]): A list of dictionaries, where each dictionary
+                                     represents a log entry.
+
+        Raises:
+            ValueError: If `log_data` contains items that are not dictionaries.
+        """
         if not all(isinstance(entry, dict) for entry in log_data):
             raise ValueError("All items in log_data must be dictionaries (LogEntry).")
         self.log_data = log_data
@@ -28,8 +59,27 @@ class BasicAnalyzer:
                     start_time: Optional[datetime] = None,
                     end_time: Optional[datetime] = None) -> List[LogEntry]:
         """
-        Filters log entries based on source, event_type, and time range.
-        Timestamps in logs are expected to be strings; they will be parsed for comparison.
+        Filters log entries based on source, event_type, and/or a time range.
+
+        Log entries are filtered sequentially by the provided criteria.
+        Timestamp filtering requires log entries to have a 'timestamp' field
+        containing a string parsable by `DEFAULT_TIMESTAMP_FORMAT`.
+
+        Args:
+            source (Optional[str]): If provided, only logs with a matching 'source'
+                                    field are returned.
+            event_type (Optional[str]): If provided, only logs with a matching
+                                        'event_type' field are returned.
+            start_time (Optional[datetime]): If provided, only logs with a timestamp
+                                             greater than or equal to `start_time`
+                                             are returned.
+            end_time (Optional[datetime]): If provided, only logs with a timestamp
+                                           less than or equal to `end_time`
+                                           are returned.
+
+        Returns:
+            List[LogEntry]: A new list containing only the log entries that match
+                            all specified filter criteria.
         """
         filtered = self.log_data
 
@@ -65,10 +115,29 @@ class BasicAnalyzer:
                               start_time: Optional[datetime] = None,
                               end_time: Optional[datetime] = None) -> Optional[Dict[str, Any]]:
         """
-        Calculates descriptive statistics for a numeric data field within the 'data' dictionary of log entries.
-        'data_field_path' can be a single key or a list of keys for nested dictionaries (e.g., ["metrics", "score"]).
+        Calculates descriptive statistics for a numeric data field from filtered log entries.
 
-        Returns a dictionary with count, mean, median, min, max, stdev, or None if no data.
+        The target numeric field is specified by `data_field_path`, which can be a single
+        key (string) or a path of keys (list of strings) to access nested values within
+        the 'data' dictionary of each log entry. Only entries where this path leads to
+        a numeric value (int or float) are included in the statistics.
+
+        Args:
+            data_field_path (Union[str, List[str]]): The key or list of keys defining the
+                                                     path to the numeric field within the
+                                                     'data' dictionary of log entries.
+                                                     E.g., "reward" or ["performance", "score"].
+            source (Optional[str]): Filter logs by source before calculating stats.
+            event_type (Optional[str]): Filter logs by event_type before calculating stats.
+            start_time (Optional[datetime]): Filter logs by start_time before calculating stats.
+            end_time (Optional[datetime]): Filter logs by end_time before calculating stats.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing the calculated statistics
+                                      (keys: "count", "mean", "median", "min", "max",
+                                      "stdev", "sum"). Returns `None` if no numeric
+                                      data is found for the specified field and filters.
+                                      'stdev' is 0.0 if count < 2.
         """
         logs_to_analyze = self.filter_logs(source, event_type, start_time, end_time)
 
@@ -110,9 +179,25 @@ class BasicAnalyzer:
                         start_time: Optional[datetime] = None,
                         end_time: Optional[datetime] = None) -> List[Tuple[datetime, Any]]:
         """
-        Extracts time-series data (timestamp, value) for a specific field.
-        'data_field_path' specifies the key or path to the value within the 'data' dictionary.
-        Returns a list of (datetime, value) tuples.
+        Extracts time-series data (timestamp, value) for a specified field from filtered logs.
+
+        The `data_field_path` specifies the key (string) or path of keys (list of strings)
+        to access the desired value within the 'data' dictionary of each log entry.
+        The timestamp from the log entry's 'timestamp' field is parsed into a datetime object.
+
+        Args:
+            data_field_path (Union[str, List[str]]): The key or path to the field within
+                                                     the 'data' dictionary.
+            source (Optional[str]): Filter logs by source before extracting data.
+            event_type (Optional[str]): Filter logs by event_type before extracting data.
+            start_time (Optional[datetime]): Filter logs by start_time.
+            end_time (Optional[datetime]): Filter logs by end_time.
+
+        Returns:
+            List[Tuple[datetime, Any]]: A list of (datetime, value) tuples, sorted
+                                        chronologically by timestamp. Returns an empty
+                                        list if no data is found or if timestamps
+                                        are unparseable.
         """
         logs_to_analyze = self.filter_logs(source, event_type, start_time, end_time)
 
@@ -150,11 +235,34 @@ class BasicAnalyzer:
                             data_field_path: Optional[Union[str, List[str]]] = None
                            ) -> Counter:
         """
-        Counts occurrences of unique values for a specified top-level field (e.g., "source", "event_type")
-        or a field within the 'data' dictionary if is_data_field is True.
+        Counts occurrences of unique values for a specified field in filtered log entries.
 
-        If is_data_field is True, data_field_path must be provided.
-        Returns a Counter object.
+        The method can count values from a top-level field in the log entry (e.g., "source",
+        "event_type") or from a field within the 'data' dictionary. If the target field's
+        value is a list or dictionary itself, it's converted to its string representation
+        to ensure hashability for counting.
+
+        Args:
+            field_name (str): The name of the top-level field to count values from if
+                              `is_data_field` is False. If `is_data_field` is True,
+                              this argument is effectively a placeholder, and
+                              `data_field_path` is used instead.
+            source (Optional[str]): Filter logs by source before counting.
+            event_type (Optional[str]): Filter logs by event_type before counting.
+            start_time (Optional[datetime]): Filter logs by start_time.
+            end_time (Optional[datetime]): Filter logs by end_time.
+            is_data_field (bool): If True, `data_field_path` is used to find the field
+                                  within the 'data' dictionary. Defaults to False.
+            data_field_path (Optional[Union[str, List[str]]]): The key or path to the
+                                                               field within the 'data'
+                                                               dictionary. Required if
+                                                               `is_data_field` is True.
+
+        Returns:
+            collections.Counter: A Counter object mapping unique values to their frequencies.
+
+        Raises:
+            ValueError: If `is_data_field` is True but `data_field_path` is not provided.
         """
         logs_to_analyze = self.filter_logs(source, event_type, start_time, end_time)
 
@@ -188,9 +296,10 @@ class BasicAnalyzer:
 
         return Counter(values_to_count)
 
-# Example Usage (can be moved to an example script or notebook later)
+# Example Usage (primarily for demonstration or direct script testing)
+# This section will typically not be run when PiaAVT is used as a library.
 if __name__ == "__main__":
-    sample_logs: List[LogEntry] = [
+    sample_logs: List[LogEntry] = [ # type: ignore
         {"timestamp": "2024-01-15T10:00:00.000Z", "source": "PiaCML.Memory", "event_type": "Write", "data": {"size_kb": 10, "success": True}},
         {"timestamp": "2024-01-15T10:00:05.000Z", "source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "move", "reward": 0.5}},
         {"timestamp": "2024-01-15T10:00:10.000Z", "source": "PiaCML.Memory", "event_type": "Read", "data": {"query_time_ms": 150, "success": True}},

@@ -1,14 +1,35 @@
 # PiaAGI_Hub/PiaAVT/visualizers/state_visualizer.py
-from typing import List, Dict, Any, Optional
+"""
+Provides functionalities for creating textual visualizations of agent states.
+
+This module defines the `StateVisualizer` class, which is designed to take
+structured dictionary data (typically from a log entry's 'data' field) and
+format it into human-readable textual summaries. This is useful for inspecting
+complex internal states of an agent, such as its current goals or the contents
+of its working memory, without needing graphical displays.
+
+The methods often expect input data to follow certain structural conventions
+to produce meaningful output.
+"""
+from typing import List, Dict, Any, Optional # List is not used in this file, but kept for consistency if it was intended for future use.
 import json
 
 class StateVisualizer:
     """
-    Provides functionalities to visualize different aspects of an agent's state.
-    Initially focuses on textual representations.
+    Generates textual representations of various aspects of an agent's state.
+
+    This class offers methods to format complex dictionary data into structured
+    and human-readable strings. It's particularly useful for displaying snapshots
+    of an agent's internal components like goals or working memory based on
+    log data.
     """
 
     def __init__(self):
+        """
+        Initializes the StateVisualizer.
+        Currently, no specific configuration is required at initialization.
+        Future enhancements might include options for output formatting or verbosity.
+        """
         # Future: Initialize with configuration for output formats, etc.
         pass
 
@@ -17,10 +38,21 @@ class StateVisualizer:
                             title: str = "State Details",
                             indent: int = 2) -> str:
         """
-        Formats a dictionary representing a state into a human-readable string.
-        Uses JSON dumping for a structured view.
+        Formats a dictionary into a human-readable, pretty-printed string.
+
+        This method uses JSON dumping with indentation for a structured view.
+        It's a general utility for displaying any dictionary-based state information.
+
+        Args:
+            state_dict (Dict[str, Any]): The dictionary to format.
+            title (str): A title for the formatted output section.
+            indent (int): The indentation level for the JSON pretty printing.
+
+        Returns:
+            str: A string containing the formatted dictionary, prefixed with the title.
+                 Returns a message indicating no data if `state_dict` is empty or None.
         """
-        if not state_dict:
+        if not state_dict: # Handles None or empty dict
             return f"{title}: (No data provided or empty state)"
 
         header = f"--- {title} ---"
@@ -36,18 +68,26 @@ class StateVisualizer:
                                 goals_log_entry_data: Optional[Dict[str, Any]],
                                 title: str = "Current Agent Goals") -> str:
         """
-        Visualizes current goals from a log entry's data field.
-        Expects goals_log_entry_data to have a structure like:
-        {
-            "active_goals": [
-                {"id": "g1", "description": "Explore sector X", "priority": 0.9, "status": "active"},
-                {"id": "g2", "description": "Analyze sample Y", "priority": 0.7, "status": "pending"}
-            ],
-            "goal_hierarchy": {"g1": ["sg1.1", "sg1.2"]} # Optional
-        }
+        Creates a textual summary of an agent's current goals.
+
+        This method expects `goals_log_entry_data` to be a dictionary, typically
+        from a log entry's 'data' field, with specific keys:
+        - "active_goals" (List[Dict]): A list of currently active goals. Each goal
+          dictionary might have keys like "id", "description", "priority", "status".
+        - "goal_hierarchy" (Optional[Dict]): A dictionary representing parent-child
+          relationships between goals (e.g., {"parent_id": ["child_id1", "child_id2"]}).
+
+        Args:
+            goals_log_entry_data (Optional[Dict[str, Any]]): The dictionary containing
+                goal information. If None or malformed, a message indicating this
+                will be returned.
+            title (str): A title for the textual visualization.
+
+        Returns:
+            str: A formatted string summarizing the agent's goals.
         """
         if not goals_log_entry_data or not isinstance(goals_log_entry_data.get("active_goals"), list):
-            return self.format_dict_as_text({}, title=f"{title} (No valid goal data)")
+            return self.format_dict_as_text(state_dict={}, title=f"{title} (No valid goal data)")
 
         output_lines = [f"--- {title} ---"]
 
@@ -76,19 +116,27 @@ class StateVisualizer:
                                  wm_log_entry_data: Optional[Dict[str, Any]],
                                  title: str = "Working Memory State") -> str:
         """
-        Visualizes the state of Working Memory from a log entry's data field.
-        Expects wm_log_entry_data to have a structure like:
-        {
-            "active_elements": [
-                {"id": "e1", "content": "Percept: увидел красный мяч", "salience": 0.8, "type": "percept"},
-                {"id": "e2", "content": "Retrieved: LTM_concept_ball", "salience": 0.7, "type": "retrieval"}
-            ],
-            "central_executive_focus": "e1",
-            "capacity_used_percent": 60.0
-        }
+        Creates a textual summary of an agent's working memory (WM) contents.
+
+        This method expects `wm_log_entry_data` to be a dictionary, typically from a
+        log entry's 'data' field, with potential keys like:
+        - "active_elements" (List[Dict]): A list of items currently in WM. Each item
+          dictionary might have keys like "id", "content", "salience", "type".
+        - "central_executive_focus" (Optional[str]): ID of the element currently in focus.
+        - "capacity_used_percent" (Optional[float]): Percentage of WM capacity utilized.
+        Other fields in `wm_log_entry_data` will be displayed as additional details.
+
+        Args:
+            wm_log_entry_data (Optional[Dict[str, Any]]): The dictionary containing
+                WM information. If None or malformed, a message indicating this
+                will be returned.
+            title (str): A title for the textual visualization.
+
+        Returns:
+            str: A formatted string summarizing the working memory state.
         """
-        if not wm_log_entry_data:
-             return self.format_dict_as_text({}, title=f"{title} (No valid WM data)")
+        if not wm_log_entry_data: # Handles None or empty dict
+             return self.format_dict_as_text(state_dict={}, title=f"{title} (No valid WM data)")
 
         output_lines = [f"--- {title} ---"]
 
@@ -123,7 +171,8 @@ class StateVisualizer:
         output_lines.append(f"{'-' * len(title) * 2}") # Footer
         return "\n".join(output_lines)
 
-# Example Usage (can be moved to an example script or notebook later)
+# Example Usage (primarily for demonstration or direct script testing)
+# This section will typically not be run when PiaAVT is used as a library.
 if __name__ == "__main__":
     visualizer = StateVisualizer()
 
