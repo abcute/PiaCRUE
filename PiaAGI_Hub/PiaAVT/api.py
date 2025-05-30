@@ -23,11 +23,25 @@ except ImportError:
 
 class PiaAVTAPI:
     """
-    Main API Facade for interacting with the PiaAGI Agent Analysis & Visualization Toolkit.
-    Provides a simplified interface to load data, perform analyses, and generate visualizations.
+    Main API Facade for interacting with the PiaAGI Agent Analysis & Visualization Toolkit (PiaAVT).
+
+    This class provides a high-level interface to the toolkit's functionalities,
+    simplifying tasks such as loading log data, performing common analyses,
+    and generating visualizations. It orchestrates the underlying components:
+    LoggingSystem, BasicAnalyzer, TimeseriesPlotter, and StateVisualizer.
+
+    Attributes:
+        logging_system (LoggingSystem): Instance for log ingestion and storage.
+        analyzer (Optional[BasicAnalyzer]): Instance for log analysis; initialized after logs are loaded.
+        timeseries_plotter (TimeseriesPlotter): Instance for generating time-series plots.
+        state_visualizer (StateVisualizer): Instance for creating textual representations of agent states.
+        _active_log_file (Optional[str]): Path to the currently loaded log file.
     """
 
     def __init__(self):
+        """
+        Initializes the PiaAVTAPI, setting up instances of internal components.
+        """
         self.logging_system = LoggingSystem()
         self.analyzer: Optional[BasicAnalyzer] = None
         self.timeseries_plotter = TimeseriesPlotter()
@@ -36,8 +50,18 @@ class PiaAVTAPI:
 
     def load_logs_from_json(self, file_path: str, validate: bool = True) -> bool:
         """
-        Loads log data from a specified JSON file.
-        Returns True on success, False on failure.
+        Loads log data from a specified JSON file into the LoggingSystem.
+        If successful, it initializes the BasicAnalyzer with the loaded logs.
+        Clears any previously loaded logs before loading new ones.
+
+        Args:
+            file_path (str): The path to the JSON log file. The file should contain a
+                             list of log entry dictionaries.
+            validate (bool): Whether to validate log entries during ingestion according
+                             to the LoggingSystem's rules. Defaults to True.
+
+        Returns:
+            bool: True if logs were loaded and analyzer initialized successfully, False otherwise.
         """
         try:
             self.logging_system.clear_logs() # Clear previous logs
@@ -58,21 +82,42 @@ class PiaAVTAPI:
             return False
 
     def get_log_count(self) -> int:
-        """Returns the number of currently loaded log entries."""
+        """
+        Returns the total number of log entries currently loaded in the LoggingSystem.
+
+        Returns:
+            int: The count of loaded log entries.
+        """
         return self.logging_system.get_log_count()
 
     def get_all_logs(self) -> List[LogEntry]:
-        """Returns all loaded log entries."""
+        """
+        Retrieves all log entries currently loaded in the LoggingSystem.
+
+        Returns:
+            List[LogEntry]: A list of all loaded log entries.
+        """
         return self.logging_system.get_log_data()
 
     def get_active_log_file(self) -> Optional[str]:
-        """Returns the path of the currently loaded log file, if any."""
+        """
+        Returns the file path of the log file that was last successfully loaded.
+
+        Returns:
+            Optional[str]: The path to the active log file, or None if no file is active
+                           or if loading failed.
+        """
         return self._active_log_file
 
     def get_analyzer(self) -> Optional[BasicAnalyzer]:
         """
-        Returns the BasicAnalyzer instance for the currently loaded log data.
-        Returns None if no logs are loaded or if loading failed.
+        Provides access to the BasicAnalyzer instance associated with the currently loaded logs.
+        This allows for more direct or advanced use of the analyzer's methods if needed,
+        beyond the facade methods provided by this API class.
+
+        Returns:
+            Optional[BasicAnalyzer]: The BasicAnalyzer instance if logs are successfully loaded,
+                                     otherwise None.
         """
         if not self.analyzer:
             print("API Warning: No log data loaded. Please load logs using 'load_logs_from_json' first.")
@@ -84,12 +129,30 @@ class PiaAVTAPI:
                             data_field_path: Union[str, List[str]],
                             source: Optional[str] = None,
                             event_type: Optional[str] = None,
-                            start_time_str: Optional[str] = None, # Expects ISO format string
-                            end_time_str: Optional[str] = None    # Expects ISO format string
+                            start_time_str: Optional[str] = None,
+                            end_time_str: Optional[str] = None
                            ) -> Optional[Dict[str, Any]]:
         """
-        Facade to get descriptive statistics for a field.
-        Converts time strings to datetime objects.
+        Retrieves descriptive statistics for a specified numeric field within the log data.
+        This is a facade method that utilizes the BasicAnalyzer. Time strings are converted
+        to datetime objects for filtering.
+
+        Args:
+            data_field_path (Union[str, List[str]]): The key (string) or path of keys (list of strings)
+                                                     to the numeric field within each log entry's 'data'
+                                                     dictionary (e.g., "reward" or ["performance", "score"]).
+            source (Optional[str]): Filter logs by this source string before analysis.
+            event_type (Optional[str]): Filter logs by this event_type string before analysis.
+            start_time_str (Optional[str]): ISO format timestamp string (e.g., "2023-10-27T10:30:00.123Z")
+                                           to filter logs starting from this time (inclusive).
+            end_time_str (Optional[str]): ISO format timestamp string to filter logs up to this
+                                         time (inclusive).
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing statistics (keys like "mean",
+                                      "median", "min", "max", "count", "stdev", "sum"),
+                                      or None if no data is found for the given parameters
+                                      or an error occurs (e.g., analyzer not ready, bad time format).
         """
         if not self.analyzer:
             print("API Error: Analyzer not available. Load logs first.")
@@ -116,8 +179,22 @@ class PiaAVTAPI:
                                  end_time_str: Optional[str] = None
                                 ) -> List[Tuple[datetime, Any]]:
         """
-        Facade to get time series data for a field.
-        Converts time strings to datetime objects.
+        Extracts time-series data (timestamp, value) for a specified field from the logs.
+        This is a facade method that utilizes the BasicAnalyzer. Time strings are converted
+        to datetime objects for filtering.
+
+        Args:
+            data_field_path (Union[str, List[str]]): The key (string) or path of keys (list of strings)
+                                                     to the field within the log entry's 'data' dictionary.
+            source (Optional[str]): Filter logs by this source string.
+            event_type (Optional[str]): Filter logs by this event_type string.
+            start_time_str (Optional[str]): ISO format timestamp string for start time filter (inclusive).
+            end_time_str (Optional[str]): ISO format timestamp string for end time filter (inclusive).
+
+        Returns:
+            List[Tuple[datetime, Any]]: A list of (datetime, value) tuples, sorted chronologically.
+                                        Returns an empty list if no data is found for the parameters
+                                        or an error occurs (e.g., analyzer not ready, bad time format).
         """
         if not self.analyzer:
             print("API Error: Analyzer not available. Load logs first.")
@@ -147,7 +224,23 @@ class PiaAVTAPI:
                              output_file: Optional[str] = None,
                              show_plot: bool = True) -> None:
         """
-        Facade to directly plot a field's time series.
+        Generates and displays/saves a time-series plot for a specified field from the log data.
+        This method combines data extraction (using `get_timeseries_for_field`) and plotting
+        (via `TimeseriesPlotter`).
+
+        Args:
+            data_field_path (Union[str, List[str]]): Key or path to the field in the 'data' dictionary.
+            title (Optional[str]): Title for the plot. If None, a default title is generated
+                                   based on `data_field_path`.
+            y_label (Optional[str]): Label for the Y-axis. If None, defaults to `data_field_path`.
+            source (Optional[str]): Filter logs by this source string before plotting.
+            event_type (Optional[str]): Filter logs by this event_type string before plotting.
+            start_time_str (Optional[str]): ISO format timestamp string for start time filter.
+            end_time_str (Optional[str]): ISO format timestamp string for end time filter.
+            output_file (Optional[str]): If provided, the plot will be saved to this file path.
+            show_plot (bool): If True (default), the plot will be displayed (e.g., in a GUI window
+                              or inline in a notebook). Set to False for non-interactive environments
+                              or when only saving the file.
         """
         ts_data = self.get_timeseries_for_field(data_field_path, source, event_type, start_time_str, end_time_str)
         if not ts_data:
@@ -164,19 +257,46 @@ class PiaAVTAPI:
                                                  show_plot=show_plot)
 
     def display_formatted_dict(self, data_dict: Dict[str, Any], title: str = "Details") -> None:
-        """Facade to display a dictionary nicely using StateVisualizer."""
+        """
+        Displays a dictionary in a formatted, human-readable textual representation.
+        This is a facade for `StateVisualizer.format_dict_as_text`.
+
+        Args:
+            data_dict (Dict[str, Any]): The dictionary to be displayed.
+            title (str): A title for the displayed output section. Defaults to "Details".
+        """
         print(self.state_visualizer.format_dict_as_text(data_dict, title=title))
 
     def display_goals_from_log_entry(self, goals_log_data: Optional[Dict[str, Any]], title: str = "Agent Goals") -> None:
-        """Facade to display goals using StateVisualizer."""
+        """
+        Displays agent goal information from a log entry's data payload in a textual format.
+        This is a facade for `StateVisualizer.visualize_current_goals`.
+
+        Args:
+            goals_log_data (Optional[Dict[str, Any]]): The 'data' field of a log entry,
+                                                       expected to contain goal information
+                                                       (e.g., "active_goals", "goal_hierarchy").
+            title (str): A title for the displayed output. Defaults to "Agent Goals".
+        """
         print(self.state_visualizer.visualize_current_goals(goals_log_data, title=title))
 
     def display_wm_from_log_entry(self, wm_log_data: Optional[Dict[str, Any]], title: str = "Working Memory") -> None:
-        """Facade to display working memory using StateVisualizer."""
+        """
+        Displays agent working memory state from a log entry's data payload in a textual format.
+        This is a facade for `StateVisualizer.visualize_working_memory`.
+
+        Args:
+            wm_log_data (Optional[Dict[str, Any]]): The 'data' field of a log entry,
+                                                    expected to contain working memory information
+                                                    (e.g., "active_elements", "capacity_used_percent").
+            title (str): A title for the displayed output. Defaults to "Working Memory".
+        """
         print(self.state_visualizer.visualize_working_memory(wm_log_data, title=title))
 
 
 # Example Usage (demonstrates the API)
+# This section is intended for direct script execution demonstration and simple testing.
+# It creates a dummy log file, loads it via the API, and showcases some API functionalities.
 if __name__ == "__main__":
     # This example assumes you have a 'sample_logs.json' file in the same directory.
     # Create a dummy sample_logs.json for this example to run:
@@ -204,71 +324,95 @@ if __name__ == "__main__":
     # --- API DEMO ---
     api = PiaAVTAPI()
 
-    # Load logs
+    # 1. Load logs
+    print(f"Attempting to load logs from: {dummy_log_file}")
     if api.load_logs_from_json(dummy_log_file):
-        print(f"Logs loaded. Count: {api.get_log_count()}")
-        print(f"Active log file: {api.get_active_log_file()}")
+        print(f"Logs loaded successfully. Total entries: {api.get_log_count()}")
+        print(f"Active log file path: {api.get_active_log_file()}")
 
-        # Get analyzer and use it directly (optional)
-        analyzer = api.get_analyzer()
-        if analyzer:
-            source_counts = analyzer.count_unique_values("source")
-            print(f"\nSource counts via direct analyzer: {source_counts}")
+        # 2. Access analyzer directly (optional, for advanced use)
+        print("\n--- Direct Analyzer Access Example ---")
+        analyzer_instance = api.get_analyzer()
+        if analyzer_instance:
+            source_counts = analyzer_instance.count_unique_values("source")
+            api.display_formatted_dict(dict(source_counts), title="Log Source Counts (via direct analyzer)")
 
-        # Use facade methods for analysis
-        print("\n--- Facade Analysis ---")
+        # 3. Use facade methods for analysis
+        print("\n--- Facade Analysis Examples ---")
+        # Example: Statistics for 'reward' field from 'Action' events
         reward_stats = api.get_stats_for_field(data_field_path="reward", event_type="Action")
         if reward_stats:
-            api.display_formatted_dict(reward_stats, title="Reward Statistics (for Action events)")
+            api.display_formatted_dict(reward_stats, title="Reward Statistics (Action Events)")
 
-        size_stats = api.get_stats_for_field(data_field_path="size_kb", source="PiaCML.Memory", event_type="Write")
+        # Example: Statistics for 'size_kb' from 'PiaCML.Memory' source and 'Write' event type
+        size_stats = api.get_stats_for_field(
+            data_field_path="size_kb",
+            source="PiaCML.Memory",
+            event_type="Write"
+        )
         if size_stats:
-            api.display_formatted_dict(size_stats, title="Memory Write Size Statistics")
+            api.display_formatted_dict(size_stats, title="Memory Write Size (KB) Statistics")
 
-        # Use facade for plotting
-        print("\n--- Facade Plotting ---")
+        # 4. Use facade for plotting
+        print("\n--- Facade Plotting Examples ---")
+        # Plotting reward over time
         api.plot_field_over_time(
             data_field_path="reward",
             event_type="Action",
-            title="Agent Rewards Over Time",
+            title="Agent Rewards Over Time (Action Events)",
             y_label="Reward Value",
-            output_file="api_reward_plot.png", # Save the plot
-            show_plot=True # Set to False for non-GUI environments
+            output_file="api_reward_plot.png",
+            show_plot=False # Set to True for interactive display, False for automated runs
         )
-        print("Plotting 'api_reward_plot.png' requested.")
+        print(f"Plot 'api_reward_plot.png' requested. Check file if show_plot=False.")
 
+        # Plotting emotion valence over time
         api.plot_field_over_time(
             data_field_path="valence",
             source="PiaCML.Emotion",
             title="Emotion Valence Over Time",
-            y_label="Valence",
+            y_label="Valence (-1 to 1)",
             output_file="api_valence_plot.png",
-            show_plot=True
+            show_plot=False
         )
-        print("Plotting 'api_valence_plot.png' requested.")
+        print(f"Plot 'api_valence_plot.png' requested. Check file if show_plot=False.")
 
-        # Use facade for state visualization (using sample data from logs)
-        all_logs = api.get_all_logs()
-        goal_log_data = next((log['data'] for log in all_logs if log['event_type'] == "GoalUpdate"), None)
-        if goal_log_data:
-            print("\n--- Facade State Visualization (Goals) ---")
-            api.display_goals_from_log_entry(goal_log_data)
+        # 5. Use facade for state visualization (using sample data from the loaded logs)
+        print("\n--- Facade State Visualization Examples ---")
+        all_loaded_logs = api.get_all_logs()
 
-        wm_log_data = next((log['data'] for log in all_logs if log['source'] == "PiaCML.WorkingMemory"), None)
-        if wm_log_data:
-            print("\n--- Facade State Visualization (Working Memory) ---")
-            api.display_wm_from_log_entry(wm_log_data)
+        # Find a 'GoalUpdate' event to display goals
+        goal_event_data = next((log['data'] for log in all_loaded_logs if log['event_type'] == "GoalUpdate"), None)
+        if goal_event_data:
+            api.display_goals_from_log_entry(goal_event_data, title="Agent Goals from Log")
+        else:
+            print("No 'GoalUpdate' event found in sample logs for goal display example.")
+
+        # Find a 'PiaCML.WorkingMemory' state to display
+        wm_event_data = next((log['data'] for log in all_loaded_logs if log['source'] == "PiaCML.WorkingMemory" and log['event_type'] == "State"), None)
+        if wm_event_data:
+            api.display_wm_from_log_entry(wm_event_data, title="Working Memory State from Log")
+        else:
+            print("No 'WorkingMemory State' event found in sample logs for WM display example.")
 
     else:
-        print("Failed to load logs, API demo cannot proceed fully.")
+        print(f"ERROR: Failed to load logs from {dummy_log_file}. API demo cannot proceed fully.")
 
-    # Clean up dummy file
+    # Clean up the dummy log file and generated plots
     import os
     if os.path.exists(dummy_log_file):
         os.remove(dummy_log_file)
     # You might want to keep the image files for inspection
-    # if os.path.exists("api_reward_plot.png"): os.remove("api_reward_plot.png")
-    # if os.path.exists("api_valence_plot.png"): os.remove("api_valence_plot.png")
+    # In a real scenario, you might want to inspect the plots. For automated tests, removal is common.
+    files_to_remove = [dummy_log_file, "api_reward_plot.png", "api_valence_plot.png"]
+    for f_path in files_to_remove:
+        if os.path.exists(f_path):
+            try:
+                os.remove(f_path)
+                print(f"Cleaned up temporary file: {f_path}")
+            except OSError as e:
+                print(f"Error removing file {f_path}: {e}")
+
     print("\nAPI Demo Complete.")
 
 ```

@@ -1,27 +1,74 @@
 # PiaAGI_Hub/PiaAVT/core/logging_system.py
+"""
+Core module for logging and data ingestion within the PiaAVT toolkit.
+
+This module defines the standard structure for log entries, provides a system
+for ingesting logs (currently from JSON files), validating their format and content,
+and storing them in memory. It forms the foundation for data analysis and
+visualization tasks performed by other components of the PiaAVT.
+
+Key Components:
+    LogEntry (TypeAlias): Defines the expected dictionary structure for a single log entry.
+    DEFAULT_TIMESTAMP_FORMAT (str): The standard ISO 8601-like format for timestamps.
+    LogValidationError (Exception): Custom exception raised for issues during log validation.
+    LoggingSystem (class): Manages log ingestion, validation, storage, and access.
+"""
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional # Retain Optional for consistency if used elsewhere, though not in current file directly
 from datetime import datetime
 
 # Define a standard log entry structure (can be expanded)
 # For now, we'll use a dictionary, but Pydantic models are a good future enhancement for validation.
 LogEntry = Dict[str, Any]
+"""
+Type alias for a log entry. Expected to be a dictionary with at least
+the fields defined in `LoggingSystem.required_fields`.
+Example:
+    {
+        "timestamp": "2023-10-27T10:30:00.123Z",
+        "source": "module.submodule",
+        "event_type": "SpecificEvent",
+        "data": {"key": "value", "metric": 123}
+    }
+"""
 
 # --- Configuration ---
 # Consider moving to a dedicated config file or class later
 DEFAULT_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+"""
+Default string format for timestamps used in log entries and parsing.
+Follows a common ISO 8601 representation (YYYY-MM-DDTHH:MM:SS.sssZ).
+"""
 
 class LogValidationError(ValueError):
-    """Custom exception for log validation errors."""
+    """
+    Custom exception raised when a log entry fails validation.
+    This can occur due to missing required fields, incorrect data types,
+    or invalid formats (e.g., for timestamps).
+    Inherits from ValueError.
+    """
     pass
 
 class LoggingSystem:
     """
-    Core logging and data ingestion components for PiaAVT.
-    Handles log ingestion, validation, and basic storage.
+    Manages the ingestion, validation, and storage of agent log data.
+
+    This class provides the core functionality for handling log entries within PiaAVT.
+    It defines a standard structure for logs, validates incoming entries against this
+    structure, and stores them in an in-memory list. Logs can be added individually,
+    in batches, or loaded from JSON files.
+
+    Attributes:
+        log_data (List[LogEntry]): An in-memory list storing all validated log entries.
+        required_fields (List[str]): A list of field names that must be present in
+                                     every log entry.
     """
 
     def __init__(self):
+        """
+        Initializes the LoggingSystem with an empty log store and default required fields.
+        The required fields are currently: "timestamp", "source", "event_type", and "data".
+        """
         self.log_data: List[LogEntry] = []
         self.required_fields: List[str] = ["timestamp", "source", "event_type", "data"]
         # Optional: Define expected data types for fields for more robust validation
@@ -34,8 +81,23 @@ class LoggingSystem:
 
     def _validate_log_entry(self, entry: Dict[str, Any]) -> LogEntry:
         """
-        Validates a single log entry against required fields and basic format.
-        Raises LogValidationError if validation fails.
+        Validates a single log entry against required fields and basic format rules.
+
+        This internal method checks for:
+        - Presence of all fields listed in `self.required_fields`.
+        - Correct type and format for the 'timestamp' field (must be a string
+          parsable by `DEFAULT_TIMESTAMP_FORMAT`).
+        - Non-empty string for 'source' and 'event_type' fields.
+        - 'data' field must be a dictionary.
+
+        Args:
+            entry (Dict[str, Any]): The log entry dictionary to validate.
+
+        Returns:
+            LogEntry: The validated log entry (unchanged if validation passes).
+
+        Raises:
+            LogValidationError: If any validation check fails.
         """
         # Check for required fields
         for field in self.required_fields:
@@ -76,9 +138,20 @@ class LoggingSystem:
 
         return entry
 
-    def add_log_entry(self, entry: Dict[str, Any], validate: bool = True) -> None:
+    def add_log_entry(self, entry: LogEntry, validate: bool = True) -> None:
         """
-        Adds a single validated log entry to the internal storage.
+        Adds a single log entry to the internal storage.
+
+        By default, the entry is validated before being added. If validation is
+        disabled, the entry is added as-is (use with caution).
+
+        Args:
+            entry (LogEntry): The log entry to add.
+            validate (bool): If True (default), the entry is validated.
+                             If False, validation is skipped.
+
+        Raises:
+            LogValidationError: If `validate` is True and the entry fails validation.
         """
         if validate:
             validated_entry = self._validate_log_entry(entry)
@@ -86,10 +159,23 @@ class LoggingSystem:
         else:
             self.log_data.append(entry) # Use with caution, assumes data is pre-validated
 
-    def add_log_entries(self, entries: List[Dict[str, Any]], validate: bool = True) -> None:
+    def add_log_entries(self, entries: List[LogEntry], validate: bool = True) -> None:
         """
         Adds multiple log entries to the internal storage.
-        If validation fails for any entry, no entries from this batch are added (all-or-nothing).
+
+        If `validate` is True (default), all entries in the batch are validated first.
+        If any entry fails validation, a `LogValidationError` is raised, and no entries
+        from that batch are added (all-or-nothing behavior for validated additions).
+        If `validate` is False, all entries are added as-is.
+
+        Args:
+            entries (List[LogEntry]): A list of log entries to add.
+            validate (bool): If True (default), entries are validated.
+                             If False, validation is skipped.
+
+        Raises:
+            LogValidationError: If `validate` is True and any entry in the batch
+                                fails validation.
         """
         validated_batch: List[LogEntry] = []
         if validate:
@@ -105,7 +191,22 @@ class LoggingSystem:
     def load_logs_from_json_file(self, file_path: str, validate: bool = True) -> None:
         """
         Loads log entries from a JSON file.
-        The JSON file should contain a list of log entry objects.
+
+        The JSON file is expected to contain a single list, where each item in the
+        list is a dictionary representing a log entry. These entries are then added
+        via `add_log_entries`, respecting the `validate` flag.
+
+        Args:
+            file_path (str): The path to the JSON file containing log entries.
+            validate (bool): If True (default), entries loaded from the file are validated.
+                             If False, validation is skipped.
+
+        Raises:
+            FileNotFoundError: If the specified `file_path` does not exist.
+            json.JSONDecodeError: If the file content is not valid JSON.
+            LogValidationError: If the JSON content is not a list, or if `validate`
+                                is True and any log entry from the file fails validation.
+            Exception: Catches other potential errors during file operations or processing.
         """
         try:
             with open(file_path, 'r') as f:
@@ -131,18 +232,33 @@ class LoggingSystem:
             raise
 
     def get_log_data(self) -> List[LogEntry]:
-        """Returns all stored log data."""
+        """
+        Returns all log entries currently stored in the LoggingSystem.
+
+        Returns:
+            List[LogEntry]: A list containing all stored log entries.
+                           Returns an empty list if no logs are stored.
+        """
         return self.log_data
 
     def clear_logs(self) -> None:
-        """Clears all stored log data."""
+        """
+        Clears all log entries from the internal storage.
+        Resets `log_data` to an empty list.
+        """
         self.log_data = []
 
     def get_log_count(self) -> int:
-        """Returns the number of stored log entries."""
+        """
+        Returns the total number of log entries currently stored.
+
+        Returns:
+            int: The number of log entries.
+        """
         return len(self.log_data)
 
-# Example Usage (can be moved to an example script or notebook later)
+# Example Usage (primarily for demonstration or direct script testing)
+# This section will typically not be run when PiaAVT is used as a library.
 if __name__ == "__main__":
     logging_system = LoggingSystem()
 

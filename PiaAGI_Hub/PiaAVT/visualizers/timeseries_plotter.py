@@ -1,18 +1,41 @@
 # PiaAGI_Hub/PiaAVT/visualizers/timeseries_plotter.py
+"""
+Provides functionality for plotting time-series data using Matplotlib.
+
+This module defines the `TimeseriesPlotter` class, which is responsible for
+generating 2D line plots from time-series data. The data is expected to be
+a list of (datetime, value) tuples. The plotter allows for customization
+of titles, labels, line styles, and markers. It can display plots directly
+or save them to image files.
+
+This module is typically used in conjunction with an analyzer (like BasicAnalyzer)
+that extracts the time-series data from logs, but it can also plot any
+appropriately formatted time-series data.
+"""
 from typing import List, Tuple, Any, Optional
 from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
+# Note: The comment below was in the original file.
 # Assuming LogEntry and BasicAnalyzer might be used for data preparation,
 # but this module focuses on plotting given time-series data.
 
 class TimeseriesPlotter:
     """
-    Provides functionalities to plot time-series data.
+    Generates 2D line plots for time-series data using Matplotlib.
+
+    This class takes time-series data, typically extracted by an analyzer,
+    and produces visual plots. It handles common plotting tasks like setting
+    titles, labels, formatting date axes, and saving plots to files.
     """
 
     def __init__(self):
+        """
+        Initializes the TimeseriesPlotter.
+        Currently, initialization does not require specific parameters, but
+        it could be extended in the future to support common styling options or themes.
+        """
         # Future: Initialize with common styling options or themes
         pass
 
@@ -26,10 +49,27 @@ class TimeseriesPlotter:
                          line_style: str = '-',
                          marker: str = 'o') -> None:
         """
-        Plots time-series data.
-        Assumes time_series_data is a list of (datetime, value) tuples.
-        Values are expected to be numeric for standard plotting.
-        If values are not numeric, it will attempt to plot them but may result in errors or non-sensical plots.
+        Plots time-series data as a line graph.
+
+        The input `time_series_data` is expected to be a list of tuples, where
+        each tuple contains a `datetime` object for the x-axis and a value for the
+        y-axis. For best results, y-axis values should be numeric. If non-numeric
+        values are provided, a warning is printed, and Matplotlib's behavior will
+        determine the outcome (which might be an error or an uninformative plot).
+
+        Args:
+            time_series_data (List[Tuple[datetime, Any]]): The data to plot.
+                Each tuple should be (timestamp, value).
+            title (str): The title of the plot.
+            x_label (str): The label for the x-axis.
+            y_label (str): The label for the y-axis.
+            output_file (Optional[str]): If provided, the plot will be saved to this
+                                         file path (e.g., "my_plot.png").
+            show_plot (bool): If True (default), `plt.show()` is called to display
+                              the plot. Set to False for non-interactive environments
+                              or when only saving the file.
+            line_style (str): The style of the plot line (e.g., '-', '--', ':').
+            marker (str): The marker style for data points (e.g., 'o', '.', ',').
         """
         if not time_series_data:
             print("No data provided to plot.")
@@ -72,7 +112,8 @@ class TimeseriesPlotter:
 
         plt.close() # Close the plot figure to free memory, especially if not showing.
 
-# Example Usage (can be moved to an example script or notebook later)
+# Example Usage (primarily for demonstration or direct script testing)
+# This section will typically not be run when PiaAVT is used as a library.
 if __name__ == "__main__":
     plotter = TimeseriesPlotter()
 
