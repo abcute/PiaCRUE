@@ -37,7 +37,6 @@ To engage with the PiaAGI project, we recommend the following:
         *   **PiaAVT (PiaAGI Agent Analysis & Visualization Toolkit):** For analyzing agent behavior and internal states.
         *   **PiaPES (PiaAGI Prompt Engineering Suite):** For designing Guiding Prompts and Developmental Scaffolding.
     *   An initial **MVP (Minimal Viable Product)** implementation for the **PiaPES Prompt Templating Engine** located in `PiaAGI_Hub/PiaPES/prompt_engine_mvp.py` with its `USAGE.md`.
-5.  **Utilize the Web Application:** For a hands-on experience with the foundational R-U-E prompting, explore the **PiaAGI Web Tool** (legacy PiaCRUE) by starting with its **[`pia_crue_web_tool/README.md`](pia_crue_web_tool/README.md)**.
 
 ## Core Components
 
@@ -45,15 +44,6 @@ To engage with the PiaAGI project, we recommend the following:
 *   **[`PiaAGI_Hub/`](PiaAGI_Hub/):** Contains conceptual designs for a suite of Python-based tools supporting AGI research (PiaSE, PiaCML, PiaAVT, PiaPES), including the PiaAGI Cognitive Module Library (CML) with defined interfaces for key cognitive functions, and initial MVP implementations (e.g., PiaPES Prompt Templating Engine).
 *   **[`Papers/`](Papers/):** A collection of documents exploring theoretical concepts and related research relevant to PiaAGI's AGI focus.
 *   **[`Examples/`](Examples/):** Contains various practical examples related to PiaAGI principles and foundational R-U-E prompting. The primary, fully documented foundational examples have been moved to **Appendix A of `PiaAGI.md`**. AGI-specific examples are detailed within the main body of `PiaAGI.md` (Section 7).
-*   **[`pia_crue_web_tool/`](pia_crue_web_tool/):** The legacy web-based application for foundational R-U-E prompt generation.
-
-## PiaAGI GPTs
-
-*Note: These are external resources that leverage PiaAGI principles.*
-
-1.  **[GPTs-PiaAGI Assistant](https://chat.openai.com/g/g-mGgqa0Aft-piacrue):** A GPT assistant trained on the PiaAGI framework, capable of answering questions about its concepts, methodologies, and AGI development approach.
-2.  **[GPTs-PromptEngineer Pro](https://chat.openai.com/g/g-uBcGAkHGm-promptengineer-pro):** A GPT-based prompt optimization assistant.
-3.  **[GPTs-AutoExpGPT](https://chat.openai.com/g/g-9pFb5GFXw-autoexpgpt):** A GPT for designing automated experiments to evaluate prompt strategies.
 
 ## License
 
