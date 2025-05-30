@@ -55,6 +55,14 @@ This initial version of the CML provides abstract base classes for the following
     *   **Purpose:** Translates abstract action selections or plans into concrete, executable behaviors, such as linguistic output (via Communication Module), tool use, or physical actions.
     *   **PiaAGI.md Sections:** 4.1.9 (Behavior Generation Module (Action Execution)).
 
+11. **`tom_module.py` (`BaseTheoryOfMindModule`)**:
+    *   **Purpose:** Enables the AGI to attribute mental states (beliefs, desires, intentions, emotions) to other agents and understand differing perspectives, crucial for advanced social interaction.
+    *   **PiaAGI.md Sections:** 3.2.2 (Theory of Mind (ToM) for Socially Aware AGI), 4.1.11 (Theory of Mind (ToM) / Social Cognition Module).
+
+12. **`communication_module.py` (`BaseCommunicationModule`)**:
+    *   **Purpose:** Manages nuanced natural language interaction (NLU/NLG), implements advanced communication strategies (e.g., CSIM, RaR), and integrates with ToM, Emotion, and Self-Model modules.
+    *   **PiaAGI.md Sections:** 2.2 (Communication Theory for AGI-Level Interaction), 4.1.12 (Communication Module).
+
 ## Concrete Implementations
 
 This section lists available concrete implementations of the abstract module interfaces.
@@ -74,8 +82,6 @@ This section lists available concrete implementations of the abstract module int
 
 The CML will be expanded to include interfaces and foundational implementations for other core PiaAGI cognitive modules, such as:
 *   Attention Module (potentially integrated more deeply with Perception and Working Memory)
-*   Theory of Mind (ToM) / Social Cognition Module
-*   Communication Module (for language processing and generation)
 *   World Model (though this might be more of a data structure and service used by many modules)
 
 Contributions and collaborations are welcome as this library evolves.

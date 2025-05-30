@@ -45,3 +45,40 @@ class BaseTheoryOfMindModule(ABC):
                                       'confidence_of_inference': 0.75}
         """
         pass
+
+    @abstractmethod
+    def update_agent_model(self, agent_id: str, new_data: Dict[str, Any]) -> bool:
+        """
+        Updates the internal model maintained for a specific agent.
+        This model might store inferred beliefs, desires, personality traits,
+        or interaction history relevant to ToM.
+
+        Args:
+            agent_id (str): The identifier of the agent whose model is to be updated.
+            new_data (Dict[str, Any]): The new information to incorporate into the agent's model.
+                                       Example: {'inferred_belief_update': {'likes_apples': True},
+                                                 'last_interaction_summary': 'shared_apple_successfully'}
+
+        Returns:
+            bool: True if the model was successfully updated, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def get_agent_model(self, agent_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves the current internal model for a specified agent.
+
+        Args:
+            agent_id (str): The identifier of the agent whose model is requested.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary representing the agent's model if found,
+                                      otherwise None. The model's structure would be
+                                      implementation-dependent.
+                                      Example: {'agent_id': agent_id,
+                                                'known_beliefs': {'prefers_coffee': True},
+                                                'estimated_emotional_state': 'neutral',
+                                                'interaction_style_preference': 'formal'}
+        """
+        pass
