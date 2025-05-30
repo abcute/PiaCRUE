@@ -1,0 +1,47 @@
+{
+    "__type__": "PiaAGIPrompt",
+    "target_agi": "TestAgent2",
+    "developmental_stage_target": "Sprout",
+    "author": "WebAppTest",
+    "version": "0.2-example2",
+    "date": "2024-03-11",
+    "objective": "Objective for Example Prompt 2",
+    "system_rules": {
+        "__type__": "SystemRules",
+        "syntax": "Markdown",
+        "language": "en-US",
+        "output_format": "Detailed text",
+        "logging_level": "Debug",
+        "piaagi_interpretation_mode": "Execute_Immediate"
+    },
+    "requirements": {
+        "__type__": "Requirements",
+        "goal": "Goal for example 2 - demonstrate placeholders like {test_data}",
+        "background_context": "This prompt is for testing purposes.",
+        "constraints_and_boundaries": ["Constraint A", "Constraint B"],
+        "success_metrics": ["Metric X > 0.9"]
+    },
+    "users_interactors": null,
+    "executors": {
+        "__type__": "Executors",
+        "role": {
+            "__type__": "Role",
+            "name": "ExampleRole",
+            "profile": "A role for example 2",
+            "skills_focus": ["skill1", "skill2"],
+            "knowledge_domains_active": [],
+            "cognitive_module_configuration": {
+                "__type__": "CognitiveModuleConfiguration",
+                "personality_config": null,
+                "motivational_bias_config": null,
+                "emotional_profile_config": null,
+                "learning_module_config": null
+            },
+            "role_specific_rules": []
+        }
+    },
+    "workflow_or_curriculum_phase": null,
+    "developmental_scaffolding_context": null,
+    "cbt_autotraining_protocol": null,
+    "initiate_interaction": "Begin example prompt 2 with {test_data}."
+}
