@@ -14,9 +14,9 @@ class BaseMemoryModule(ABC):
     """
 
     @abstractmethod
-    def store(self, information: dict, context: dict = None) -> bool:
+    def store(self, information: dict, context: dict = None) -> str:
         """
-        Stores information into the memory module.
+        Stores information into the memory module and returns a unique identifier for the stored item.
 
         The 'information' itself is expected to be a structured dict, but its exact content
         will depend on the type of memory (e.g., semantic fact, episodic event, procedural skill).
@@ -34,7 +34,7 @@ class BaseMemoryModule(ABC):
                                       Example: {'timestamp': 1234567890.0, 'source': 'PerceptionModule', 'emotion_valence': 0.7}
 
         Returns:
-            bool: True if storage was successful, False otherwise.
+            str: A unique identifier for the stored memory item.
         """
         pass
 
@@ -57,6 +57,19 @@ class BaseMemoryModule(ABC):
             list[dict]: A list of information items matching the query and criteria.
                         Each item is a dict, similar in structure to what was stored.
                         Returns an empty list if no information is found.
+        """
+        pass
+
+    @abstractmethod
+    def delete_memory(self, memory_id: str) -> bool:
+        """
+        Deletes a memory item by its unique ID.
+
+        Args:
+            memory_id (str): The unique ID of the memory item to delete.
+
+        Returns:
+            bool: True if deletion was successful, False otherwise (e.g., item not found).
         """
         pass
 
@@ -113,36 +126,53 @@ if __name__ == '__main__':
 
     class ConceptualLTM(BaseMemoryModule):
         def __init__(self):
-            self.storage = {}
-            self.item_id_counter = 0
+            self.storage = {} # Stores items by string ID now
+            self.item_id_counter = 0 # Used to generate unique IDs
             print("ConceptualLTM initialized - A very simplified LTM concept.")
 
-        def store(self, information: dict, context: dict = None) -> bool:
+        def store(self, information: dict, context: dict = None) -> str:
             print(f"ConceptualLTM: Attempting to store: {information} with context: {context}")
             self.item_id_counter += 1
-            self.storage[self.item_id_counter] = {'info': information, 'ctx': context or {}}
-            print(f"ConceptualLTM: Stored item with ID {self.item_id_counter}")
-            return True
+            memory_id = str(self.item_id_counter) # Generate string ID
+            self.storage[memory_id] = {'id': memory_id, 'info': information, 'ctx': context or {}}
+            print(f"ConceptualLTM: Stored item with ID {memory_id}")
+            return memory_id # Return the string ID
 
         def retrieve(self, query: dict, criteria: dict = None) -> list[dict]:
             print(f"ConceptualLTM: Attempting to retrieve based on query: {query} and criteria: {criteria}")
             results = []
-            # Highly simplified retrieval: exact match on a 'concept' in information
+            if not query:
+                return list(self.storage.values())
+            
+            query_id = query.get('id')
+            if query_id and query_id in self.storage:
+                return [self.storage[query_id]]
+
             if 'concept' in query:
                 for item_id, stored_item in self.storage.items():
                     if stored_item['info'].get('concept') == query['concept']:
-                        results.append(stored_item['info'])
+                        results.append(stored_item) # Append the whole item including its ID
             print(f"ConceptualLTM: Found {len(results)} items.")
             return results
+        
+        def delete_memory(self, memory_id: str) -> bool:
+            print(f"ConceptualLTM: Attempting to delete item with ID {memory_id}")
+            if memory_id in self.storage:
+                del self.storage[memory_id]
+                print(f"ConceptualLTM: Deleted item with ID {memory_id}")
+                return True
+            print(f"ConceptualLTM: Item with ID {memory_id} not found for deletion.")
+            return False
 
         def manage_capacity(self) -> None:
             print("ConceptualLTM: manage_capacity() called. In a real system, this would involve complex processes.")
-            if len(self.storage) > 10: # Arbitrary small capacity for demo
-                print("ConceptualLTM: Capacity potentially exceeded. Forgetting oldest item for demo.")
-                if self.storage:
-                    oldest_item_id = min(self.storage.keys())
-                    del self.storage[oldest_item_id]
-                    print(f"ConceptualLTM: Forgot item with ID {oldest_item_id}")
+            # Example: if len(self.storage) > 10: # Arbitrary small capacity for demo
+            #     print("ConceptualLTM: Capacity potentially exceeded. Forgetting oldest item for demo.")
+            #     if self.storage:
+            #         # Deletion now requires string IDs
+            #         oldest_item_id = min(self.storage.keys(), key=lambda k: self.storage[k].get('ctx', {}).get('timestamp', float('inf'))) # Example: find oldest by timestamp
+            #         self.delete_memory(oldest_item_id)
+            pass # Simplified for this example
 
 
         def handle_forgetting(self, strategy: str = 'default') -> None:
@@ -152,7 +182,7 @@ if __name__ == '__main__':
 
         def get_status(self) -> dict:
             status = {
-                'capacity_percentage': (len(self.storage) / 10.0) * 100 if 10 > 0 else 0, # Conceptual capacity of 10 items
+                'capacity_percentage': (len(self.storage) / 100.0) * 100, # Conceptual capacity of 100 items
                 'total_items': len(self.storage),
                 'module_type': 'ConceptualLTM'
             }
@@ -161,9 +191,17 @@ if __name__ == '__main__':
 
     # Conceptual usage demonstration:
     ltm_instance = ConceptualLTM()
-    ltm_instance.store({'type': 'semantic', 'concept': 'Dark Matter', 'definition': 'Hypothetical matter not interacting with light.'}, {'source': 'user_input'})
-    ltm_instance.store({'type': 'semantic', 'concept': 'AGI', 'definition': 'Artificial General Intelligence.'})
-    retrieved_info = ltm_instance.retrieve({'concept': 'Dark Matter'})
-    print(f"Retrieved from LTM: {retrieved_info}")
+    id1 = ltm_instance.store({'type': 'semantic', 'concept': 'Dark Matter', 'definition': 'Hypothetical matter...'}, {'source': 'user_input', 'timestamp': 1})
+    id2 = ltm_instance.store({'type': 'semantic', 'concept': 'AGI', 'definition': 'Artificial General Intelligence.'}, {'timestamp': 2})
+    
+    print("\nRetrieving AGI by ID:", ltm_instance.retrieve({'id': id2}))
+    print("Retrieving Dark Matter concepts:", ltm_instance.retrieve({'concept': 'Dark Matter'}))
+    
     ltm_instance.get_status()
-    ltm_instance.manage_capacity() # Potentially forget if capacity is small and exceeded
+    
+    print("\nDeleting Dark Matter (ID:", id1, ")")
+    ltm_instance.delete_memory(id1)
+    print("Try deleting Dark Matter again (should fail):", ltm_instance.delete_memory(id1))
+    
+    ltm_instance.get_status()
+    ltm_instance.manage_capacity()
