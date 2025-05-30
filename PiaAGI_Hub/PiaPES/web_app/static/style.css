@@ -76,6 +76,7 @@ form textarea {
 }
 form input[type="text"]:focus,
 form input[type="number"]:focus,
+form select:focus,
 form textarea:focus {
     border-color: #3498db; /* Highlight focus */
     box-shadow: 0 0 5px rgba(52,152,219,0.25);
@@ -83,6 +84,15 @@ form textarea:focus {
 form textarea {
     min-height: 100px;
     font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+form select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    background-color: white; /* Ensure select background is white */
+    height: calc(2.25rem + 2px + 12px * 2); /* Match input height if needed, adjust based on font */
 }
 form input[type="checkbox"] {
     margin-right: 5px;
@@ -112,11 +122,12 @@ form button[type="submit"]:hover,
 button.delete-btn, button.removeStepButton {
     background-color: #e74c3c; /* Red for delete/remove */
     color: white;
-    padding: 8px 15px;
+    padding: 8px 15px; /* Default padding */
     border: none;
     border-radius: 3px;
     cursor: pointer;
-    margin-top: 5px;
+    margin-top: 10px; /* Increased margin for better spacing */
+    margin-bottom: 5px; /* Added margin bottom */
     align-self: flex-start;
     font-size: 0.9em;
     transition: background-color 0.2s ease-in-out;
@@ -125,13 +136,21 @@ button.delete-btn:hover, button.removeStepButton:hover {
     background-color: #c0392b; /* Darker red */
 }
 
-#addStepButton {
-    background-color: #2ecc71; /* Green for add */
-    color: white;
-    padding: 10px 18px;
+/* Standardize add buttons */
+.add-button, #addStepButton, #addWorkflowStepButton {
+    background-color: #2ecc71 !important; /* Green for add - important to override inline */
+    color: white !important;
+    padding: 10px 18px !important; /* Standardize padding */
+    margin-bottom: 15px !important; /* Add some space below add buttons */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 1em;
+    transition: background-color 0.2s ease-in-out;
 }
-#addStepButton:hover {
-    background-color: #27ae60; /* Darker green */
+.add-button:hover, #addStepButton:hover, #addWorkflowStepButton:hover {
+    background-color: #27ae60 !important; /* Darker green */
 }
 
 
@@ -304,15 +323,62 @@ footer small {
     color: #555;
 }
 
-/* Fieldset for dynamically added steps in curriculum_form.html */
-#steps-container fieldset {
-    background-color: #fdfdfd; /* Slightly different from main form fieldsets if needed */
-    border: 1px dashed #ccc; /* Dashed to indicate dynamic content */
+/* Styling for dynamically added fieldsets (Workflow steps, Curriculum steps) */
+.workflow-step-item, .curriculum-step-item { /* Class names used in JS */
+    background-color: #f9f9f9; /* Very light grey, distinct from main fieldsets */
+    border: 1px dashed #bbb;   /* Dashed border to indicate dynamic/sub-section */
+    padding: 15px;
+    margin-bottom: 20px; /* Increased spacing between dynamic steps */
+    border-radius: 4px;
 }
-#steps-container legend {
-    font-size: 1.1em; /* Slightly smaller than main legends */
-    color: #555;
+.workflow-step-item legend, .curriculum-step-item legend {
+    font-size: 1.1em;         /* Slightly smaller than main fieldset legends */
+    font-weight: bold;
+    color: #444;             /* Slightly softer color */
+    padding: 0 8px;
+    margin-left: 5px;
 }
+
+/* Ensure inputs within dynamic steps are full width and match general styling */
+.workflow-step-item input[type="text"],
+.workflow-step-item textarea,
+.curriculum-step-item input[type="text"],
+.curriculum-step-item input[type="number"],
+.curriculum-step-item select,
+.curriculum-step-item textarea {
+    width: 100%;
+    /* Other properties like padding, border should be inherited from general form styles */
+    margin-bottom: 10px; /* Spacing for inputs within these steps */
+}
+.workflow-step-item div, .curriculum-step-item div {
+    margin-bottom: 10px; /* Consistent spacing for divs wrapping label/input in dynamic steps */
+}
+
+
+/* "Load from Template" specific section */
+#load-template-fieldset {
+    background-color: #eef7ff; /* A light blue tint */
+    border-color: #cce0ff;
+}
+#load-template-fieldset legend {
+    color: #2c3e50;
+}
+#loadTemplateSelect { /* Will inherit general select styling */
+    margin-right: 10px;
+}
+#loadTemplateButton { /* Will inherit .action-button styling, fine-tune if needed */
+    background-color: #3498db; /* Already has inline, but can be standardized */
+    margin-left: 0; /* Override inline if it had margin-left */
+}
+
+
+/* Ensure action buttons in lists have consistent vertical alignment and margin */
+ul#prompt-list li .button, ul#curriculum-list li .button,
+ul#prompt-list li button.delete-btn, ul#curriculum-list li button.delete-btn {
+    vertical-align: middle;
+    margin-top: 0; /* Adjust if needed for alignment with text */
+}
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -327,9 +393,22 @@ footer small {
     h1 { font-size: 1.8em; }
     h2 { font-size: 1.4em; }
     h3 { font-size: 1.1em; }
-    form button[type="submit"], .button, a.button, button.action-button {
+    form button[type="submit"], .button, a.button, button.action-button,
+    .add-button, #addStepButton, #addWorkflowStepButton { /* Ensure responsive buttons */
         width: 100%;
         padding: 12px;
+        margin-right: 0; /* Full width, so no right margin needed */
+        margin-left: 0;  /* Full width, so no left margin needed */
+    }
+    #loadTemplateSelect, #loadTemplateButton {
+        width: 100%;
+        margin-right: 0;
+        margin-left: 0;
+        margin-bottom: 10px; /* Stack them in mobile */
+    }
+    #load-template-fieldset div {
+        display: flex;
+        flex-direction: column;
     }
 }
 ```

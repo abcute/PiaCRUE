@@ -119,7 +119,9 @@ The web interface aims to simplify the creation, viewing, editing, and managemen
         *   Motivational Biases (as a comma-separated key:value text input).
         *   Emotional Profile (text inputs for baseline valence, reactivity, empathy).
         *   Learning Module Config (text input for primary mode, checkbox for rate adaptation).
-    *   Other complex sections like `UsersInteractors`, `Workflow`, `DevelopmentalScaffolding`, and `CBTAutoTraining` are managed via their respective JSON textareas.
+    *   **Workflow Steps:** A dynamic UI allows users to add, remove, and edit individual workflow steps. Each step has fields for `name`, `action_directive`, `module_focus` (comma-separated), `expected_outcome_internal`, and `expected_output_external`. An "Advanced Workflow JSON" textarea is also available for more complex configurations, which will be supplemented or overridden by UI-defined steps.
+    *   **Developmental Scaffolding Context:** Specific input fields are provided for `current_developmental_goal` (textarea), `scaffolding_techniques_employed` (comma-separated text), and `feedback_level_from_overseer`. An "Advanced Dev. Scaffolding JSON" textarea allows for further customization.
+    *   Other complex sections like `UsersInteractors` and `CBTAutoTraining` are managed via their respective JSON textareas.
     *   Users must provide a filename (ending in `.json`).
     *   Clicking "Save Prompt" creates the new JSON file.
 *   **View/Render Prompt:**
@@ -127,17 +129,20 @@ The web interface aims to simplify the creation, viewing, editing, and managemen
     *   Displays the prompt's filename, its raw JSON data, and its fully rendered Markdown output.
 *   **Edit Existing Prompt:**
     *   Accessible from the dashboard. The form is pre-filled with existing data.
-    *   Specific fields and JSON textareas can be modified. Values from specific fields will override or supplement data in the corresponding "Advanced JSON" textareas upon saving.
-    *   The filename is read-only during edit. To "Save As" or rename, users should copy the content to a "Create New Prompt" form.
+    *   Specific fields (including dynamic Workflow Steps and Developmental Scaffolding fields) and JSON textareas can be modified. Values from specific fields will override or supplement data in the corresponding "Advanced JSON" textareas upon saving.
+    *   The filename is read-only during edit.
 *   **Delete Prompt:**
     *   Accessible from the dashboard, with a confirmation step.
+*   **Basic Prompt Template Management:**
+    *   **Load from Template:** When creating a new prompt, an optional section at the top of the form allows you to select an existing prompt from a dropdown. Clicking "Load Template" will populate the form with the data from the selected prompt. You should then provide a new, unique filename for the prompt you are creating.
+    *   **Save as New Template:** To save the current form's content as a new template/prompt (especially when editing an existing prompt), use the "Save as New Template" button. You must ensure the 'Filename' field has a new, unique name distinct from the original. In 'create' mode, if you load a template, modify it, and then change the 'Filename' field to a new name, the main 'Save Prompt' button achieves the same "save as new" behavior.
 
 #### Curriculum Management
 *   **Dashboard Listing:** Curricula (`*.curriculum.json` files) are listed on the dashboard with links to "View Details" and "Edit Metadata".
 *   **Create New Curriculum:**
     *   Accessible via the "Create New Curriculum" button on the dashboard.
     *   A form allows defining curriculum metadata: `filename` (must end with `.curriculum.json`), `name`, `description`, `target_developmental_stage`, `version`, and `author`.
-    *   Users can dynamically add/remove "Curriculum Steps". Each step includes fields for `step_name`, `step_order`, `step_prompt_reference` (filename of a prompt JSON), `step_conditions` (textarea), and `step_notes` (textarea).
+    *   Users can dynamically add/remove "Curriculum Steps". Each step includes fields for `step_name`, `step_order`, `step_prompt_reference` (a dropdown select populated with available prompt filenames), `step_conditions` (textarea), and `step_notes` (textarea).
     *   Saving creates a new `.curriculum.json` file.
 *   **View Curriculum:**
     *   Displays curriculum metadata and a detailed list of its steps, including links to view referenced prompts.
