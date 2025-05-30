@@ -92,6 +92,14 @@
                 <textarea id="role_profile" name="role_profile" rows="3">{{ prompt_data.role_profile if prompt_data else '' }}</textarea>
             </div>
             <div>
+                <label for="role_skills_focus">Role Skills Focus (comma-separated):</label>
+                <input type="text" id="role_skills_focus" name="role_skills_focus" value="{{ prompt_data.role_skills_focus_str if prompt_data else '' }}">
+            </div>
+            <div>
+                <label for="role_knowledge_domains_active">Role Knowledge Domains Active (comma-separated):</label>
+                <input type="text" id="role_knowledge_domains_active" name="role_knowledge_domains_active" value="{{ prompt_data.role_knowledge_domains_active_str if prompt_data else '' }}">
+            </div>
+            <div>
                 <label for="executors_json">Advanced Executors JSON (supplements/overrides Role fields above if a complete Executors object with Role is provided; Cognitive Config is separate below):</label>
                 <textarea id="executors_json" name="executors_json" rows="4" placeholder='{"__type__": "Executors", "role": {"__type__": "Role", "skills_focus": [], ...}}'>{{ prompt_data.executors_json if prompt_data else '' }}</textarea>
             </div>
@@ -166,10 +174,20 @@
         const currentPromptFilenameForEdit = "{{ prompt_filename_for_edit if prompt_filename_for_edit else '' }}";
 
         // If currentPromptFilenameForEdit is set, we are in "edit" mode.
-        // The 'prompt_data' variable passed to the template by Flask should contain
-        // the pre-parsed JSON strings for textareas.
-        // The 'filename' field is set from 'prompt_data.filename'.
-        // 'original_filename' hidden field is also set from 'prompt_data.filename'.
+        // The 'prompt_data' variable passed to the template by Flask should contain individual fields
+        // for direct population, and JSON strings for the '_json' textareas.
+
+        // Populate specific fields if data is available (edit mode)
+        if (currentPromptFilenameForEdit) {
+            // Simple fields are populated by Jinja2 'value' attributes directly.
+            // For specific Role fields that are now text inputs for comma-separated values:
+            document.getElementById('role_skills_focus').value = "{{ prompt_data.role_skills_focus_str if prompt_data and prompt_data.role_skills_focus_str else '' }}";
+            document.getElementById('role_knowledge_domains_active').value = "{{ prompt_data.role_knowledge_domains_active_str if prompt_data and prompt_data.role_knowledge_domains_active_str else '' }}";
+
+            // Cognitive config fields are also populated by Jinja2 'value' or 'checked' attributes.
+            // JSON textareas are populated by Jinja2 'value' attributes.
+        }
+
 
         promptForm.addEventListener('submit', function(event) {
             event.preventDefault();
@@ -228,6 +246,14 @@
                 }
                 if (formData.get('role_name')) executorsData.role.name = formData.get('role_name');
                 if (formData.get('role_profile')) executorsData.role.profile = formData.get('role_profile');
+
+                // Handle new comma-separated fields for Role
+                const skillsFocusStr = formData.get('role_skills_focus').trim();
+                executorsData.role.skills_focus = skillsFocusStr ? skillsFocusStr.split(',').map(s => s.trim()).filter(s => s) : [];
+
+                const knowledgeDomainsStr = formData.get('role_knowledge_domains_active').trim();
+                executorsData.role.knowledge_domains_active = knowledgeDomainsStr ? knowledgeDomainsStr.split(',').map(s => s.trim()).filter(s => s) : [];
+
                 fullPromptData.executors = executorsData;
 
 

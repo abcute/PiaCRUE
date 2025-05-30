@@ -124,12 +124,19 @@ def route_edit_prompt_view(filename):
         role_obj = None
         if executors_obj and hasattr(executors_obj, 'role') and executors_obj.role: # Check if 'role' attribute exists
             role_obj = executors_obj.role
-            prompt_data_for_form['role_name'] = role_obj.name
-            prompt_data_for_form['role_profile'] = role_obj.profile
+            prompt_data_for_form['role_name'] = getattr(role_obj, 'name', None)
+            prompt_data_for_form['role_profile'] = getattr(role_obj, 'profile', None)
+            # Convert lists to comma-separated strings for the form fields
+            prompt_data_for_form['role_skills_focus_str'] = ', '.join(getattr(role_obj, 'skills_focus', None) or [])
+            prompt_data_for_form['role_knowledge_domains_active_str'] = ', '.join(getattr(role_obj, 'knowledge_domains_active', None) or [])
 
-            # For executors_json, create a dict of the role excluding CMC, then wrap in Executors dict
-            role_dict_for_json = {k: v for k, v in role_obj.__dict__.items() if k != 'cognitive_module_configuration'}
-            if '__type__' not in role_dict_for_json: role_dict_for_json['__type__'] = role_obj.__class__.__name__
+            # For executors_json, create a dict of the role excluding CMC, skills_focus, knowledge_domains_active
+            excluded_role_keys = {'cognitive_module_configuration', 'skills_focus', 'knowledge_domains_active', 'name', 'profile'}
+            role_dict_for_json = {k: v for k, v in role_obj.__dict__.items() if k not in excluded_role_keys}
+            # Ensure __type__ is present, even if other fields are stripped for the JSON blob
+            role_dict_for_json['__type__'] = role_obj.__class__.__name__
+            # If all specific fields are stripped and nothing else is in role_dict_for_json other than __type__,
+            # then executors_json might just become {"__type__": "Executors", "role": {"__type__": "Role"}}. This is fine.
 
             executors_shell_for_json = {
                 "__type__": executors_obj.__class__.__name__,
@@ -162,13 +169,15 @@ def route_edit_prompt_view(filename):
                 if hasattr(cmc, 'learning_module_config') and cmc.learning_module_config:
                     lc = cmc.learning_module_config
                     prompt_data_for_form['learning_primary_mode'] = lc.primary_learning_mode
-                    prompt_data_for_form['learning_rate_adaptation_enabled'] = bool(lc.learning_rate_adaptation)
+                    prompt_data_for_form['learning_rate_adaptation_enabled'] = bool(lc.learning_rate_adaptation) # Ensure boolean
         else: # Default empty values if no executors or role
             prompt_data_for_form['role_name'] = "DefaultRole"
             prompt_data_for_form['role_profile'] = ""
+            prompt_data_for_form['role_skills_focus_str'] = ""
+            prompt_data_for_form['role_knowledge_domains_active_str'] = ""
             prompt_data_for_form['executors_json'] = json.dumps({"__type__": "Executors", "role": {"__type__": "Role", "name": "DefaultRole"}}, indent=2)
             prompt_data_for_form['motivational_biases_text'] = ""
-            # Other cognitive fields will be empty/default in the form
+            # Other cognitive fields will be empty/default in the form (e.g. personality_openness etc. will be blank)
 
 
         return render_template('prompt_form.html',
@@ -188,6 +197,36 @@ def route_view_prompt(filename):
         flash(f"Error: Prompt file '{filename}' not found.", "error")
         return redirect(url_for('route_dashboard'))
     return render_template('view_prompt.html', filename=filename)
+
+@app.route('/curriculum/create', methods=['GET'])
+def route_create_curriculum_view():
+    return render_template('curriculum_form.html', form_title="Create New Curriculum", form_mode="create")
+
+@app.route('/curriculum/edit/<path:filename>', methods=['GET'])
+def route_edit_curriculum_view(filename):
+    filepath = os.path.join(PROMPT_DIR, filename)
+    if not os.path.exists(filepath) or not filename.endswith('.curriculum.json'):
+        flash(f"Error: Curriculum file '{filename}' not found for editing.", "error")
+        return redirect(url_for('route_dashboard'))
+
+    try:
+        curriculum = load_template(filepath)
+        if not curriculum or not isinstance(curriculum, DevelopmentalCurriculum):
+            flash(f"Error: File '{filename}' is not a valid curriculum for editing.", "error")
+            return redirect(url_for('route_dashboard'))
+
+        # Pass curriculum.__dict__ directly as it contains all top-level fields
+        # The form template will access them as curriculum_data.name, etc.
+        # For steps, they are passed for read-only display in the template.
+        return render_template('curriculum_form.html',
+                               form_title=f"Edit Curriculum Metadata: {filename}",
+                               form_mode="edit",
+                               current_filename=filename,
+                               curriculum_data=curriculum.__dict__)
+    except Exception as e:
+        app.logger.error(f"Error loading curriculum {filename} for edit view: {e}")
+        flash(f"Error loading curriculum '{filename}' for editing: {str(e)}", "error")
+        return redirect(url_for('route_dashboard'))
 
 @app.route('/curriculum/view/<path:filename>')
 def route_view_curriculum(filename):
@@ -444,6 +483,138 @@ def api_render_curriculum(filename):
     except Exception as e:
         app.logger.error(f"Error rendering curriculum {filename}: {e}")
         return jsonify({"error": f"Failed to render curriculum: {str(e)}"}), 500
+
+@app.route('/api/curricula', methods=['POST'])
+def api_create_curriculum():
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
+
+    data = request.get_json()
+
+    # filename for saving is expected in the data payload itself from the client
+    filename_from_payload = data.get('filename')
+    if not filename_from_payload:
+        return jsonify({"error": "Filename is required in the JSON payload."}), 400
+
+    if not filename_from_payload.endswith('.curriculum.json'):
+        return jsonify({"error": "Filename must end with '.curriculum.json'"}), 400
+
+    # Sanitize the filename part before the suffix
+    base_filename_part = os.path.splitext(os.path.splitext(filename_from_payload)[0])[0]
+    # Use sanitize_filename for the base part, but it appends .json, so remove it first
+    sanitized_base = sanitize_filename(base_filename_part).replace(".json", "")
+    if not sanitized_base or sanitized_base == "unnamed_prompt".replace(".json",""): # Check if sanitization resulted in empty or default
+        # if original filename was also problematic, this might lead to "unnamed_prompt.curriculum.json"
+        # which is acceptable, but truly empty/invalid needs a specific error
+        if not base_filename_part.strip('.-'): # if original was just dots/hyphens
+             return jsonify({"error": "Invalid base filename (e.g. just dots/hyphens)."}), 400
+        # If sanitize_filename produced "unnamed_prompt", use that as the base
+        if sanitized_base == "unnamed_prompt".replace(".json",""):
+            sanitized_base = "unnamed_prompt"
+
+    filename = sanitized_base + ".curriculum.json"
+
+    filepath = os.path.join(PROMPT_DIR, filename)
+    if os.path.exists(filepath):
+        return jsonify({"error": f"Curriculum file '{filename}' already exists."}), 409
+
+    # Preliminary validation of raw data
+    required_top_level_fields = {"name": str, "description": str, "steps": list, "__type__": str}
+    for field, field_type in required_top_level_fields.items():
+        if field not in data:
+            return jsonify({"error": f"Missing required top-level field in curriculum data: '{field}'."}), 400
+        if not isinstance(data[field], field_type):
+            return jsonify({"error": f"Field '{field}' must be of type {field_type.__name__}."}), 400
+
+    if data["__type__"] != "DevelopmentalCurriculum":
+        return jsonify({"error": "Invalid __type__ for curriculum data. Expected 'DevelopmentalCurriculum'."}), 400
+
+    if not data["steps"]: # Must have at least one step, or allow empty? For now, let's allow empty.
+        pass # Allow empty steps list
+
+    for i, step in enumerate(data["steps"]):
+        if not isinstance(step, dict):
+            return jsonify({"error": f"Item at steps[{i}] is not a valid step object."}), 400
+        required_step_fields = {"name": str, "order": (int, str), "prompt_reference": str, "__type__": str}
+        for s_field, s_field_type in required_step_fields.items():
+            if s_field not in step:
+                return jsonify({"error": f"Missing required field '{s_field}' in step {i+1}."}), 400
+            if not isinstance(step[s_field], s_field_type):
+                 return jsonify({"error": f"Field '{s_field}' in step {i+1} must be of type {s_field_type}."}), 400
+        if step["__type__"] != "CurriculumStep":
+            return jsonify({"error": f"Invalid __type__ for step {i+1}. Expected 'CurriculumStep'."}), 400
+        try:
+            int(step["order"]) # Check if order is convertible to int
+        except ValueError:
+            return jsonify({"error": f"Field 'order' in step {i+1} must be an integer or string convertible to integer."}), 400
+
+
+    try:
+        reconstructed_json_str = json.dumps(data)
+        curriculum_object = json.loads(reconstructed_json_str, object_hook=pia_agi_object_hook)
+
+        if not isinstance(curriculum_object, DevelopmentalCurriculum):
+             return jsonify({"error": "Error reconstructing curriculum object. Ensure data structure and __type__ hints are correct."}), 400
+
+        save_template(curriculum_object, filepath)
+        return jsonify({"message": f"Curriculum '{filename}' created successfully.", "filename": filename}), 201
+    except json.JSONDecodeError as e: # Should be caught by initial parsing if not JSON
+        app.logger.error(f"JSONDecodeError creating curriculum {filename}: {e}")
+        return jsonify({"error": f"Invalid JSON format provided: {str(e)}"}), 400
+    except (TypeError, KeyError, AttributeError, ValueError) as e: # Broader catch for hook issues
+        app.logger.error(f"DataStructureError creating curriculum {filename}: {e}")
+        return jsonify({"error": f"Error reconstructing curriculum object from data. Ensure all fields are correct and __type__ hints are valid. Details: {str(e)}"}), 400
+    except Exception as e:
+        app.logger.error(f"Error creating curriculum {filename}: {e}")
+        return jsonify({"error": f"Failed to create curriculum: {str(e)}"}), 500
+
+@app.route('/api/curricula/<path:filename>', methods=['PUT'])
+def api_update_curriculum_metadata(filename):
+    if not filename.endswith('.curriculum.json'):
+        abort(400, description="Invalid curriculum filename format for update.")
+
+    filepath = os.path.join(PROMPT_DIR, filename)
+    if not os.path.exists(filepath):
+        abort(404, description="Curriculum file not found to update.")
+
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
+
+    data_to_update = request.get_json()
+
+    try:
+        curriculum_obj = load_template(filepath) # Renamed for clarity
+        if not isinstance(curriculum_obj, DevelopmentalCurriculum): # Stricter check
+            app.logger.error(f"Loaded file '{filename}' is not a valid DevelopmentalCurriculum object.")
+            return jsonify({"error": "Loaded file is not a valid curriculum object."}), 500
+
+        allowed_metadata_fields = ['name', 'description', 'target_developmental_stage', 'version', 'author']
+        updated_fields_count = 0
+
+        for field in allowed_metadata_fields:
+            if field in data_to_update:
+                setattr(curriculum_obj, field, data_to_update[field])
+                updated_fields_count += 1
+
+        # Preserve __type__ from the loaded object, do not allow client to change it via this metadata endpoint.
+        curriculum_obj.__type__ = "DevelopmentalCurriculum"
+
+        if updated_fields_count > 0:
+            save_template(curriculum_obj, filepath)
+            return jsonify({"message": f"Curriculum metadata for '{filename}' updated successfully.", "filename": filename}), 200
+        else:
+            return jsonify({"message": f"No recognized metadata fields provided for update in '{filename}'. No changes made."}), 200
+
+    except json.JSONDecodeError as e:
+        app.logger.error(f"JSONDecodeError (should not happen here if request.get_json() passed) updating curriculum metadata {filename}: {e}")
+        return jsonify({"error": f"Invalid JSON format in request: {str(e)}"}), 400 # Should be caught by request.is_json
+    except (TypeError, AttributeError) as e: # Errors during setattr if field is wrong type (should be caught by prompt_engine_mvp setter ideally)
+        app.logger.error(f"TypeError/AttributeError updating curriculum metadata {filename}: {e}")
+        return jsonify({"error": f"Error setting curriculum attribute. Details: {str(e)}"}), 400
+    except Exception as e:
+        app.logger.error(f"Error updating curriculum metadata {filename}: {e}")
+        return jsonify({"error": f"Failed to update curriculum metadata: {str(e)}"}), 500
+
 
 if __name__ == '__main__':
     # Ensure the prompt_files directory exists

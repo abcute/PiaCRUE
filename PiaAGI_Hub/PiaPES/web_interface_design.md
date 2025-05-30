@@ -30,20 +30,21 @@ The web interface will provide the following core functionalities:
         *   Version (from 'version' field in JSON).
     *   **Actions per item:**
         *   **Prompts:** "View/Render" link, "Edit" link, "Delete" button.
-        *   **Curricula:** "View Details" link.
+        *   **Curricula:** "View Details" link, "Edit Metadata" link.
 *   **Global Actions:**
     *   "Create New Prompt" button.
+    *   "Create New Curriculum" button.
 
 ### 2.2 Prompt Creation / Editing View (`prompt_form.html`)
 
 *   **Purpose:** To allow users to create new `PiaAGIPrompt` objects or edit existing ones through a web form.
 *   **Form Fields:**
     *   **Basic Metadata:** `filename` (read-only on edit), `author`, `version`, `objective`, `target_agi`, `developmental_stage_target`, `date`.
-    *   **System Rules:** Specific inputs for `language`, `output_format`. An "Advanced System Rules JSON" textarea for other/full JSON.
+    *   **System Rules:** Specific inputs for `language`, `output_format`. An "Advanced System Rules JSON" textarea.
     *   **Requirements:** Specific inputs for `goal`, `background_context`. An "Advanced Requirements JSON" textarea.
-    *   **Role (within Executors):** Specific inputs for `role_name`, `role_profile`. An "Advanced Executors JSON" textarea (for other role attributes like skills, knowledge, rules; Cognitive Config is separate).
-    *   **Cognitive Module Configuration:** Dedicated fieldsets and inputs for:
-        *   Personality (OCEAN scores: openness, conscientiousness, extraversion, agreeableness, neuroticism).
+    *   **Role (within Executors):** Specific inputs for `role_name`, `role_profile`, and comma-separated text inputs for `skills_focus` and `knowledge_domains_active`. An "Advanced Executors JSON" textarea for other role attributes (e.g., `role_specific_rules`).
+    *   **Cognitive Module Configuration (within Role):** Dedicated fieldsets and inputs for:
+        *   Personality (OCEAN scores).
         *   Motivational Biases (comma-separated key:value pairs text input).
         *   Emotional Profile (baseline_valence, reactivity_to_failure, empathy_target).
         *   Learning Module Config (primary_mode, learning_rate_adaptation_enabled checkbox).
@@ -69,14 +70,28 @@ The web interface will provide the following core functionalities:
     *   A list of `CurriculumStep` objects, showing Order, Name, Conditions, Notes, and the `prompt_reference` filename.
     *   The `prompt_reference` is a link to the view page for that specific prompt template.
     *   Raw JSON and rendered Markdown for the curriculum object.
-*   **Scope:** Creation and editing of curricula via the UI are not part of the MVP.
+
+### 2.5 Curriculum Creation View (`curriculum_form.html` with `form_mode='create'`)
+*   **Purpose:** To allow users to create new `DevelopmentalCurriculum` objects.
+*   **Form Fields (Metadata):** `filename` (must end with `.curriculum.json`), `name`, `description`, `target_developmental_stage`, `version`, `author`.
+*   **Dynamic Steps Section:**
+    *   A container (`div#steps-container`) where users can dynamically add, define, and remove curriculum steps.
+    *   Each step includes inputs for: `step_name`, `step_order` (defaults to current count), `step_prompt_reference` (filename of a prompt JSON), `step_conditions` (textarea), and `step_notes` (textarea).
+*   **Actions:** "Add Curriculum Step" button, "Remove This Step" button (per step), "Save Curriculum" button (submits to `POST /api/curricula`).
+
+### 2.6 Curriculum Editing View (Metadata Only) (`curriculum_form.html` with `form_mode='edit'`)
+*   **Purpose:** To allow users to edit the metadata of existing `DevelopmentalCurriculum` objects.
+*   **Form Fields:** Same metadata fields as creation (`name`, `description`, etc.). The `filename` field is read-only.
+*   **Steps Management:** The UI for adding, removing, or editing steps is hidden or disabled. A message indicates that steps are preserved and not editable in this mode. Existing steps may be displayed in a read-only format.
+*   **Actions:** "Save Curriculum" button (submits to `PUT /api/curricula/<filename>`).
 
 ## 3. Non-Goals for Initial Version
 
 *   **Advanced GUI for JSON sections:** Complex JSON structures (beyond those with specific fields) are still edited in textareas.
 *   **Direct Git Integration through the UI.**
 *   **Complex User Management & Granular Permissions.**
-*   **Visual Curriculum Designer** or UI-based curriculum editing.
+*   **Visual Curriculum Designer.**
+*   **Full UI-based editing of existing curriculum steps** (only metadata editing is supported for existing curricula; steps are preserved).
 *   **Prompt Evaluation Triggering/Dashboard.**
 *   **Importing from Markdown.**
 
@@ -91,20 +106,20 @@ The web interface will provide the following core functionalities:
 
 ### 5.1 Dashboard Page (`index.html`)
 
-*   **Layout:** Header, "Create New Prompt" button. Two main sections: "Available Prompts" and "Available Curricula".
+*   **Layout:** Header, "Create New Prompt" button, "Create New Curriculum" button. Two main sections: "Available Prompts" and "Available Curricula".
 *   **Prompts List:** Each item shows Name (from objective/name), Version, Filename, and links for "View/Render", "Edit", "Delete".
-*   **Curricula List:** Each item shows Name, Version, Filename, and a link for "View Details".
+*   **Curricula List:** Each item shows Name, Version, Filename, and links for "View Details" and "Edit Metadata".
 
 ### 5.2 Create/Edit Prompt Page (`prompt_form.html`)
 
 *   **Layout:** Header ("Create New Prompt" or "Edit Prompt: [Filename]"). Single form.
 *   **Sections (Fieldsets):**
-    *   Basic Info (Filename, Author, Version, Objective, Target AGI, etc.).
-    *   System Rules (specific fields + advanced JSON textarea).
-    *   Requirements (specific fields + advanced JSON textarea).
+    *   Basic Info (Filename (readonly if editing), Author, Version, Objective, Target AGI, etc.).
+    *   System Rules (specific fields for language/output + advanced JSON textarea).
+    *   Requirements (specific fields for goal/context + advanced JSON textarea).
     *   Users/Interactors (JSON textarea).
-    *   Executor Role Details (specific fields for name/profile + advanced JSON textarea for other role attributes).
-    *   Cognitive Module Configuration (dedicated subsections with specific inputs for Personality, Motivation, Emotion, Learning).
+    *   Executor Role Details (specific fields for name/profile, comma-separated skills_focus & knowledge_domains_active + advanced JSON textarea for other role attributes).
+    *   Cognitive Module Configuration (dedicated subsections with specific inputs).
     *   Other major sections (Workflow, Scaffolding, CBT) as JSON textareas.
     *   Initiate Interaction.
 *   **Buttons:** "Save Prompt". Error/Success message areas.
@@ -118,9 +133,22 @@ The web interface will provide the following core functionalities:
 ### 5.4 View Curriculum Page (`view_curriculum.html`)
 
 *   **Layout:** Header ("Curriculum: [Name/Filename]"). Link to Dashboard.
-*   Displays curriculum metadata.
-*   Lists steps, each showing order, name, prompt reference (link), conditions, notes.
+*   Displays curriculum metadata (Name, Description, Target Stage, Version, Author).
+*   Lists steps, each showing Order, Name, Prompt Reference (as a link to its view page), Conditions, and Notes.
 *   Displays raw JSON and rendered Markdown for the curriculum.
+
+### 5.5 Create/Edit Curriculum Page (`curriculum_form.html`)
+*   **Layout:** Header ("Create New Curriculum" or "Edit Curriculum Metadata: [Filename]"). Single form.
+*   **Fields for Metadata:** Filename (readonly if editing), Name, Description, Target Stage, Version, Author.
+*   **Steps Section (Create Mode Only):**
+    *   Container `div#steps-container`.
+    *   "Add Curriculum Step" button.
+    *   Each dynamically added step contains inputs for: Step Name, Order, Prompt Reference, Conditions, Notes, and a "Remove" button.
+*   **Steps Section (Edit Mode):**
+    *   A message indicating steps are not editable here.
+    *   Read-only display of existing steps.
+*   **Buttons:** "Save Curriculum". Error/Success message areas.
+
 
 ## 6. Backend API Endpoints (Conceptual - Flask Routes)
 
@@ -131,16 +159,19 @@ The web interface will provide the following core functionalities:
     *   `PUT /api/prompts/<filename>`: Updates an existing prompt from JSON body.
     *   `DELETE /api/prompts/<filename>`: Deletes a prompt file.
     *   `GET /api/prompts/<filename>/render`: Gets rendered Markdown for a prompt.
-*   **Curricula (Read-Only):**
-    *   `GET /api/curricula`: Lists all curricula with details.
+*   **Curricula:**
+    *   `GET /api/curricula`: Lists all curricula with details (filename, name, version).
+    *   `POST /api/curricula`: Creates a new curriculum from JSON body (expects full structure including steps).
     *   `GET /api/curricula/<filename>`: Gets JSON data for a specific curriculum.
+    *   `PUT /api/curricula/<filename>`: Updates metadata of an existing curriculum from JSON body (ignores steps).
     *   `GET /api/curricula/<filename>/render`: Gets rendered Markdown for a curriculum.
 *   **HTML Serving Routes:**
     *   `GET /`: Dashboard.
     *   `GET /create`: Prompt creation form.
     *   `GET /edit/<filename>`: Prompt editing form.
     *   `GET /view/<filename>`: Prompt view page.
+    *   `GET /curriculum/create`: Curriculum creation form.
+    *   `GET /curriculum/edit/<filename>`: Curriculum metadata editing form.
     *   `GET /curriculum/view/<filename>`: Curriculum view page.
 
 Error handling (404, 400, 500) is implemented for API endpoints. User feedback via Flask `flash` messages for page redirects and JavaScript-driven messages on forms.
-```
