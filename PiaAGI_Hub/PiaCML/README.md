@@ -116,6 +116,17 @@ This section lists available concrete implementations of the abstract module int
         *   `get_agent_model`: Retrieves the stored model for an agent.
     *   **Usage:** Suitable for initial simulations requiring a mock ToM, or as a starting point for developing more sophisticated mental state inference engines.
 
+6.  **[`ConcreteCommunicationModule`](concrete_communication_module.py)** ([Tests](tests/test_concrete_communication_module.py)):
+    *   **Implements:** `BaseCommunicationModule`
+    *   **Purpose:** Provides a basic concrete implementation of `BaseCommunicationModule`. It uses keyword-based NLU, template-based NLG, and dictionary-based dialogue state management.
+    *   **Functionality:**
+        *   `process_incoming_communication`: Simple keyword matching for intent (e.g., weather, greeting) and entity extraction from text.
+        *   `generate_outgoing_communication`: Template-filling for predefined intents.
+        *   `manage_dialogue_state`: Tracks dialogue history and turn counts in a dictionary. Supports custom context.
+        *   `apply_communication_strategy`: Placeholder that returns a default or the first available strategy.
+        *   `get_module_status`: Reports active dialogues and conceptual strategies.
+    *   **Usage:** Suitable for simple task-oriented dialogue simulations or as a foundation for more sophisticated conversational AI components.
+
 ## Future Development
 
 The CML will be expanded to include interfaces and foundational implementations for other core PiaAGI cognitive modules, such as:
