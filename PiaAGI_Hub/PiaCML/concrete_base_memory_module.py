@@ -60,7 +60,7 @@ class ConcreteBaseMemoryModule(BaseMemoryModule):
                 if item_data['info'].get('concept') == query_concept:
                     results.append(item_data)
             return results
-        
+
         # Fallback: if query is not recognized for specific fields, and not empty, return nothing or all?
         # For now, let's return empty if specific query fields don't match.
         # If you want to return all when a query is present but not matched, change the logic here.

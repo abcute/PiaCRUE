@@ -100,13 +100,13 @@ class TestConcreteBaseMemoryModule(unittest.TestCase):
         """Test deleting a memory item."""
         info = {'data': 'item_to_delete'}
         memory_id = self.memory.store(info)
-        
+
         # Ensure it's there
         self.assertEqual(len(self.memory.retrieve({'id': memory_id})), 1)
 
         delete_success = self.memory.delete_memory(memory_id)
         self.assertTrue(delete_success, "delete_memory should return True on successful deletion.")
-        
+
         # Ensure it's gone
         self.assertEqual(len(self.memory.retrieve({'id': memory_id})), 0, "Item should be gone after deletion.")
         self.assertNotIn(memory_id, self.memory._storage, "ID should not be in internal storage after deletion.")

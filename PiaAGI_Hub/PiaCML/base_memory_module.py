@@ -143,7 +143,7 @@ if __name__ == '__main__':
             results = []
             if not query:
                 return list(self.storage.values())
-            
+
             query_id = query.get('id')
             if query_id and query_id in self.storage:
                 return [self.storage[query_id]]
@@ -154,7 +154,7 @@ if __name__ == '__main__':
                         results.append(stored_item) # Append the whole item including its ID
             print(f"ConceptualLTM: Found {len(results)} items.")
             return results
-        
+
         def delete_memory(self, memory_id: str) -> bool:
             print(f"ConceptualLTM: Attempting to delete item with ID {memory_id}")
             if memory_id in self.storage:
@@ -193,15 +193,15 @@ if __name__ == '__main__':
     ltm_instance = ConceptualLTM()
     id1 = ltm_instance.store({'type': 'semantic', 'concept': 'Dark Matter', 'definition': 'Hypothetical matter...'}, {'source': 'user_input', 'timestamp': 1})
     id2 = ltm_instance.store({'type': 'semantic', 'concept': 'AGI', 'definition': 'Artificial General Intelligence.'}, {'timestamp': 2})
-    
+
     print("\nRetrieving AGI by ID:", ltm_instance.retrieve({'id': id2}))
     print("Retrieving Dark Matter concepts:", ltm_instance.retrieve({'concept': 'Dark Matter'}))
-    
+
     ltm_instance.get_status()
-    
+
     print("\nDeleting Dark Matter (ID:", id1, ")")
     ltm_instance.delete_memory(id1)
     print("Try deleting Dark Matter again (should fail):", ltm_instance.delete_memory(id1))
-    
+
     ltm_instance.get_status()
     ltm_instance.manage_capacity()
