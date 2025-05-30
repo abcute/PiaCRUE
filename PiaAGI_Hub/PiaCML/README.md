@@ -11,7 +11,7 @@ This library aims to:
 4.  **Promote Code Reusability:** Offer well-documented and tested base components that can be extended or used directly in more complex AGI implementations.
 5.  **Align with Theory:** Ensure that module designs and interfaces are closely mapped to the theoretical descriptions in the main `PiaAGI.md` document.
 
-## Current Modules (Abstract Interfaces)
+## Current Abstract Interfaces
 
 This initial version of the CML provides abstract base classes for the following modules:
 
@@ -46,41 +46,30 @@ This initial version of the CML provides abstract base classes for the following
 8.  **`self_model_module.py` (`SelfModelModule`)**:
     *   **Purpose:** Maintains a dynamic representation of the AGI itself, including its capabilities, limitations, internal states, interaction history, performance, and ethical framework. Crucial for metacognition, self-awareness, and self-improvement.
     *   **PiaAGI.md Sections:** 4.1.10 (Self-Model Module).
-4.  **[`PerceptionModule`](perception_module.py)**:
-    *   **Purpose:** Handles the processing of raw sensory input from various modalities, transforming it into a format usable by other cognitive modules.
-    *   **PiaAGI.md Sections:** 3.1.3 (Sensory Processing), 4.1.1 (Perception Module).
 
-5.  **[`MotivationalSystemModule`](motivational_system_module.py)**:
-    *   **Purpose:** Manages the agent's internal drives, needs, and goals. It is responsible for generating motivation and influencing goal selection.
-    *   **PiaAGI.md Sections:** 3.2.1 (Drives, Needs, and Goals), 4.2.1 (Motivational System).
+## Concrete Implementations
 
-6.  **[`EmotionModule`](emotion_module.py)**:
-    *   **Purpose:** Models and processes emotions, which play a crucial role in evaluating situations, influencing decision-making, and modulating behavior and cognitive processes.
-    *   **PiaAGI.md Sections:** 3.2.2 (Emotional Processing), 4.2.2 (Emotion Module).
+This section lists available concrete implementations of the abstract module interfaces.
 
-7.  **[`PlanningAndDecisionMakingModule`](planning_and_decision_making_module.py)**:
-    *   **Purpose:** Responsible for generating possible actions, evaluating them, selecting an optimal action or sequence of actions (plan) to achieve current goals.
-    *   **PiaAGI.md Sections:** 3.1.5 (Decision Making and Action Selection), 3.1.6 (Planning and Problem Solving), 4.1.5 (Planning and Decision-Making Module).
-
-8.  **[`SelfModelModule`](self_model_module.py)**:
-    *   **Purpose:** Maintains and updates the agent's internal representation of itself, including its own states, capabilities, beliefs, and history. This contributes to self-awareness and metacognitive abilities.
-    *   **PiaAGI.md Sections:** 3.2.4 (Self-Reflection and Metacognition), 4.2.4 (Self-Model Module).
-
-## Core Module Interfaces
-
-(This section title can be considered if a more distinct separation from memory modules is desired in the future, but for now, the above list under "Current Modules" should suffice and maintain consistency.)
+1.  **[`ConcreteBaseMemoryModule`](concrete_base_memory_module.py)** ([Tests](tests/test_concrete_base_memory_module.py)):
+    *   **Implements:** `BaseMemoryModule`
+    *   **Purpose:** Provides a basic, in-memory concrete implementation of the `BaseMemoryModule` interface. It uses a Python dictionary for storage and assigns a unique ID to each memory item.
+    *   **Functionality:**
+        *   Implements `store` (returns memory ID), `retrieve` (by ID or concept query) methods using dictionary lookups.
+        *   Includes `delete_memory(memory_id)` for removing items by ID.
+        *   Provides placeholders for `manage_capacity`, `handle_forgetting`.
+        *   Includes additional placeholder methods: `update_memory_decay(memory_id, decay_factor)` and `find_similar_memories(query_embedding, top_n)`.
+        *   Offers a `get_status` method reporting basic statistics (e.g., total items).
+    *   **Usage:** Serves as a foundational example and can be used for simple simulations or as a starting point for more complex memory systems.
 
 ## Future Development
 
 The CML will be expanded to include interfaces and foundational implementations for other core PiaAGI cognitive modules, such as:
 *   Attention Module (potentially integrated more deeply with Perception and Working Memory)
 *   Learning Module(s) (various types, e.g., reinforcement, supervised, unsupervised)
-*   Attention Module
-*   Learning Module(s)
 *   Behavior Generation Module
 *   Theory of Mind (ToM) / Social Cognition Module
 *   Communication Module (for language processing and generation)
 *   World Model (though this might be more of a data structure and service used by many modules)
 
 Contributions and collaborations are welcome as this library evolves.
-```
