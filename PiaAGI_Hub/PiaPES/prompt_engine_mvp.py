@@ -1,5 +1,6 @@
 import textwrap
 from typing import Dict, List, Optional, Any, Union
+import json
 
 class BaseElement:
     """Base class for all prompt elements to handle placeholder filling."""
@@ -410,6 +411,27 @@ class PiaAGIPrompt(BaseElement):
             output += f"    {self.initiate_interaction}\n"
             
         return output.strip()
+# --- Export to Markdown Function ---
+
+def export_to_markdown(element: BaseElement, filepath: str):
+    """
+    Exports a PiaAGI prompt element (or any BaseElement derivative) to a Markdown file.
+    """
+    if not isinstance(element, BaseElement):
+        print(f"Error: Element to export must be a BaseElement derivative. Got: {type(element)}")
+        return
+
+    markdown_string = element.render()
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(markdown_string)
+        print(f"Element successfully exported to Markdown: {filepath}")
+    except IOError as e:
+        print(f"Error writing Markdown file to {filepath}: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred during Markdown export to {filepath}: {e}")
+
+# --- End of Export to Markdown Function ---
 
 if __name__ == '__main__':
     # Simple Usage Example
@@ -466,7 +488,7 @@ if __name__ == '__main__':
         target_agi="PiaAGI_SciDev_Instance_001",
         developmental_stage_target="PiaSapling",
         author="Dr. Example",
-        version="1.0.0",
+        version="1.0.0-maintest", # Specific version for testing
         date="2024-11-24",
         objective="To configure and guide PiaAGI for a collaborative research paper writing task on {topic}, focusing on {custom_skill} development.",
         system_rules=system_rules,
@@ -499,7 +521,327 @@ if __name__ == '__main__':
     print("\n--- Example of accessing a filled value ---")
     if filled_prompt.requirements:
         print(f"Filled Goal: {filled_prompt.requirements.goal}")
-    if filled_prompt.executors and filled_prompt.executors.role and filled_prompt.executors.role.cognitive_module_configuration and filled_prompt.executors.role.cognitive_module_configuration.motivational_bias_config:
-        print(f"Filled Motivational Bias: {filled_prompt.executors.role.cognitive_module_configuration.motivational_bias_config.biases}")
+    if filled_prompt.executors and filled_prompt.executors.role and \
+       filled_prompt.executors.role.cognitive_module_configuration and \
+       filled_prompt.executors.role.cognitive_module_configuration.motivational_bias_config:
+        mb_biases = filled_prompt.executors.role.cognitive_module_configuration.motivational_bias_config.biases
+        print(f"Filled Motivational Bias: {mb_biases}")
+
+    print("\n--- Testing Template Save/Load ---")
+    template_filepath = "prompt_template_test.json"
+
+    # Save the filled prompt as a template
+    save_template(filled_prompt, template_filepath)
+    print(f"Prompt saved to {template_filepath}")
+
+    # Load the prompt from the template file
+    loaded_prompt = load_template(template_filepath)
+    print(f"Prompt loaded from {template_filepath}")
+
+    # Verify by rendering the loaded prompt or checking specific fields
+    if loaded_prompt:
+        print("\n--- Rendered Loaded Prompt ---")
+        print(loaded_prompt.render())
+        
+        # Example check
+        if loaded_prompt.requirements and filled_prompt.requirements:
+            assert loaded_prompt.requirements.goal == filled_prompt.requirements.goal
+            print("\nSUCCESS: Loaded prompt goal matches original prompt goal.")
+        
+        assert loaded_prompt.version == filled_prompt.version # Check version attribute
+        print(f"SUCCESS: Loaded prompt version '{loaded_prompt.version}' matches original prompt version.")
+
+        if loaded_prompt.executors and loaded_prompt.executors.role and \
+           loaded_prompt.executors.role.cognitive_module_configuration and \
+           loaded_prompt.executors.role.cognitive_module_configuration.motivational_bias_config and \
+           filled_prompt.executors and filled_prompt.executors.role and \
+           filled_prompt.executors.role.cognitive_module_configuration and \
+           filled_prompt.executors.role.cognitive_module_configuration.motivational_bias_config:
+            
+            loaded_biases = loaded_prompt.executors.role.cognitive_module_configuration.motivational_bias_config.biases
+            original_biases = filled_prompt.executors.role.cognitive_module_configuration.motivational_bias_config.biases
+            assert loaded_biases == original_biases
+            print("SUCCESS: Loaded motivational biases match original.")
+
+    else:
+        print("ERROR: Failed to load prompt from template.")
+
+    print("\n\n--- Testing Developmental Curriculum ---")
+
+    # 1. Create and save a couple of simple PiaAGIPrompt templates
+    prompt_step1_content = PiaAGIPrompt(
+        author="CurriculumDesigner",
+        version="1.0.1-step1", # Specific version for step prompt
+        objective="Objective for Step 1: Introduce {concept_A}",
+        initiate_interaction="Explain {concept_A} in simple terms."
+    )
+    prompt_step1_filepath = "prompt_curriculum_step1.json"
+    save_template(prompt_step1_content, prompt_step1_filepath)
+    print(f"Saved Step 1 prompt template to {prompt_step1_filepath}")
+
+    prompt_step2_content = PiaAGIPrompt(
+        author="CurriculumDesigner",
+        version="1.0.2-step2", # Specific version for step prompt
+        objective="Objective for Step 2: Elaborate on {concept_A} and introduce {concept_B}",
+        initiate_interaction="Now, how does {concept_A} relate to {concept_B}?"
+    )
+    prompt_step2_filepath = "prompt_curriculum_step2.json"
+    save_template(prompt_step2_content, prompt_step2_filepath)
+    print(f"Saved Step 2 prompt template to {prompt_step2_filepath}")
+
+    # 2. Create CurriculumSteps
+    step1 = CurriculumStep(
+        name="Introduction to {concept_A_name}",
+        order=1,
+        prompt_reference=prompt_step1_filepath,
+        conditions="Agent is at PiaSeedling stage.",
+        notes="Focus on basic understanding of {concept_A_name}."
+    )
+
+    step2 = CurriculumStep(
+        name="Relating {concept_A_name} to {concept_B_name}",
+        order=2,
+        prompt_reference=prompt_step2_filepath,
+        conditions="Successful completion of Step 1.",
+        notes="Encourage agent to find connections."
+    )
+    
+    step0 = CurriculumStep( # To test ordering
+        name="Pre-computation of {something_else}",
+        order=0,
+        prompt_reference="utility_prompt.json", # Assuming this exists or is placeholder
+        notes="A utility step for {something_else}"
+    )
+
+    # 3. Create DevelopmentalCurriculum
+    curriculum = DevelopmentalCurriculum(
+        name="Learning {concept_A_name} and {concept_B_name}",
+        description="A curriculum to teach an agent about two related concepts, {concept_A_name} and {concept_B_name}, and their connections.",
+        target_developmental_stage="PiaSeedling to PiaSprout",
+        author="AI Tutor Developer",
+        version="0.9.5-curriculumtest" # Specific version for curriculum
+    )
+    curriculum.add_step(step1)
+    curriculum.add_step(step2)
+    curriculum.add_step(step0) # Added out of order, should be sorted
+
+    # 4. Fill placeholders in the curriculum
+    curriculum_placeholders = {
+        "concept_A_name": "Abstraction",
+        "concept_B_name": "Generalization",
+        "concept_A": "the concept of Abstraction", # For prompt_step1_content
+        "concept_B": "the concept of Generalization", # For prompt_step2_content
+        "something_else": "environment variables"
+    }
+    curriculum.fill_placeholders(curriculum_placeholders)
+    
+    # Note: Filling placeholders in prompts referenced by curriculum steps
+    # would typically be a separate step when the step is 'activated' or prepared for execution.
+    # For example, one might load the prompt_template from step.prompt_reference,
+    # fill its placeholders, and then use it.
+    # The curriculum's fill_placeholders only affects the curriculum and step attributes themselves.
+
+    # 5. Render the curriculum
+    print("\n--- Rendered Curriculum ---")
+    rendered_curriculum = curriculum.render()
+    print(rendered_curriculum)
+
+    # 6. Save the curriculum
+    curriculum_filepath = "developmental_curriculum_test.json"
+    save_template(curriculum, curriculum_filepath)
+    print(f"\nCurriculum saved to {curriculum_filepath}")
+
+    # 7. Load the curriculum
+    loaded_curriculum = load_template(curriculum_filepath)
+    print(f"Curriculum loaded from {curriculum_filepath}")
+
+    if loaded_curriculum and isinstance(loaded_curriculum, DevelopmentalCurriculum):
+        print("\n--- Rendered Loaded Curriculum ---")
+        print(loaded_curriculum.render())
+
+        assert loaded_curriculum.name == "Learning Abstraction and Generalization"
+        assert len(loaded_curriculum.steps) == 3
+        assert loaded_curriculum.steps[0].name == "Pre-computation of environment variables" # Check order
+        assert loaded_curriculum.steps[1].name == "Introduction to Abstraction"
+        assert loaded_curriculum.steps[1].prompt_reference == prompt_step1_filepath
+        assert loaded_curriculum.steps[2].notes == "Encourage agent to find connections."
+        assert loaded_curriculum.version == curriculum.version # Check curriculum version
+        print(f"SUCCESS: Loaded curriculum version '{loaded_curriculum.version}' matches original curriculum version.")
+        print("SUCCESS: Loaded curriculum passes integrity checks.")
+    else:
+        print("ERROR: Failed to load or validate the curriculum.")
+
+    # Test Markdown export
+    print("\n\n--- Testing Markdown Export ---")
+    if loaded_prompt:
+        export_to_markdown(loaded_prompt, "loaded_prompt_export.md")
+    else:
+        print("Skipping Markdown export for prompt_template as it was not loaded.")
+
+    if loaded_curriculum and isinstance(loaded_curriculum, DevelopmentalCurriculum):
+        export_to_markdown(loaded_curriculum, "loaded_curriculum_export.md")
+    else:
+        print("Skipping Markdown export for curriculum as it was not loaded or is not a DevelopmentalCurriculum.")
+
+
+# --- Template Saving and Loading Functions ---
+
+class PiaAGIEncoder(json.JSONEncoder):
+    """Custom JSON encoder for PiaAGI elements."""
+    def default(self, obj):
+        if isinstance(obj, BaseElement):
+            # Create a dictionary that includes the type and all attributes
+            data = {'__type__': obj.__class__.__name__}
+            data.update(obj.__dict__)
+            return data
+        return super().default(obj)
+
+def pia_agi_object_hook(dct: Dict[str, Any]) -> Any:
+    """Custom object hook for deserializing PiaAGI elements."""
+    if '__type__' in dct:
+        class_name = dct.pop('__type__')
+        cls = globals().get(class_name)
+        if cls and issubclass(cls, BaseElement):
+            # Create instance without calling __init__ initially
+            instance = cls.__new__(cls) 
+            
+            # For each item in dct, if it's a dictionary that represents a nested custom object,
+            # recursively call this hook (or allow json.loads to do it).
+            # If it's a list of such dictionaries, process each one.
+            processed_dct = {}
+            for key, value in dct.items():
+                if isinstance(value, dict): # Potentially a nested object
+                    processed_dct[key] = pia_agi_object_hook(value)
+                elif isinstance(value, list): # Potentially a list of nested objects
+                    processed_dct[key] = [pia_agi_object_hook(item) if isinstance(item, dict) else item for item in value]
+                else:
+                    processed_dct[key] = value
+            
+            instance.__dict__.update(processed_dct) # Populate attributes
+            return instance
+    return dct
+
+def save_template(element: BaseElement, filepath: str):
+    """
+    Saves a PiaAGI prompt element (or any BaseElement derivative) to a JSON file.
+    """
+    with open(filepath, 'w') as f:
+        json.dump(element, f, cls=PiaAGIEncoder, indent=4)
+
+def load_template(filepath: str) -> Optional[BaseElement]:
+    """
+    Loads a PiaAGI prompt element from a JSON file.
+    Returns the deserialized object, or None if an error occurs.
+    """
+    try:
+        with open(filepath, 'r') as f:
+            data = json.load(f, object_hook=pia_agi_object_hook)
+        if isinstance(data, BaseElement):
+            return data
+        # If the root object isn't a BaseElement (e.g. loading a simple dict),
+        # this indicates an issue or incorrect file.
+        # For this use case, we expect a BaseElement derivative.
+        print(f"Warning: Loaded data from {filepath} is not a PiaAGI BaseElement derivative. Type: {type(data)}")
+        return None
+    except FileNotFoundError:
+        print(f"Error: Template file not found at {filepath}")
+        return None
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from {filepath}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred while loading template from {filepath}: {e}")
+        return None
+
+# --- End of Template Saving and Loading Functions ---
+
+
+# --- Developmental Curriculum Classes ---
+
+class CurriculumStep(BaseElement):
+    """Represents a single step in a developmental curriculum."""
+    def __init__(self,
+                 name: str,
+                 order: int,
+                 prompt_reference: str, # Filepath to a PiaAGIPrompt template
+                 conditions: Optional[str] = None, # Descriptive conditions
+                 notes: Optional[str] = None):
+        self.name = name
+        self.order = order
+        self.prompt_reference = prompt_reference
+        self.conditions = conditions
+        self.notes = notes
+
+    def render(self, indent_level: int = 0) -> str:
+        indent = "    " * indent_level
+        output = f"{indent}### Step {self.order}: {self.name}\n"
+        output += f"{indent}- **Prompt Template:** {self.prompt_reference}\n"
+        if self.conditions:
+            output += f"{indent}- **Conditions:** {self.conditions}\n"
+        if self.notes:
+            output += f"{indent}- **Notes:** {self.notes}\n"
+        # Potentially load and render the referenced prompt if needed,
+        # but for now, keep it as a reference.
+        # Example:
+        # try:
+        #     referenced_prompt = load_template(self.prompt_reference)
+        #     if referenced_prompt:
+        #         output += f"{indent}    <details><summary>View Prompt Details</summary>\n"
+        #         output += referenced_prompt.render(indent_level + 2)
+        #         output += f"{indent}    </details>\n"
+        # except Exception as e:
+        #     output += f"{indent}    (Could not load/render prompt: {e})\n"
+        return output
+
+class DevelopmentalCurriculum(BaseElement):
+    """Represents a developmental curriculum composed of multiple steps."""
+    def __init__(self,
+                 name: str,
+                 description: str,
+                 target_developmental_stage: str,
+                 steps: Optional[List[CurriculumStep]] = None,
+                 version: Optional[str] = None,
+                 author: Optional[str] = None):
+        self.name = name
+        self.description = description
+        self.target_developmental_stage = target_developmental_stage
+        self.steps = steps if steps else []
+        self.version = version
+        self.author = author
+        self.sort_steps()
+
+    def add_step(self, step: CurriculumStep):
+        self.steps.append(step)
+        self.sort_steps()
+
+    def sort_steps(self):
+        self.steps.sort(key=lambda s: s.order)
+
+    def fill_placeholders(self, data: Dict[str, str]):
+        """Fills placeholders in the curriculum's attributes and its steps."""
+        super().fill_placeholders(data) # Fill placeholders for curriculum's own string attributes
+        for step in self.steps:
+            step.fill_placeholders(data) # Propagate to each step
+        return self
+
+    def render(self, indent_level: int = 0) -> str:
+        indent = "    " * indent_level
+        output = f"{indent}# Curriculum: {self.name}\n"
+        if self.author:
+            output += f"{indent}**Author:** {self.author}\n"
+        if self.version:
+            output += f"{indent}**Version:** {self.version}\n"
+        output += f"{indent}**Description:** {self.description}\n"
+        output += f"{indent}**Target Developmental Stage:** {self.target_developmental_stage}\n\n"
+        
+        output += f"{indent}## Curriculum Steps\n"
+        if not self.steps:
+            output += f"{indent}No steps defined for this curriculum.\n"
+        else:
+            for step in self.steps:
+                output += step.render(indent_level + 1)
+        return output
+
+# --- End of Developmental Curriculum Classes ---
 
 ```
