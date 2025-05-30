@@ -97,3 +97,47 @@ The `prompt_engine_mvp.py` script is the first step towards a more comprehensive
 ---
 
 This README provides an overview of the PiaPES MVP. We encourage users to explore the `prompt_engine_mvp.py` script and the detailed `USAGE.md` for practical application.
+
+
+## Web Interface (MVP)
+
+A basic Model-View-Controller (MVC) style web interface is available to provide a user-friendly way to interact with some of the core functionalities of the PiaPES `prompt_engine_mvp.py`.
+
+### Purpose
+The web interface aims to simplify the creation, viewing, editing, and management of PiaAGI prompts for users who may prefer a graphical interface.
+
+### Running the Web Application
+1.  Navigate to the web application directory:
+    ```bash
+    cd PiaAGI_Hub/PiaPES/web_app
+    ```
+2.  Run the Flask application:
+    ```bash
+    python app.py
+    ```
+3.  Open your web browser and go to `http://127.0.0.1:5001/`.
+
+### Basic Usage
+*   **Dashboard:** The main page (`/`) lists all available prompt templates found in the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory.
+*   **View/Render Prompt:** Click "View/Render" next to a prompt on the dashboard. This page displays the prompt's raw JSON data and its rendered Markdown output.
+*   **Create New Prompt:** Click the "Create New Prompt" button or link. Fill in the form fields.
+    *   Primary prompt attributes (objective, author, version, etc.) are direct input fields.
+    *   Complex nested structures (like `SystemRules`, `Requirements`, `Executors` including `Role` and `CognitiveModuleConfiguration`) are input via textareas expecting valid JSON. Ensure `__type__` fields are included for these JSON objects for correct backend processing.
+    *   Provide a filename (ending in `.json`).
+    *   Click "Save Prompt". The new prompt file will be saved in the `prompt_files/` directory.
+*   **Edit Existing Prompt:** Click "Edit" next to a prompt on the dashboard. The form will be pre-filled. Modify the necessary fields and click "Save Prompt". The filename is read-only during edit; to "Save As" a new name, copy the content to a "Create New Prompt" form.
+*   **Delete Prompt:** Click "Delete" next to a prompt on the dashboard. A confirmation will be required.
+
+### Storage
+Prompt files managed by this web interface are stored as `.json` files in the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory.
+
+### Running Web Application Tests
+Unit and integration tests for the Flask backend are located in `PiaAGI_Hub/PiaPES/web_app/tests/`. To run them:
+1.  Ensure your current directory is the project root (e.g., `PiaAGI_Hub` or its parent).
+2.  Run:
+    ```bash
+    python -m unittest discover PiaAGI_Hub/PiaPES/web_app/tests
+    ```
+
+### Further Design Details
+For more detailed information on the conceptual design of this web interface, including API endpoints and page mockups, refer to the [PiaPES Web Interface Design Document](./web_interface_design.md).

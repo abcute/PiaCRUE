@@ -542,12 +542,12 @@ if __name__ == '__main__':
     if loaded_prompt:
         print("\n--- Rendered Loaded Prompt ---")
         print(loaded_prompt.render())
-        
+
         # Example check
         if loaded_prompt.requirements and filled_prompt.requirements:
             assert loaded_prompt.requirements.goal == filled_prompt.requirements.goal
             print("\nSUCCESS: Loaded prompt goal matches original prompt goal.")
-        
+
         assert loaded_prompt.version == filled_prompt.version # Check version attribute
         print(f"SUCCESS: Loaded prompt version '{loaded_prompt.version}' matches original prompt version.")
 
@@ -557,7 +557,7 @@ if __name__ == '__main__':
            filled_prompt.executors and filled_prompt.executors.role and \
            filled_prompt.executors.role.cognitive_module_configuration and \
            filled_prompt.executors.role.cognitive_module_configuration.motivational_bias_config:
-            
+
             loaded_biases = loaded_prompt.executors.role.cognitive_module_configuration.motivational_bias_config.biases
             original_biases = filled_prompt.executors.role.cognitive_module_configuration.motivational_bias_config.biases
             assert loaded_biases == original_biases
@@ -605,7 +605,7 @@ if __name__ == '__main__':
         conditions="Successful completion of Step 1.",
         notes="Encourage agent to find connections."
     )
-    
+
     step0 = CurriculumStep( # To test ordering
         name="Pre-computation of {something_else}",
         order=0,
@@ -634,7 +634,7 @@ if __name__ == '__main__':
         "something_else": "environment variables"
     }
     curriculum.fill_placeholders(curriculum_placeholders)
-    
+
     # Note: Filling placeholders in prompts referenced by curriculum steps
     # would typically be a separate step when the step is 'activated' or prepared for execution.
     # For example, one might load the prompt_template from step.prompt_reference,
@@ -703,8 +703,8 @@ def pia_agi_object_hook(dct: Dict[str, Any]) -> Any:
         cls = globals().get(class_name)
         if cls and issubclass(cls, BaseElement):
             # Create instance without calling __init__ initially
-            instance = cls.__new__(cls) 
-            
+            instance = cls.__new__(cls)
+
             # For each item in dct, if it's a dictionary that represents a nested custom object,
             # recursively call this hook (or allow json.loads to do it).
             # If it's a list of such dictionaries, process each one.
@@ -716,7 +716,7 @@ def pia_agi_object_hook(dct: Dict[str, Any]) -> Any:
                     processed_dct[key] = [pia_agi_object_hook(item) if isinstance(item, dict) else item for item in value]
                 else:
                     processed_dct[key] = value
-            
+
             instance.__dict__.update(processed_dct) # Populate attributes
             return instance
     return dct
@@ -833,7 +833,7 @@ class DevelopmentalCurriculum(BaseElement):
             output += f"{indent}**Version:** {self.version}\n"
         output += f"{indent}**Description:** {self.description}\n"
         output += f"{indent}**Target Developmental Stage:** {self.target_developmental_stage}\n\n"
-        
+
         output += f"{indent}## Curriculum Steps\n"
         if not self.steps:
             output += f"{indent}No steps defined for this curriculum.\n"

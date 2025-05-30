@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}View Prompt: {{ filename }}{% endblock %}
+
+{% block content %}
+    <h1>Prompt Details: {{ filename }}</h1>
+    <p>
+        <a href="{{ url_for('route_dashboard') }}">Back to Dashboard</a> |
+        <a href="{{ url_for('route_edit_prompt_view', filename=filename) }}">Edit this Prompt</a>
+    </p>
+
+    <div id="prompt-details-container">
+        <h2>Prompt Data:</h2>
+        <pre id="raw-json">Loading raw data...</pre>
+
+        <h2>Rendered Markdown Output:</h2>
+        <pre id="rendered-markdown">Loading rendered output...</pre>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentFilename = "{{ filename }}";
+            const rawJsonPre = document.getElementById('raw-json');
+            const renderedMarkdownPre = document.getElementById('rendered-markdown');
+
+            // Fetch and display raw JSON data of the prompt
+            fetch("{{ url_for('api_get_prompt', filename=filename) }}")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status} for raw data`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // The backend's /api/prompts/<filename> returns the prompt's __dict__
+                    // which might be directly what we want to show, or data.prompt_data if nested.
+                    // Based on app.py, it's jsonify(prompt.__dict__)
+                    rawJsonPre.textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    rawJsonPre.textContent = 'Error loading raw prompt data: ' + error.message;
+                    console.error('Error fetching raw prompt data:', error);
+                });
+
+            // Fetch and display rendered Markdown
+            fetch("{{ url_for('api_render_prompt_markdown', filename=filename) }}")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status} for rendered markdown`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.markdown) {
+                        renderedMarkdownPre.textContent = data.markdown;
+                    } else if (data.error) {
+                        throw new Error(data.error);
+                    } else {
+                        throw new Error("Unexpected response format for rendered markdown.");
+                    }
+                })
+                .catch(error => {
+                    renderedMarkdownPre.textContent = 'Error loading rendered Markdown: ' + error.message;
+                    console.error('Error fetching rendered markdown:', error);
+                });
+        });
+    </script>
+{% endblock %}

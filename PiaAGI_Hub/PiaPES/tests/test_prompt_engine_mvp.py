@@ -105,7 +105,7 @@ class TestPromptEngineMVP(unittest.TestCase):
         # Create and save dummy prompt files for curriculum steps
         prompt1_path = os.path.join(self.test_dir, f"curr_prompt1{name_suffix}.json")
         prompt2_path = os.path.join(self.test_dir, f"curr_prompt2{name_suffix}.json")
-        
+
         p1 = PiaAGIPrompt(objective="Step 1 objective", version="c1.0")
         p2 = PiaAGIPrompt(objective="Step 2 objective", version="c2.0")
         save_template(p1, prompt1_path)
@@ -113,7 +113,7 @@ class TestPromptEngineMVP(unittest.TestCase):
 
         step1 = CurriculumStep(name="Step1{name_suffix}", order=1, prompt_reference=prompt1_path, notes="Notes for {step_note_placeholder}")
         step2 = CurriculumStep(name="Step2{name_suffix}", order=2, prompt_reference=prompt2_path)
-        
+
         curriculum = DevelopmentalCurriculum(
             name=f"TestCurriculum{name_suffix}",
             description="A curriculum for {curriculum_purpose}",
@@ -155,7 +155,7 @@ class TestPromptEngineMVP(unittest.TestCase):
     def test_pia_agi_prompt_render(self):
         prompt = self._create_sample_pia_agi_prompt("_render")
         prompt.fill_placeholders({ # Fill some to make render more complete
-            "placeholder": "val", "goal_description": "goal", "purpose": "purpose", 
+            "placeholder": "val", "goal_description": "goal", "purpose": "purpose",
             "conscientiousness_level": "0.5", "curiosity_level": "mid", "test_name": "render_test"
         })
         markdown = prompt.render()
@@ -184,7 +184,7 @@ class TestPromptEngineMVP(unittest.TestCase):
         loaded_prompt = load_template(filepath)
         self.assertIsNotNone(loaded_prompt)
         self.assertIsInstance(loaded_prompt, PiaAGIPrompt)
-        
+
         # Compare __dict__ for equality (requires careful handling of nested objects)
         # For BaseElement derivatives, their __dict__ should be comparable if attributes are simple types
         # or other BaseElement derivatives.
@@ -197,14 +197,14 @@ class TestPromptEngineMVP(unittest.TestCase):
             "placeholder": "md_val", "goal_description": "md_goal", "purpose": "md_purpose",
             "conscientiousness_level": "0.6", "curiosity_level": "low", "test_name": "md_export_test"
         })
-        
+
         filepath = os.path.join(self.test_dir, "prompt_export.md")
         export_to_markdown(prompt, filepath)
         self.assertTrue(os.path.exists(filepath))
 
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
-        
+
         expected_render = prompt.render()
         self.assertEqual(content, expected_render)
 
@@ -229,7 +229,7 @@ class TestPromptEngineMVP(unittest.TestCase):
         self.assertEqual(ep.baseline_valence, "Positive")
         self.assertIn("Positive", ep.render())
         self.assertIn("High", ep.render())
-        
+
         # Test LearningModuleConfig
         lc = LearningModuleConfig(primary_learning_mode="{mode}", learning_rate_adaptation=True)
         lc.fill_placeholders({"mode": "Supervised"})
@@ -250,8 +250,8 @@ class TestPromptEngineMVP(unittest.TestCase):
         self.assertIn("Emotional Profile", cmc_render)
         self.assertIn("Learning Module Config", cmc_render)
         self.assertIn("Ocean Openness", cmc_render) # Check nested content
-        self.assertIn("goal1", cmc_render.lower()) 
-        self.assertIn("Positive", cmc_render) 
+        self.assertIn("goal1", cmc_render.lower())
+        self.assertIn("Positive", cmc_render)
         self.assertIn("Supervised", cmc_render)
 
 
@@ -262,7 +262,7 @@ class TestPromptEngineMVP(unittest.TestCase):
 
         step1 = CurriculumStep(name="Step1", order=1, prompt_reference="p1.json")
         step0 = CurriculumStep(name="Step0", order=0, prompt_reference="p0.json")
-        
+
         curriculum.add_step(step1)
         self.assertEqual(len(curriculum.steps), 1)
         self.assertEqual(curriculum.steps[0].name, "Step1")
@@ -282,7 +282,7 @@ class TestPromptEngineMVP(unittest.TestCase):
         curriculum.fill_placeholders(placeholders)
         self.assertEqual(curriculum.name, "TestCurriculum_curr_ph") # Name doesn't have placeholder
         self.assertEqual(curriculum.description, "A curriculum for testing placeholders in curriculum")
-        
+
         # Check placeholders in steps (assuming step names and notes had placeholders)
         # The sample curriculum has placeholders in step.name and step.notes
         self.assertEqual(curriculum.steps[0].name, "Step1_filled")
@@ -293,8 +293,8 @@ class TestPromptEngineMVP(unittest.TestCase):
     def test_developmental_curriculum_render(self):
         curriculum = self._create_sample_curriculum("_curr_render")
         curriculum.fill_placeholders({
-            "name_suffix": "_rendered", 
-            "step_note_placeholder": "render_note", 
+            "name_suffix": "_rendered",
+            "step_note_placeholder": "render_note",
             "curriculum_purpose": "render_purpose"
         })
         markdown = curriculum.render()
@@ -308,8 +308,8 @@ class TestPromptEngineMVP(unittest.TestCase):
     def test_developmental_curriculum_save_and_load_template(self):
         original_curriculum = self._create_sample_curriculum("_curr_saveload")
         original_curriculum.fill_placeholders({
-             "name_suffix": "_final", 
-             "step_note_placeholder": "final_note", 
+             "name_suffix": "_final",
+             "step_note_placeholder": "final_note",
              "curriculum_purpose": "final_purpose"
         })
 
@@ -320,7 +320,7 @@ class TestPromptEngineMVP(unittest.TestCase):
         loaded_curriculum = load_template(filepath)
         self.assertIsNotNone(loaded_curriculum)
         self.assertIsInstance(loaded_curriculum, DevelopmentalCurriculum)
-        
+
         self.assertTrue(compare_dicts(original_curriculum.__dict__, loaded_curriculum.__dict__), "Curriculum dictionaries do not match after save/load.")
 
 
@@ -329,14 +329,14 @@ class TestPromptEngineMVP(unittest.TestCase):
         curriculum.fill_placeholders({
             "name_suffix": "_md", "step_note_placeholder": "md_note", "curriculum_purpose": "md_export"
         })
-        
+
         filepath = os.path.join(self.test_dir, "curriculum_export.md")
         export_to_markdown(curriculum, filepath)
         self.assertTrue(os.path.exists(filepath))
 
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
-        
+
         expected_render = curriculum.render()
         self.assertEqual(content, expected_render)
 
