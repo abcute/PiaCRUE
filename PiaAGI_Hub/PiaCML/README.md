@@ -78,6 +78,44 @@ This section lists available concrete implementations of the abstract module int
         *   Offers a `get_status` method reporting basic statistics (e.g., total items).
     *   **Usage:** Serves as a foundational example and can be used for simple simulations or as a starting point for more complex memory systems.
 
+2.  **[`ConcreteAttentionModule`](concrete_attention_module.py)** ([Tests](tests/test_concrete_attention_module.py)):
+    *   **Implements:** `BaseAttentionModule`
+    *   **Purpose:** Provides a basic concrete implementation of the `BaseAttentionModule`. It uses a simple dictionary for current focus and rule-based logic for filtering and load management.
+    *   **Functionality:**
+        *   Implements `direct_attention` based on priority.
+        *   Implements `filter_information` based on string/tag matching to current focus.
+        *   Implements `manage_cognitive_load` with simple threshold checks.
+        *   Implements `get_attentional_state` to report internal status.
+    *   **Usage:** Suitable for initial simulations requiring basic attention mechanisms or as a template for more advanced implementations.
+
+3.  **[`ConcreteLearningModule`](concrete_learning_module.py)** ([Tests](tests/test_concrete_learning_module.py)):
+    *   **Implements:** `BaseLearningModule`
+    *   **Purpose:** Provides a very basic concrete implementation of `BaseLearningModule`. It primarily logs learning attempts and feedback, with a conceptual 'direct_store' paradigm and placeholder ethical checks.
+    *   **Functionality:**
+        *   `learn`: Logs learning attempts; conceptually handles 'direct_store' and a 'supervised_dummy' paradigm.
+        *   `process_feedback`: Logs feedback data.
+        *   `consolidate_knowledge`: Placeholder.
+        *   `get_learning_status`: Reports on logged attempts and simple task status.
+        *   `apply_ethical_guardrails`: Basic placeholder checks.
+    *   **Usage:** Suitable for initial simulations needing a mock learning module or as a very basic template for more sophisticated learning algorithm integrations.
+
+4.  **[`ConcreteBehaviorGenerationModule`](concrete_behavior_generation_module.py)** ([Tests](tests/test_concrete_behavior_generation_module.py)):
+    *   **Implements:** `BaseBehaviorGenerationModule`
+    *   **Purpose:** Provides a basic concrete implementation of `BaseBehaviorGenerationModule`. It translates action plans into structured dictionaries representing executable behaviors.
+    *   **Functionality:**
+        *   `generate_behavior`: Maps action plans for 'communicate', 'use_tool', and 'log_internal_state' to behavior specification dictionaries. Includes original plan for traceability.
+        *   `get_status`: Reports supported behavior types.
+    *   **Usage:** Suitable for simulations where behavior execution is handled by interpreting the output dictionary, or as a base for modules interfacing with specific actuators or APIs.
+
+5.  **[`ConcreteTheoryOfMindModule`](concrete_tom_module.py)** ([Tests](tests/test_concrete_tom_module.py)):
+    *   **Implements:** `BaseTheoryOfMindModule`
+    *   **Purpose:** Provides a very basic concrete implementation of `BaseTheoryOfMindModule`. It uses a dictionary to store agent models and simple rules for state inference.
+    *   **Functionality:**
+        *   `infer_mental_state`: Applies rudimentary rules based on utterance and expression keywords to infer desire, intention, or emotion. Logs inferences.
+        *   `update_agent_model`: Stores or updates agent-specific data in an internal dictionary.
+        *   `get_agent_model`: Retrieves the stored model for an agent.
+    *   **Usage:** Suitable for initial simulations requiring a mock ToM, or as a starting point for developing more sophisticated mental state inference engines.
+
 ## Future Development
 
 The CML will be expanded to include interfaces and foundational implementations for other core PiaAGI cognitive modules, such as:
