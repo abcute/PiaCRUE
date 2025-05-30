@@ -127,6 +127,35 @@ This section lists available concrete implementations of the abstract module int
         *   `get_module_status`: Reports active dialogues and conceptual strategies.
     *   **Usage:** Suitable for simple task-oriented dialogue simulations or as a foundation for more sophisticated conversational AI components.
 
+7.  **[`ConcreteLongTermMemoryModule`](concrete_long_term_memory_module.py)** ([Tests](tests/test_concrete_long_term_memory_module.py)):
+    *   **Implements:** `BaseLongTermMemoryModule` (and by extension `BaseMemoryModule`)
+    *   **Purpose:** Provides a concrete implementation for LTM, differentiating between episodic, semantic, and procedural memory by using an internal `ConcreteBaseMemoryModule` and tagging data with an `ltm_type` in its context.
+    *   **Functionality:**
+        *   Implements `store_<type>`, `retrieve_<type>` methods for episodic, semantic, and procedural memories.
+        *   Delegates basic store, retrieve, delete operations to the internal `ConcreteBaseMemoryModule`, adding `ltm_type` context.
+        *   Tracks basic stats for each subcomponent (items stored, queries made).
+        *   Includes placeholder for `manage_ltm_subcomponents`.
+    *   **Usage:** Suitable for simulations needing distinct LTM functionalities and provides a clear example of composing memory modules. Assumes the underlying `ConcreteBaseMemoryModule`'s `retrieve` method can filter based on context criteria for typed retrievals.
+
+8.  **[`ConcreteWorkingMemoryModule`](concrete_working_memory_module.py)** ([Tests](tests/test_concrete_working_memory_module.py)):
+    *   **Implements:** `BaseWorkingMemoryModule` (and by extension `BaseMemoryModule`)
+    *   **Purpose:** Provides a basic concrete implementation for Working Memory. It manages a capacity-limited list of items with unique WM-specific IDs and salience values.
+    *   **Functionality:**
+        *   Adapts `store`, `retrieve`, `delete_memory` from `BaseMemoryModule` for a transient, ID-based workspace.
+        *   Implements `add_item_to_workspace`, `remove_item_from_workspace`, `get_workspace_contents`.
+        *   Manages `set_active_focus` and `get_active_focus` on items within the workspace.
+        *   `manage_workspace_capacity_and_coherence` enforces capacity by removing least salient items.
+        *   `handle_forgetting` includes a conceptual 'decay_salience' strategy.
+    *   **Usage:** Suitable for simulations requiring a basic, capacity-aware cognitive workspace with item salience and focus mechanisms.
+
+9.  **[`ConcretePerceptionModule`](concrete_perception_module.py)** ([Tests](tests/test_concrete_perception_module.py)):
+    *   **Implements:** `BasePerceptionModule`
+    *   **Purpose:** Provides a basic concrete implementation of `BasePerceptionModule`. It performs simple keyword spotting on text inputs and wraps dictionary inputs.
+    *   **Functionality:**
+        *   `process_sensory_input`: For "text" modality, identifies predefined keywords for conceptual entities (apple, ball, user, Pia) and actions (give, see, greet). For "dict_mock" modality, it wraps the input dictionary. Other modalities are marked unsupported.
+        *   `get_module_status`: Reports supported modalities and processing log count.
+    *   **Usage:** Suitable for simulations requiring very basic NLU or mock sensory input processing, or as a template for integrating more sophisticated perception tools.
+
 ## Future Development
 
 The CML will be expanded to include interfaces and foundational implementations for other core PiaAGI cognitive modules, such as:
