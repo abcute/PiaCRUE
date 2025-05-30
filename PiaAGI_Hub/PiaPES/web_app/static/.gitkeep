@@ -1,0 +1,3 @@
+# This file is to ensure the 'static' directory is tracked by Git.
+# It will be used for CSS, JavaScript, and other static assets
+# for the PiaPES web interface.

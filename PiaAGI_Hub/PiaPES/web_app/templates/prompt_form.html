@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title|default('Prompt Form') }} - PiaPES{% endblock %}
+
+{% block content %}
+    <h1>{{ form_title|default('Prompt Form') }}</h1>
+    <form id="promptForm">
+        <!-- Hidden field to store original filename for edits, to detect "Save As" or rename -->
+        <input type="hidden" id="original_filename" name="original_filename" value="{{ prompt_data.filename if prompt_data and prompt_data.filename else '' }}">
+
+        <div>
+            <label for="filename">Filename (must end with .json):</label>
+            <input type="text" id="filename" name="filename" value="{{ prompt_data.filename if prompt_data and prompt_data.filename else '' }}" required {% if prompt_filename_for_edit %}readonly{% endif %}>
+            <small>{% if prompt_filename_for_edit %}Filename cannot be changed during edit. To "Save As" new, copy content to a "Create New Prompt" form.{% else %}This will be the name of the new file.{% endif %}</small>
+        </div>
+
+        <div>
+            <label for="author">Author:</label>
+            <input type="text" id="author" name="author" value="{{ prompt_data.author if prompt_data else '' }}">
+        </div>
+
+        <div>
+            <label for="version">Version:</label>
+            <input type="text" id="version" name="version" value="{{ prompt_data.version if prompt_data else '' }}">
+        </div>
+
+        <div>
+            <label for="objective">Objective:</label>
+            <textarea id="objective" name="objective" rows="3">{{ prompt_data.objective if prompt_data else '' }}</textarea>
+        </div>
+
+        <div>
+            <label for="target_agi">Target AGI:</label>
+            <input type="text" id="target_agi" name="target_agi" value="{{ prompt_data.target_agi if prompt_data else '' }}">
+        </div>
+
+        <div>
+            <label for="developmental_stage_target">Developmental Stage Target:</label>
+            <input type="text" id="developmental_stage_target" name="developmental_stage_target" value="{{ prompt_data.developmental_stage_target if prompt_data else '' }}">
+        </div>
+
+        <div>
+            <label for="date">Date:</label>
+            <input type="text" id="date" name="date" value="{{ prompt_data.date if prompt_data else '' }}" placeholder="YYYY-MM-DD">
+        </div>
+
+        <hr>
+        <h2>Core Sections (Enter as JSON)</h2>
+        <p><small>For nested structures like System Rules, Requirements, Executors (including Role and Cognitive Configuration), etc., please provide valid JSON. Ensure `__type__` fields are included for proper object reconstruction by the backend.</small></p>
+
+        <div>
+            <label for="system_rules_json">System Rules (JSON):</label>
+            <textarea id="system_rules_json" name="system_rules_json" rows="6" placeholder='{"__type__": "SystemRules", "language": "en", ...}'>{{ prompt_data.system_rules_json if prompt_data else '' }}</textarea>
+        </div>
+
+        <div>
+            <label for="requirements_json">Requirements (JSON):</label>
+            <textarea id="requirements_json" name="requirements_json" rows="6" placeholder='{"__type__": "Requirements", "goal": "...", ...}'>{{ prompt_data.requirements_json if prompt_data else '' }}</textarea>
+        </div>
+
+        <div>
+            <label for="users_interactors_json">Users/Interactors (JSON):</label>
+            <textarea id="users_interactors_json" name="users_interactors_json" rows="4" placeholder='{"__type__": "UsersInteractors", "type": "Human", ...}'>{{ prompt_data.users_interactors_json if prompt_data else '' }}</textarea>
+        </div>
+
+        <div>
+            <label for="executors_json">Executors (JSON - contains Role and Cognitive Config):</label>
+            <textarea id="executors_json" name="executors_json" rows="12" placeholder='{"__type__": "Executors", "role": {"__type__": "Role", "name": "...", "cognitive_module_configuration": {"__type__": "CognitiveModuleConfiguration", ...}}}'>{{ prompt_data.executors_json if prompt_data else '' }}</textarea>
+        </div>
+
+        <div>
+            <label for="workflow_or_curriculum_phase_json">Workflow/Curriculum Phase (JSON):</label>
+            <textarea id="workflow_or_curriculum_phase_json" name="workflow_or_curriculum_phase_json" rows="6" placeholder='{"__type__": "Workflow", "steps": [...]}'>{{ prompt_data.workflow_or_curriculum_phase_json if prompt_data else '' }}</textarea>
+        </div>
+
+        <div>
+            <label for="developmental_scaffolding_context_json">Developmental Scaffolding Context (JSON):</label>
+            <textarea id="developmental_scaffolding_context_json" name="developmental_scaffolding_context_json" rows="4" placeholder='{"__type__": "DevelopmentalScaffolding", ...}'>{{ prompt_data.developmental_scaffolding_context_json if prompt_data else '' }}</textarea>
+        </div>
+
+        <div>
+            <label for="cbt_autotraining_protocol_json">CBT AutoTraining Protocol (JSON):</label>
+            <textarea id="cbt_autotraining_protocol_json" name="cbt_autotraining_protocol_json" rows="4" placeholder='{"__type__": "CBTAutoTraining", ...}'>{{ prompt_data.cbt_autotraining_protocol_json if prompt_data else '' }}</textarea>
+        </div>
+
+        <div>
+            <label for="initiate_interaction">Initiate Interaction:</label>
+            <textarea id="initiate_interaction" name="initiate_interaction" rows="3">{{ prompt_data.initiate_interaction if prompt_data else '' }}</textarea>
+        </div>
+
+        <button type="submit">Save Prompt</button>
+    </form>
+    <div id="error-message" class="error" style="margin-top: 15px;"></div>
+    <div id="success-message" class="success" style="margin-top: 15px;"></div>
+
+    <script>
+        const promptForm = document.getElementById('promptForm');
+        const originalFilenameField = document.getElementById('original_filename');
+        const filenameField = document.getElementById('filename');
+        const errorMessageDiv = document.getElementById('error-message');
+        const successMessageDiv = document.getElementById('success-message');
+
+        // This variable would be dynamically set by Jinja2 if editing
+        const currentPromptFilenameForEdit = "{{ prompt_filename_for_edit if prompt_filename_for_edit else '' }}";
+
+        // If currentPromptFilenameForEdit is set, we are in "edit" mode.
+        // The 'prompt_data' variable passed to the template by Flask should contain
+        // the pre-parsed JSON strings for textareas.
+        // The 'filename' field is set from 'prompt_data.filename'.
+        // 'original_filename' hidden field is also set from 'prompt_data.filename'.
+
+        promptForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            successMessageDiv.textContent = '';
+            errorMessageDiv.textContent = '';
+
+            const formData = new FormData(promptForm);
+            const fullPromptData = { "__type__": "PiaAGIPrompt" };
+
+            // Simple fields
+            ['target_agi', 'developmental_stage_target', 'author', 'version', 'date', 'objective', 'initiate_interaction'].forEach(key => {
+                fullPromptData[key] = formData.get(key) || null;
+            });
+
+            // JSON fields
+            const jsonFields = [
+                'system_rules', 'requirements', 'users_interactors', 'executors',
+                'workflow_or_curriculum_phase', 'developmental_scaffolding_context',
+                'cbt_autotraining_protocol'
+            ];
+
+            try {
+                jsonFields.forEach(fieldName => {
+                    const jsonString = formData.get(fieldName + '_json');
+                    if (jsonString && jsonString.trim() !== "") {
+                        fullPromptData[fieldName] = JSON.parse(jsonString);
+                    } else {
+                        fullPromptData[fieldName] = null; // Or default object structure if required by backend
+                    }
+                });
+            } catch (e) {
+                errorMessageDiv.textContent = `Invalid JSON in one of the fields: ${e.message}`;
+                return;
+            }
+
+            const targetFilename = filenameField.value.trim(); // This is the filename to save to or create
+            // const originalFilenameForCheck = originalFilenameField.value.trim(); // This was the filename when the page loaded (for edits)
+
+            if (!targetFilename.endsWith('.json')) {
+                errorMessageDiv.textContent = "Filename must end with .json";
+                return;
+            }
+
+            // Add all collected data to a top-level key for the backend, or send as is if backend expects flat structure from form.
+            // Based on current app.py, it expects the fields directly.
+            // The 'filename' for saving is derived by backend for POST, or taken from URL for PUT.
+            // Let's ensure the __dict__ we send for POST/PUT does not contain its own 'filename' key if backend derives it,
+            // or ensure it's consistent if backend uses it.
+            // The current backend for POST uses data.pop('filename', None) then derives,
+            // but also expects 'filename' in fullPromptData for the object itself if relevant.
+            // Let's ensure 'filename' field from form is part of the object if it's a PiaAGIPrompt attribute (it's not directly).
+            // The backend save_template will handle the object, the filename for saving is separate.
+
+            let method;
+            let url;
+
+            if (currentPromptFilenameForEdit) { // Editing existing prompt
+                method = 'PUT';
+                url = "{{ url_for('api_update_prompt', filename='TEMP_FILENAME') }}".replace('TEMP_FILENAME', currentPromptFilenameForEdit);
+                // The filename in the URL is the key for update.
+                // The 'filename' field in the form (targetFilename) is ignored for PUT's destination, but if it's part of the prompt data itself, it should be there.
+            } else { // Creating new prompt
+                method = 'POST';
+                url = "{{ url_for('api_create_prompt') }}";
+                // For POST, the backend needs to know the desired filename.
+                // We add it to the JSON body. The backend `create_prompt` expects it.
+                fullPromptData.filename = targetFilename;
+            }
+
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(fullPromptData) // Send the full reconstructed object
+            })
+            .then(response => {
+                // Store response status to check before parsing JSON
+                const status = response.status;
+                return response.json().then(data => ({ status, data }));
+            })
+            .then(result => {
+                if (result.status < 200 || result.status >= 300) { // Check if response was not OK
+                    throw new Error(result.data.error || `HTTP error! status: ${result.status}`);
+                }
+                successMessageDiv.textContent = result.data.message || 'Prompt saved successfully!';
+
+                // If it was a new prompt (POST), redirect to edit page of the new prompt
+                if (method === 'POST' && result.data.filename) {
+                    successMessageDiv.textContent = result.data.message + " Redirecting to edit...";
+                    window.location.href = "{{ url_for('route_edit_prompt_view', filename='TEMP_FILENAME') }}".replace('TEMP_FILENAME', result.data.filename);
+                } else if (method === 'PUT') {
+                    // For PUT, just show success, no redirect needed, or could reload.
+                    // To reflect any changes if other fields were modified:
+                    // window.location.reload(); // Or selectively update fields if not redirecting.
+                }
+            })
+            .catch(error => {
+                errorMessageDiv.textContent = `Error saving prompt: ${error.message}`;
+                console.error('Error saving prompt:', error);
+            });
+        });
+    </script>
+{% endblock %}

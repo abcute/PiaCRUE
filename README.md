@@ -37,7 +37,8 @@ To engage with the PiaAGI project, we recommend the following:
         *   **PiaAVT (PiaAGI Agent Analysis & Visualization Toolkit):** For analyzing agent behavior and internal states.
         *   **PiaPES (PiaAGI Prompt Engineering Suite):** For designing Guiding Prompts and Developmental Scaffolding.
     *   An initial **MVP (Minimal Viable Product)** implementation for the **PiaPES Prompt Templating Engine** located in `PiaAGI_Hub/PiaPES/prompt_engine_mvp.py` with its `USAGE.md`.
-5.  **Utilize the Web Application:** For a hands-on experience with the foundational R-U-E prompting, explore the **PiaAGI Web Tool** (legacy PiaCRUE) by starting with its **[`pia_crue_web_tool/README.md`](pia_crue_web_tool/README.md)**.
+5.  **Experiment with the PiaPES Web Interface (MVP):** For a basic graphical interface to manage prompts, navigate to `PiaAGI_Hub/PiaPES/web_app/` and follow the instructions in `PiaAGI_Hub/PiaPES/README.md` (specifically the "Web Interface (MVP)" section) to run the web application.
+6.  **Utilize the Legacy Web Application:** For a hands-on experience with the foundational R-U-E prompting, explore the **PiaAGI Web Tool** (legacy PiaCRUE) by starting with its **[`pia_crue_web_tool/README.md`](pia_crue_web_tool/README.md)**.
 
 ## Core Components
 
