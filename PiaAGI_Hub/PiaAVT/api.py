@@ -2,12 +2,14 @@
 
 from typing import List, Dict, Any, Optional, Union, Tuple
 from datetime import datetime
+import json # Added import json for the __main__ block example
 
 # Attempt to import from sibling directories core, analyzers, visualizers
 # This structure assumes PiaAVT is used as a package or these paths are configured.
 try:
     from .core.logging_system import LoggingSystem, LogEntry, DEFAULT_TIMESTAMP_FORMAT, LogValidationError
     from .analyzers.basic_analyzer import BasicAnalyzer
+    from .analyzers.event_sequencer import EventSequencer
     from .visualizers.timeseries_plotter import TimeseriesPlotter
     from .visualizers.state_visualizer import StateVisualizer
 except ImportError:
@@ -17,6 +19,7 @@ except ImportError:
     print("PiaAVT API: Attempting fallback imports. For proper package structure, ensure PiaAVT is installable.")
     from core.logging_system import LoggingSystem, LogEntry, DEFAULT_TIMESTAMP_FORMAT, LogValidationError
     from analyzers.basic_analyzer import BasicAnalyzer
+    from analyzers.event_sequencer import EventSequencer
     from visualizers.timeseries_plotter import TimeseriesPlotter
     from visualizers.state_visualizer import StateVisualizer
 
@@ -28,11 +31,12 @@ class PiaAVTAPI:
     This class provides a high-level interface to the toolkit's functionalities,
     simplifying tasks such as loading log data, performing common analyses,
     and generating visualizations. It orchestrates the underlying components:
-    LoggingSystem, BasicAnalyzer, TimeseriesPlotter, and StateVisualizer.
+    LoggingSystem, BasicAnalyzer, EventSequencer, TimeseriesPlotter, and StateVisualizer.
 
     Attributes:
         logging_system (LoggingSystem): Instance for log ingestion and storage.
-        analyzer (Optional[BasicAnalyzer]): Instance for log analysis; initialized after logs are loaded.
+        analyzer (Optional[BasicAnalyzer]): Instance for basic log analysis; initialized after logs are loaded.
+        event_sequencer (Optional[EventSequencer]): Instance for event sequence analysis; initialized after logs are loaded.
         timeseries_plotter (TimeseriesPlotter): Instance for generating time-series plots.
         state_visualizer (StateVisualizer): Instance for creating textual representations of agent states.
         _active_log_file (Optional[str]): Path to the currently loaded log file.
@@ -44,6 +48,7 @@ class PiaAVTAPI:
         """
         self.logging_system = LoggingSystem()
         self.analyzer: Optional[BasicAnalyzer] = None
+        self.event_sequencer: Optional[EventSequencer] = None
         self.timeseries_plotter = TimeseriesPlotter()
         self.state_visualizer = StateVisualizer()
         self._active_log_file: Optional[str] = None
@@ -51,7 +56,7 @@ class PiaAVTAPI:
     def load_logs_from_json(self, file_path: str, validate: bool = True) -> bool:
         """
         Loads log data from a specified JSON file into the LoggingSystem.
-        If successful, it initializes the BasicAnalyzer with the loaded logs.
+        If successful, it initializes the BasicAnalyzer and EventSequencer with the loaded logs.
         Clears any previously loaded logs before loading new ones.
 
         Args:
@@ -61,22 +66,26 @@ class PiaAVTAPI:
                              to the LoggingSystem's rules. Defaults to True.
 
         Returns:
-            bool: True if logs were loaded and analyzer initialized successfully, False otherwise.
+            bool: True if logs were loaded and analyzers initialized successfully, False otherwise.
         """
         try:
             self.logging_system.clear_logs() # Clear previous logs
             self.logging_system.load_logs_from_json_file(file_path, validate=validate)
-            self.analyzer = BasicAnalyzer(self.logging_system.get_log_data())
+            loaded_logs = self.logging_system.get_log_data()
+            self.analyzer = BasicAnalyzer(loaded_logs)
+            self.event_sequencer = EventSequencer(loaded_logs)
             self._active_log_file = file_path
-            print(f"API: Successfully loaded and initialized analyzer with logs from {file_path}")
+            print(f"API: Successfully loaded and initialized analyzers with logs from {file_path}")
             return True
         except (FileNotFoundError, json.JSONDecodeError, LogValidationError) as e:
-            self.analyzer = None # Ensure analyzer is not stale
+            self.analyzer = None # Ensure analyzers are not stale
+            self.event_sequencer = None
             self._active_log_file = None
             print(f"API Error: Failed to load logs from {file_path}. {e}")
             return False
-        except Exception as e:
+        except Exception as e: # Catch any other unexpected errors during loading/init
             self.analyzer = None
+            self.event_sequencer = None
             self._active_log_file = None
             print(f"API Error: An unexpected error occurred loading logs from {file_path}. {e}")
             return False
@@ -293,6 +302,83 @@ class PiaAVTAPI:
         """
         print(self.state_visualizer.visualize_working_memory(wm_log_data, title=title))
 
+    def get_event_sequencer(self) -> Optional[EventSequencer]:
+        """
+        Provides access to the EventSequencer instance for the currently loaded logs.
+
+        Returns:
+            Optional[EventSequencer]: The EventSequencer instance, or None if no logs are loaded.
+        """
+        if not self.event_sequencer:
+            print("API Warning: Event sequencer not available. Load logs first.")
+        return self.event_sequencer
+
+    def find_event_sequences(self,
+                             sequence_definition: List[Dict[str, Optional[str]]],
+                             max_time_between_steps_seconds: Optional[float] = None,
+                             max_intervening_logs: Optional[int] = None,
+                             allow_repeats_in_definition: bool = False
+                            ) -> List[List[LogEntry]]:
+        """
+        Facade to find event sequences using EventSequencer.
+
+        Args:
+            sequence_definition (List[Dict[str, Optional[str]]]): Defines the sequence pattern.
+                Each dict should have 'event_type' and optionally 'source'.
+            max_time_between_steps_seconds (Optional[float]): Max time between consecutive steps.
+            max_intervening_logs (Optional[int]): Max other logs between consecutive steps.
+            allow_repeats_in_definition (bool): Policy for repeated definitions.
+                See EventSequencer.extract_event_sequences for details.
+
+        Returns:
+            List[List[LogEntry]]: A list of found sequences (each sequence is a list of LogEntry),
+                                  or an empty list if none found or an error occurs.
+        """
+        if not self.event_sequencer:
+            print("API Error: Event sequencer not available. Load logs first.")
+            return []
+        try:
+            return self.event_sequencer.extract_event_sequences(
+                sequence_definition,
+                max_time_between_steps_seconds,
+                max_intervening_logs,
+                allow_repeats_in_definition
+            )
+        except Exception as e:
+            print(f"API Error: Error during event sequence extraction: {e}")
+            return []
+
+    def get_formatted_event_sequences(self,
+                                      sequence_definition: List[Dict[str, Optional[str]]],
+                                      max_time_between_steps_seconds: Optional[float] = None,
+                                      max_intervening_logs: Optional[int] = None,
+                                      allow_repeats_in_definition: bool = False
+                                     ) -> str:
+        """
+        Finds event sequences using EventSequencer and returns them in a formatted string.
+
+        Args:
+            sequence_definition (List[Dict[str, Optional[str]]]): Defines the sequence pattern.
+            max_time_between_steps_seconds (Optional[float]): Max time between steps.
+            max_intervening_logs (Optional[int]): Max intervening logs.
+            allow_repeats_in_definition (bool): Policy for repeated definitions.
+
+        Returns:
+            str: A human-readable string of the found sequences, or an error/empty message.
+        """
+        if not self.event_sequencer:
+            # This specific message is fine here, as it's a direct user feedback from API.
+            return "API Error: Event sequencer not available. Load logs first."
+
+        sequences = self.find_event_sequences(
+            sequence_definition,
+            max_time_between_steps_seconds,
+            max_intervening_logs,
+            allow_repeats_in_definition
+        )
+        # The format_sequences_for_display method itself handles "No event sequences found."
+        return self.event_sequencer.format_sequences_for_display(sequences)
+
 
 # Example Usage (demonstrates the API)
 # This section is intended for direct script execution demonstration and simple testing.
@@ -317,7 +403,7 @@ if __name__ == "__main__":
         }
     ]
     dummy_log_file = "sample_logs.json"
-    import json
+    import json # json import was missing from the original prompt's __main__ block for this file
     with open(dummy_log_file, 'w') as f:
         json.dump(sample_log_content, f, indent=2)
 
@@ -395,14 +481,34 @@ if __name__ == "__main__":
         else:
             print("No 'WorkingMemory State' event found in sample logs for WM display example.")
 
+        # 6. Facade Event Sequence Analysis Example
+        print("\n--- Facade Event Sequence Analysis ---")
+        # Define a sequence that IS in the sample_log_content
+        seq_def_present = [
+            {"event_type": "Write", "source": "PiaCML.Memory"}, # Log 0: 10:00:00
+            {"event_type": "Action", "source": "PiaSE.Agent0"}  # Log 1: 10:00:05
+        ]
+        print("Searching for sequence: PiaCML.Memory/Write -> PiaSE.Agent0/Action (0 intervening)")
+        formatted_sequences = api.get_formatted_event_sequences(
+            seq_def_present,
+            max_intervening_logs=0 # Expect mem001->act001 and mem003->act002
+        )
+        print(formatted_sequences)
+
+        print("\nSearching with time limit (max 3s between steps, 0 intervening):")
+        # This should find no sequences, as the gap between Write and Action is 5s.
+        formatted_sequences_timed = api.get_formatted_event_sequences(
+            seq_def_present,
+            max_time_between_steps_seconds=3.0,
+            max_intervening_logs=0
+        )
+        print(formatted_sequences_timed)
+
     else:
         print(f"ERROR: Failed to load logs from {dummy_log_file}. API demo cannot proceed fully.")
 
     # Clean up the dummy log file and generated plots
     import os
-    if os.path.exists(dummy_log_file):
-        os.remove(dummy_log_file)
-    # You might want to keep the image files for inspection
     # In a real scenario, you might want to inspect the plots. For automated tests, removal is common.
     files_to_remove = [dummy_log_file, "api_reward_plot.png", "api_valence_plot.png"]
     for f_path in files_to_remove:
@@ -414,5 +520,4 @@ if __name__ == "__main__":
                 print(f"Error removing file {f_path}: {e}")
 
     print("\nAPI Demo Complete.")
-
 ```
