@@ -44,29 +44,92 @@
         </div>
 
         <hr>
-        <h2>Core Sections (Enter as JSON)</h2>
-        <p><small>For nested structures like System Rules, Requirements, Executors (including Role and Cognitive Configuration), etc., please provide valid JSON. Ensure `__type__` fields are included for proper object reconstruction by the backend.</small></p>
+        <fieldset>
+            <legend>System Rules</legend>
+            <div>
+                <label for="system_rules_language">Language:</label>
+                <input type="text" id="system_rules_language" name="system_rules_language" value="{{ prompt_data.system_rules_language if prompt_data else 'English' }}">
+            </div>
+            <div>
+                <label for="system_rules_output_format">Output Format:</label>
+                <input type="text" id="system_rules_output_format" name="system_rules_output_format" value="{{ prompt_data.system_rules_output_format if prompt_data else 'Natural language' }}">
+            </div>
+            <div>
+                <label for="system_rules_json">Advanced System Rules JSON (supplements/overrides fields above if a complete SystemRules object is provided here):</label>
+                <textarea id="system_rules_json" name="system_rules_json" rows="3" placeholder='{"__type__": "SystemRules", "logging_level": "Brief", ...}'>{{ prompt_data.system_rules_json if prompt_data else '' }}</textarea>
+            </div>
+        </fieldset>
 
-        <div>
-            <label for="system_rules_json">System Rules (JSON):</label>
-            <textarea id="system_rules_json" name="system_rules_json" rows="6" placeholder='{"__type__": "SystemRules", "language": "en", ...}'>{{ prompt_data.system_rules_json if prompt_data else '' }}</textarea>
-        </div>
+        <fieldset>
+            <legend>Requirements</legend>
+            <div>
+                <label for="requirements_goal">Goal:</label>
+                <textarea id="requirements_goal" name="requirements_goal" rows="3">{{ prompt_data.requirements_goal if prompt_data else '' }}</textarea>
+            </div>
+            <div>
+                <label for="requirements_background_context">Background Context:</label>
+                <textarea id="requirements_background_context" name="requirements_background_context" rows="3">{{ prompt_data.requirements_background_context if prompt_data else '' }}</textarea>
+            </div>
+            <div>
+                <label for="requirements_json">Advanced Requirements JSON (supplements/overrides fields above if a complete Requirements object is provided here):</label>
+                <textarea id="requirements_json" name="requirements_json" rows="3" placeholder='{"__type__": "Requirements", "constraints_and_boundaries": [], ...}'>{{ prompt_data.requirements_json if prompt_data else '' }}</textarea>
+            </div>
+        </fieldset>
 
-        <div>
-            <label for="requirements_json">Requirements (JSON):</label>
-            <textarea id="requirements_json" name="requirements_json" rows="6" placeholder='{"__type__": "Requirements", "goal": "...", ...}'>{{ prompt_data.requirements_json if prompt_data else '' }}</textarea>
-        </div>
-
-        <div>
+        <div> <!-- Users/Interactors remains as JSON for now -->
             <label for="users_interactors_json">Users/Interactors (JSON):</label>
-            <textarea id="users_interactors_json" name="users_interactors_json" rows="4" placeholder='{"__type__": "UsersInteractors", "type": "Human", ...}'>{{ prompt_data.users_interactors_json if prompt_data else '' }}</textarea>
+            <textarea id="users_interactors_json" name="users_interactors_json" rows="3" placeholder='{"__type__": "UsersInteractors", "type": "Human", ...}'>{{ prompt_data.users_interactors_json if prompt_data else '' }}</textarea>
         </div>
 
-        <div>
-            <label for="executors_json">Executors (JSON - contains Role and Cognitive Config):</label>
-            <textarea id="executors_json" name="executors_json" rows="12" placeholder='{"__type__": "Executors", "role": {"__type__": "Role", "name": "...", "cognitive_module_configuration": {"__type__": "CognitiveModuleConfiguration", ...}}}'>{{ prompt_data.executors_json if prompt_data else '' }}</textarea>
-        </div>
+        <fieldset>
+            <legend>Executor Role Details</legend>
+             <div>
+                <label for="role_name">Role Name:</label>
+                <input type="text" id="role_name" name="role_name" value="{{ prompt_data.role_name if prompt_data else 'DefaultRole' }}">
+            </div>
+            <div>
+                <label for="role_profile">Role Profile:</label>
+                <textarea id="role_profile" name="role_profile" rows="3">{{ prompt_data.role_profile if prompt_data else '' }}</textarea>
+            </div>
+            <div>
+                <label for="executors_json">Advanced Executors JSON (supplements/overrides Role fields above if a complete Executors object with Role is provided; Cognitive Config is separate below):</label>
+                <textarea id="executors_json" name="executors_json" rows="4" placeholder='{"__type__": "Executors", "role": {"__type__": "Role", "skills_focus": [], ...}}'>{{ prompt_data.executors_json if prompt_data else '' }}</textarea>
+            </div>
+        </fieldset>
 
+        <hr>
+        <h2>Cognitive Module Configuration (within the Role)</h2>
+
+        <fieldset>
+            <legend>Personality (OCEAN Scores)</legend>
+            <div><label for="personality_openness">Openness (0.0-1.0):</label><input type="number" id="personality_openness" name="personality_openness" min="0" max="1" step="0.01" value="{{ prompt_data.personality_openness if prompt_data else '' }}"></div>
+            <div><label for="personality_conscientiousness">Conscientiousness (0.0-1.0):</label><input type="number" id="personality_conscientiousness" name="personality_conscientiousness" min="0" max="1" step="0.01" value="{{ prompt_data.personality_conscientiousness if prompt_data else '' }}"></div>
+            <div><label for="personality_extraversion">Extraversion (0.0-1.0):</label><input type="number" id="personality_extraversion" name="personality_extraversion" min="0" max="1" step="0.01" value="{{ prompt_data.personality_extraversion if prompt_data else '' }}"></div>
+            <div><label for="personality_agreeableness">Agreeableness (0.0-1.0):</label><input type="number" id="personality_agreeableness" name="personality_agreeableness" min="0" max="1" step="0.01" value="{{ prompt_data.personality_agreeableness if prompt_data else '' }}"></div>
+            <div><label for="personality_neuroticism">Neuroticism (0.0-1.0):</label><input type="number" id="personality_neuroticism" name="personality_neuroticism" min="0" max="1" step="0.01" value="{{ prompt_data.personality_neuroticism if prompt_data else '' }}"></div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Motivational Biases</legend>
+            <div><label for="motivational_biases_text">Biases (comma-separated key:value pairs, e.g., Intrinsic_Curiosity:High, Task_Completion:0.8):</label>
+                 <textarea id="motivational_biases_text" name="motivational_biases_text" rows="3">{{ prompt_data.motivational_biases_text if prompt_data else '' }}</textarea></div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Emotional Profile</legend>
+            <div><label for="emotional_baseline_valence">Baseline Valence:</label><input type="text" id="emotional_baseline_valence" name="emotional_baseline_valence" value="{{ prompt_data.emotional_baseline_valence if prompt_data else '' }}"></div>
+            <div><label for="emotional_reactivity_to_failure">Reactivity to Failure Intensity:</label><input type="text" id="emotional_reactivity_to_failure" name="emotional_reactivity_to_failure" value="{{ prompt_data.emotional_reactivity_to_failure if prompt_data else '' }}"></div>
+            <div><label for="emotional_empathy_target">Empathy Level Target:</label><input type="text" id="emotional_empathy_target" name="emotional_empathy_target" value="{{ prompt_data.emotional_empathy_target if prompt_data else '' }}"></div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Learning Module Config</legend>
+            <div><label for="learning_primary_mode">Primary Learning Mode:</label><input type="text" id="learning_primary_mode" name="learning_primary_mode" value="{{ prompt_data.learning_primary_mode if prompt_data else '' }}"></div>
+            <div><label for="learning_rate_adaptation_enabled">Learning Rate Adaptation Enabled:</label><input type="checkbox" id="learning_rate_adaptation_enabled" name="learning_rate_adaptation_enabled" value="true" {% if prompt_data and prompt_data.learning_rate_adaptation_enabled %}checked{% endif %}></div>
+            <!-- ethical_heuristic_update_rule could be another text field if needed -->
+        </fieldset>
+
+        <hr>
         <div>
             <label for="workflow_or_curriculum_phase_json">Workflow/Curriculum Phase (JSON):</label>
             <textarea id="workflow_or_curriculum_phase_json" name="workflow_or_curriculum_phase_json" rows="6" placeholder='{"__type__": "Workflow", "steps": [...]}'>{{ prompt_data.workflow_or_curriculum_phase_json if prompt_data else '' }}</textarea>
@@ -121,28 +184,127 @@
                 fullPromptData[key] = formData.get(key) || null;
             });
 
-            // JSON fields
-            const jsonFields = [
-                'system_rules', 'requirements', 'users_interactors', 'executors',
-                'workflow_or_curriculum_phase', 'developmental_scaffolding_context',
-                'cbt_autotraining_protocol'
-            ];
+            // Function to safely parse JSON from a textarea, returning a default object if empty or invalid
+            function parseJsonField(fieldName, defaultType = null) {
+                const jsonString = formData.get(fieldName + '_json');
+                let parsedJson = null;
+                if (jsonString && jsonString.trim() !== "") {
+                    try {
+                        parsedJson = JSON.parse(jsonString);
+                    } catch (e) {
+                        throw new Error(`Invalid JSON in ${fieldName}_json: ${e.message}`);
+                    }
+                }
+                // Ensure __type__ is present if it's a known default type
+                if (defaultType && (!parsedJson || !parsedJson.__type__)) {
+                    if (!parsedJson) parsedJson = {};
+                    parsedJson["__type__"] = defaultType;
+                }
+                return parsedJson;
+            }
 
             try {
-                jsonFields.forEach(fieldName => {
-                    const jsonString = formData.get(fieldName + '_json');
-                    if (jsonString && jsonString.trim() !== "") {
-                        fullPromptData[fieldName] = JSON.parse(jsonString);
-                    } else {
-                        fullPromptData[fieldName] = null; // Or default object structure if required by backend
-                    }
+                // System Rules
+                let systemRulesData = parseJsonField('system_rules', 'SystemRules');
+                if (formData.get('system_rules_language')) systemRulesData.language = formData.get('system_rules_language');
+                if (formData.get('system_rules_output_format')) systemRulesData.output_format = formData.get('system_rules_output_format');
+                fullPromptData.system_rules = systemRulesData;
+
+                // Requirements
+                let requirementsData = parseJsonField('requirements', 'Requirements');
+                if (formData.get('requirements_goal')) requirementsData.goal = formData.get('requirements_goal');
+                if (formData.get('requirements_background_context')) requirementsData.background_context = formData.get('requirements_background_context');
+                fullPromptData.requirements = requirementsData;
+
+                // UsersInteractors (remains JSON only for now)
+                fullPromptData.users_interactors = parseJsonField('users_interactors', 'UsersInteractors');
+
+                // Executors & Role
+                let executorsData = parseJsonField('executors', 'Executors');
+                if (!executorsData.role || typeof executorsData.role !== 'object') { // Ensure role object exists
+                    executorsData.role = { "__type__": "Role" };
+                } else if (!executorsData.role.__type__) {
+                    executorsData.role.__type__ = "Role";
+                }
+                if (formData.get('role_name')) executorsData.role.name = formData.get('role_name');
+                if (formData.get('role_profile')) executorsData.role.profile = formData.get('role_profile');
+                fullPromptData.executors = executorsData;
+
+
+                // --- Cognitive Module Configuration (handled as before, injected into executors.role) ---
+                const personalityConfig = { "__type__": "PersonalityConfig" };
+                ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'].forEach(trait => {
+                    const val = formData.get(`personality_${trait}`);
+                    personalityConfig[`ocean_${trait}`] = val ? parseFloat(val) : null;
                 });
+
+                const motivationalBiasesText = formData.get('motivational_biases_text');
+                const motivationalBiases = {};
+                if (motivationalBiasesText) {
+                    motivationalBiasesText.split(',').forEach(pair => {
+                        const parts = pair.split(':');
+                        if (parts.length === 2) {
+                            const key = parts[0].trim();
+                            const value = parts[1].trim();
+                            // Attempt to convert to float if numeric, else keep as string
+                            motivationalBiases[key] = isNaN(parseFloat(value)) ? value : parseFloat(value);
+                        }
+                    });
+                }
+                const motivationalBiasConfig = { "__type__": "MotivationalBias", "biases": motivationalBiases };
+
+                const emotionalProfileConfig = {
+                    "__type__": "EmotionalProfile",
+                    "baseline_valence": formData.get('emotional_baseline_valence') || null,
+                    "reactivity_to_failure_intensity": formData.get('emotional_reactivity_to_failure') || null,
+                    "empathy_level_target": formData.get('emotional_empathy_target') || null
+                };
+
+                const learningModuleConfig = {
+                    "__type__": "LearningModuleConfig",
+                    "primary_learning_mode": formData.get('learning_primary_mode') || null,
+                    "learning_rate_adaptation": formData.get('learning_rate_adaptation_enabled') === 'true' // Checkbox value
+                };
+
+                const cognitiveModuleConfiguration = {
+                    "__type__": "CognitiveModuleConfiguration",
+                    "personality_config": personalityConfig,
+                    "motivational_bias_config": motivationalBiasConfig,
+                    "emotional_profile_config": emotionalProfileConfig,
+                    "learning_module_config": learningModuleConfig
+                };
+
+                // Inject cognitiveModuleConfiguration into the executors.role structure
+                if (fullPromptData.executors && fullPromptData.executors.role) { // Should always be true due to above logic
+                    fullPromptData.executors.role.cognitive_module_configuration = cognitiveModuleConfiguration;
+                } else {
+                     // This case should ideally not be reached if executors and role are initialized
+                    console.error("Executors or Role object not properly initialized before injecting CMC.");
+                }
+                // --- End Cognitive Module Configuration ---
+
+
+                // Other JSON fields (Workflow, Scaffolding, CBT)
+                const otherJsonFields = [
+                    'workflow_or_curriculum_phase', 'developmental_scaffolding_context',
+                    'cbt_autotraining_protocol'
+                ];
+                otherJsonFields.forEach(fieldName => {
+                    // For these, we expect their specific __type__ if JSON is provided, or they can be null
+                    const defaultTypes = {
+                        'workflow_or_curriculum_phase': 'Workflow',
+                        'developmental_scaffolding_context': 'DevelopmentalScaffolding',
+                        'cbt_autotraining_protocol': 'CBTAutoTraining'
+                    };
+                    fullPromptData[fieldName] = parseJsonField(fieldName, defaultTypes[fieldName]);
+                });
+
             } catch (e) {
-                errorMessageDiv.textContent = `Invalid JSON in one of the fields: ${e.message}`;
+                errorMessageDiv.textContent = `Error processing form data: ${e.message}`;
                 return;
             }
 
-            const targetFilename = filenameField.value.trim(); // This is the filename to save to or create
+            const targetFilename = filenameField.value.trim();
             // const originalFilenameForCheck = originalFilenameField.value.trim(); // This was the filename when the page loaded (for edits)
 
             if (!targetFilename.endsWith('.json')) {

@@ -10,8 +10,14 @@
         <li>Loading prompts...</li>
     </ul>
 
+    <h2>Available Curricula:</h2>
+    <ul id="curriculum-list">
+        <li>Loading curricula...</li>
+    </ul>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Fetch Prompts
             fetch("{{ url_for('api_list_prompts') }}")
                 .then(response => {
                     if (!response.ok) {
@@ -74,6 +80,42 @@
                     const ul = document.getElementById('prompt-list');
                     ul.innerHTML = `<li>Error loading prompts: ${error.message}. Please ensure the backend is running and accessible.</li>`;
                     console.error('Error fetching prompts:', error);
+                });
+
+            // Fetch Curricula
+            fetch("{{ url_for('api_list_curricula') }}")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const ul = document.getElementById('curriculum-list');
+                    ul.innerHTML = ''; // Clear loading message
+
+                    if (data && data.length > 0) {
+                        data.forEach(curriculum_info => {
+                            const filename = curriculum_info.filename;
+                            const name = curriculum_info.name || filename;
+                            const version = curriculum_info.version || 'N/A';
+
+                            const li = document.createElement('li');
+                            li.innerHTML = `
+                                <strong>${name}</strong> (Version: ${version})<br>
+                                <small>File: ${filename}</small><br>
+                                <a href="{{ url_for('route_view_curriculum', filename='TEMP_FILENAME') }}".replace('TEMP_FILENAME', filename)>View Details</a>
+                            `; // Note: No edit/delete for curricula in this MVP
+                            ul.appendChild(li);
+                        });
+                    } else {
+                        ul.innerHTML = '<li>No curricula found in the data directory.</li>';
+                    }
+                })
+                .catch(error => {
+                    const ul = document.getElementById('curriculum-list');
+                    ul.innerHTML = `<li>Error loading curricula: ${error.message}. Please ensure the backend is running and accessible.</li>`;
+                    console.error('Error fetching curricula:', error);
                 });
         });
     </script>

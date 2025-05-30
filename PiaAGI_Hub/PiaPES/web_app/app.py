@@ -22,6 +22,7 @@ try:
         CognitiveModuleConfiguration, PersonalityConfig, MotivationalBias,
         EmotionalProfile, LearningModuleConfig, Workflow, WorkflowStep,
         DevelopmentalScaffolding, CBTAutoTraining,
+        DevelopmentalCurriculum, CurriculumStep, # Added curriculum classes
         pia_agi_object_hook # Important for loading
     )
 except ImportError as e:
@@ -47,10 +48,15 @@ if not os.path.exists(PROMPT_DIR):
     os.makedirs(PROMPT_DIR)
 
 def sanitize_filename(name):
-    """Sanitizes a string to be a safe filename."""
-    name = re.sub(r'[^\w\s-]', '', name).strip().lower()
-    name = re.sub(r'[-\s]+', '-', name)
-    if not name:
+    """Sanitizes a string to be a safe filename component."""
+    # Remove characters that are not alphanumeric, whitespace, hyphen, or underscore
+    name = re.sub(r'[^\w\s-]', '', str(name)).strip()
+    # Replace whitespace and multiple hyphens/underscores with a single hyphen
+    name = re.sub(r'[-\s_]+', '-', name)
+    # Remove leading/trailing hyphens and dots
+    name = name.strip('-.')
+    # Prevent names that are just dots or empty after sanitization
+    if not name or all(c == '.' for c in name):
         name = "unnamed_prompt"
     return name + ".json"
 
@@ -77,17 +83,93 @@ def route_edit_prompt_view(filename):
             flash(f"Error: Could not load or parse prompt '{filename}'.", "error")
             return redirect(url_for('route_dashboard'))
 
-        # Prepare data for the form, converting complex objects to JSON strings for textareas
-        prompt_data_for_form = {}
-        for key, value in prompt.__dict__.items():
-            if isinstance(value, BaseElement) or isinstance(value, list) and value and isinstance(value[0], BaseElement):
-                 # For complex objects or lists of them, pass as JSON string
-                prompt_data_for_form[key + '_json'] = json.dumps(value, cls=app.config['PiaAGIEncoder'], indent=2) if value else ""
-            elif isinstance(value, dict): # For simple dicts like 'biases' in MotivationalBias
-                prompt_data_for_form[key + '_json'] = json.dumps(value, indent=2) if value else ""
-            else:
-                prompt_data_for_form[key] = value
-        prompt_data_for_form['filename'] = filename # Ensure filename is part of the data for the form
+        # Prepare data for the form
+        prompt_data_for_form = {'filename': filename}
+
+        # Populate simple attributes from PiaAGIPrompt root
+        for key in ['target_agi', 'developmental_stage_target', 'author', 'version', 'date', 'objective', 'initiate_interaction']:
+            prompt_data_for_form[key] = getattr(prompt, key, None)
+
+        # SystemRules: specific fields + full JSON
+        sr = getattr(prompt, 'system_rules', None)
+        if sr:
+            prompt_data_for_form['system_rules_language'] = sr.language
+            prompt_data_for_form['system_rules_output_format'] = sr.output_format
+            prompt_data_for_form['system_rules_json'] = json.dumps(sr.__dict__, cls=app.config['PiaAGIEncoder'], indent=2)
+        else:
+            prompt_data_for_form['system_rules_language'] = "English" # Default
+            prompt_data_for_form['system_rules_output_format'] = "Natural language" # Default
+            prompt_data_for_form['system_rules_json'] = ""
+
+
+        # Requirements: specific fields + full JSON
+        req = getattr(prompt, 'requirements', None)
+        if req:
+            prompt_data_for_form['requirements_goal'] = req.goal
+            prompt_data_for_form['requirements_background_context'] = req.background_context
+            prompt_data_for_form['requirements_json'] = json.dumps(req.__dict__, cls=app.config['PiaAGIEncoder'], indent=2)
+        else:
+            prompt_data_for_form['requirements_goal'] = ""
+            prompt_data_for_form['requirements_background_context'] = ""
+            prompt_data_for_form['requirements_json'] = ""
+
+        # UsersInteractors, Workflow, Scaffolding, CBT: remain as full JSON for now
+        for key in ['users_interactors', 'workflow_or_curriculum_phase',
+                    'developmental_scaffolding_context', 'cbt_autotraining_protocol']:
+            value = getattr(prompt, key, None)
+            prompt_data_for_form[key + '_json'] = json.dumps(value.__dict__, cls=app.config['PiaAGIEncoder'], indent=2) if value else ""
+
+        # Executors (Role specific fields) and CognitiveModuleConfiguration (specific fields)
+        executors_obj = getattr(prompt, 'executors', None)
+        role_obj = None
+        if executors_obj and hasattr(executors_obj, 'role') and executors_obj.role: # Check if 'role' attribute exists
+            role_obj = executors_obj.role
+            prompt_data_for_form['role_name'] = role_obj.name
+            prompt_data_for_form['role_profile'] = role_obj.profile
+
+            # For executors_json, create a dict of the role excluding CMC, then wrap in Executors dict
+            role_dict_for_json = {k: v for k, v in role_obj.__dict__.items() if k != 'cognitive_module_configuration'}
+            if '__type__' not in role_dict_for_json: role_dict_for_json['__type__'] = role_obj.__class__.__name__
+
+            executors_shell_for_json = {
+                "__type__": executors_obj.__class__.__name__,
+                "role": role_dict_for_json
+            }
+            prompt_data_for_form['executors_json'] = json.dumps(executors_shell_for_json, cls=app.config['PiaAGIEncoder'], indent=2)
+
+            cmc = getattr(role_obj, 'cognitive_module_configuration', None)
+            if cmc:
+                if hasattr(cmc, 'personality_config') and cmc.personality_config:
+                    pc = cmc.personality_config
+                    prompt_data_for_form['personality_openness'] = pc.ocean_openness
+                    prompt_data_for_form['personality_conscientiousness'] = pc.ocean_conscientiousness
+                    prompt_data_for_form['personality_extraversion'] = pc.ocean_extraversion
+                    prompt_data_for_form['personality_agreeableness'] = pc.ocean_agreeableness
+                    prompt_data_for_form['personality_neuroticism'] = pc.ocean_neuroticism
+
+                if hasattr(cmc, 'motivational_bias_config') and cmc.motivational_bias_config and cmc.motivational_bias_config.biases:
+                    biases = cmc.motivational_bias_config.biases
+                    prompt_data_for_form['motivational_biases_text'] = ", ".join([f"{k}:{v}" for k,v in biases.items()])
+                else:
+                    prompt_data_for_form['motivational_biases_text'] = ""
+
+                if hasattr(cmc, 'emotional_profile_config') and cmc.emotional_profile_config:
+                    ep = cmc.emotional_profile_config
+                    prompt_data_for_form['emotional_baseline_valence'] = ep.baseline_valence
+                    prompt_data_for_form['emotional_reactivity_to_failure'] = ep.reactivity_to_failure_intensity
+                    prompt_data_for_form['emotional_empathy_target'] = ep.empathy_level_target
+
+                if hasattr(cmc, 'learning_module_config') and cmc.learning_module_config:
+                    lc = cmc.learning_module_config
+                    prompt_data_for_form['learning_primary_mode'] = lc.primary_learning_mode
+                    prompt_data_for_form['learning_rate_adaptation_enabled'] = bool(lc.learning_rate_adaptation)
+        else: # Default empty values if no executors or role
+            prompt_data_for_form['role_name'] = "DefaultRole"
+            prompt_data_for_form['role_profile'] = ""
+            prompt_data_for_form['executors_json'] = json.dumps({"__type__": "Executors", "role": {"__type__": "Role", "name": "DefaultRole"}}, indent=2)
+            prompt_data_for_form['motivational_biases_text'] = ""
+            # Other cognitive fields will be empty/default in the form
+
 
         return render_template('prompt_form.html',
                                form_title=f"Edit Prompt: {filename}",
@@ -106,6 +188,24 @@ def route_view_prompt(filename):
         flash(f"Error: Prompt file '{filename}' not found.", "error")
         return redirect(url_for('route_dashboard'))
     return render_template('view_prompt.html', filename=filename)
+
+@app.route('/curriculum/view/<path:filename>')
+def route_view_curriculum(filename):
+    filepath = os.path.join(PROMPT_DIR, filename)
+    if not os.path.exists(filepath) or not filename.endswith('.curriculum.json'):
+        flash(f"Error: Curriculum file '{filename}' not found.", "error")
+        return redirect(url_for('route_dashboard'))
+    # Pass curriculum object to template for direct rendering of details, JS can fetch full data if needed for interactivity
+    try:
+        curriculum = load_template(filepath)
+        if not curriculum or not isinstance(curriculum, DevelopmentalCurriculum):
+            flash(f"Error: File '{filename}' is not a valid curriculum.", "error")
+            return redirect(url_for('route_dashboard'))
+        return render_template('view_curriculum.html', filename=filename, curriculum=curriculum)
+    except Exception as e:
+        app.logger.error(f"Error loading curriculum {filename} for view: {e}")
+        flash(f"Error loading curriculum '{filename}': {str(e)}", "error")
+        return redirect(url_for('route_dashboard'))
 
 
 # --- API Endpoints ---
@@ -198,15 +298,20 @@ def create_prompt():
         # We pass the entire data dict to json.loads(json.dumps(data)) to simulate loading it from a file string.
         # This is a bit of a workaround to reuse the existing object_hook logic.
         # A more direct approach would be to have a from_dict class method on BaseElement.
-        reconstructed_json_str = json.dumps(data)
+        reconstructed_json_str = json.dumps(data) # Ensures data is a string for loads
         prompt_object = json.loads(reconstructed_json_str, object_hook=pia_agi_object_hook)
 
-        if not isinstance(prompt_object, BaseElement): # Check if reconstruction was successful
-             return jsonify({"error": "Invalid data structure for prompt object reconstruction."}), 400
+        if not isinstance(prompt_object, BaseElement):
+             return jsonify({"error": "Invalid prompt data structure after reconstruction. Ensure correct __type__ hints and fields."}), 400
 
         save_template(prompt_object, filepath)
-        # Return the filename in the response so client can use it (e.g. for redirect)
         return jsonify({"message": f"Prompt '{filename}' created successfully.", "filename": filename}), 201
+    except json.JSONDecodeError as e:
+        app.logger.error(f"JSONDecodeError creating prompt {filename}: {e}")
+        return jsonify({"error": f"Invalid JSON format provided: {str(e)}"}), 400
+    except (TypeError, KeyError, AttributeError) as e: # Catch errors from object_hook or attribute access
+        app.logger.error(f"DataStructureError creating prompt {filename}: {e}")
+        return jsonify({"error": f"Invalid prompt data structure. Check __type__ hints and field completeness/names. Details: {str(e)}"}), 400
     except Exception as e:
         app.logger.error(f"Error creating prompt {filename}: {e}")
         return jsonify({"error": f"Failed to create prompt: {str(e)}"}), 500
@@ -227,15 +332,20 @@ def api_update_prompt(filename):
         if '__type__' not in data:
             data['__type__'] = 'PiaAGIPrompt' # Assume root is PiaAGIPrompt
 
-        reconstructed_json_str = json.dumps(data)
+        reconstructed_json_str = json.dumps(data) # Ensures data is a string for loads
         prompt_object = json.loads(reconstructed_json_str, object_hook=pia_agi_object_hook)
 
         if not isinstance(prompt_object, BaseElement):
-             return jsonify({"error": "Invalid data structure for prompt object update."}), 400
+             return jsonify({"error": "Invalid prompt data structure after reconstruction. Ensure correct __type__ hints and fields."}), 400
 
-        # Overwrite the existing file
         save_template(prompt_object, filepath)
         return jsonify({"message": f"Prompt '{filename}' updated successfully."})
+    except json.JSONDecodeError as e:
+        app.logger.error(f"JSONDecodeError updating prompt {filename}: {e}")
+        return jsonify({"error": f"Invalid JSON format provided: {str(e)}"}), 400
+    except (TypeError, KeyError, AttributeError) as e: # Catch errors from object_hook or attribute access
+        app.logger.error(f"DataStructureError updating prompt {filename}: {e}")
+        return jsonify({"error": f"Invalid prompt data structure. Check __type__ hints and field completeness/names. Details: {str(e)}"}), 400
     except Exception as e:
         app.logger.error(f"Error updating prompt {filename}: {e}")
         return jsonify({"error": f"Failed to update prompt: {str(e)}"}), 500
@@ -269,6 +379,71 @@ def api_render_prompt_markdown(filename):
     except Exception as e:
         app.logger.error(f"Error rendering prompt {filename}: {e}")
         return jsonify({"error": f"Failed to render prompt: {str(e)}"}), 500
+
+
+@app.route('/api/curricula', methods=['GET'])
+def api_list_curricula():
+    try:
+        curriculum_files = []
+        for filename in os.listdir(PROMPT_DIR):
+            if filename.endswith('.curriculum.json'): # Specific suffix for curricula
+                filepath = os.path.join(PROMPT_DIR, filename)
+                try:
+                    with open(filepath, 'r') as f:
+                        data = json.load(f)
+                        name = data.get('name', filename) # Use curriculum name if available
+                        version = data.get('version', 'N/A')
+                        curriculum_files.append({
+                            "filename": filename,
+                            "name": name,
+                            "version": version
+                        })
+                except Exception as e:
+                    app.logger.warn(f"Could not parse metadata from curriculum {filename}: {e}")
+                    curriculum_files.append({"filename": filename, "name": filename, "version": "Error reading"})
+        return jsonify(curriculum_files)
+    except Exception as e:
+        app.logger.error(f"Error listing curricula: {e}")
+        return jsonify({"error": "Failed to list curricula"}), 500
+
+@app.route('/api/curricula/<path:filename>', methods=['GET'])
+def api_get_curriculum(filename):
+    if not filename.endswith('.curriculum.json'):
+        abort(400, description="Invalid curriculum filename format.")
+
+    filepath = os.path.join(PROMPT_DIR, filename)
+    if not os.path.exists(filepath):
+        abort(404, description="Curriculum file not found.")
+
+    try:
+        curriculum = load_template(filepath)
+        if curriculum and isinstance(curriculum, DevelopmentalCurriculum): # Ensure it's the correct type
+            return jsonify({"filename": filename, "curriculum_data": curriculum.__dict__})
+        else:
+            abort(500, description="Failed to load or parse curriculum file, or incorrect type.")
+    except Exception as e:
+        app.logger.error(f"Error getting curriculum {filename}: {e}")
+        return jsonify({"error": f"Failed to get curriculum: {str(e)}"}), 500
+
+@app.route('/api/curricula/<path:filename>/render', methods=['GET'])
+def api_render_curriculum(filename):
+    if not filename.endswith('.curriculum.json'):
+        abort(400, description="Invalid curriculum filename format.")
+
+    filepath = os.path.join(PROMPT_DIR, filename)
+    if not os.path.exists(filepath):
+        abort(404, description="Curriculum file not found.")
+
+    try:
+        curriculum = load_template(filepath)
+        if curriculum and isinstance(curriculum, DevelopmentalCurriculum):
+            markdown_content = curriculum.render()
+            return jsonify({"filename": filename, "markdown": markdown_content})
+        else:
+            abort(500, description="Failed to load or parse curriculum for rendering, or incorrect type.")
+    except Exception as e:
+        app.logger.error(f"Error rendering curriculum {filename}: {e}")
+        return jsonify({"error": f"Failed to render curriculum: {str(e)}"}), 500
 
 if __name__ == '__main__':
     # Ensure the prompt_files directory exists

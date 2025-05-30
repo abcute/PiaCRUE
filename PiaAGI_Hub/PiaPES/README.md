@@ -118,15 +118,42 @@ The web interface aims to simplify the creation, viewing, editing, and managemen
 3.  Open your web browser and go to `http://127.0.0.1:5001/`.
 
 ### Basic Usage
-*   **Dashboard:** The main page (`/`) lists all available prompt templates found in the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory.
-*   **View/Render Prompt:** Click "View/Render" next to a prompt on the dashboard. This page displays the prompt's raw JSON data and its rendered Markdown output.
-*   **Create New Prompt:** Click the "Create New Prompt" button or link. Fill in the form fields.
-    *   Primary prompt attributes (objective, author, version, etc.) are direct input fields.
-    *   Complex nested structures (like `SystemRules`, `Requirements`, `Executors` including `Role` and `CognitiveModuleConfiguration`) are input via textareas expecting valid JSON. Ensure `__type__` fields are included for these JSON objects for correct backend processing.
-    *   Provide a filename (ending in `.json`).
-    *   Click "Save Prompt". The new prompt file will be saved in the `prompt_files/` directory.
-*   **Edit Existing Prompt:** Click "Edit" next to a prompt on the dashboard. The form will be pre-filled. Modify the necessary fields and click "Save Prompt". The filename is read-only during edit; to "Save As" a new name, copy the content to a "Create New Prompt" form.
-*   **Delete Prompt:** Click "Delete" next to a prompt on the dashboard. A confirmation will be required.
+
+#### Prompt Management
+*   **Dashboard Listing:** The main page (`/`) lists available prompt templates (`*.json` files) and developmental curricula (`*.curriculum.json` files) from the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory.
+*   **Create New Prompt:**
+    *   Accessible via the "Create New Prompt" button.
+    *   The form provides specific input fields for common `PiaAGIPrompt` attributes like `objective`, `author`, `version`, `target_agi`, etc.
+    *   **SystemRules:** Specific fields for `language` and `output_format` are provided, supplemented by an "Advanced System Rules JSON" textarea for other attributes or full JSON input.
+    *   **Requirements:** Specific fields for `goal` and `background_context`, supplemented by an "Advanced Requirements JSON" textarea.
+    *   **Role (within Executors):** Specific fields for `role_name` and `role_profile`, supplemented by an "Advanced Executors JSON" textarea (for other role attributes and the main Executors structure).
+    *   **Cognitive Configurations:** Dedicated fields are provided for:
+        *   Personality (OCEAN scores as number inputs).
+        *   Motivational Biases (as a comma-separated key:value text input).
+        *   Emotional Profile (text inputs for baseline valence, reactivity, empathy).
+        *   Learning Module Config (text input for primary mode, checkbox for rate adaptation).
+    *   Other complex sections like `UsersInteractors`, `Workflow`, `DevelopmentalScaffolding`, and `CBTAutoTraining` are managed via their respective JSON textareas.
+    *   Users must provide a filename (ending in `.json`).
+    *   Clicking "Save Prompt" creates the new JSON file.
+*   **View/Render Prompt:**
+    *   Accessible from the dashboard.
+    *   Displays the prompt's filename, its raw JSON data, and its fully rendered Markdown output.
+*   **Edit Existing Prompt:**
+    *   Accessible from the dashboard. The form is pre-filled with existing data.
+    *   Specific fields and JSON textareas can be modified. Values from specific fields will override or supplement data in the corresponding "Advanced JSON" textareas upon saving.
+    *   The filename is read-only during edit. To "Save As" or rename, users should copy the content to a "Create New Prompt" form.
+*   **Delete Prompt:**
+    *   Accessible from the dashboard, with a confirmation step.
+
+#### Curriculum Viewing (Read-Only)
+*   **Dashboard Listing:** Curricula (`*.curriculum.json` files) are listed on the dashboard.
+*   **View Curriculum:**
+    *   Click "View Details" next to a curriculum on the dashboard.
+    *   The view page displays the curriculum's metadata (name, description, target stage, version, author).
+    *   It lists all `CurriculumStep` objects, showing their order, name, conditions, notes, and the `prompt_reference` filename.
+    *   Each `prompt_reference` is a link to the view page for that specific prompt template.
+    *   The raw JSON and rendered Markdown for the curriculum object are also displayed.
+*   **Note:** Creation and editing of curricula are not supported through the web UI in the current MVP; these actions are done by creating/editing the `.curriculum.json` files directly.
 
 ### Storage
 Prompt files managed by this web interface are stored as `.json` files in the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory.
