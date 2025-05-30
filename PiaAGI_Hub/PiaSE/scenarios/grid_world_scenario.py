@@ -25,7 +25,9 @@ from PiaAGI_Hub.PiaSE.core_engine.basic_engine import BasicSimulationEngine
 from PiaAGI_Hub.PiaSE.environments.grid_world import GridWorld
 # from PiaAGI_Hub.PiaSE.agents.basic_grid_agent import BasicGridAgent # Comment out or remove if only using QLearningAgent
 from PiaAGI_Hub.PiaSE.agents.q_learning_agent import QLearningAgent
+from PiaAGI_Hub.PiaSE.utils.visualizer import GridWorldVisualizer
 from PiaAGI_Hub.PiaSE.core_engine.interfaces import PiaSEEvent
+import matplotlib.pyplot as plt # For plot management
 
 def run_grid_world_scenario():
     """
@@ -83,7 +85,13 @@ def run_grid_world_scenario():
     engine.register_agent(q_agent_id, q_agent)
     print(f"[SCENARIO] Agents registered. Current agents in engine: {list(engine.agents.keys())}")
 
-    # 5. Initialize the Engine
+    # 5. Instantiate Visualizer
+    print("\n[SCENARIO] Initializing GridWorldVisualizer...")
+    visualizer = GridWorldVisualizer(grid_environment)
+    print("[SCENARIO] GridWorldVisualizer created.")
+    plt.ion() # Turn on interactive mode for matplotlib for step-by-step rendering
+
+    # 6. Initialize the Engine
     # This will now also call agent.initialize_q_table() and agent.perceive() for the QLearningAgent
     # using the logic added to BasicSimulationEngine.initialize()
     print("\n[SCENARIO] Initializing the simulation engine (calls env.reset, agent.perceive, agent.initialize_q_table)...")
@@ -92,14 +100,28 @@ def run_grid_world_scenario():
     print(f"[SCENARIO] Environment state after init: {engine.get_environment_state()}")
     print(f"[SCENARIO] Q-Agent initial Q-table for state {q_agent.current_state}: {q_agent.q_table.get(q_agent.current_state)}")
 
+    # Initial render
+    visualizer.render(title="Initial State", step_delay=0.5)
 
-    # 6. Run the Simulation for more steps to allow for learning
-    num_simulation_steps = 2000 # Increased steps for Q-learning
-    print(f"\n[SCENARIO] Running simulation for {num_simulation_steps} steps...")
-    engine.run_simulation(num_steps=num_simulation_steps)
-    print("\n[SCENARIO] Simulation finished.")
 
-    # 7. Post-simulation information
+    # 7. Run the Simulation with manual loop for visualization
+    num_simulation_steps = 200 # Adjusted for visualization speed
+    print(f"\n[SCENARIO] Running simulation for up to {num_simulation_steps} steps with visualization...")
+
+    for i in range(num_simulation_steps):
+        print(f"\n--- Scenario Step {i+1}/{num_simulation_steps} ---")
+
+        engine.run_step() # Engine's run_step processes one step for all agents
+
+        visualizer.render(title=f"After Step {i+1}", step_delay=0.2)
+
+        if grid_environment.is_done(q_agent_id): # Check if the Q-agent reached the goal
+             print(f"Agent '{q_agent_id}' reached the goal at step {i+1}!")
+             break
+
+    print("\n[SCENARIO] Simulation loop finished.")
+
+    # 8. Post-simulation information
     print("\n[SCENARIO] Final environment state:")
     final_state = engine.get_environment_state()
     print(final_state)
@@ -145,6 +167,11 @@ def run_grid_world_scenario():
     # print("\n[SCENARIO] Posting a sample event...")
     # sample_event = PiaSEEvent()
     # engine.post_event(sample_event)
+
+    # Final render and keep plot open
+    visualizer.render(title=f"Final State (Close window to exit)", step_delay=None)
+    if plt.isinteractive():
+        plt.ioff() # Turn off interactive mode
 
     print("\n--- Grid World Q-Learning Scenario Finished ---")
 

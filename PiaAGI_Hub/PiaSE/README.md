@@ -21,6 +21,13 @@ The components implemented in this initial phase include:
 - Modifications to `GridWorld` to support rewards and goal-oriented tasks.
 - A `BasicGridAgent`
 - A `QLearningAgent` capable of learning in GridWorld.
+- A `GridWorldVisualizer` using Matplotlib to display `GridWorld` states.
 - An example `grid_world_scenario.py`
 - Unit tests for `GridWorld` and `BasicGridAgent`.
 - Unit tests for `QLearningAgent`.
+- Unit tests for the `GridWorldVisualizer`.
+
+## Dependencies
+- Python 3.x
+- Matplotlib (for visualization)
+- NumPy (for visualization)
