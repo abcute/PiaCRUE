@@ -4,46 +4,48 @@
 {% block content %}
     <h1>{{ form_title|default('Prompt Form') }}</h1>
     <form id="promptForm">
-        <!-- Hidden field to store original filename for edits, to detect "Save As" or rename -->
-        <input type="hidden" id="original_filename" name="original_filename" value="{{ prompt_data.filename if prompt_data and prompt_data.filename else '' }}">
+        <fieldset>
+            <legend>Basic Information</legend>
+            <!-- Hidden field to store original filename for edits, to detect "Save As" or rename -->
+            <input type="hidden" id="original_filename" name="original_filename" value="{{ prompt_data.filename if prompt_data and prompt_data.filename else '' }}">
 
-        <div>
-            <label for="filename">Filename (must end with .json):</label>
-            <input type="text" id="filename" name="filename" value="{{ prompt_data.filename if prompt_data and prompt_data.filename else '' }}" required {% if prompt_filename_for_edit %}readonly{% endif %}>
-            <small>{% if prompt_filename_for_edit %}Filename cannot be changed during edit. To "Save As" new, copy content to a "Create New Prompt" form.{% else %}This will be the name of the new file.{% endif %}</small>
-        </div>
+            <div>
+                <label for="filename">Filename (must end with .json):</label>
+                <input type="text" id="filename" name="filename" value="{{ prompt_data.filename if prompt_data and prompt_data.filename else '' }}" required {% if prompt_filename_for_edit %}readonly{% endif %}>
+                <small>{% if prompt_filename_for_edit %}Filename cannot be changed during edit. To "Save As" new, copy content to a "Create New Prompt" form.{% else %}This will be the name of the new file.{% endif %}</small>
+            </div>
 
-        <div>
-            <label for="author">Author:</label>
-            <input type="text" id="author" name="author" value="{{ prompt_data.author if prompt_data else '' }}">
-        </div>
+            <div>
+                <label for="author">Author:</label>
+                <input type="text" id="author" name="author" value="{{ prompt_data.author if prompt_data else '' }}">
+            </div>
 
-        <div>
-            <label for="version">Version:</label>
-            <input type="text" id="version" name="version" value="{{ prompt_data.version if prompt_data else '' }}">
-        </div>
+            <div>
+                <label for="version">Version:</label>
+                <input type="text" id="version" name="version" value="{{ prompt_data.version if prompt_data else '' }}">
+            </div>
 
-        <div>
-            <label for="objective">Objective:</label>
-            <textarea id="objective" name="objective" rows="3">{{ prompt_data.objective if prompt_data else '' }}</textarea>
-        </div>
+            <div>
+                <label for="objective">Objective:</label>
+                <textarea id="objective" name="objective" rows="3">{{ prompt_data.objective if prompt_data else '' }}</textarea>
+            </div>
 
-        <div>
-            <label for="target_agi">Target AGI:</label>
-            <input type="text" id="target_agi" name="target_agi" value="{{ prompt_data.target_agi if prompt_data else '' }}">
-        </div>
+            <div>
+                <label for="target_agi">Target AGI:</label>
+                <input type="text" id="target_agi" name="target_agi" value="{{ prompt_data.target_agi if prompt_data else '' }}">
+            </div>
 
-        <div>
-            <label for="developmental_stage_target">Developmental Stage Target:</label>
-            <input type="text" id="developmental_stage_target" name="developmental_stage_target" value="{{ prompt_data.developmental_stage_target if prompt_data else '' }}">
-        </div>
+            <div>
+                <label for="developmental_stage_target">Developmental Stage Target:</label>
+                <input type="text" id="developmental_stage_target" name="developmental_stage_target" value="{{ prompt_data.developmental_stage_target if prompt_data else '' }}">
+            </div>
 
-        <div>
-            <label for="date">Date:</label>
-            <input type="text" id="date" name="date" value="{{ prompt_data.date if prompt_data else '' }}" placeholder="YYYY-MM-DD">
-        </div>
+            <div>
+                <label for="date">Date:</label>
+                <input type="text" id="date" name="date" value="{{ prompt_data.date if prompt_data else '' }}" placeholder="YYYY-MM-DD">
+            </div>
+        </fieldset>
 
-        <hr>
         <fieldset>
             <legend>System Rules</legend>
             <div>
@@ -76,10 +78,13 @@
             </div>
         </fieldset>
 
-        <div> <!-- Users/Interactors remains as JSON for now -->
-            <label for="users_interactors_json">Users/Interactors (JSON):</label>
-            <textarea id="users_interactors_json" name="users_interactors_json" rows="3" placeholder='{"__type__": "UsersInteractors", "type": "Human", ...}'>{{ prompt_data.users_interactors_json if prompt_data else '' }}</textarea>
-        </div>
+        <fieldset>
+            <legend>Users/Interactors</legend>
+            <div>
+                <label for="users_interactors_json">Users/Interactors (JSON):</label>
+                <textarea id="users_interactors_json" name="users_interactors_json" rows="3" placeholder='{"__type__": "UsersInteractors", "type": "Human", ...}'>{{ prompt_data.users_interactors_json if prompt_data else '' }}</textarea>
+            </div>
+        </fieldset>
 
         <fieldset>
             <legend>Executor Role Details</legend>
@@ -137,21 +142,23 @@
             <!-- ethical_heuristic_update_rule could be another text field if needed -->
         </fieldset>
 
-        <hr>
-        <div>
-            <label for="workflow_or_curriculum_phase_json">Workflow/Curriculum Phase (JSON):</label>
-            <textarea id="workflow_or_curriculum_phase_json" name="workflow_or_curriculum_phase_json" rows="6" placeholder='{"__type__": "Workflow", "steps": [...]}'>{{ prompt_data.workflow_or_curriculum_phase_json if prompt_data else '' }}</textarea>
-        </div>
+        <fieldset>
+            <legend>Other Core Prompt Sections (JSON)</legend>
+            <div>
+                <label for="workflow_or_curriculum_phase_json">Workflow/Curriculum Phase (JSON):</label>
+                <textarea id="workflow_or_curriculum_phase_json" name="workflow_or_curriculum_phase_json" rows="6" placeholder='{"__type__": "Workflow", "steps": [...]}'>{{ prompt_data.workflow_or_curriculum_phase_json if prompt_data else '' }}</textarea>
+            </div>
 
-        <div>
-            <label for="developmental_scaffolding_context_json">Developmental Scaffolding Context (JSON):</label>
-            <textarea id="developmental_scaffolding_context_json" name="developmental_scaffolding_context_json" rows="4" placeholder='{"__type__": "DevelopmentalScaffolding", ...}'>{{ prompt_data.developmental_scaffolding_context_json if prompt_data else '' }}</textarea>
-        </div>
+            <div>
+                <label for="developmental_scaffolding_context_json">Developmental Scaffolding Context (JSON):</label>
+                <textarea id="developmental_scaffolding_context_json" name="developmental_scaffolding_context_json" rows="4" placeholder='{"__type__": "DevelopmentalScaffolding", ...}'>{{ prompt_data.developmental_scaffolding_context_json if prompt_data else '' }}</textarea>
+            </div>
 
-        <div>
-            <label for="cbt_autotraining_protocol_json">CBT AutoTraining Protocol (JSON):</label>
-            <textarea id="cbt_autotraining_protocol_json" name="cbt_autotraining_protocol_json" rows="4" placeholder='{"__type__": "CBTAutoTraining", ...}'>{{ prompt_data.cbt_autotraining_protocol_json if prompt_data else '' }}</textarea>
-        </div>
+            <div>
+                <label for="cbt_autotraining_protocol_json">CBT AutoTraining Protocol (JSON):</label>
+                <textarea id="cbt_autotraining_protocol_json" name="cbt_autotraining_protocol_json" rows="4" placeholder='{"__type__": "CBTAutoTraining", ...}'>{{ prompt_data.cbt_autotraining_protocol_json if prompt_data else '' }}</textarea>
+            </div>
+        </fieldset>
 
         <div>
             <label for="initiate_interaction">Initiate Interaction:</label>

@@ -16,6 +16,7 @@
         <p><strong>Author:</strong> {{ curriculum.author|default('N/A') }}</p>
 
         <h2>Steps:</h2>
+        <div id="curriculum-steps-list">
         {% if curriculum.steps and curriculum.steps|length > 0 %}
             <ul>
             {% for step in curriculum.steps %}
@@ -32,6 +33,7 @@
         {% else %}
             <p>No steps defined for this curriculum.</p>
         {% endif %}
+        </div> {# end #curriculum-steps-list #}
     </div>
     <hr>
     <h2>Rendered Markdown Output:</h2>
@@ -120,6 +122,7 @@
                 detailsHtml += `<p><strong>Version:</strong> ${data.version || 'N/A'}</p>`;
                 detailsHtml += `<p><strong>Author:</strong> ${data.author || 'N/A'}</p>`;
                 detailsHtml += `<h2>Steps:</h2>`;
+                detailsHtml += `<div id="curriculum-steps-list">`; // Match the server-side ID for consistent styling
 
                 if (data.steps && data.steps.length > 0) {
                     detailsHtml += `<ul>`;
@@ -137,7 +140,8 @@
                 } else {
                     detailsHtml += `<p>No steps defined for this curriculum.</p>`;
                 }
-                detailsHtml += `</div>`;
+                detailsHtml += `</div>`; // Closing curriculum-steps-list-js
+                detailsHtml += `</div>`; // Closing curriculum-details
 
                 // Find a place to insert this if the server didn't provide it
                 const existingContent = container.innerHTML;
