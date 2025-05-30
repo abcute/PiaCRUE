@@ -98,6 +98,19 @@ class TestWebAppAPI(unittest.TestCase):
                     "skills_focus": ["skill1", "skill2"],
                     "knowledge_domains_active": ["domain1", "domain2"]
                 }
+            },
+            "workflow_or_curriculum_phase": {
+                "__type__": "Workflow",
+                "steps": [
+                    {"__type__": "WorkflowStep", "name": "Initial WF Step 1", "action_directive": "Initial Action 1", "module_focus": ["ModA"], "expected_outcome_internal": "StateA", "expected_output_external": "OutputA"},
+                    {"__type__": "WorkflowStep", "name": "Initial WF Step 2", "action_directive": "Initial Action 2", "module_focus": ["ModB"], "expected_outcome_internal": "StateB", "expected_output_external": "OutputB"}
+                ]
+            },
+            "developmental_scaffolding_context": {
+                "__type__": "DevelopmentalScaffolding",
+                "current_developmental_goal": "Initial Dev Goal",
+                "scaffolding_techniques_employed": ["Technique1", "Technique2"],
+                "feedback_level_from_overseer": "Medium"
             }
         }
         self.prompt1_filename = "test_prompt1.json"
@@ -160,7 +173,19 @@ class TestWebAppAPI(unittest.TestCase):
                     "cognitive_module_configuration": {
                         "__type__": "CognitiveModuleConfiguration",
                         "personality_config": {"__type__": "PersonalityConfig", "ocean_openness": 0.1}
-                    }}}
+                    }}},
+            "workflow_or_curriculum_phase": {
+                "__type__": "Workflow",
+                "steps": [
+                    {"__type__": "WorkflowStep", "name": "Created WF Step 1", "action_directive": "Action C1", "module_focus": ["ModC"], "expected_outcome_internal": "StateC", "expected_output_external": "OutputC"},
+                ]
+            },
+            "developmental_scaffolding_context": {
+                "__type__": "DevelopmentalScaffolding",
+                "current_developmental_goal": "Created Dev Goal",
+                "scaffolding_techniques_employed": ["TechniqueC"],
+                "feedback_level_from_overseer": "High"
+            }
         }
         response = self.client.post('/api/prompts', json=new_prompt_payload)
         self.assertEqual(response.status_code, 201, response.get_json())
@@ -171,6 +196,14 @@ class TestWebAppAPI(unittest.TestCase):
         self.assertEqual(loaded_prompt.objective, new_prompt_payload['objective'])
         self.assertEqual(loaded_prompt.executors.role.skills_focus, ["created_skill1"])
         self.assertEqual(loaded_prompt.executors.role.cognitive_module_configuration.personality_config.ocean_openness, 0.1)
+        self.assertIsNotNone(loaded_prompt.workflow_or_curriculum_phase)
+        self.assertEqual(loaded_prompt.workflow_or_curriculum_phase.__type__, "Workflow")
+        self.assertEqual(len(loaded_prompt.workflow_or_curriculum_phase.steps), 1)
+        self.assertEqual(loaded_prompt.workflow_or_curriculum_phase.steps[0].name, "Created WF Step 1")
+        self.assertEqual(loaded_prompt.workflow_or_curriculum_phase.steps[0].module_focus, ["ModC"])
+        self.assertIsNotNone(loaded_prompt.developmental_scaffolding_context)
+        self.assertEqual(loaded_prompt.developmental_scaffolding_context.current_developmental_goal, "Created Dev Goal")
+        self.assertEqual(loaded_prompt.developmental_scaffolding_context.feedback_level_from_overseer, "High")
 
     def test_api_create_prompt_malformed_nested_type(self):
         malformed_payload = {
@@ -204,7 +237,22 @@ class TestWebAppAPI(unittest.TestCase):
                     "cognitive_module_configuration": {
                         "__type__": "CognitiveModuleConfiguration",
                         "personality_config": {"__type__": "PersonalityConfig", "ocean_neuroticism": 0.99}
-                    }}}}
+                    }}},
+            "workflow_or_curriculum_phase": { # Update: Change step name, add a step
+                "__type__": "Workflow",
+                "steps": [
+                    {"__type__": "WorkflowStep", "name": "Updated WF Step 1", "action_directive": "Updated Action 1", "module_focus": ["ModAUpdated"], "expected_outcome_internal": "StateAUpdated", "expected_output_external": "OutputAUpdated"},
+                    {"__type__": "WorkflowStep", "name": "Initial WF Step 2", "action_directive": "Initial Action 2", "module_focus": ["ModB"], "expected_outcome_internal": "StateB", "expected_output_external": "OutputB"}, # Unchanged
+                    {"__type__": "WorkflowStep", "name": "Added WF Step 3", "action_directive": "Added Action 3", "module_focus": ["ModNew"], "expected_outcome_internal": "StateNew", "expected_output_external": "OutputNew"}
+                ]
+            },
+            "developmental_scaffolding_context": { # Update: Change goal and feedback
+                "__type__": "DevelopmentalScaffolding",
+                "current_developmental_goal": "Super Updated Dev Goal",
+                "scaffolding_techniques_employed": ["Technique1", "TechniqueUpdated"], # Technique2 removed, TechniqueUpdated added
+                "feedback_level_from_overseer": "VeryHigh"
+            }
+        }
         response = self.client.put(f'/api/prompts/{self.prompt1_filename}', json=update_payload)
         self.assertEqual(response.status_code, 200, response.get_json())
         loaded_prompt = load_template(os.path.join(app.PROMPT_DIR, self.prompt1_filename))
@@ -213,9 +261,103 @@ class TestWebAppAPI(unittest.TestCase):
         self.assertEqual(loaded_prompt.executors.role.skills_focus, ["super_skill1", "super_skill2"])
         self.assertEqual(loaded_prompt.executors.role.cognitive_module_configuration.personality_config.ocean_neuroticism, 0.99)
 
+        self.assertIsNotNone(loaded_prompt.workflow_or_curriculum_phase)
+        self.assertEqual(loaded_prompt.workflow_or_curriculum_phase.__type__, "Workflow")
+        self.assertEqual(len(loaded_prompt.workflow_or_curriculum_phase.steps), 3)
+        self.assertEqual(loaded_prompt.workflow_or_curriculum_phase.steps[0].name, "Updated WF Step 1")
+        self.assertEqual(loaded_prompt.workflow_or_curriculum_phase.steps[0].module_focus, ["ModAUpdated"])
+        self.assertEqual(loaded_prompt.workflow_or_curriculum_phase.steps[2].name, "Added WF Step 3")
+
+        self.assertIsNotNone(loaded_prompt.developmental_scaffolding_context)
+        self.assertEqual(loaded_prompt.developmental_scaffolding_context.current_developmental_goal, "Super Updated Dev Goal")
+        self.assertEqual(loaded_prompt.developmental_scaffolding_context.scaffolding_techniques_employed, ["Technique1", "TechniqueUpdated"])
+        self.assertEqual(loaded_prompt.developmental_scaffolding_context.feedback_level_from_overseer, "VeryHigh")
+
+
     def test_api_update_prompt_not_found(self):
         response = self.client.put('/api/prompts/non_existent_prompt.json', json=self.prompt1_data_dict)
         self.assertEqual(response.status_code, 404)
+
+    # --- New Negative Tests for Workflow and Developmental Scaffolding ---
+    def test_api_create_prompt_invalid_workflow_structure_steps_not_list(self):
+        payload = {
+            "__type__": "PiaAGIPrompt", "filename": "invalid_wf1.json", "objective": "Test",
+            "workflow_or_curriculum_phase": {"__type__": "Workflow", "steps": "not-a-list"}
+        }
+        response = self.client.post('/api/prompts', json=payload)
+        self.assertEqual(response.status_code, 400, response.get_json())
+        self.assertIn("Field 'steps' must be of type list", response.get_json().get("error", ""))
+
+    def test_api_create_prompt_invalid_workflow_structure_step_missing_type(self):
+        payload = {
+            "__type__": "PiaAGIPrompt", "filename": "invalid_wf2.json", "objective": "Test",
+            "workflow_or_curriculum_phase": {
+                "__type__": "Workflow",
+                "steps": [{"name": "Step W/O Type", "action_directive": "Do"}] # Missing __type__
+            }
+        }
+        response = self.client.post('/api/prompts', json=payload)
+        self.assertEqual(response.status_code, 400, response.get_json())
+        self.assertIn("Invalid __type__ for step 1", response.get_json().get("error", ""))
+
+    def test_api_create_prompt_invalid_workflow_structure_step_missing_name(self):
+        payload = {
+            "__type__": "PiaAGIPrompt", "filename": "invalid_wf3.json", "objective": "Test",
+            "workflow_or_curriculum_phase": {
+                "__type__": "Workflow",
+                "steps": [{"__type__": "WorkflowStep", "action_directive": "Do"}] # Missing name
+            }
+        }
+        response = self.client.post('/api/prompts', json=payload)
+        self.assertEqual(response.status_code, 400, response.get_json())
+        # The backend might catch this as a general "Invalid prompt data structure" or more specifically.
+        # For now, checking for 400 is the main goal. The exact message depends on app.py's validation depth.
+        # self.assertIn("Missing required field 'name' in step", response.get_json().get("error", "")) # Example detailed check
+        self.assertTrue(response.get_json().get("error", "").startswith("Invalid prompt data structure") or \
+                        "Missing required field 'name' in step" in response.get_json().get("error", ""),
+                        f"Unexpected error: {response.get_json().get('error', '')}")
+
+
+    def test_api_create_prompt_invalid_dev_scaffolding_structure_missing_type(self):
+        payload = {
+            "__type__": "PiaAGIPrompt", "filename": "invalid_ds1.json", "objective": "Test",
+            "developmental_scaffolding_context": {"current_developmental_goal": "Goal"} # Missing __type__
+        }
+        response = self.client.post('/api/prompts', json=payload)
+        self.assertEqual(response.status_code, 400, response.get_json())
+        self.assertIn("Invalid prompt data structure", response.get_json().get("error", ""))
+
+
+    def test_api_create_prompt_invalid_dev_scaffolding_structure_techniques_not_list(self):
+        payload = {
+            "__type__": "PiaAGIPrompt", "filename": "invalid_ds2.json", "objective": "Test",
+            "developmental_scaffolding_context": {
+                "__type__": "DevelopmentalScaffolding",
+                "scaffolding_techniques_employed": "not-a-list"
+            }
+        }
+        response = self.client.post('/api/prompts', json=payload)
+        self.assertEqual(response.status_code, 400, response.get_json())
+        self.assertIn("Field 'scaffolding_techniques_employed' must be of type list", response.get_json().get("error", ""))
+
+    def test_api_update_prompt_invalid_workflow_structure(self):
+        payload = {"workflow_or_curriculum_phase": {"__type__": "Workflow", "steps": "not-a-list"}}
+        response = self.client.put(f'/api/prompts/{self.prompt1_filename}', json=payload)
+        self.assertEqual(response.status_code, 400, response.get_json())
+        self.assertIn("Field 'steps' must be of type list", response.get_json().get("error", ""))
+
+    def test_api_update_prompt_invalid_dev_scaffolding_structure(self):
+        payload = {
+            "developmental_scaffolding_context": {
+                "__type__": "DevelopmentalScaffolding",
+                "scaffolding_techniques_employed": "not-a-list"
+            }
+        }
+        response = self.client.put(f'/api/prompts/{self.prompt1_filename}', json=payload)
+        self.assertEqual(response.status_code, 400, response.get_json())
+        self.assertIn("Field 'scaffolding_techniques_employed' must be of type list", response.get_json().get("error", ""))
+
+    # --- End of New Negative Tests ---
 
     def test_api_delete_prompt_exists(self):
         response = self.client.delete(f'/api/prompts/{self.prompt1_filename}')

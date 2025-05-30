@@ -113,11 +113,40 @@ def route_edit_prompt_view(filename):
             prompt_data_for_form['requirements_background_context'] = ""
             prompt_data_for_form['requirements_json'] = ""
 
-        # UsersInteractors, Workflow, Scaffolding, CBT: remain as full JSON for now
-        for key in ['users_interactors', 'workflow_or_curriculum_phase',
-                    'developmental_scaffolding_context', 'cbt_autotraining_protocol']:
+        # UsersInteractors, CBT: remain as full JSON for now
+        for key in ['users_interactors', 'cbt_autotraining_protocol']:
             value = getattr(prompt, key, None)
             prompt_data_for_form[key + '_json'] = json.dumps(value.__dict__, cls=app.config['PiaAGIEncoder'], indent=2) if value else ""
+
+        # Workflow: specific fields (steps) + full JSON
+        wf = getattr(prompt, 'workflow_or_curriculum_phase', None)
+        if wf and wf.__class__.__name__ == 'Workflow' and hasattr(wf, 'steps'):
+            prompt_data_for_form['workflow_steps_data'] = []
+            for step_obj in wf.steps:
+                step_dict = step_obj.__dict__.copy()
+                # module_focus is already a list of strings, JS will join for input, parse back on submit
+                prompt_data_for_form['workflow_steps_data'].append(step_dict)
+            prompt_data_for_form['workflow_or_curriculum_phase_json'] = json.dumps(wf.__dict__, cls=app.config['PiaAGIEncoder'], indent=2)
+        else:
+            prompt_data_for_form['workflow_steps_data'] = [] # Pass empty list for JS
+            prompt_data_for_form['workflow_or_curriculum_phase_json'] = ""
+            if wf: # if it's not None but not a Workflow (e.g. old data), stringify it as is
+                 prompt_data_for_form['workflow_or_curriculum_phase_json'] = json.dumps(wf.__dict__, cls=app.config['PiaAGIEncoder'], indent=2)
+
+
+        # DevelopmentalScaffolding: specific fields + full JSON
+        dsc = getattr(prompt, 'developmental_scaffolding_context', None)
+        if dsc:
+            prompt_data_for_form['dev_scaffolding_current_developmental_goal'] = getattr(dsc, 'current_developmental_goal', None)
+            prompt_data_for_form['dev_scaffolding_techniques_employed_str'] = ', '.join(getattr(dsc, 'scaffolding_techniques_employed', None) or [])
+            prompt_data_for_form['dev_scaffolding_feedback_level'] = getattr(dsc, 'feedback_level_from_overseer', None)
+            prompt_data_for_form['developmental_scaffolding_context_json'] = json.dumps(dsc.__dict__, cls=app.config['PiaAGIEncoder'], indent=2)
+        else:
+            prompt_data_for_form['dev_scaffolding_current_developmental_goal'] = ""
+            prompt_data_for_form['dev_scaffolding_techniques_employed_str'] = ""
+            prompt_data_for_form['dev_scaffolding_feedback_level'] = ""
+            prompt_data_for_form['developmental_scaffolding_context_json'] = ""
+
 
         # Executors (Role specific fields) and CognitiveModuleConfiguration (specific fields)
         executors_obj = getattr(prompt, 'executors', None)

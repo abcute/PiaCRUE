@@ -81,50 +81,99 @@
         const formMode = document.getElementById('form_mode').value;
         const currentFilename = document.getElementById('current_filename').value; // Original filename for PUT URL
         let stepCounter = 0;
+        let availablePrompts = [];
 
-        if (formMode === 'edit' && currentFilename) {
-            // Fetch and populate form for editing metadata
-            // Filename field is already populated by Jinja and set to readonly
-            // Other metadata fields (name, description, etc.) are also populated by Jinja.
-            // No need to fetch again if Jinja has already populated curriculum_data correctly.
-            // If curriculum_data was not fully passed, an API call would be needed here.
-            // For now, assume Jinja passes necessary metadata.
-            if (addStepButton) addStepButton.style.display = 'none'; // Hide add step button in edit mode
+        function populatePromptSelect(selectElement, selectedValue = null) {
+            selectElement.innerHTML = '<option value="">Select a prompt</option>'; // Default empty option
+            availablePrompts.forEach(promptFile => {
+                const option = document.createElement('option');
+                option.value = promptFile.filename; // Assuming API returns objects with filename
+                option.textContent = promptFile.name || promptFile.filename; // Display name or filename
+                if (selectedValue === promptFile.filename) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
         }
 
-
-        if (addStepButton) { // Only add event listener if the button exists (i.e., in 'create' mode)
-            addStepButton.addEventListener('click', function() {
+        function addStepToForm(stepData = null) {
             stepCounter++;
             const stepDiv = document.createElement('fieldset');
             stepDiv.setAttribute('data-step-id', stepCounter);
-            stepDiv.style.border = "1px solid #ccc";
+            stepDiv.className = 'curriculum-step-item'; // For styling
+            stepDiv.style.border = "1px dashed #ccc";
             stepDiv.style.padding = "10px";
             stepDiv.style.marginBottom = "10px";
+
+            const promptRefValue = stepData ? (stepData.prompt_reference || '') : '';
 
             stepDiv.innerHTML = `
                 <legend>Step ${stepCounter}</legend>
                 <div><label for="step_name_${stepCounter}">Step Name:</label>
-                     <input type="text" id="step_name_${stepCounter}" name="step_name[]" required></div>
+                     <input type="text" id="step_name_${stepCounter}" name="step_name[]" value="${stepData ? (stepData.name || '') : ''}" required></div>
                 <div><label for="step_order_${stepCounter}">Order:</label>
-                     <input type="number" id="step_order_${stepCounter}" name="step_order[]" value="${stepCounter}" required></div>
-                <div><label for="step_prompt_reference_${stepCounter}">Prompt Reference (filename, e.g., prompt.json):</label>
-                     <input type="text" id="step_prompt_reference_${stepCounter}" name="step_prompt_reference[]" required></div>
+                     <input type="number" id="step_order_${stepCounter}" name="step_order[]" value="${stepData ? (stepData.order || stepCounter) : stepCounter}" required></div>
+                <div><label for="step_prompt_reference_${stepCounter}">Prompt Reference:</label>
+                     <select id="step_prompt_reference_${stepCounter}" name="step_prompt_reference[]" class="step-prompt-reference" required></select></div>
                 <div><label for="step_conditions_${stepCounter}">Conditions:</label>
-                     <textarea id="step_conditions_${stepCounter}" name="step_conditions[]" rows="2"></textarea></div>
+                     <textarea id="step_conditions_${stepCounter}" name="step_conditions[]" rows="2">${stepData ? (stepData.conditions || '') : ''}</textarea></div>
                 <div><label for="step_notes_${stepCounter}">Notes:</label>
                      <textarea id="step_notes_${stepCounter}" name="step_notes[]" rows="2"></textarea></div>
                 <button type="button" class="removeStepButton" style="background-color: #d9534f;">Remove This Step</button>
             `;
             stepsContainer.appendChild(stepDiv);
 
+            const promptSelect = stepDiv.querySelector(`#step_prompt_reference_${stepCounter}`);
+            populatePromptSelect(promptSelect, promptRefValue);
+
             stepDiv.querySelector('.removeStepButton').addEventListener('click', function() {
                 stepDiv.remove();
-                // Could re-number steps here if desired, but not critical for functionality
             });
-        });
+        }
 
-        curriculumForm.addEventListener('submit', function(event) {
+        function fetchAvailablePrompts() {
+            return fetch("{{ url_for('api_list_prompts') }}")
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to load prompts for reference.');
+                    return response.json();
+                })
+                .then(data => {
+                    // Assuming data is an array of objects like [{"filename": "f1.json", "name": "Prompt1", "version": "v1"}, ...]
+                    availablePrompts = data;
+                    // If steps are being re-populated (e.g., in full edit mode later), refresh dropdowns here.
+                    // For now, this primarily benefits newly added steps.
+                    if (formMode === 'edit' && stepsContainer) { // If editing and steps were rendered by server
+                        const existingSelects = stepsContainer.querySelectorAll('.step-prompt-reference');
+                        existingSelects.forEach(select => {
+                            const currentValue = select.value; // Try to preserve if it was set by server/user
+                            populatePromptSelect(select, currentValue);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching available prompts:", error);
+                    errorMessageDiv.textContent = "Could not load prompt list for step references. Please try reloading. " + error.message;
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchAvailablePrompts().then(() => {
+                // This ensures prompts are loaded before user can add steps,
+                // or before existing steps (if any were rendered by server for edit mode) might need repopulation.
+                if (formMode === 'edit' && currentFilename) {
+                    // If steps were passed by server and rendered with select tags,
+                    // this ensures their options are populated.
+                    // The current 'edit' mode only does metadata, so this is more for future full edit.
+                    // For now, it just ensures availablePrompts is ready if 'Add Step' was visible.
+                    if (addStepButton) addStepButton.style.display = 'none';
+                }
+            });
+
+            if (addStepButton) {
+                addStepButton.addEventListener('click', () => addStepToForm());
+            }
+
+            curriculumForm.addEventListener('submit', function(event) {
             event.preventDefault();
             successMessageDiv.textContent = '';
             errorMessageDiv.textContent = '';
