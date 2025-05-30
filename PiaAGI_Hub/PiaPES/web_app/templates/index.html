@@ -11,6 +11,7 @@
     </ul>
 
     <h2>Available Curricula:</h2>
+    <p><a href="{{ url_for('route_create_curriculum_view') }}">Create New Curriculum</a></p>
     <ul id="curriculum-list">
         <li>Loading curricula...</li>
     </ul>
@@ -104,8 +105,9 @@
                             li.innerHTML = `
                                 <strong>${name}</strong> (Version: ${version})<br>
                                 <small>File: ${filename}</small><br>
-                                <a href="{{ url_for('route_view_curriculum', filename='TEMP_FILENAME') }}".replace('TEMP_FILENAME', filename)>View Details</a>
-                            `; // Note: No edit/delete for curricula in this MVP
+                                <a href="{{ url_for('route_view_curriculum', filename='TEMP_FILENAME') }}".replace('TEMP_FILENAME', filename)>View Details</a> |
+                                <a href="{{ url_for('route_edit_curriculum_view', filename='TEMP_FILENAME') }}".replace('TEMP_FILENAME', filename)>Edit Metadata</a>
+                            `;
                             ul.appendChild(li);
                         });
                     } else {

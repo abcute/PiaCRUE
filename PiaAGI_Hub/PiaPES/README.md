@@ -124,10 +124,10 @@ The web interface aims to simplify the creation, viewing, editing, and managemen
 *   **Create New Prompt:**
     *   Accessible via the "Create New Prompt" button.
     *   The form provides specific input fields for common `PiaAGIPrompt` attributes like `objective`, `author`, `version`, `target_agi`, etc.
-    *   **SystemRules:** Specific fields for `language` and `output_format` are provided, supplemented by an "Advanced System Rules JSON" textarea for other attributes or full JSON input.
+    *   **SystemRules:** Specific fields for `language` and `output_format` are provided, supplemented by an "Advanced System Rules JSON" textarea.
     *   **Requirements:** Specific fields for `goal` and `background_context`, supplemented by an "Advanced Requirements JSON" textarea.
-    *   **Role (within Executors):** Specific fields for `role_name` and `role_profile`, supplemented by an "Advanced Executors JSON" textarea (for other role attributes and the main Executors structure).
-    *   **Cognitive Configurations:** Dedicated fields are provided for:
+    *   **Role (within Executors):** Specific fields for `role_name`, `role_profile`, as well as comma-separated text inputs for `skills_focus` and `knowledge_domains_active`. An "Advanced Executors JSON" textarea is available for other role attributes (like `role_specific_rules`) and the main Executors structure.
+    *   **Cognitive Configurations (within Role):** Dedicated fields are provided for:
         *   Personality (OCEAN scores as number inputs).
         *   Motivational Biases (as a comma-separated key:value text input).
         *   Emotional Profile (text inputs for baseline valence, reactivity, empathy).
@@ -145,15 +145,20 @@ The web interface aims to simplify the creation, viewing, editing, and managemen
 *   **Delete Prompt:**
     *   Accessible from the dashboard, with a confirmation step.
 
-#### Curriculum Viewing (Read-Only)
-*   **Dashboard Listing:** Curricula (`*.curriculum.json` files) are listed on the dashboard.
+#### Curriculum Management
+*   **Dashboard Listing:** Curricula (`*.curriculum.json` files) are listed on the dashboard with links to "View Details" and "Edit Metadata".
+*   **Create New Curriculum:**
+    *   Accessible via the "Create New Curriculum" button on the dashboard.
+    *   A form allows defining curriculum metadata: `filename` (must end with `.curriculum.json`), `name`, `description`, `target_developmental_stage`, `version`, and `author`.
+    *   Users can dynamically add/remove "Curriculum Steps". Each step includes fields for `step_name`, `step_order`, `step_prompt_reference` (filename of a prompt JSON), `step_conditions` (textarea), and `step_notes` (textarea).
+    *   Saving creates a new `.curriculum.json` file.
 *   **View Curriculum:**
-    *   Click "View Details" next to a curriculum on the dashboard.
-    *   The view page displays the curriculum's metadata (name, description, target stage, version, author).
-    *   It lists all `CurriculumStep` objects, showing their order, name, conditions, notes, and the `prompt_reference` filename.
-    *   Each `prompt_reference` is a link to the view page for that specific prompt template.
-    *   The raw JSON and rendered Markdown for the curriculum object are also displayed.
-*   **Note:** Creation and editing of curricula are not supported through the web UI in the current MVP; these actions are done by creating/editing the `.curriculum.json` files directly.
+    *   Displays curriculum metadata and a detailed list of its steps, including links to view referenced prompts.
+    *   Also shows the raw JSON and rendered Markdown for the curriculum object.
+*   **Edit Curriculum Metadata:**
+    *   Accessible from the dashboard.
+    *   Allows modification of curriculum metadata fields (`name`, `description`, etc.). The filename is read-only.
+    *   **Important:** Step editing (adding, removing, or modifying existing steps) for an existing curriculum is **not** supported via this specific edit metadata form; steps are preserved as is. Full step management requires editing the JSON file directly or deleting and recreating the curriculum via the UI.
 
 ### Storage
 Prompt files managed by this web interface are stored as `.json` files in the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory.
