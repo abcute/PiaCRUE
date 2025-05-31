@@ -39,26 +39,28 @@ class GridWorldVisualizer:
         self.fig, self.ax = plt.subplots()
         self.agent_markers: Dict[str, plt.Text] = {} # To store agent text markers for updating
 
-    def render(self, title: str = "", step_delay: Optional[float] = 0.1):
+    def render(self, title: str = "", output_path: Optional[str] = None, step_delay: Optional[float] = 0.1):
         if self.env is None:
             print("Error: Environment not set for visualizer.")
-            return
+            return None # Return None if path not saved
 
         self.ax.clear()
 
         # Grid and labels
-        self.ax.set_xticks(np.arange(-0.5, self.env.width, 1), minor=True)
-        self.ax.set_yticks(np.arange(-0.5, self.env.height, 1), minor=True)
-        # Correcting tick labels to show 0 to width-1 and 0 to height-1
+        # Major ticks (for labels)
         self.ax.set_xticks(np.arange(0, self.env.width, 1))
         self.ax.set_yticks(np.arange(0, self.env.height, 1))
-        # self.ax.set_xticklabels(np.arange(0, self.env.width)) # Redundant if set_xticks is used with locations
-        # self.ax.set_yticklabels(np.arange(0, self.env.height))
+        # Labels for major ticks
+        self.ax.set_xticklabels(np.arange(0, self.env.width))
+        self.ax.set_yticklabels(np.arange(0, self.env.height))
+        # Minor ticks (for gridlines) - positioned at -0.5, 0.5, 1.5, etc.
+        self.ax.set_xticks(np.arange(-0.5, self.env.width, 1), minor=True)
+        self.ax.set_yticks(np.arange(-0.5, self.env.height, 1), minor=True)
 
-        self.ax.grid(which="minor", color="black", linestyle='-', linewidth=1)
+        self.ax.grid(which="minor", color="black", linestyle='-', linewidth=1) # Grid lines based on minor ticks
         self.ax.set_xlim(-0.5, self.env.width - 0.5)
-        self.ax.set_ylim(self.env.height - 0.5, -0.5) # Y-axis inverted: higher numbers at bottom
-        # self.ax.invert_yaxis() # Alternative way to invert: (0,0) is top-left
+        self.ax.set_ylim(-0.5, self.env.height - 0.5)
+        self.ax.invert_yaxis()
 
         # Walls
         if self.env.walls:
@@ -83,14 +85,32 @@ class GridWorldVisualizer:
 
         self.ax.set_title(title)
 
-        if plt.isinteractive(): # Check if in interactive mode
-            plt.draw() # Update the plot
+        saved_path = None # Initialize saved_path
+        if output_path:
+            try:
+                self.fig.savefig(output_path)
+                # print(f"Saved plot to {output_path}") # Optional: for debugging
+                saved_path = output_path
+            except Exception as e:
+                print(f"Error saving plot to {output_path}: {e}")
+        else: # No output_path, so handle interactive display based on step_delay
+            if plt.isinteractive():
+                plt.draw() # Update the plot
 
-        if step_delay is not None and step_delay > 0:
-            plt.pause(step_delay)
-        elif step_delay is None: # For showing a single static plot at the end
-            plt.ioff() # Turn off interactive mode if it was on for pause
-            plt.show()
+            if step_delay is not None and step_delay > 0:
+                plt.pause(step_delay)
+            elif step_delay is None: # For showing a single static plot at the end
+                if plt.isinteractive():
+                    plt.ioff()
+                plt.show()
+
+        # If saving, we generally don't want to call plt.show() or plt.pause()
+        # as it might interfere with server operation or try to open GUI.
+        # The 'Agg' backend should prevent GUI.
+        # Consider plt.close(self.fig) after saving if generating many images in a loop without display.
+        # For now, let app.py manage closing, or if visualizer is reused, it clears self.ax.
+
+        return saved_path # Return the path where image was saved
 
 
 if __name__ == '__main__':

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiaSE Runner</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h1 { color: #0056b3; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        button {
+            background-color: #007bff; color: white; padding: 10px 15px;
+            border: none; border-radius: 5px; cursor: pointer; font-size: 16px;
+        }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PiaSE Scenario Runner</h1>
+        <p>Click the button below to run the default GridWorld Q-Learning scenario.</p>
+        <form action="/run_scenario" method="post">
+            <button type="submit">Run Simulation</button>
+        </form>
+    </div>
+</body>
+</html>

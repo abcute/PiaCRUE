@@ -1,0 +1,12 @@
+/* Basic styling can be added later */
+body {
+    font-family: sans-serif;
+    margin: 20px;
+}
+pre {
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+    padding: 10px;
+    white-space: pre-wrap; /* Allow text wrapping */
+    word-wrap: break-word; /* Break long words */
+}
