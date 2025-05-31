@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiaSE Simulation Results</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h1, h2 { color: #0056b3; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .image-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .image-gallery img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; max-height: 300px; }
+        .log-output { white-space: pre-wrap; background-color: #e9ecef; padding: 15px; border-radius: 4px; font-family: monospace; max-height: 400px; overflow-y: auto; }
+        .back-link { display: inline-block; margin-top: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        .back-link:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulation Results</h1>
+
+        <h2>Visualizations</h2>
+        <div class="image-gallery">
+            {% if image_paths %}
+                {% for image_path in image_paths %}
+                    <img src="{{ image_path }}" alt="Simulation Step Image">
+                {% endfor %}
+            {% else %}
+                <p>No images generated.</p>
+            {% endif %}
+        </div>
+
+        <h2>Text Log</h2>
+        <div class="log-output">
+            {% if text_log %}
+                {{ text_log | join('\n') }}
+            {% else %}
+                <p>No text log available.</p>
+            {% endif %}
+        </div>
+
+        <a href="{{ url_for('index') }}" class="back-link">Run Another Simulation</a>
+    </div>
+</body>
+</html>

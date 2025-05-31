@@ -28,6 +28,8 @@ from PiaAGI_Hub.PiaSE.agents.q_learning_agent import QLearningAgent
 from PiaAGI_Hub.PiaSE.utils.visualizer import GridWorldVisualizer
 from PiaAGI_Hub.PiaSE.core_engine.interfaces import PiaSEEvent
 import matplotlib.pyplot as plt # For plot management
+import os # For path operations and creating directories
+import json # For outputting frame list
 
 def run_grid_world_scenario():
     """
@@ -89,7 +91,22 @@ def run_grid_world_scenario():
     print("\n[SCENARIO] Initializing GridWorldVisualizer...")
     visualizer = GridWorldVisualizer(grid_environment)
     print("[SCENARIO] GridWorldVisualizer created.")
-    plt.ion() # Turn on interactive mode for matplotlib for step-by-step rendering
+
+    # Ensure the directory for saving frames exists
+    current_script_dir = os.path.dirname(os.path.abspath(__file__))
+    frames_dir = os.path.join(current_script_dir, '..', 'WebApp', 'static', 'frames')
+    os.makedirs(frames_dir, exist_ok=True)
+
+    # Clean up old frames
+    for old_frame in os.listdir(frames_dir):
+        if old_frame.startswith("frame_") and old_frame.endswith(".png"):
+            try:
+                os.remove(os.path.join(frames_dir, old_frame))
+            except OSError as e:
+                print(f"Error removing old frame {old_frame}: {e}")
+
+    # For WebApp integration, ensure plotting is non-blocking and figures are closed.
+    plt.ioff() # Turn off interactive mode to prevent windows from popping up on server
 
     # 6. Initialize the Engine
     # This will now also call agent.initialize_q_table() and agent.perceive() for the QLearningAgent
@@ -100,20 +117,24 @@ def run_grid_world_scenario():
     print(f"[SCENARIO] Environment state after init: {engine.get_environment_state()}")
     print(f"[SCENARIO] Q-Agent initial Q-table for state {q_agent.current_state}: {q_agent.q_table.get(q_agent.current_state)}")
 
-    # Initial render
-    visualizer.render(title="Initial State", step_delay=0.5)
+    # Initial render - save frame
+    initial_frame_path = os.path.join(frames_dir, "frame_000.png")
+    visualizer.render(title="Initial State", save_path=initial_frame_path)
+    print(f"[SCENARIO] Saved initial frame to {initial_frame_path}")
 
 
     # 7. Run the Simulation with manual loop for visualization
     num_simulation_steps = 200 # Adjusted for visualization speed
-    print(f"\n[SCENARIO] Running simulation for up to {num_simulation_steps} steps with visualization...")
+    print(f"\n[SCENARIO] Running simulation for up to {num_simulation_steps} steps, saving frames...")
 
     for i in range(num_simulation_steps):
         print(f"\n--- Scenario Step {i+1}/{num_simulation_steps} ---")
 
         engine.run_step() # Engine's run_step processes one step for all agents
 
-        visualizer.render(title=f"After Step {i+1}", step_delay=0.2)
+        frame_filename = f"frame_{i+1:03d}.png"
+        frame_save_path = os.path.join(frames_dir, frame_filename)
+        visualizer.render(title=f"After Step {i+1}", save_path=frame_save_path)
 
         if grid_environment.is_done(q_agent_id): # Check if the Q-agent reached the goal
              print(f"Agent '{q_agent_id}' reached the goal at step {i+1}!")
@@ -168,10 +189,17 @@ def run_grid_world_scenario():
     # sample_event = PiaSEEvent()
     # engine.post_event(sample_event)
 
-    # Final render and keep plot open
-    visualizer.render(title=f"Final State (Close window to exit)", step_delay=None)
-    if plt.isinteractive():
-        plt.ioff() # Turn off interactive mode
+    # Output list of saved frames for the WebApp
+    # The paths should be relative to the 'static' folder for web serving
+    saved_frames_for_web = sorted([f for f in os.listdir(frames_dir) if f.startswith("frame_") and f.endswith(".png")])
+    frame_paths_for_json = [os.path.join('static', 'frames', f).replace(os.sep, '/') for f in saved_frames_for_web]
+
+    print("\n--- SIMULATION_FRAMES_START ---")
+    print(json.dumps({"frames": frame_paths_for_json}))
+    print("--- SIMULATION_FRAMES_END ---")
+
+    plt.close(visualizer.fig) # Close the figure used by visualizer to free memory
+    # plt.close('all') # Alternatively, close all figs, just in case
 
     print("\n--- Grid World Q-Learning Scenario Finished ---")
 
