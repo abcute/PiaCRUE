@@ -36,7 +36,7 @@ To help you quickly find the information you need, here is a description of the 
         *   `USAGE.md`: Instructions and examples for using the `prompt_engine_mvp.py`.
     *   The main `README.md` in this directory provides an overview of these tools. Researchers and developers interested in practical implementations and experimentation should focus here.
 
-*   **`Papers/`**: This directory houses theoretical research papers, conceptual explorations, and in-depth analyses related to the PiaAGI framework and its AGI aspirations. These documents provide academic context and deeper insights into the methodologies.
+*   **`Papers/`**: This directory ([see its `README.md`](Papers/README.md) for a summary of contents) houses theoretical research papers, conceptual explorations, and in-depth analyses related to the PiaAGI framework and its AGI aspirations. These documents provide academic context and deeper insights into the methodologies.
     *   Key papers discuss the application of communication theories, psychological models, and ethical considerations relevant to building AGI.
 
 *   **`Examples/`**: This directory contains various practical examples related to PiaAGI principles and foundational R-U-E prompting. The primary, fully documented foundational examples ('Viral Xiaohongshu Post Copywriting Expert,' 'PoetActor' examples) have been moved to **Appendix A of `PiaAGI.md`**. AGI-specific examples are detailed within the main body of `PiaAGI.md` (Section 7). The `Examples/` directory may still contain other illustrative scenarios or simpler templates like `PiaCRUE_Template.md` and `PiaCRUE_mini.md`.
