@@ -14,6 +14,9 @@ This directory contains a collection of theoretical research papers, summaries o
 *   **[AI_Narrative_Understanding.md](AI_Narrative_Understanding.md):** (Hypothetical)
     *   Proposes a framework on the role of narrative and storytelling in enhancing human-AI understanding, examining how AI (especially LLMs) might develop deeper contextual awareness and worldviews through narrative processing.
 
+*   **[Alita_Agent.md](Alita_Agent.md):**
+    *   Summarizes the Alita agent framework (arXiv:2505.20286), which emphasizes "Minimal Predefinition" and "Maximal Self-Evolution" through dynamic generation and reuse of Model Context Protocols (MCPs) for scalable agentic reasoning.
+
 *   **[CSIM.md](CSIM.md):**
     *   Summarizes the CSIM (Communication Skills + Inner Monologue) framework, an approach designed to enhance the human-like qualities and proactivity of LLMs by introducing an "inner monologue" process to apply specific communication skills.
 
