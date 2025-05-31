@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title|default('Curriculum Form') }} - PiaPES{% endblock %}
+
+{% block content %}
+    <h1>{{ form_title|default('Curriculum Form') }}</h1>
+    <form id="curriculumForm">
+        <fieldset>
+            <legend>Curriculum Metadata</legend>
+            <input type="hidden" id="form_mode" name="form_mode" value="{{ form_mode|default('create') }}">
+            <input type="hidden" id="current_filename" name="current_filename" value="{{ current_filename|default('') }}">
+
+            <div>
+                <label for="filename">Filename (must end with .curriculum.json):</label>
+                <input type="text" id="filename" name="filename" value="{{ curriculum_data.filename if curriculum_data else '' }}" required {% if form_mode == 'edit' %}readonly{% endif %}>
+                {% if form_mode == 'edit' %}<small>Filename cannot be changed during edit.</small>{% else %}<small>This will be the name of the new file.</small>{% endif %}
+            </div>
+
+            <div>
+                <label for="name">Curriculum Name:</label>
+                <input type="text" id="name" name="name" value="{{ curriculum_data.name if curriculum_data else '' }}" required>
+            </div>
+
+            <div>
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" rows="3">{{ curriculum_data.description if curriculum_data else '' }}</textarea>
+            </div>
+
+            <div>
+                <label for="target_developmental_stage">Target Developmental Stage:</label>
+                <input type="text" id="target_developmental_stage" name="target_developmental_stage" value="{{ curriculum_data.target_developmental_stage if curriculum_data else '' }}">
+            </div>
+
+            <div>
+                <label for="version">Version:</label>
+                <input type="text" id="version" name="version" value="{{ curriculum_data.version if curriculum_data else '' }}">
+            </div>
+
+            <div>
+                <label for="author">Author:</label>
+                <input type="text" id="author" name="author" value="{{ curriculum_data.author if curriculum_data else '' }}">
+            </div>
+        </fieldset>
+
+        <hr>
+        <h2>Curriculum Steps</h2>
+        {% if form_mode == 'create' %}
+            <div id="steps-container">
+                <!-- Steps will be added here by JavaScript -->
+            </div>
+            <button type="button" id="addStepButton">Add Curriculum Step</button>
+        {% else %} {# edit mode #}
+            <p><small>(Step editing is not available in this metadata editing mode. Steps will be preserved as they are.)</small></p>
+            <!-- Optionally, display read-only steps if curriculum_data.steps is passed -->
+            {% if curriculum_data and curriculum_data.steps %}
+                <h4>Existing Steps (Read-Only):</h4>
+                <ul>
+                {% for step in curriculum_data.steps %}
+                    <li>
+                        <strong>Step {{ step.order }}: {{ step.name }}</strong><br>
+                        Prompt: {{ step.prompt_reference }}<br>
+                        Conditions: {{ step.conditions|default('N/A') }}<br>
+                        Notes: {{ step.notes|default('N/A') }}
+                    </li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endif %}
+
+        <hr style="margin-top: 20px;">
+        <button type="submit">Save Curriculum</button>
+    </form>
+    <div id="error-message" class="error" style="margin-top: 15px;"></div>
+    <div id="success-message" class="success" style="margin-top: 15px;"></div>
+
+    <script>
+        const curriculumForm = document.getElementById('curriculumForm');
+        const stepsContainer = document.getElementById('steps-container');
+        const addStepButton = document.getElementById('addStepButton'); // Might be null in edit mode
+        const errorMessageDiv = document.getElementById('error-message');
+        const successMessageDiv = document.getElementById('success-message');
+        const formMode = document.getElementById('form_mode').value;
+        const currentFilename = document.getElementById('current_filename').value; // Original filename for PUT URL
+        let stepCounter = 0;
+        let availablePrompts = [];
+
+        function populatePromptSelect(selectElement, selectedValue = null) {
+            selectElement.innerHTML = '<option value="">Select a prompt</option>'; // Default empty option
+            availablePrompts.forEach(promptFile => {
+                const option = document.createElement('option');
+                option.value = promptFile.filename; // Assuming API returns objects with filename
+                option.textContent = promptFile.name || promptFile.filename; // Display name or filename
+                if (selectedValue === promptFile.filename) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        }
+
+        function addStepToForm(stepData = null) {
+            stepCounter++;
+            const stepDiv = document.createElement('fieldset');
+            stepDiv.setAttribute('data-step-id', stepCounter);
+            stepDiv.className = 'curriculum-step-item'; // For styling
+            stepDiv.style.border = "1px dashed #ccc";
+            stepDiv.style.padding = "10px";
+            stepDiv.style.marginBottom = "10px";
+
+            const promptRefValue = stepData ? (stepData.prompt_reference || '') : '';
+
+            stepDiv.innerHTML = `
+                <legend>Step ${stepCounter}</legend>
+                <div><label for="step_name_${stepCounter}">Step Name:</label>
+                     <input type="text" id="step_name_${stepCounter}" name="step_name[]" value="${stepData ? (stepData.name || '') : ''}" required></div>
+                <div><label for="step_order_${stepCounter}">Order:</label>
+                     <input type="number" id="step_order_${stepCounter}" name="step_order[]" value="${stepData ? (stepData.order || stepCounter) : stepCounter}" required></div>
+                <div><label for="step_prompt_reference_${stepCounter}">Prompt Reference:</label>
+                     <select id="step_prompt_reference_${stepCounter}" name="step_prompt_reference[]" class="step-prompt-reference" required></select></div>
+                <div><label for="step_conditions_${stepCounter}">Conditions:</label>
+                     <textarea id="step_conditions_${stepCounter}" name="step_conditions[]" rows="2">${stepData ? (stepData.conditions || '') : ''}</textarea></div>
+                <div><label for="step_notes_${stepCounter}">Notes:</label>
+                     <textarea id="step_notes_${stepCounter}" name="step_notes[]" rows="2"></textarea></div>
+                <button type="button" class="removeStepButton" style="background-color: #d9534f;">Remove This Step</button>
+            `;
+            stepsContainer.appendChild(stepDiv);
+
+            const promptSelect = stepDiv.querySelector(`#step_prompt_reference_${stepCounter}`);
+            populatePromptSelect(promptSelect, promptRefValue);
+
+            stepDiv.querySelector('.removeStepButton').addEventListener('click', function() {
+                stepDiv.remove();
+            });
+        }
+
+        function fetchAvailablePrompts() {
+            return fetch("{{ url_for('api_list_prompts') }}")
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to load prompts for reference.');
+                    return response.json();
+                })
+                .then(data => {
+                    // Assuming data is an array of objects like [{"filename": "f1.json", "name": "Prompt1", "version": "v1"}, ...]
+                    availablePrompts = data;
+                    // If steps are being re-populated (e.g., in full edit mode later), refresh dropdowns here.
+                    // For now, this primarily benefits newly added steps.
+                    if (formMode === 'edit' && stepsContainer) { // If editing and steps were rendered by server
+                        const existingSelects = stepsContainer.querySelectorAll('.step-prompt-reference');
+                        existingSelects.forEach(select => {
+                            const currentValue = select.value; // Try to preserve if it was set by server/user
+                            populatePromptSelect(select, currentValue);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching available prompts:", error);
+                    errorMessageDiv.textContent = "Could not load prompt list for step references. Please try reloading. " + error.message;
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchAvailablePrompts().then(() => {
+                // This ensures prompts are loaded before user can add steps,
+                // or before existing steps (if any were rendered by server for edit mode) might need repopulation.
+                if (formMode === 'edit' && currentFilename) {
+                    // If steps were passed by server and rendered with select tags,
+                    // this ensures their options are populated.
+                    // The current 'edit' mode only does metadata, so this is more for future full edit.
+                    // For now, it just ensures availablePrompts is ready if 'Add Step' was visible.
+                    if (addStepButton) addStepButton.style.display = 'none';
+                }
+            });
+
+            if (addStepButton) {
+                addStepButton.addEventListener('click', () => addStepToForm());
+            }
+
+            curriculumForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            successMessageDiv.textContent = '';
+            errorMessageDiv.textContent = '';
+
+            const formData = new FormData(curriculumForm);
+            const curriculumPayload = {
+                "__type__": "DevelopmentalCurriculum",
+                // filename for saving is handled by backend based on URL for PUT, or from payload for POST
+                "name": formData.get('name'),
+                "description": formData.get('description'),
+                "target_developmental_stage": formData.get('target_developmental_stage'),
+                "version": formData.get('version'),
+                "author": formData.get('author')
+                // Steps are only included for 'create' mode
+            };
+
+            let method;
+            let url;
+
+            if (formMode === 'edit') {
+                method = 'PUT';
+                url = "{{ url_for('api_update_curriculum_metadata', filename='TEMP_FILENAME') }}".replace('TEMP_FILENAME', currentFilename);
+                // For PUT, we only send metadata, steps are not modified via this form.
+                // Backend will preserve existing steps.
+            } else { // 'create' mode
+                method = 'POST';
+                url = "{{ url_for('api_create_curriculum') }}";
+                curriculumPayload.filename = formData.get('filename'); // Send filename for creation
+                if (!curriculumPayload.filename || !curriculumPayload.filename.endsWith('.curriculum.json')) {
+                    errorMessageDiv.textContent = "Filename is required for new curriculum and must end with .curriculum.json";
+                    return;
+                }
+
+                curriculumPayload.steps = [];
+                const stepElements = stepsContainer.querySelectorAll('fieldset[data-step-id]');
+                stepElements.forEach(stepDiv => {
+                    const stepName = stepDiv.querySelector('input[name="step_name[]"]').value;
+                    const stepOrder = parseInt(stepDiv.querySelector('input[name="step_order[]"]').value, 10);
+                    const stepPromptRef = stepDiv.querySelector('input[name="step_prompt_reference[]"]').value;
+                    const stepConditions = stepDiv.querySelector('textarea[name="step_conditions[]"]').value;
+                    const stepNotes = stepDiv.querySelector('textarea[name="step_notes[]"]').value;
+
+                    if (stepName && !isNaN(stepOrder) && stepPromptRef) {
+                        curriculumPayload.steps.push({
+                            "__type__": "CurriculumStep",
+                            "name": stepName,
+                            "order": stepOrder,
+                            "prompt_reference": stepPromptRef,
+                            "conditions": stepConditions,
+                            "notes": stepNotes
+                        });
+                    }
+                });
+                curriculumPayload.steps.sort((a, b) => a.order - b.order);
+            }
+
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(curriculumPayload)
+            })
+            .then(response => {
+                const status = response.status;
+                return response.json().then(data => ({ status, data }));
+            })
+            .then(result => {
+                if (result.status < 200 || result.status >= 300) {
+                    throw new Error(result.data.error || `HTTP error! status: ${result.status}`);
+                }
+                successMessageDiv.textContent = result.data.message || 'Curriculum action successful!';
+
+                if (formMode === 'create' && result.data.filename) {
+                     successMessageDiv.textContent += " Redirecting to view...";
+                     setTimeout(() => {
+                        window.location.href = "{{ url_for('route_view_curriculum', filename='TEMP_FILENAME') }}".replace('TEMP_FILENAME', result.data.filename);
+                     }, 1500);
+                } else if (formMode === 'edit') {
+                    // Optionally, you could redirect to the view page or dashboard
+                    // For now, just show success message. User can navigate away.
+                    // Or, to see changes reflected if not redirecting:
+                    // setTimeout(() => { window.location.reload(); }, 1000); // Or just let them stay
+                } else { // Create mode but maybe no filename in response (should not happen with current backend)
+                    curriculumForm.reset();
+                    if(stepsContainer) stepsContainer.innerHTML = '';
+                    stepCounter = 0;
+                }
+            })
+            .catch(error => {
+                errorMessageDiv.textContent = `Error saving curriculum: ${error.message}`;
+                console.error('Error saving curriculum:', error);
+            });
+        });
+    </script>
+{% endblock %}
