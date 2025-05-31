@@ -5,8 +5,14 @@ This directory contains a collection of theoretical research papers, summaries o
 
 ## Documents
 
-*   **[PiaC.md](PiaC.md):**
-    *   Outlines "PiaC" (Personalizing Intelligent Agent Customization), an early conceptual exploration within the PiaAGI project. It proposes methodologies for customizing Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying principles from psychology (Cognitive Behavioral Therapy, Social Cognitive Theory, Behaviorism) and structured communication. Key ideas from this document have been expanded and integrated into the main `PiaAGI.md`.
+*   **[AI_Cultural_Evolution.md](AI_Cultural_Evolution.md):** (Hypothetical)
+    *   Explores the integration of cultural evolution theories (variation, selection, transmission of cultural traits) into AI agent development, particularly for multi-agent systems and LLMs, aiming for AI that can participate in and adapt to simulated cultural dynamics.
+
+*   **[AI_Ethical_Heuristics.md](AI_Ethical_Heuristics.md):** (Hypothetical)
+    *   Investigates integrating ethical heuristics from social psychology (e.g., Moral Foundations Theory, fairness principles) into AI decision-making to foster more nuanced and human-relatable ethical reasoning.
+
+*   **[AI_Narrative_Understanding.md](AI_Narrative_Understanding.md):** (Hypothetical)
+    *   Proposes a framework on the role of narrative and storytelling in enhancing human-AI understanding, examining how AI (especially LLMs) might develop deeper contextual awareness and worldviews through narrative processing.
 
 *   **[CSIM.md](CSIM.md):**
     *   Summarizes the CSIM (Communication Skills + Inner Monologue) framework, an approach designed to enhance the human-like qualities and proactivity of LLMs by introducing an "inner monologue" process to apply specific communication skills.
@@ -16,6 +22,9 @@ This directory contains a collection of theoretical research papers, summaries o
 
 *   **[EmotionPrompt.md](EmotionPrompt.md):**
     *   Discusses the "EmotionPrompt" concept, investigating how incorporating emotional stimuli into prompts can influence the performance (e.g., truthfulness, informativeness) of Large Language Models.
+
+*   **[PiaC.md](PiaC.md):**
+    *   Outlines "PiaC" (Personalizing Intelligent Agent Customization), an early conceptual exploration within the PiaAGI project. It proposes methodologies for customizing Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying principles from psychology (Cognitive Behavioral Therapy, Social Cognitive Theory, Behaviorism) and structured communication. Key ideas from this document have been expanded and integrated into the main `PiaAGI.md`.
 
 *   **[Rephrase-and-Respond.md](Rephrase-and-Respond.md):**
     *   Summarizes the Rephrase-and-Respond (RaR) prompting strategy, designed to improve LLM accuracy by having the model first rephrase and expand upon a user's question before answering.
