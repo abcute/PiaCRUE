@@ -20,6 +20,9 @@ This directory contains a collection of theoretical research papers, summaries o
 *   **[Alita_Agent.md](Alita_Agent.md):**
     *   Summarizes the Alita agent framework (arXiv:2505.20286), which emphasizes "Minimal Predefinition" and "Maximal Self-Evolution" through dynamic generation and reuse of Model Context Protocols (MCPs) for scalable agentic reasoning.
 
+*   **[Chain_of_Thought_Alignment.md](Chain_of_Thought_Alignment.md):** (PiaAGI Conceptual Linking)
+    *   Explores Chain-of-Thought (CoT) prompting as embodying the PiaAGI principle of interacting with agents as human-like thinkers capable of step-by-step cognitive processes.
+
 *   **[CSIM.md](CSIM.md):**
     *   Summarizes the CSIM (Communication Skills + Inner Monologue) framework, an approach designed to enhance the human-like qualities and proactivity of LLMs by introducing an "inner monologue" process to apply specific communication skills.
 
