@@ -2,14 +2,14 @@
 # CSIM: Communication Skills + Inner Monologue
 
 **Original Source:** [https://arxiv.org/abs/2311.07445](https://arxiv.org/abs/2311.07445)
-*Note: This document summarizes key concepts from the research paper "Enhancing Human-like and Proactive LLM Interaction via CSIM (Communication Skills + Inner Monologue)" by an author or group identifiable by "CSIM" in the original metadata.*
+*Note: This document summarizes key concepts from the research paper "Enhancing Human-like and Proactive LLM Interaction via CSIM (Communication Skills + Inner Monologue)" by an author or group identifiable by "CSIM" in the original metadata. The CSIM framework's emphasis on an 'inner monologue' and the application of human-centric communication skills aligns with the PiaAGI perspective of conceptualizing agents as sophisticated communicative partners capable of internal processing analogous to human thought before interaction.*
 
 ## Abstract
 This document outlines the CSIM (Communication Skills + Inner Monologue) framework, an innovative approach designed to enhance the human-like qualities and proactivity of Large Language Models (LLMs) in conversations. The core idea is to introduce an "inner monologue" process before an LLM generates a response, allowing it to "think" about applying specific communication skills to improve dialogue effectiveness, thereby mirroring human pre-interaction thought processes.
 
 ## Introduction
 
-CSIM, standing for "Communication Skills + Inner Monologue," is a novel framework aimed at improving the human-like qualities and proactivity of LLMs in dialogues. The central concept of the CSIM method involves introducing an internal monologue phase before the LLM generates a response. During this phase, the model first "considers" how to apply specific communication skills to enhance the dialogue's effectiveness. This cognitive process, akin to human pre-communication thought, enables the generation of responses that are not only contextually aware but also tailored to the dynamic needs of the conversation.
+CSIM, standing for "Communication Skills + Inner Monologue," is a novel framework aimed at improving the human-like qualities and proactivity of LLMs in dialogues. The central concept of the CSIM method involves introducing an internal monologue phase before the LLM generates a response. During this phase, the model first "considers" how to apply specific communication skills to enhance the dialogue's effectiveness. This cognitive process, akin to human pre-communication thought, **thus framing the agent as an entity capable of reflective consideration,** enables the generation of responses that are not only contextually aware but also tailored to the dynamic needs of the conversation.
 
 ## Five Communication Skills
 
