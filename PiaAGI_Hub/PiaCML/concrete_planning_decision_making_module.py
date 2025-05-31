@@ -3,8 +3,10 @@ import uuid
 
 try:
     from .base_planning_and_decision_making_module import BasePlanningAndDecisionMakingModule
+    from .base_world_model import BaseWorldModel # Add this
 except ImportError:
     from base_planning_and_decision_making_module import BasePlanningAndDecisionMakingModule
+    from base_world_model import BaseWorldModel # Add this
 
 class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModule):
     """
@@ -65,36 +67,65 @@ class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModul
         return [default_plan]
 
 
-    def evaluate_plan(self, plan: Dict[str, Any], world_model_context: Dict[str, Any], self_model_context: Dict[str, Any]) -> Dict[str, Any]:
+    def evaluate_plan(self, plan: Dict[str, Any], world_model_context: Dict[str, Any], self_model_context: Dict[str, Any], world_model_instance: Optional[BaseWorldModel] = None) -> Dict[str, Any]:
         """
-        Evaluates a plan. Basic version: score based on number of steps (shorter is better, arbitrarily).
-        Also checks for a conceptual 'risk' in context.
+        Evaluates a plan. Basic version: score based on number of steps.
+        Checks for 'risk' in world_model_context.
+        Conceptually interacts with world_model_instance for complexity and step prediction.
         """
         plan_id = plan.get("plan_id", "unknown_plan")
         num_steps = len(plan.get("steps", []))
 
-        # Arbitrary scoring: base score 100, penalty for more steps
         score = max(0, 100 - (num_steps * 10))
 
-        # Conceptual risk assessment
-        perceived_risk = world_model_context.get("perceived_risk_level", 0.0) # 0.0 to 1.0
+        perceived_risk = world_model_context.get("perceived_risk_level", 0.0)
         ethical_concerns = self_model_context.get("ethical_flags_raised", [])
 
         if perceived_risk > 0.7:
-            score *= 0.5 # Halve score if high risk
+            score *= 0.5
         if ethical_concerns:
-            score *= 0.1 # Drastically reduce score if ethical concerns
+            score *= 0.1
+
+        # New: Interaction with world_model_instance
+        world_complexity_factor = 1.0 # Default factor
+        step_predictions = []
+
+        if world_model_instance:
+            print(f"ConcretePDM: Evaluating plan '{plan_id}' with world_model_instance.")
+            complexity = world_model_instance.get_environment_property("world_complexity_level")
+            if isinstance(complexity, (int, float)) and complexity > 0.75: # e.g., high complexity
+                world_complexity_factor = 0.8 # Reduce score by 20% for high complexity
+                print(f"ConcretePDM: High world complexity ({complexity}) detected, applying factor {world_complexity_factor}.")
+
+            for step_action in plan.get("steps", []):
+                try:
+                    prediction = world_model_instance.predict_action_outcome(step_action)
+                    step_predictions.append(prediction)
+                    print(f"ConcretePDM: Prediction for step {step_action.get('action_type', 'unknown_step')}: {prediction}")
+                    # Conceptual: Adjust score based on prediction success_probability or side_effects
+                    if prediction.get("success_probability", 1.0) < 0.5:
+                        score *= 0.9 # Penalize if any step has low success prob
+                    if prediction.get("potential_side_effects"):
+                        score *= 0.95 # Small penalty for potential side effects
+                except Exception as e:
+                    print(f"ConcretePDM: Error predicting outcome for step {step_action}: {e}")
+                    step_predictions.append({"error": str(e)})
+
+
+        score *= world_complexity_factor # Apply complexity factor
 
         evaluation = {
             "plan_id": plan_id,
-            "score": score,
-            "feasibility": 0.8, # Placeholder
-            "confidence": 0.7,  # Placeholder
-            "risks_considered": perceived_risk,
-            "ethical_flags": list(ethical_concerns)
+            "score": round(score, 2), # Round score for cleaner output
+            "feasibility": 0.8,
+            "confidence": 0.7,
+            "risks_considered_from_context": perceived_risk, # Keep original risk
+            "ethical_flags_from_context": list(ethical_concerns), # Keep original ethics
+            "world_complexity_factor_applied": world_complexity_factor if world_model_instance else None,
+            "step_predictions_conceptual": step_predictions if world_model_instance else None
         }
-        self._known_plans_evaluations[plan_id] = evaluation # Store evaluation
-        print(f"ConcretePDM: Evaluated plan '{plan_id}'. Score: {score}, Steps: {num_steps}, Risk: {perceived_risk}, Ethics: {ethical_concerns}")
+        self._known_plans_evaluations[plan_id] = evaluation
+        print(f"ConcretePDM: Evaluated plan '{plan_id}'. Final Score: {evaluation['score']}, Steps: {num_steps}, RiskContext: {perceived_risk}, EthicsContext: {ethical_concerns}")
         return evaluation
 
     def select_action_or_plan(self, evaluated_plans: List[Dict[str, Any]], selection_criteria: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
@@ -141,7 +172,12 @@ class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModul
         }
 
 if __name__ == '__main__':
+    from concrete_world_model import ConcreteWorldModel
+    # (BaseWorldModel might not be needed directly in __main__ if only ConcreteWorldModel is instantiated)
+
     pdm_module = ConcretePlanningAndDecisionMakingModule()
+    world_model_inst = ConcreteWorldModel() # Instantiate
+    world_model_inst._environment_properties["world_complexity_level"] = 0.9 # Set high complexity for testing
 
     # Initial Status
     print("\n--- Initial Status ---")
@@ -171,26 +207,33 @@ if __name__ == '__main__':
     print("\n--- Evaluating Plans ---")
     evaluations = []
     if plan_a_id:
-        # We need the full plan structure for evaluation in this design
         plan_a_structure = next(p for p in plans_for_a if p['plan_id'] == plan_a_id)
-        eval_a = pdm_module.evaluate_plan(plan_a_structure, world_context_safe, self_context_clear)
-        evaluations.append(eval_a) # Store evaluation which includes score and ID
-        print("Evaluation for Plan A:", eval_a)
+        eval_a = pdm_module.evaluate_plan(plan_a_structure, world_context_safe, self_context_clear, world_model_instance=world_model_inst)
+        evaluations.append(eval_a)
+        print("Evaluation for Plan A (with WM interaction):", eval_a)
+        assert 'world_complexity_factor_applied' in eval_a
+        assert 'step_predictions_conceptual' in eval_a
 
     if plan_unknown_id:
         plan_unknown_structure = next(p for p in plans_for_unknown if p['plan_id'] == plan_unknown_id)
-        eval_unknown = pdm_module.evaluate_plan(plan_unknown_structure, world_context_safe, self_context_clear)
+        eval_unknown = pdm_module.evaluate_plan(plan_unknown_structure, world_context_safe, self_context_clear, world_model_instance=world_model_inst)
         evaluations.append(eval_unknown)
-        print("Evaluation for Unknown Plan:", eval_unknown)
+        print("Evaluation for Unknown Plan (with WM interaction):", eval_unknown)
 
-    # Evaluate a risky plan
     world_context_risky = {"perceived_risk_level": 0.8}
-    if plan_greet_id: # Use greet plan for risky test
+    if plan_greet_id:
         plan_greet_structure = next(p for p in plans_for_greet if p['plan_id'] == plan_greet_id)
-        eval_greet_risky = pdm_module.evaluate_plan(plan_greet_structure, world_context_risky, self_context_clear)
+        eval_greet_risky = pdm_module.evaluate_plan(plan_greet_structure, world_context_risky, self_context_clear, world_model_instance=world_model_inst)
         evaluations.append(eval_greet_risky)
-        print("Evaluation for Greet Plan (Risky Context):", eval_greet_risky)
-        assert eval_greet_risky['score'] < (100 - len(plan_greet_structure['steps'])*10) # Score reduced due to risk
+        print("Evaluation for Greet Plan (Risky Context, with WM interaction):", eval_greet_risky)
+        # Base score for 1 step plan = 90. Risk (0.8) makes it 45. WM complexity (0.9 -> factor 0.8) makes it 45 * 0.8 = 36.
+        # Further penalties if step predictions are bad.
+        # For "communicate" step, prediction is likely default, success_prob 0.7 (no penalty)
+        # No side effects by default for "communicate" (no penalty)
+        expected_score_greet_risky_wm = (100 - 1*10) * 0.5 * world_model_inst._environment_properties.get("world_complexity_level_factor", 0.8) # Approximation
+        # The exact score depends on the default prediction for communicate action.
+        # Let's assert it's less than without WM: (100 - 1*10) * 0.5 = 45
+        assert eval_greet_risky['score'] < 45
 
 
     # Select action/plan
@@ -199,11 +242,13 @@ if __name__ == '__main__':
         selected_plan_eval = pdm_module.select_action_or_plan(evaluations)
         print("Selected Plan Evaluation:", selected_plan_eval)
         if selected_plan_eval:
-             # The selection logic picks the one with highest score.
-             # In this setup, plan_a (2 steps) will have score 80.
-             # plan_unknown (1 step) will have score 90.
-             # plan_greet_risky (1 step, base 90) will have score 45 due to risk.
-             # So, plan_unknown should be selected.
+            # Plan A: 2 steps (score 80). WM factor 0.8 -> 64.
+            # Plan Unknown: 1 step (score 90). WM factor 0.8 -> 72.
+            # Plan Greet Risky: 1 step (score 90). Risk 0.5 -> 45. WM factor 0.8 -> 36.
+            # Default predictions for unknown steps might add penalties.
+            # Assuming default_action_for_unknown_goal and step1/2_for_A get default good predictions:
+            # eval_a['score'] should be around 80 * 0.8 = 64
+            # eval_unknown['score'] should be around 90 * 0.8 = 72
             assert selected_plan_eval['plan_id'] == plan_unknown_id
     else:
         print("No evaluations to select from.")

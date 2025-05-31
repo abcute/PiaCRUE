@@ -41,7 +41,6 @@ To engage with the PiaAGI project, we recommend the following:
     *   Hands-on experience with foundational R-U-E prompting (interacting with LLMs).
     *   Interactive exploration of the PiaAGI Cognitive Module Library (CML) modules.
     Start by reading the setup and deployment guide in **[`PiaAGI_Hub/WebApp/README.md`](PiaAGI_Hub/WebApp/README.md)**.
-6.  **Utilize the Legacy Web Application:** For a hands-on experience with the foundational R-U-E prompting, explore the **PiaAGI Web Tool** (legacy PiaCRUE) by starting with its **[`pia_crue_web_tool/README.md`](pia_crue_web_tool/README.md)**.
 
 ## Core Components
 

@@ -63,6 +63,10 @@ This initial version of the CML provides abstract base classes for the following
     *   **Purpose:** Manages nuanced natural language interaction (NLU/NLG), implements advanced communication strategies (e.g., CSIM, RaR), and integrates with ToM, Emotion, and Self-Model modules.
     *   **PiaAGI.md Sections:** 2.2 (Communication Theory for AGI-Level Interaction), 4.1.12 (Communication Module).
 
+13. **`base_world_model.py` (`BaseWorldModel`)**:
+    *   **Purpose:** Defines the interface for a module that maintains an internal representation of the environment, including entities, states, relationships, and dynamics. Essential for situational awareness, prediction, and planning.
+    *   **PiaAGI.md Sections:** 4.3 (Perception and World Modeling).
+
 ## Concrete Implementations
 
 This section lists available concrete implementations of the abstract module interfaces.
@@ -197,10 +201,21 @@ This section lists available concrete implementations of the abstract module int
         *   `get_module_status`: Reports current operational state, confidence, and counts of ethical rules/performance logs.
     *   **Usage:** Suitable for simulations requiring a basic representation of an agent's understanding of itself, its capabilities, and its ethical guidelines.
 
+14. **[`ConcreteWorldModel`](concrete_world_model.py)** ([Tests](tests/test_concrete_world_model.py)):
+    *   **Implements:** `BaseWorldModel`
+    *   **Purpose:** Provides a basic concrete implementation of `BaseWorldModel`. It uses dictionaries to store entity states and environment properties, with placeholder logic for prediction and uncertainty.
+    *   **Functionality:**
+        *   `update_model_from_perception`: Merges perceived entity data into an internal dictionary.
+        *   `get_entity_state`: Retrieves entity attributes from the dictionary.
+        *   `get_environment_property`: Retrieves predefined environment properties.
+        *   `predict_action_outcome`: Rudimentary outcome prediction for conceptual 'move' and 'interact_object' actions.
+        *   `get_uncertainty_level`: Placeholder for uncertainty reporting.
+        *   `get_module_status`: Reports counts of tracked entities and basic metrics.
+    *   **Usage:** Suitable for simulations requiring a simple, dictionary-based world state representation, or as a foundation for more complex world modeling techniques.
+
 ## Future Development
 
 The CML will be expanded to include interfaces and foundational implementations for other core PiaAGI cognitive modules, such as:
 *   Attention Module (potentially integrated more deeply with Perception and Working Memory)
-*   World Model (though this might be more of a data structure and service used by many modules)
 
 Contributions and collaborations are welcome as this library evolves.

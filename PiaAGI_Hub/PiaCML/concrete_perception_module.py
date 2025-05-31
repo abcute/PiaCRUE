@@ -2,9 +2,11 @@ from typing import Any, Dict, List, Optional
 
 try:
     from .base_perception_module import BasePerceptionModule
+    from .base_world_model import BaseWorldModel # Add this
 except ImportError:
     # Fallback for scenarios where the relative import might fail
     from base_perception_module import BasePerceptionModule
+    from base_world_model import BaseWorldModel # Add this
 
 class ConcretePerceptionModule(BasePerceptionModule):
     """
@@ -19,7 +21,7 @@ class ConcretePerceptionModule(BasePerceptionModule):
         self._processing_log: List[str] = []
         print("ConcretePerceptionModule initialized.")
 
-    def process_sensory_input(self, raw_input: Any, modality: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def process_sensory_input(self, raw_input: Any, modality: str, context: Optional[Dict[str, Any]] = None, world_model: Optional[BaseWorldModel] = None) -> Dict[str, Any]:
         """
         Processes raw sensory input into a structured perceptual representation.
         """
@@ -39,10 +41,10 @@ class ConcretePerceptionModule(BasePerceptionModule):
             actions_found = []
 
             # Very simple keyword spotting
-            if "apple" in text_lower: entities_found.append({"type": "fruit", "name": "apple"})
-            if "ball" in text_lower: entities_found.append({"type": "toy", "name": "ball"})
-            if "user" in text_lower: entities_found.append({"type": "agent", "name": "user"})
-            if "pia" in text_lower: entities_found.append({"type": "agent", "name": "PiaAGI"})
+            if "apple" in text_lower: entities_found.append({"id": "apple_instance_1", "type": "fruit", "name": "apple"}) # Example ID
+            if "ball" in text_lower: entities_found.append({"id": "ball_instance_1", "type": "toy", "name": "ball"})
+            if "user" in text_lower: entities_found.append({"id": "user_agent_1", "type": "agent", "name": "user"})
+            if "pia" in text_lower: entities_found.append({"id": "pia_agent_1", "type": "agent", "name": "PiaAGI"})
 
             if "give" in text_lower or "pass" in text_lower: actions_found.append({"type": "transfer", "verb": "give/pass"})
             if "see" in text_lower or "look" in text_lower: actions_found.append({"type": "observe", "verb": "see/look"})
@@ -69,6 +71,24 @@ class ConcretePerceptionModule(BasePerceptionModule):
             print(f"ConcretePerceptionModule: Unsupported modality '{modality}' or input type.")
 
         print(f"ConcretePerceptionModule: Generated percept: {percept}")
+
+        # Add this new block for world model interaction:
+        if world_model:
+            # Avoid updating world model with error/unsupported percepts
+            processed_type = percept.get("processed_representation", {}).get("type", "unknown")
+            if processed_type not in ["unsupported_modality", "unknown_type_error"]: # Assuming error types
+                print(f"ConcretePerceptionModule: Attempting to update world model with percept.")
+                try:
+                    update_success = world_model.update_model_from_perception(percept)
+                    if update_success:
+                        print(f"ConcretePerceptionModule: World model updated successfully.")
+                    else:
+                        print(f"ConcretePerceptionModule: World model update failed or returned False.")
+                except Exception as e:
+                    print(f"ConcretePerceptionModule: Error calling world_model.update_model_from_perception: {e}")
+            else:
+                print(f"ConcretePerceptionModule: Skipping world model update for percept type '{processed_type}'.")
+
         return percept
 
     def get_module_status(self) -> Dict[str, Any]:
@@ -81,30 +101,40 @@ class ConcretePerceptionModule(BasePerceptionModule):
         }
 
 if __name__ == '__main__':
+    from concrete_world_model import ConcreteWorldModel # Assuming in same dir for example
+
     perception_module = ConcretePerceptionModule()
+    world_model_instance = ConcreteWorldModel()
 
     # Initial Status
     print("\n--- Initial Status ---")
     print(perception_module.get_module_status())
+    print("Initial WM Status:", world_model_instance.get_module_status())
+
 
     # Process text input
     print("\n--- Process Text Input ---")
     text_input1 = "Hello Pia, see the red ball."
-    percept1 = perception_module.process_sensory_input(text_input1, "text", {"source_id": "user_A"})
+    percept1 = perception_module.process_sensory_input(text_input1, "text", {"source_id": "user_A"}, world_model=world_model_instance)
     print("Percept 1:", percept1)
-    assert len(percept1['processed_representation']['entities']) == 2 # Pia, ball
-    assert len(percept1['processed_representation']['actions']) == 2 # greet, see
+    assert len(percept1['processed_representation']['entities']) == 2
+    assert any(e['id'] == "pia_agent_1" for e in percept1['processed_representation']['entities'])
+    assert any(e['id'] == "ball_instance_1" for e in percept1['processed_representation']['entities'])
+    assert len(percept1['processed_representation']['actions']) == 2
 
     text_input2 = "User give apple to Pia."
-    percept2 = perception_module.process_sensory_input(text_input2, "text")
+    percept2 = perception_module.process_sensory_input(text_input2, "text", world_model=world_model_instance)
     print("Percept 2:", percept2)
-    assert len(percept2['processed_representation']['entities']) == 3 # User, apple, Pia
-    assert len(percept2['processed_representation']['actions']) == 1 # give
+    assert len(percept2['processed_representation']['entities']) == 3
+    assert any(e['id'] == "user_agent_1" for e in percept2['processed_representation']['entities'])
+    assert any(e['id'] == "apple_instance_1" for e in percept2['processed_representation']['entities'])
+    assert any(e['id'] == "pia_agent_1" for e in percept2['processed_representation']['entities'])
+    assert len(percept2['processed_representation']['actions']) == 1
 
     # Process dict_mock input
     print("\n--- Process Dict Mock Input ---")
     dict_input = {"sensor_type": "camera", "objects_detected": [{"id": "obj1", "class": "cup", "confidence": 0.9}]}
-    percept3 = perception_module.process_sensory_input(dict_input, "dict_mock")
+    percept3 = perception_module.process_sensory_input(dict_input, "dict_mock", world_model=world_model_instance)
     print("Percept 3:", percept3)
     assert percept3['processed_representation']['type'] == "structured_data"
     assert percept3['processed_representation']['data'] == dict_input
@@ -112,13 +142,28 @@ if __name__ == '__main__':
     # Process unsupported modality
     print("\n--- Process Unsupported Modality ---")
     audio_input = b"some_audio_bytes" # Representing raw audio
-    percept4 = perception_module.process_sensory_input(audio_input, "audio")
+    percept4 = perception_module.process_sensory_input(audio_input, "audio", world_model=world_model_instance)
     print("Percept 4:", percept4)
     assert percept4['processed_representation']['type'] == "unsupported_modality"
 
     # Final Status
     print("\n--- Final Status ---")
-    print(perception_module.get_module_status())
+    print("Perception Module Status:", perception_module.get_module_status())
     assert perception_module.get_module_status()['processing_log_count'] == 4
+
+    print("\n--- World Model Status After Perceptions ---")
+    print(world_model_instance.get_module_status())
+    # Check some entities in World Model based on IDs assigned in perception
+    print("Pia state from WM:", world_model_instance.get_entity_state("pia_agent_1"))
+    assert world_model_instance.get_entity_state("pia_agent_1") is not None
+    print("User state from WM:", world_model_instance.get_entity_state("user_agent_1"))
+    assert world_model_instance.get_entity_state("user_agent_1") is not None
+    print("Apple state from WM:", world_model_instance.get_entity_state("apple_instance_1"))
+    assert world_model_instance.get_entity_state("apple_instance_1") is not None
+    print("Ball state from WM:", world_model_instance.get_entity_state("ball_instance_1"))
+    assert world_model_instance.get_entity_state("ball_instance_1") is not None
+    print("obj1 state from WM:", world_model_instance.get_entity_state("obj1")) # From dict_mock
+    assert world_model_instance.get_entity_state("obj1") is not None
+
 
     print("\nExample Usage Complete.")
