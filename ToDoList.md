@@ -71,3 +71,8 @@
 - [ ] CML: Implement basic functionality for SelfModelModule.
 - [ ] CML: Develop example usage of combined CML modules demonstrating basic interactions.
 ```
+
+## Papers Directory Refinement
+- [ ] Consider integrating key insights from `PiaC.md` more explicitly as historical context within relevant sections of `PiaAGI.md`.
+- [ ] Review other documents in `Papers/` (beyond `PiaC.md`) for deeper alignment or integration possibilities with `PiaAGI.md` in the future, potentially summarizing them or incorporating their core ideas into the main framework document if highly relevant.
+- [ ] Ensure all documents in `Papers/` consistently use relative links for images and cross-references to other project documents.

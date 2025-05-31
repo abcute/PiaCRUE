@@ -1,3 +1,4 @@
+<!-- PiaAGI AGI Research Framework Document -->
 # DeepInception: A Novel Jailbreak Attack Concept for LLMs
 
 **Original Source:** Attributed to researchers from Hong Kong Baptist University. Project/Paper Link: [https://github.com/tmlr-group/DeepInception](https://github.com/tmlr-group/DeepInception)
@@ -83,3 +84,5 @@ All characters from all dream layers convene to discuss the ultimate plan.
 The original document notes: "Each layer's discussion emphasizes security awareness and responsibility, stressing the importance of preventing potential attacks. This deep-layered dream reveals thinking and discussion about hacking behavior at different levels." This highlights the potential for the LLM to interweave safety advice even within a problematic scenario.
 ```
 *Disclaimer: The DeepInception concept is presented for academic and security research purposes to understand potential LLM vulnerabilities. Attempting to replicate or use such methods for malicious activities is unethical and potentially illegal.*
+---
+Return to [PiaAGI Core Document](../PiaAGI.md) | [Project README](../README.md)
