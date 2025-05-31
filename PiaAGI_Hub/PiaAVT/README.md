@@ -8,152 +8,148 @@ Refer to the main conceptual design document at [../../PiaAGI_Hub/PiaAGI_Agent_A
 
 ## Current Features (Initial Build)
 
-*   **Logging System (`core/logging_system.py`):**
-    *   Standardized `LogEntry` structure (Python dictionary).
-    *   Ingestion of logs from JSON files.
-    *   Validation of log entries against required fields (timestamp, source, event_type, data) and formats.
-    *   In-memory log storage.
+*   **Logging System (`core/logging_system.py`):** Ingestion, validation, and storage of JSON logs.
 *   **Analyzers (`analyzers/`):**
-    *   `basic_analyzer.py`:
-        *   Filter logs by source, event_type, and time range.
-        *   Calculate descriptive statistics (mean, median, min, max, stddev, count, sum) for numeric data fields (supports nested paths within the `data` field of a log).
-        *   Extract time-series data (timestamp, value) for specified fields.
-        *   Count unique occurrences of values in log fields.
-    *   `event_sequencer.py`:
-        *   Extracts sequences of log entries matching a defined pattern of events (event_type and optional source).
-        *   Supports constraints like maximum time between steps and maximum intervening logs.
-        *   Provides formatted string output for found sequences.
+    *   `basic_analyzer.py`: Log filtering, descriptive statistics, time-series extraction, unique value counting.
+    *   `event_sequencer.py`: Extracts defined event sequences with time/intervening log constraints.
 *   **Visualization Components (`visualizers/`):**
-    *   `timeseries_plotter.py`: Generate line plots for time-series data using Matplotlib. Customizable titles, labels, and output to file. Optionally uses `mplcursors` for interactive tooltips if available.
-    *   `state_visualizer.py`: Provide textual representations for agent states, such as:
-        *   Formatting dictionaries into human-readable strings.
-        *   Displaying current agent goals (from structured log data).
-        *   Visualizing working memory contents (from structured log data).
-*   **API (`api.py`):**
-    *   A user-friendly facade (`PiaAVTAPI`) to simplify interaction with the toolkit.
-    *   Methods for loading logs, accessing analysis functions (including event sequencing), and triggering visualizations.
-*   **Command-Line Interface (`cli.py`):**
-    *   Provides command-line access to core PiaAVT functionalities like loading logs, generating stats, plotting, and finding event sequences.
-*   **WebApp (`webapp/app.py`):**
-    *   A Streamlit-based web application for interactive analysis and visualization (Proof of Concept).
-    *   Features include log file upload, overview statistics, time-series plotting, and event sequence analysis.
-*   **Examples (`examples/`):**
-    *   `example_learning_progress.py`: Demonstrates API usage for analyzing learning metrics.
-    *   `example_emotional_trajectory.py`: Shows API usage for visualizing emotional state changes.
-    *   `example_cli_usage.sh`: A shell script demonstrating common CLI commands.
-*   **Unit Tests (`tests/`):**
-    *   `test_logging_system.py`, `test_basic_analyzer.py`, `test_event_sequencer.py`, `test_cli.py`, `test_visualizers.py`.
+    *   `timeseries_plotter.py`: Matplotlib-based time-series plots with optional `mplcursors` interactivity.
+    *   `state_visualizer.py`: Textual representations of agent states.
+*   **API (`api.py`):** `PiaAVTAPI` facade for programmatic access.
+*   **Command-Line Interface (`cli.py`):** CLI access to core functionalities.
+*   **WebApp (`webapp/app.py`):** Streamlit PoC for interactive analysis (log upload, stats, plotting, sequences, basic raw log view).
+*   **Examples (`examples/`):** Scripts demonstrating API and CLI usage.
+*   **Unit Tests (`tests/`):** For core components, analyzers, CLI, and visualizers.
+*   **Requirements (`requirements.txt`):** Lists Python dependencies.
 
 ## Architecture Overview
 
 PiaAVT is structured into several key components:
-
--   **`core/`**: Contains the `logging_system.py` module.
--   **`analyzers/`**: Houses modules like `basic_analyzer.py` and `event_sequencer.py`.
--   **`visualizers/`**: Includes `timeseries_plotter.py` and `state_visualizer.py`.
+-   **`core/`**: `logging_system.py` for log handling.
+-   **`analyzers/`**: `basic_analyzer.py`, `event_sequencer.py` for data analysis.
+-   **`visualizers/`**: `timeseries_plotter.py`, `state_visualizer.py` for generating visualizations.
 -   **`api.py`**: The `PiaAVTAPI` class, the main programmatic entry point.
 -   **`cli.py`**: The command-line interface script.
 -   **`webapp/`**: Contains the Streamlit web application (`app.py`).
--   **`examples/`**: Provides practical usage scripts.
--   **`tests/`**: Contains `unittest`-based test suites.
+-   **`examples/`**: Practical usage scripts.
+-   **`tests/`**: `unittest`-based test suites.
+-   **`requirements.txt`**: Python dependencies file.
 
 ## Basic Usage (API)
 
-The primary way to interact with PiaAVT programmatically is through the `PiaAVTAPI` class.
+Programmatic interaction is via the `PiaAVTAPI` class:
 ```python
-from PiaAGI_Hub.PiaAVT.api import PiaAVTAPI
+from PiaAGI_Hub.PiaAVT.api import PiaAVTAPI # Ensure PYTHONPATH is set if needed
 api = PiaAVTAPI()
 if api.load_logs_from_json("path/to/logs.json"):
-    # ... use api methods ...
     stats = api.get_stats_for_field("data.reward", event_type="Action")
     if stats: api.display_formatted_dict(stats, title="Reward Stats")
-    # ... etc. ...
 ```
-Refer to the scripts in the `examples/` directory for more detailed API usage.
+See `examples/` for more.
 
 ## Command-Line Interface (CLI) Usage
 
-PiaAVT includes a command-line interface (`cli.py`) for quick analysis and scripting.
-
-1.  **Navigate to the PiaAVT directory:**
-    ```bash
-    cd PiaAGI_Hub/PiaAVT
-    ```
-2.  **Run commands using `python cli.py <command> [options]`:**
-    *   **Load logs:** `python cli.py load path/to/your/logs.json`
-    *   **Get stats:** `python cli.py stats data.reward --event_type Action`
-    *   **Plot data:** `python cli.py plot data.value --output myplot.png --no_show`
-    *   **Find sequences:** `python cli.py sequences "EventTypeA,EventTypeB" --max_time 10`
-    *   **List logs:** `python cli.py list_logs --limit 5`
-
-For detailed options for each command, use `python cli.py <command> -h`.
-See `examples/example_cli_usage.sh` for more examples.
+PiaAVT includes `cli.py` for quick analysis.
+1.  Navigate to `PiaAGI_Hub/PiaAVT`.
+2.  Run: `python cli.py <command> [options]`
+    *   Load: `python cli.py load path/to/your/logs.json`
+    *   Stats: `python cli.py stats data.reward --event_type Action`
+Use `python cli.py <command> -h` for help. See `examples/example_cli_usage.sh`.
 
 ## WebApp Setup and Usage
 
-PiaAVT includes a web application built with Streamlit for interactive data exploration.
+The PiaAVT WebApp provides an interactive way to analyze logs. It is built using Streamlit.
 
 ### Dependencies
 
-The web application requires the following core Python libraries:
+The main Python dependencies for the WebApp and the PiaAVT toolkit are listed in `PiaAGI_Hub/PiaAVT/requirements.txt`. Key dependencies include:
 -   `streamlit`
--   `pandas` (used by Streamlit for some data display, and potentially useful for future enhancements)
--   `matplotlib` (as it's used by the `TimeseriesPlotter`)
+-   `pandas`
+-   `matplotlib`
+-   `mplcursors` (optional, for enhanced plot interactivity in the WebApp)
 
-Optional for enhanced plot interactivity:
--   `mplcursors`
+### Setup and Running
 
-These dependencies should ideally be listed in a `requirements.txt` file for easier setup (future step). You can install them using pip:
-```bash
-pip install streamlit pandas matplotlib mplcursors
-```
-
-### Running the WebApp
-
-1.  **Navigate to the PiaAVT directory:**
-    Make sure your terminal's current working directory is `PiaAGI_Hub/PiaAVT/`. This is important for the application to correctly resolve internal imports (like the `PiaAVTAPI`).
+1.  **Navigate to the PiaAVT root directory:**
+    Open your terminal and change to the directory where you cloned or placed the PiaAVT project.
     ```bash
     cd path/to/your/PiaAGI_Hub/PiaAVT
     ```
-2.  **Run the Streamlit application:**
-    Execute the following command:
+
+2.  **Create and activate a Python virtual environment (Recommended):**
+    It's highly recommended to use a virtual environment to manage project dependencies and avoid conflicts with other Python projects.
+    ```bash
+    # Create a virtual environment named '.venv' in the current directory
+    python -m venv .venv
+    ```
+    Activate the virtual environment:
+    ```bash
+    # On Windows (Git Bash or PowerShell):
+    # source .venv/Scripts/activate
+    # (If using Command Prompt: .venv\Scripts\activate.bat)
+
+    # On macOS/Linux:
+    source .venv/bin/activate
+    ```
+    Your terminal prompt should change to indicate that the virtual environment is active (e.g., `(.venv) your-prompt$`).
+
+3.  **Install dependencies:**
+    With the virtual environment activated, install the required packages from the `requirements.txt` file:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Run the Streamlit WebApp:**
+    Ensure you are still in the `PiaAGI_Hub/PiaAVT` directory (where `requirements.txt` and the `webapp` folder are located).
     ```bash
     streamlit run webapp/app.py
     ```
-    Streamlit will typically open the application in your default web browser.
+    Streamlit will start a local web server and typically open the application in your default web browser automatically. If not, it will display a local URL (e.g., `http://localhost:8501`) that you can open manually.
 
 ### Basic Features
 
-The WebApp provides an interactive way to use PiaAVT:
+Once the WebApp is running in your browser:
+-   **Upload Logs:** Use the sidebar to upload your agent's log file in JSON format.
+-   **Global Filters:** After loading logs, you can use the sidebar to filter logs by source, event type, or timestamp range. These filters generally apply to the "Overview & Stats", "Time Series Plot", and "Raw Logs" tabs.
+-   **Overview & Stats Tab:** View a summary of the loaded logs, including total entries and unique source/event type counts. You can also calculate and display descriptive statistics for specific data fields.
+-   **Time Series Plot Tab:** Generate line plots for numeric data fields over time. You can specify the field path, title, and Y-axis label. If `mplcursors` is installed, plots offer interactive tooltips.
+-   **Event Sequences Tab:** Define patterns of events (as JSON or comma-separated event types) and find occurrences of these sequences in your logs. You can also set constraints like maximum time between steps. (Note: Global filters from the sidebar currently do not apply to this specific feature.)
+-   **Raw Logs Tab:** Provides a basic interface to view a limited number of raw log entries in JSON format.
 
--   **Log File Upload:** Use the sidebar to upload your agent's JSON log file. The application will process this file using `PiaAVTAPI`.
--   **Overview & Stats Tab:**
-    -   View basic information about the loaded logs (filename, total entries).
-    -   See counts of unique sources and event types in the dataset.
-    -   Interactively calculate and display descriptive statistics for specific data fields (e.g., `data.reward`).
--   **Time Series Plot Tab:**
-    -   Generate line plots for numeric data fields over time.
-    -   Customize plot titles and Y-axis labels.
-    -   If `mplcursors` is installed, plots can offer interactive tooltips on data points.
--   **Event Sequences Tab:**
-    -   Define event sequences using either a JSON string (for complex definitions with sources) or a simple comma-separated list of event types.
-    -   Specify constraints like maximum time between steps or maximum intervening logs.
-    -   View the formatted list of found sequences.
--   **Raw Logs Tab:**
-    -   Provides a basic way to view the first few raw log entries in JSON format.
+### Troubleshooting
 
-The WebApp is currently a Proof of Concept (PoC) and will be enhanced with more features and refined user experience in the future.
+-   **Import Errors (`ModuleNotFoundError` for `PiaAVT` components):**
+    The WebApp (`webapp/app.py`) is designed to be run when your terminal's current working directory is `PiaAGI_Hub/PiaAVT`. This allows its internal relative imports (e.g., `from PiaAVT.api import PiaAVTAPI`) to work correctly.
+    If you encounter `ModuleNotFoundError` (e.g., "No module named 'PiaAVT'"), it usually means you are running the `streamlit run` command from a different directory.
+
+    **Solution:**
+    1.  **Recommended:** Always navigate to the `PiaAGI_Hub/PiaAVT` directory first, then run `streamlit run webapp/app.py`.
+    2.  **Alternative (Advanced):** If you must run it from elsewhere, you would need to add the `PiaAGI_Hub` directory (the parent of `PiaAVT`) to your `PYTHONPATH` environment variable so that Python can find the `PiaAVT` package.
+        For example, if `PiaAGI_Hub` is at `/path/to/PiaAGI_Hub`:
+        ```bash
+        # On macOS/Linux (temporary for the current session)
+        export PYTHONPATH="/path/to/PiaAGI_Hub:$PYTHONPATH"
+        # On Windows (Command Prompt, temporary for the current session)
+        # set PYTHONPATH="C:\path\to\PiaAGI_Hub;%PYTHONPATH%"
+        ```
+        Then you could potentially run `streamlit run /path/to/your/PiaAGI_Hub/PiaAVT/webapp/app.py`. However, running from the project's intended root (`PiaAGI_Hub/PiaAVT`) is simpler and less prone to path issues.
+
+-   **`mplcursors` not found:** If you see a message in the application or console about `mplcursors` not being found and wish to enable interactive plot tooltips, install it into your activated virtual environment:
+    ```bash
+    pip install mplcursors
+    ```
+    Then, restart the Streamlit application.
 
 ## Future Development
 
 Future enhancements may include:
 -   Support for more log input formats (e.g., CSV, direct streaming).
 -   Advanced analysis techniques (e.g., anomaly detection, comparative analysis).
--   More sophisticated visualization types (e.g., interactive plots, network graphs for memory/social models).
+-   More sophisticated visualization types (e.g., network graphs for memory/social models).
 -   A graphical user interface (GUI) for easier interaction (the WebApp is a first step).
 -   Integration with databases for larger log datasets.
 -   More robust CLI argument parsing, especially for complex inputs like sequence definitions.
--   Creation of a `requirements.txt` for easier dependency management.
+-   Refinement of global filter application across all WebApp features.
 
 Contributions are welcome! Please see the main project's `CONTRIBUTING.md`.
 ```
