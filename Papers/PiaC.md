@@ -3,10 +3,10 @@
 # PiaC: Theory and Methods for Personalizing Intelligent Agents
 
 **Original Source:** Conceptualized by abcute for the PiaAGI project. Further details and context can be found at [https://github.com/abcute/PiaAGI](https://github.com/abcute/PiaAGI).
-*Note: This document outlines "PiaC" (Personalized Intelligent Agent Customization), an original conceptual exploration within the PiaAGI project. It proposes a methodology for customizing general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying principles from psychology, drawing analogies to psychological interventions.*
+*Note: This document outlines "PiaC" (Personalized Intelligent Agent Customization), an original conceptual exploration within the PiaAGI project. **Reflecting a core PiaAGI tenet of considering intelligent agents as entities with the potential for human-like role cognition,** it proposes a methodology for customizing general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying principles from psychology, drawing analogies to psychological interventions.*
 
 ## Abstract
-This document introduces the theory and methods for "PiaC" (Personalizing Intelligent Agent Customization). It aims to customize general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying theories and methods from psychology. This approach draws an analogy to psychological interventions for individuals with multifaceted personalities (used metaphorically), with the goal of inspiring humans to explore more effective communication techniques and strategies with general LLMs, particularly in the context of developing AGI capabilities.
+This document introduces the theory and methods for "PiaC" (Personalizing Intelligent Agent Customization). It aims to customize general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying theories and methods from psychology. This approach, **grounded in a foundational PiaAGI viewpoint that treats the agent as a developing, human-like cognitive entity capable of role adoption,** draws an analogy to psychological interventions for individuals with multifaceted personalities (used metaphorically). The goal is to inspire humans to explore more effective communication techniques and strategies with general LLMs, particularly in the context of developing AGI capabilities by fostering a deeper role cognition within the agent.
 
 ## Content
 
@@ -16,7 +16,9 @@ This document introduces the theory and methods for "PiaC" (Personalizing Intell
 
 This paper aims to customize general Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying theories and methods from psychology. The approach involves drawing an analogy to psychological interventions for individuals with multifaceted personalities (this is a conceptual metaphor, not a literal clinical diagnosis of LLMs). This process is also intended to inspire humans to explore effective communication techniques and strategies with general LLMs.
 
-Based on the theoretical frameworks of:
+The selection of these psychological theories is deliberate, reflecting PiaAGI's foundational perspective of viewing the agent not merely as a tool, but as a learning, cognitive entity. This perspective suggests that, for an agent to truly adopt and perform within a specific social or functional role, its internal "cognitive" and "behavioral" patterns can be shaped using principles analogous to those that foster human development and adaptation.
+
+Viewing the agent through this lens of a human-like cognitive learner, PiaC is based on analogous applications of theoretical frameworks from:
 *   **Cognitive Psychology:** Primarily Aaron T. Beck's Cognitive Behavioral Therapy (CBT).
 *   **Social Psychology:** Primarily Albert Bandura's Social Cognitive Theory.
 *   **Behavioral Psychology:** Primarily John Broadus Watson's Behaviorist Learning Theory.
@@ -137,7 +139,7 @@ These special prompt templates based on effective communication theory aim to op
 In this step, we first define a role and then use techniques analogous to Cognitive Behavioral Therapy (CBT) to awaken and reinforce the LLM's "cognition" (i.e., its programmed understanding and behavioral patterns) of that specific role or identity.
 
 **Theoretical Basis (Analogous Application):**
-Cognitive restructuring, a technique from CBT, is a psychological intervention aimed at helping individuals change maladaptive thought patterns and behaviors. It guides individuals to re-evaluate and reorganize their thoughts, beliefs, and emotions, thereby improving mental health and quality of life. In AI, cognitive restructuring can be analogously used to deepen a model's "understanding" and "cognition" of a specific role by refining its response patterns.
+Cognitive restructuring, a technique from CBT, is a psychological intervention aimed at helping individuals change maladaptive thought patterns and behaviors. It guides individuals to re-evaluate and reorganize their thoughts, beliefs, and emotions, thereby improving mental health and quality of life. In AI, **approaching the agent as a cognitive entity whose 'thought patterns' (i.e., response generation tendencies) can be reshaped,** cognitive restructuring can be analogously used to deepen a model's 'understanding' and 'cognition' of a specific role by refining its response patterns, **much like guiding a human to align their self-perception and behaviors with a chosen identity or social role.**
 
 **Operational Technique (Analogous Application):**
 
@@ -186,7 +188,7 @@ These special prompt templates, inspired by CBT principles, aim to promote the L
 After establishing role "cognition" in Step 1, Step 2 aims to further reinforce and supplement the necessary knowledge and skills for this role, drawing inspiration from Social Cognitive Theory.
 
 **Theoretical Basis (Analogous Application):**
-Social Cognitive Theory, proposed by Albert Bandura, emphasizes the importance of observational learning, self-efficacy, and social interaction in human behavior and knowledge acquisition. In AI, it offers analogous perspectives for model learning and knowledge integration.
+Social Cognitive Theory, proposed by Albert Bandura, emphasizes the importance of observational learning, self-efficacy, and social interaction in human behavior and knowledge acquisition. In AI, **particularly when conceptualizing the agent as a social learner akin to humans,** it offers analogous perspectives for model learning and knowledge integration, **suggesting that an agent can acquire role-relevant knowledge and skills by observing examples and through simulated interactions within a social context.**
 
 **Operational Technique (Analogous Application):**
 
@@ -233,7 +235,7 @@ These special prompt templates, inspired by Social Cognitive Theory, aim to help
 After establishing a specific role and identity for the LLM and supplementing it with necessary knowledge and skills in the first two steps, we can consolidate these achievements by drawing analogies from Behaviorist Learning Theory, particularly the Stimulus-Response (S-R) behavioral formula. The goal is to merge these elements into a complete, unique intelligent agent with role and identity coherence.
 
 **Theoretical Basis (Analogous Application):**
-John B. Watson is considered a founder of behaviorism. Behaviorist Learning Theory's core concept is the Stimulus-Response (S-R) formula (later expanded to S-O-R by neo-behaviorists, including an Organismic variable). This framework suggests that behaviors are learned responses to environmental stimuli. In LLMs, prompts act as stimuli, and the generated text is the response.
+John B. Watson is considered a founder of behaviorism. Behaviorist Learning Theory's core concept is the Stimulus-Response (S-R) formula (later expanded to S-O-R by neo-behaviorists, including an Organismic variable). This framework suggests that behaviors are learned responses to environmental stimuli. In LLMs, **when the agent is viewed as the 'organism' in the S-O-R model,** prompts act as stimuli, and the generated text is its learned response.
 
 **Operational Technique (Analogous Application):**
 
@@ -249,7 +251,7 @@ John B. Watson is considered a founder of behaviorism. Behaviorist Learning Theo
 **Summary:**
 By leveraging principles analogous to Behaviorist Learning Theory, continuous dialogue and feedback (or iterative prompting and refinement) can consolidate the work of the previous two steps, forming a unique intelligent agent that possesses role "identity" and the necessary knowledge base.
 
-Through these three analogous steps, the LLM gradually forms stable "cognitive" and behavioral patterns consistent with its defined role and identity. These elements merge into an intelligent agent with a unique (programmed) role and identity, capable not only of "understanding" and executing role-related tasks but also of exhibiting corresponding (simulated) emotions and attitudes in human interactions.
+Through these three analogous steps, **viewing the LLM as a developing cognitive entity,** it gradually forms stable "cognitive" and behavioral patterns consistent with its defined role and identity. These elements merge into an intelligent agent with a unique (programmed) role and identity—**akin to an individual adopting a specific social persona**—capable not only of "understanding" and executing role-related tasks but also of exhibiting corresponding (simulated) emotions and attitudes in human interactions.
 
 #### Prompt Examples Based on S-R Behavioral Formula (Analogous Application)
 ```markdown
