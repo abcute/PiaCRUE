@@ -1,0 +1,30 @@
+{
+    "__type__": "PiaAGIPrompt",
+    "target_agi": "TestAgent1",
+    "developmental_stage_target": "Seedling",
+    "author": "WebAppTest",
+    "version": "0.1-example1",
+    "date": "2024-03-10",
+    "objective": "Objective for Example Prompt 1",
+    "system_rules": {
+        "__type__": "SystemRules",
+        "syntax": "Markdown",
+        "language": "en",
+        "output_format": "text",
+        "logging_level": "Info",
+        "piaagi_interpretation_mode": "Execute_Immediate"
+    },
+    "requirements": {
+        "__type__": "Requirements",
+        "goal": "Goal for example 1",
+        "background_context": null,
+        "constraints_and_boundaries": [],
+        "success_metrics": []
+    },
+    "users_interactors": null,
+    "executors": null,
+    "workflow_or_curriculum_phase": null,
+    "developmental_scaffolding_context": null,
+    "cbt_autotraining_protocol": null,
+    "initiate_interaction": "Begin example prompt 1."
+}
