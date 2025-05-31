@@ -5,6 +5,9 @@ This directory contains a collection of theoretical research papers, summaries o
 
 ## Documents
 
+*   **[Agent_Autonomous_Tool_Mastery.md](Agent_Autonomous_Tool_Mastery.md):** (PiaAGI Core Concept)
+    *   Outlines the core PiaAGI viewpoint that an AGI agent, akin to a "digital human," must possess the capability for autonomous tool design, creation, and use, leveraging its programming abilities as a foundational mechanism for this.
+
 *   **[AI_Cultural_Evolution.md](AI_Cultural_Evolution.md):** (Hypothetical)
     *   Explores the integration of cultural evolution theories (variation, selection, transmission of cultural traits) into AI agent development, particularly for multi-agent systems and LLMs, aiming for AI that can participate in and adapt to simulated cultural dynamics.
 
