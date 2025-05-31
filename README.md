@@ -1,3 +1,4 @@
+<!-- PiaAGI AGI Research Framework Document -->
 # PiaAGI: A Psycho-Cognitive Framework for Developing Artificial General Intelligence
 
 PiaAGI (Personalized Intelligent Agent for AGI) is an advanced, **cross-disciplinary framework** aimed at the research and development of Artificial General Intelligence (AGI). It significantly evolves from earlier LLM interaction enhancement methodologies by proposing a **psycho-cognitively plausible architecture** for AGI. PiaAGI integrates deep principles from psychology (cognitive, developmental, personality, social), communication theory, LLM technology, and agent-based systems to foster agents with greater autonomy, adaptability, and ethically-informed behavior. Our core methodology, **comprehensively detailed in the revised `PiaAGI.md`**, outlines how "Personalized Intelligent Agents" (Pias) can be developed through structured prompting and developmental scaffolding, serving as a pathway towards AGI.
@@ -30,18 +31,18 @@ To engage with the PiaAGI project, we recommend the following:
 1.  **Understand the Core AGI Framework:** Begin by thoroughly reading **[`PiaAGI.md`](PiaAGI.md)**. This extensively revised document is the cornerstone of our AGI methodology, detailing the theoretical underpinnings, the psycho-cognitive architecture, developmental stages, and the advanced prompting/scaffolding techniques.
 2.  **Explore the Project Structure:** Refer to **[`PROJECT_GUIDE.md`](PROJECT_GUIDE.md)** for a comprehensive overview of how this repository is organized and what you can find in each directory, including the new research tools.
 3.  **Review AGI-Centric Examples:** Dive into the AGI use case examples in **[`PiaAGI.md`](PiaAGI.md) (Section 7)** to see how the framework is applied to complex AGI scenarios. Simpler examples demonstrating foundational R-U-E principles can now be found in **Appendix A of `PiaAGI.md`**.
-4.  **Discover AGI Research Tools:** Explore the **[`PiaAGI_Hub/`](PiaAGI_Hub/)** directory. This new section contains:
+4.  **Discover AGI Research Tools:** Explore the **[`PiaAGI_Research_Tools/`](PiaAGI_Research_Tools/)** directory. This new section contains:
     *   Conceptual design documents for a suite of Python-based tools:
         *   **PiaSE (PiaAGI Simulation Environment):** For testing agents in dynamic environments.
-        *   **PiaCML (PiaAGI Cognitive Module Library):** For constructing agent cognitive modules. This library now includes defined interfaces for core modules such as Perception, Motivation, Emotion, Planning, Self-Model, and various memory systems. More details can be found in the [PiaAGI_Hub/cognitive_module_library/README.md](PiaAGI_Hub/cognitive_module_library/README.md).
+        *   **PiaCML (PiaAGI Cognitive Module Library):** For constructing agent cognitive modules. This library now includes defined interfaces for core modules such as Perception, Motivation, Emotion, Planning, Self-Model, and various memory systems. More details can be found in the [PiaAGI_Research_Tools/PiaCML/README.md](PiaAGI_Research_Tools/PiaCML/README.md).
         *   **PiaAVT (PiaAGI Agent Analysis & Visualization Toolkit):** For analyzing agent behavior and internal states.
         *   **PiaPES (PiaAGI Prompt Engineering Suite):** For designing Guiding Prompts and Developmental Scaffolding.
-    *   An initial **MVP (Minimal Viable Product)** implementation for the **PiaPES Prompt Templating Engine** located in `PiaAGI_Hub/PiaPES/prompt_engine_mvp.py` with its `USAGE.md`.
+    *   An initial **MVP (Minimal Viable Product)** implementation for the **PiaPES Prompt Templating Engine** located in `PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py` with its `USAGE.md`.
 
 ## Core Components
 
 *   **[`PiaAGI.md`](PiaAGI.md):** The main, extensively revised document detailing the PiaAGI framework, its psycho-cognitive architecture for AGI, developmental principles, ethical considerations, and advanced methodology for guiding AGI development.
-*   **[`PiaAGI_Hub/`](PiaAGI_Hub/):** Contains conceptual designs for a suite of Python-based tools supporting AGI research (PiaSE, PiaCML, PiaAVT, PiaPES), including the PiaAGI Cognitive Module Library (CML) with defined interfaces for key cognitive functions, and initial MVP implementations (e.g., PiaPES Prompt Templating Engine).
+*   **[`PiaAGI_Research_Tools/`](PiaAGI_Research_Tools/):** Contains conceptual designs for a suite of Python-based tools supporting AGI research (PiaSE, PiaCML, PiaAVT, PiaPES), including the PiaAGI Cognitive Module Library (CML) with defined interfaces for key cognitive functions, and initial MVP implementations (e.g., PiaPES Prompt Templating Engine).
 *   **[`Papers/`](Papers/):** A collection of documents exploring theoretical concepts and related research relevant to PiaAGI's AGI focus.
 *   **[`Examples/`](Examples/):** Contains various practical examples related to PiaAGI principles and foundational R-U-E prompting. The primary, fully documented foundational examples have been moved to **Appendix A of `PiaAGI.md`**. AGI-specific examples are detailed within the main body of `PiaAGI.md` (Section 7).
 
@@ -56,3 +57,6 @@ We enthusiastically welcome contributions to the PiaAGI project, particularly th
 ## Acknowledgements
 
 We acknowledge the foundational work in structured prompting by LangGPT and the broader AI, psychology, and cognitive science research communities. Specific acknowledgements are detailed within the `PiaAGI.md` document (Section 12).
+
+---
+Return to [PiaAGI Core Document](PiaAGI.md) | [Project README](README.md)

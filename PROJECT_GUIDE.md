@@ -1,3 +1,4 @@
+<!-- PiaAGI AGI Research Framework Document -->
 # Project Structure and Navigation Guide
 
 Welcome to the PiaAGI project! This guide is designed to help you understand the structure of our repository and navigate its contents effectively as we pursue our **upgraded AGI research vision**.
@@ -24,7 +25,7 @@ To help you quickly find the information you need, here is a description of the 
 
 *   **`CODE_OF_CONDUCT.md`**: Outlines the code of conduct for all contributors and participants in the PiaAGI community.
 
-*   **`PiaAGI_Research_Tools/`**: This **new directory** is central to the project's AGI research toolkit. It contains:
+*   **`PiaAGI_Research_Tools/`**: This **directory** is central to the project's AGI research toolkit. It contains:
     *   **Conceptual Design Documents:** Detailed Markdown files for a suite of Python-based tools envisioned to support AGI research within the PiaAGI framework:
         *   `PiaAGI_Simulation_Environment.md` (PiaSE): For creating dynamic environments to test and develop PiaAGI agents.
         *   `PiaAGI_Cognitive_Module_Library.md` (PiaCML): For building and experimenting with implementations of PiaAGI's cognitive modules.
@@ -66,3 +67,6 @@ We warmly welcome community contributions to the PiaAGI project, particularly th
 For detailed guidelines on how to contribute, please see our **[`CONTRIBUTING.md`](CONTRIBUTING.md)** file.
 
 If you have any questions, suggestions, or feedback, please use the **GitHub Issues** section of this repository. We appreciate your input!
+
+---
+Return to [PiaAGI Core Document](PiaAGI.md) | [Project README](README.md)

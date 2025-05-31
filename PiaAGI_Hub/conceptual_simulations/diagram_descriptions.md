@@ -1,3 +1,4 @@
+<!-- PiaAGI AGI Research Framework Document -->
 # PiaAGI Diagram Descriptions
 
 This file contains textual descriptions for the diagrams requested in `PiaAGI.md`. Each description is intended to be comprehensive enough for a graphic designer or a future AI image generation tool to create the visual.
@@ -540,3 +541,6 @@ This file contains textual descriptions for the diagrams requested in `PiaAGI.md
 
 **DIAGRAM DESCRIPTION END**
 ```
+
+---
+Return to [PiaAGI Core Document](../../PiaAGI.md) | [Project README](../../README.md)
