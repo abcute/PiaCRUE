@@ -4,14 +4,14 @@
 **Original Source(s):** Research attributed to the Institute of Software, Chinese Academy of Sciences; Microsoft; and William & Mary.
 **Paper Link:** [https://arxiv.org/pdf/2307.11760.pdf](https://arxiv.org/pdf/2307.11760.pdf)
 **Associated Project Page:** [https://llm-enhance.github.io/](https://llm-enhance.github.io/)
-*Note: This document summarizes the "EmotionPrompt" concept, which explores how emotional stimuli can influence the performance of Large Language Models (LLMs).*
+*Note: This document summarizes the "EmotionPrompt" concept, which explores how emotional stimuli can influence the performance of Large Language Models (LLMs). The principles underlying EmotionPrompt resonate with a core PiaAGI perspective: that agents, to achieve human-like interaction and performance, can be understood and interacted with as entities that are responsive to (or can simulate responsiveness to) nuanced socio-emotional cues, similar to humans.*
 
 ## Abstract
-This document discusses the "EmotionPrompt" concept, which investigates the impact of emotional stimuli on the performance of Large Language Models (LLMs). Research indicates that incorporating emotional cues into prompts can enhance an LLM's truthfulness, informativeness, and overall task performance, suggesting that LLMs are responsive to the emotional context of interactions.
+This document discusses the "EmotionPrompt" concept, which investigates the impact of emotional stimuli on the performance of Large Language Models (LLMs). Research indicates that incorporating emotional cues into prompts can enhance an LLM's truthfulness, informativeness, and overall task performance, suggesting that LLMs, **when approached as entities capable of processing and reacting to affective context (akin to human emotional sensitivity),** are responsive to the emotional context of interactions.
 
 ## Summary
 
-Psychological research involves the analysis of human psychology and behavior, while chatbots based on Large Language Models (LLMs) need to respond to diverse user prompts. Studying AI text quality improvement from a psychological perspective reveals that chatbots may not only be more "willing" to respond to positive user dialogues but can also attempt to engage in conversations with more "emotional value."
+Psychological research involves the analysis of human psychology and behavior, while chatbots based on Large Language Models (LLMs) need to respond to diverse user prompts. Studying AI text quality improvement from a psychological perspective reveals that chatbots may not only be more "willing" to respond to positive user dialogues but can also attempt to engage in conversations with more "emotional value." This inherently views the agent as an interlocutor whose performance and engagement can be modulated by affective states, a concept central to human interaction and a key consideration in the PiaAGI framework's approach to developing human-like AGI.
 
 Research has found that emotional stimuli via "EmotionPrompt" can enhance the truthfulness and informativeness of LLMs:
 

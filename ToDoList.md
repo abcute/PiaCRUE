@@ -80,3 +80,6 @@
 - [ ] Explore and detail the potential integration of Alita agent's Model Context Protocol (MCP) concepts (from `Papers/Alita_Agent.md`) into PiaAGI's tool creation (Section 3.6), Self-Model (Section 4.1.10), and Learning Module (Section 4.1.5) functionalities.
 - [ ] Further elaborate on the core concept presented in `Papers/Agent_Autonomous_Tool_Mastery.md` and ensure its principles are deeply integrated and referenced throughout relevant sections of `PiaAGI.md` (especially concerning agent capabilities, autonomy, and developmental stages).
 - [ ] Establish a standard template/guideline for conceptual papers in the `Papers/` directory, recommending the structure: Abstract, Summary of Core Concepts, and Implications for PiaAGI (similar to `Agent_Autonomous_Tool_Mastery.md`).
+
+## Framework Philosophy and Consistency
+- [ ] Review all core PiaAGI documents (especially `PiaAGI.md`, `README.md`, `PROJECT_GUIDE.md`, and relevant conceptual papers) to ensure the foundational viewpoint of "treating the agent as a developing, human-like cognitive entity" is consistently and clearly articulated where appropriate, particularly when discussing psychological analogies, agent development, and role cognition.
