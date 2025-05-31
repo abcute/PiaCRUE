@@ -140,6 +140,34 @@ Once the WebApp is running in your browser:
     ```
     Then, restart the Streamlit application.
 
+## Advanced Configuration and Extensibility
+
+### Managing API Keys and External Services (Conceptual)
+
+While the current version of PiaAVT primarily focuses on analyzing local log data and does not directly integrate with external services like Large Language Models (LLMs) that require API keys, the broader PiaAGI project envisions components that might.
+
+For future extensions or related PiaAGI tools that might require such integrations, a common approach for managing API keys and service endpoints would be recommended:
+
+1.  **Environment Variables:** Store API keys and sensitive configuration in environment variables (e.g., `OPENAI_API_KEY`, `PIA_CUSTOM_SERVICE_ENDPOINT`). This is a secure and flexible method, as keys are not hardcoded into the source.
+    *   Example: `export OPENAI_API_KEY="your_actual_key_here"`
+2.  **Configuration Files:** Use a dedicated configuration file (e.g., `.env` files loaded by a library like `python-dotenv`, or a `config.toml`/`config.yaml` file) to store these settings. These files should be added to `.gitignore` to prevent accidental versioning of secrets.
+    *   Example (`.env` file):
+        ```
+        OPENAI_API_KEY="your_actual_key_here"
+        LLAMA_API_ENDPOINT="https://api.example.com/llama"
+        ```
+    *   Example (`config.toml`):
+        ```toml
+        [api_keys]
+        openai = "your_actual_key_here"
+
+        [service_endpoints]
+        my_custom_model = "https://custom.api/v1"
+        ```
+3.  **Application Access:** The application code would then securely load these configurations at runtime, typically defaulting to environment variables first, then checking configuration files.
+
+This approach ensures that users can easily and securely configure any necessary credentials or endpoints without modifying the core codebase, facilitating easier deployment and maintenance across different environments and for various users. PiaAVT itself may adopt such a system if it evolves to directly support analyses requiring external API calls.
+
 ## Future Development
 
 Future enhancements may include:
@@ -150,6 +178,8 @@ Future enhancements may include:
 -   Integration with databases for larger log datasets.
 -   More robust CLI argument parsing, especially for complex inputs like sequence definitions.
 -   Refinement of global filter application across all WebApp features.
+-   Creation of a `requirements.txt` for easier dependency management (Done).
+-   Configuration management for external services if PiaAVT expands to use them.
 
 Contributions are welcome! Please see the main project's `CONTRIBUTING.md`.
 ```
