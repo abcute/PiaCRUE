@@ -1,3 +1,4 @@
+<!-- PiaAGI AGI Research Framework Document -->
 # Rephrase-and-Respond (RaR): A Method for Enhancing LLM Accuracy
 
 **Original Source:** Gu, Quanquan; Deng, Yoeho; Zhang, Weitong; Chen, Zixiang (UCLA).
@@ -10,7 +11,7 @@ The Rephrase-and-Respond (RaR) method is a prompting strategy designed to enhanc
 
 ## RaR Method and PiaC Ideology
 
-The RaR method is an excellent application example of the PiaC (Personalized Intelligent Agent Customization) communication encoding ideas within the [PiaCRUE framework](../PiaCRUE.md). Specifically, it embodies the principle of having the AI optimize the original prompt to express it in a way the AI can better understand. This idea has various applications in everyday prompt engineering. For instance, one might solicit the AI's input when crafting a prompt:
+The RaR method is an excellent application example of the PiaC (Personalized Intelligent Agent Customization) communication encoding ideas, concepts that were foundational to the PiaCRUE methodology and have been further evolved within the comprehensive [PiaAGI framework](../PiaAGI.md). Specifically, it embodies the principle of having the AI optimize the original prompt to express it in a way the AI can better understand. This idea has various applications in everyday prompt engineering. For instance, one might solicit the AI's input when crafting a prompt:
 
 ```
 Hello ChatGPT, how should I phrase my question to enable you to perform better? My question is "{question}". Please optimize my question's phrasing, provide an improved example, and then respond.
@@ -54,3 +55,5 @@ This is an example of asking the LLM to help optimize the user's query, reflecti
 My question is "{question}".
 How should I phrase my question to enable you to perform better? Please optimize my question's phrasing, provide an improved example, and then respond.
 ```
+---
+Return to [PiaAGI Core Document](../PiaAGI.md) | [Project README](../README.md)

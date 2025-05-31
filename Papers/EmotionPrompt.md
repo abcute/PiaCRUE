@@ -1,3 +1,4 @@
+<!-- PiaAGI AGI Research Framework Document -->
 # EmotionPrompt: Enhancing LLM Performance via Emotional Stimuli
 
 **Original Source(s):** Research attributed to the Institute of Software, Chinese Academy of Sciences; Microsoft; and William & Mary.
@@ -51,3 +52,5 @@ Query: {query_str}
 Answer: \
 ```
 *In the structure above, `{emotion_str}` would be replaced with one of the emotional cues, like "This is very important to my career."*
+---
+Return to [PiaAGI Core Document](../PiaAGI.md) | [Project README](../README.md)

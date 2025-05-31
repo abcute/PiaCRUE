@@ -1,3 +1,5 @@
+<!-- PiaAGI AGI Research Framework Document -->
+<!-- PiaAGI Note: This document, PiaC.md, represents an early conceptual exploration for the PiaAGI project. Many of the foundational ideas discussed here regarding personalized intelligent agents, psychological principles (CBT, Social Cognitive Theory, Behaviorism), and communication strategies have been significantly expanded, deepened, and integrated into the core PiaAGI AGI framework. For the most current, comprehensive, and architecturally detailed discussion of these concepts and their role in AGI development, please refer to the main [PiaAGI.md](../PiaAGI.md) document. This document is preserved for historical context and to illustrate the evolutionary path of the PiaAGI framework. -->
 # PiaC: Theory and Methods for Personalizing Intelligent Agents
 
 **Original Source:** Conceptualized by abcute for the PiaAGI project. Further details and context can be found at [https://github.com/abcute/PiaAGI](https://github.com/abcute/PiaAGI).
@@ -318,4 +320,5 @@ Following the layered generation, the LLM would be prompted to synthesize and re
 ```markdown
 Please continue to discuss around the topic of ['Communication theories and Psychological methods'] to provide more examples of special prompt templates and explain how they work, drawing from the ideas generated in the previous layers.
 ```
-[end of Papers/PiaC.md]
+---
+Return to [PiaAGI Core Document](../PiaAGI.md) | [Project README](../README.md)

@@ -1,3 +1,4 @@
+<!-- PiaAGI AGI Research Framework Document -->
 # CSIM: Communication Skills + Inner Monologue
 
 **Original Source:** [https://arxiv.org/abs/2311.07445](https://arxiv.org/abs/2311.07445)
@@ -55,3 +56,5 @@ Hello! For our upcoming conversation to be more profound and productive, please 
 5.  **Frequent Summarizing**: At critical junctures in the conversation, _indicate in italics that you are about to summarize_, then provide an overview of our discussion to ensure mutual understanding.
 6.  **Conclusion**: At the end of the conversation, _express in italics your overall assessment of the dialogue_, then offer concluding advice or answers. This communication style will help me better understand your thought process, making our conversation more insightful and effective. Thank you!
 ```
+---
+Return to [PiaAGI Core Document](../PiaAGI.md) | [Project README](../README.md)
