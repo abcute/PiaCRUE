@@ -16,7 +16,7 @@ For more advanced and AGI-oriented examples that leverage the full PiaAGI psycho
 ## PiaAGI Prompt: Simplified Poet
 
 ```markdown
-<!-- 
+<!--
   - Product: SimplifiedPoetActor
   - Author: Adapted from PiaAGI examples
   - Version: 0.2 (PiaAGI Refactor)
