@@ -89,9 +89,10 @@
 - [ ] Specify how a simple scenario would be defined and loaded in this TextBasedRoom.
 
 ### PiaAVT (PiaAGI Analysis & Visualization Toolkit)
-- [ ] Define a standardized logging format/schema (e.g., JSON lines) for CML modules and PiaSE to output.
+- [x] Defined standardized logging format/schema (JSONL) and created `PiaAGI_Research_Tools/PiaAVT/Logging_Specification.md`.
 - [ ] Conceptually outline 2-3 basic analyses for early PiaAGI experiments (e.g., emotional valence over time, goal status changes).
 - [ ] Sketch a simple visualization or textual summary for one basic analysis.
+- [ ] Design and implement a prototype Python logger in PiaCML/PiaSE that adheres to Logging_Specification.md.
 
 ### PiaPES (PiaAGI Prompt Engineering Suite)
 - [ ] Ensure prompt_engine_mvp.py classes can fully represent/serialize the detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
