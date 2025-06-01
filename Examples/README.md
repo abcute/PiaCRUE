@@ -30,6 +30,8 @@ These examples illustrate core PiaAGI prompting techniques or are original examp
 *   **[`CBT-AutoTraining.md`](./Foundational_And_Refactored/CBT-AutoTraining.md)**: Illustrates a simulated Cognitive Behavioral Training loop for agent skill refinement, engaging the Self-Model and Learning Modules.
 *   **[`EmotionPrompt_Demo.md`](./Foundational_And_Refactored/EmotionPrompt_Demo.md)**: Shows how emotional cues in user prompts can influence agent processing via its Emotion Module and other cognitive functions.
 *   **[`PiaCRUE_mini.md`](./Foundational_And_Refactored/PiaCRUE_mini.md)**: A very basic R-U-E prompt structure, serving as a simple illustration. (Refer to `PiaAGI.md` Appendix A for more complete foundational R-U-E examples).
+*   **[`Hybrid_Agent_Concept_Intro.md`](./Foundational_And_Refactored/Hybrid_Agent_Concept_Intro.md)**: Illustrates the five core characteristics of a PiaAGI Hybrid Agent in a simple, conceptual manner.
+*   **[`RaR_Communication_Principle_Demo.md`](./Foundational_And_Refactored/RaR_Communication_Principle_Demo.md)**: Demonstrates the application of the Reasoning and Reassurance (RaR) communication principle in an agent's response.
 
 ### 2. Cognitive Module Configuration
 
