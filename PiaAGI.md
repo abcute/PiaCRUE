@@ -12,8 +12,54 @@ The pursuit of Artificial General Intelligence (AGI) necessitates frameworks tha
 The advent of Large Language Models (LLMs) represents a significant milestone in artificial intelligence, yielding powerful tools for natural language understanding and generation. However, the trajectory towards Artificial General Intelligence (AGI) necessitates a conceptual paradigm shift: from models excelling at specific tasks under human guidance to truly autonomous agents capable of continuous learning, profound adaptation, and nuanced decision-making in diverse and dynamic environments—capabilities that remain largely elusive for current systems. The PiaAGI framework represents an evolution of the foundational PiaCRUE (Personalized Intelligent Agent via Communication, Requirements, Users, and Executors) methodology. While PiaCRUE focused on optimizing human-LLM interaction by conceptualizing LLMs as "Hybrid Agents" configurable into "Personalized Intelligent Agents (Pia)" through applied psychology and structured communication, PiaAGI extends this vision to address core challenges in AGI research, arguing that such personalization, when grounded in deep cognitive principles, is a foundational step towards more general intelligence.
 
 PiaAGI outlines a psycho-cognitively plausible architecture for developing advanced Personalized Intelligent Agents, proposed as crucial precursors or integral components within larger AGI systems (e.g., a PiaAGI specializing in social cognition could function as a module within a broader AGI), thereby tackling the challenge of bridging the gap between narrow AI and AGI. The principle of psycho-cognitive plausibility suggests that architectures inspired by the structures and processes of human cognition may offer significant advantages for AGI development. These advantages include: enhanced generalizability across diverse tasks due to underlying cognitive mechanisms adaptable to novelty; more intuitive human-AGI alignment due to shared cognitive frameworks facilitating mutual understanding and shared goals [Citation Needed: On shared mental models]; improved interpretability of agent behavior as its reasoning can be mapped to recognizable cognitive processes; and potentially greater efficiency in learning and reasoning within complex, underspecified environments by leveraging cognitive heuristics and developmental learning strategies [Bruner, 1961]. This involves the systematic integration of advanced psychological theories, encompassing cognitive architectures (e.g., working memory [Baddeley & Hitch, 1974], long-term memory, attention mechanisms, sophisticated learning algorithms), developmental psychology perspectives (e.g., stages of cognitive development [Piaget, 1952], acquisition of Theory of Mind [Wellman, 2014]), computational models of motivation [Reeve, 2018] and emotion [Scherer, 2005], and configurable personality traits [Digman, 1990], each selected for its potential to address specific AGI requirements like robust learning and common-sense reasoning. PiaAGI uniquely positions itself at the intersection of psychology, large-scale language modeling, and agent technology, offering a synergistic approach where deep psychological insights inform the structure and developmental trajectory of AI agents, LLMs provide powerful foundational linguistic and semantic capabilities, and agent technology enables autonomous interaction and goal pursuit. The ultimate objective is to foster agents that are not only more capable and versatile but also exhibit substantial autonomy, profound adaptability, and are equipped with a foundational, programmable framework for ethical reasoning and value alignment (e.g., through mechanisms for learning and internalizing ethical principles within the agent's Self-Model, Section 4.1.10), tackling the critical AGI challenge of ensuring beneficial AGI. The potential for emergent intelligent behaviors, arising from the complex interplay of these integrated modules, is a core tenet of this approach, drawing parallels with how general intelligence is understood in complex adaptive systems [Holland, 1998].
-*[Diagram Needed: High-level conceptual diagram showing the relationship between PiaCRUE, PiaAGI, Psychology, LLMs, and the goal of AGI.]*
-<!-- Diagram Note: Emphasize the evolutionary path from PiaCRUE to PiaAGI, and highlight how PiaAGI deeply integrates Psychology (including Developmental aspects like stages, Self-Model, Motivation, Emotion, EI, Symbol Grounding) as a core component for AGI, not just an LLM enhancer. -->
+### Diagram: PiaAGI Framework: Foundational Influences and AGI Objective
+
+**DIAGRAM DESCRIPTION START**
+
+**Title:** PiaAGI Framework: Foundational Influences and AGI Objective
+
+**Type:** Conceptual Block Diagram
+
+**Core Elements:**
+
+1.  **Central Hub: "PiaAGI Framework"**
+    *   Label: **PiaAGI Framework**
+    *   Subtitle: "Psycho-Cognitive Architecture for AGI Development"
+    *   Description: This should be the most prominent element, centrally located.
+
+2.  **Influencing Factors (arranged as inputs feeding into PiaAGI):**
+    *   **Element 1: "PiaCRUE Methodology"**
+        *   Label: **PiaCRUE Methodology**
+        *   Subtitles: "Structured Prompting", "Agent Personalization", "R-U-E Model"
+        *   Arrow: From PiaCRUE to PiaAGI, labeled "Evolves From".
+    *   **Element 2: "Psychology"**
+        *   Label: **Psychology**
+        *   Subtitles: "Cognitive Architectures (Memory, Attention)", "Developmental Psychology (Stages, ToM)", "Motivation Theories", "Emotion Models", "Personality Theories"
+        *   Arrow: From Psychology to PiaAGI, labeled "Deeply Integrates".
+    *   **Element 3: "Large Language Models (LLMs)"**
+        *   Label: **Large Language Models (LLMs)**
+        *   Subtitles: "NLU/NLG Capabilities", "Semantic Knowledge Base", "Foundation for Perception & Communication Modules"
+        *   Arrow: From LLMs to PiaAGI, labeled "Leverages".
+    *   **Element 4: "Agent Technology"**
+        *   Label: **Agent Technology**
+        *   Subtitles: "Autonomous Interaction", "Goal Pursuit", "Environmental Embodiment (Conceptual)"
+        *   Arrow: From Agent Technology to PiaAGI, labeled "Enables".
+
+3.  **Primary Goal (PiaAGI output):**
+    *   **Element: "Artificial General Intelligence (AGI)"**
+        *   Label: **Artificial General Intelligence (AGI)**
+        *   Subtitles: "Autonomous Learning & Adaptation", "Robust Ethical Reasoning", "General Problem Solving", "Deep Social Understanding"
+        *   Arrow: From PiaAGI to AGI, labeled "Aims to Achieve".
+
+**Visual Style:**
+*   Use clear, distinct boxes for each element.
+*   Arrows should clearly indicate the direction of influence or progression.
+*   Maintain a professional and academic look.
+*   Consider using icons or subtle visual cues for Psychology (e.g., a brain silhouette), LLMs (e.g., text/code icon), Agent Tech (e.g., a simple robot/agent icon), and AGI (e.g., a more complex, integrated icon).
+
+**Purpose:** To visually articulate that PiaAGI is an advanced framework that builds upon PiaCRUE, is deeply informed by diverse psychological theories, leverages the power of LLMs and agent technologies, and is fundamentally directed towards the ambitious goal of developing AGI.
+
+**DIAGRAM DESCRIPTION END**
 
 This document delineates the initial structure of the PiaAGI framework. It represents the beginning of a comprehensive research program aimed at not only elaborating this theoretical model but also fostering the development of associated methodologies, computational tools, and experimental frameworks to empirically investigate and iteratively refine the proposed pathway towards AGI. PiaAGI evolves from the PiaCRUE methodology's successes in structured prompting and agent personalization, significantly expanding its theoretical underpinnings and architectural scope to directly contribute to the ambitious scientific and engineering journey towards AGI.
 
@@ -431,8 +477,54 @@ Such a methodology of dynamic capability acquisition strongly aligns with PiaAGI
 *AGI Contribution:* The ability to create and use tools allows an AGI to transcend its built-in limitations, amplify its problem-solving capabilities, adapt to novel challenges more effectively, and interact with its environment (and other agents) in richer, more complex ways. It is a key enabler of open-ended learning and adaptation, moving the AGI from a system that processes information to one that actively shapes its world and its own capabilities.
 
 ## 4. The PiaAGI Cognitive Architecture
-*[Diagram Needed: High-level block diagram of the PiaAGI Cognitive Architecture showing core modules and primary information flow pathways.]*
-<!-- Diagram Note: Ensure the Self-Model (4.1.10) is depicted with strong feedback loops to other modules (WM/CE, LTM, Learning, Motivation, Planning) and also to the overall architecture, indicating its role in metacognition, self-improvement, and potentially guiding architectural maturation (3.2.1). Highlight its developmental nature. -->
+### Diagram: PiaAGI Cognitive Architecture: Core Modules and Interactions
+
+**DIAGRAM DESCRIPTION START**
+
+**Title:** PiaAGI Cognitive Architecture: Core Modules and Interactions
+
+**Type:** Modular Block Diagram with Information Flow Arrows
+
+**Core Elements (Modules - refer to Section 4.1 for full list and details):**
+*   List all 12 core modules as boxes:
+    1.  **Perception Module** (Input: Raw Multi-modal Data; Output: Structured Perceptual Reps)
+    2.  **Working Memory (WM) Module** (Central Component, containing **Central Executive (CE)**)
+    3.  **Long-Term Memory (LTM) Module** (Sub-components: Episodic, Semantic, Procedural)
+    4.  **Attention Module** (Closely linked to CE)
+    5.  **Learning Module(s)** (Multiple learning types)
+    6.  **Motivational System Module** (Intrinsic/Extrinsic Goals)
+    7.  **Emotion Module (Affective System)** (Appraisal-based)
+    8.  **Planning and Decision-Making Module**
+    9.  **Behavior Generation Module** (Output: Actions)
+    10. **Self-Model Module** (Knowledge, Capabilities, Ethics, Metacognition)
+    11. **Theory of Mind (ToM) / Social Cognition Module**
+    12. **Communication Module** (NLU/NLG Orchestration)
+
+**Arrangement and Flow:**
+*   **Centrality of WM/CE:** Position Working Memory / Central Executive somewhat centrally, as it's a key hub for information processing and coordination.
+*   **Perception to WM:** Arrow from Perception to WM.
+*   **WM to/from LTM:** Bidirectional arrows between WM and LTM.
+*   **Attention with WM/CE:** Attention can be shown as influencing inputs to WM or as a function managed by CE.
+*   **Learning interacts with WM, LTM, Self-Model, Motivation, Emotion:** Arrows showing these interactions.
+*   **Motivational System influences Planning, WM/CE, Learning:** Arrows.
+*   **Emotion Module interacts with WM/CE, Motivation, Learning, Planning, Communication:** Arrows.
+*   **Planning/Decision-Making takes input from WM, LTM, World Model (see Diagram 4), Motivation, Emotion, Self-Model, ToM; outputs to Behavior Generation.** Arrows.
+*   **Behavior Generation (via Communication Module for language) outputs to Environment.**
+*   **Self-Model interacts with nearly all other modules (bidirectional where appropriate, e.g., receives feedback, provides constraints/guidance).** Emphasize its role in metacognition and ethical oversight.
+*   **ToM Module interacts with Perception, WM, World Model, Planning, Communication, Emotion:** Arrows.
+*   **Communication Module interfaces with Perception (NLU), Behavior Generation (NLG), WM, ToM, Emotion, Self-Model.** Arrows.
+*   **World Model (though detailed in Diagram 4) should be shown as a distinct component interacting with Perception, WM, LTM, Planning, ToM.**
+
+**Visual Style:**
+*   Clear boxes for each module. Use consistent naming with `PiaAGI.md`.
+*   Different arrow types or colors could differentiate primary data flow, control signals, and modulatory influences.
+*   Group LTM sub-components visually within the LTM Module box.
+*   Highlight the Central Executive within the WM Module.
+*   The diagram should convey a sense of a highly interconnected and dynamic system.
+
+**Purpose:** To provide a visual overview of the main functional components of the PiaAGI architecture and illustrate the primary pathways of information and influence between them, emphasizing the system's integrated nature.
+
+**DIAGRAM DESCRIPTION END**
 
 The development of a PiaAGI capable of approaching human-level general intelligence requires a sophisticated underlying cognitive architecture. This architecture provides a conceptual blueprint for the necessary components, their functional roles, and their dynamic interactions, enabling complex cognitive processes like perception, memory, learning, reasoning, motivation, emotion, and self-awareness. While drawing inspiration from human cognitive psychology and neuroscience [e.g., Fodor, 1983; Baars, 1988], the PiaAGI architecture is primarily a functional specification, designed to guide the engineering of an AGI system rather than to be a direct biological replica. It aims to integrate the psychological principles and models discussed in Section 3 into a cohesive, operational framework, from which complex AGI capabilities are envisioned to *emerge* due to the rich, dynamic interactions between its constituent modules. This architecture is conceived with AGI-scale considerations such as modularity for development, potential for parallel processing, and eventual scalability in mind. The nature of inter-module communication is flexible, potentially involving symbolic messages, sub-symbolic activations, or structured data representations, depending on the specific modules and implementation. Overall control is coordinated by the Central Executive (in WM), but individual modules like Motivation and Emotion can also exert significant influence on processing priorities.
 
@@ -581,8 +673,53 @@ The power of the PiaAGI cognitive architecture lies not just in its individual m
 Ultimately, it is the *synergistic, recursive, and developmentally maturing interaction* of these modules—orchestrated by the Central Executive, shaped by ongoing learning (Section 3.1.3) and developmental processes (Section 3.2), and driven by motivations (Section 3.3)—that PiaAGI proposes will lead to the emergence of true general intelligence. No single module confers AGI; rather, AGI arises from the holistic functioning of the integrated system. This architecture is designed to tackle AGI challenges such as the **symbol grounding problem** (via integrated perception, world modeling, and LTM providing multi-modal context and experiential data for symbols), the **frame problem** (via dynamic world modeling, attention mechanisms focusing on relevant changes, and causal reasoning about action consequences, as discussed in Section 4.3), and **catastrophic forgetting** (via advanced LTM mechanisms like consolidation analogues, rehearsal, and modular updates, as discussed in Section 3.1.1). It also provides a framework for integrating **ethical reasoning and value alignment** at multiple levels, particularly within the Self-Model, Learning Modules, and Planning/Decision-Making. The modular design facilitates iterative development and testing, and is conceived with future research into **scalability** (e.g., through more efficient knowledge representations and learning algorithms), **parallel processing** across modules, and potentially **distributed instantiations** in mind, crucial for handling the complexity and real-time demands of AGI. The following sections will delve deeper into key systemic processes within this architecture.
 
 ### 4.2. Information Flow and Processing
-*[Diagram Needed: Illustrative diagrams for key information flows, e.g., the perception-action cycle, and a social interaction loop, showing module involvement at each step.]*
-<!-- Diagram Note (Social Interaction Loop): Explicitly show how the Self-Model's awareness of its own emotional state (from Emotion Module) and its understanding of emotional regulation strategies (developed via learning) can influence the Communication Module's output and the ToM's interpretation of social cues. -->
+### Diagram: PiaAGI: Key Information Flow Examples
+
+**DIAGRAM DESCRIPTION START**
+
+**Title:** PiaAGI: Key Information Flow Examples
+
+**Type:** Two separate flowcharts or sequence diagrams.
+
+**Diagram 3a: Standard Perception-Action Cycle**
+
+*   **Layout:** Circular or sequential flow.
+*   **Steps & Involved Modules (Numbered):**
+    1.  **Environment Stimulus** (External)
+    2.  → **Perception Module:** Processes input.
+    3.  → **Working Memory (WM) & Central Executive (CE):** Initial processing, LTM query.
+        *   (Shows interaction with **LTM Module** for retrieval)
+        *   (Shows interaction with **World Model** for update/context)
+    4.  → **Motivational System:** Evaluates against goals.
+    5.  → **Emotion Module:** Appraises situation, generates emotion.
+    6.  → **Planning & Decision-Making Module:** (Inputs from WM, Goals, Emotion, Self-Model-Ethics, World Model) Formulates/selects action.
+    7.  → **Behavior Generation Module:** (Via **Communication Module** if linguistic) Executes action.
+    8.  → **Environment Action** (Effect on External)
+    9.  → Feedback Loop to **Perception Module** (New state)
+    10. → **Learning Module(s):** Processes outcome/feedback (Interaction with LTM, Self-Model, World Model for updates).
+*   **Visual Style:** Clear arrows showing sequence. Modules involved at each step should be clearly labeled.
+
+**Diagram 3b: Social Interaction Loop (e.g., Empathetic Dialogue)**
+
+*   **Layout:** Sequential flow, possibly with internal loops for clarification.
+*   **Steps & Involved Modules (Numbered):**
+    1.  **User Utterance (Social Stimulus)** (External)
+    2.  → **Perception Module & Communication Module (NLU):** Semantic and emotional cue extraction.
+    3.  → **Working Memory (WM):** Holds processed input.
+    4.  → **ToM / Social Cognition Module:** Infers user's mental state (beliefs, emotions, intentions). (Interaction with LTM for social scripts, World Model for context).
+    5.  → **Emotion Module:** Generates PiaAGI's internal empathetic response based on ToM input and its own goals/values.
+    6.  → **WM / Central Executive:** Integrates ToM insights, PiaAGI's emotion, goals (Motivational System), and communication strategy (from Communication Module, e.g., CSIM/RaR).
+    7.  → **Planning & Decision-Making Module:** Selects communicative act.
+    8.  → **Communication Module (NLG):** Crafts nuanced response (incorporating ToM, emotion, personality from Self-Model).
+    9.  → **Behavior Generation Module:** Outputs response.
+    10. → **User Receives Response** (External)
+    11. → User's Reply (Feedback to Perception, restarting loop).
+    12. → **Learning Module(s) & Episodic LTM:** Update interaction history, ToM models, communication strategies.
+*   **Visual Style:** Clear sequence, highlight modules central to social cognition (ToM, Emotion, Communication).
+
+**Purpose:** To illustrate the dynamic interplay of PiaAGI modules during typical complex cognitive tasks, showcasing how different components contribute to overall behavior and learning.
+
+**DIAGRAM DESCRIPTION END**
 
 The core modules of the PiaAGI cognitive architecture (Section 4.1) do not operate in isolation. Instead, they are part of a highly dynamic and interconnected system where information (e.g., structured data, activation patterns, symbolic messages) and control signals flow continuously between them. This section illustrates typical pathways of information flow and processing during key cognitive tasks, demonstrating the architecture's integrated nature. These descriptions are conceptual and simplified for clarity; a deployed AGI would involve more complex and potentially parallel interactions.
 
@@ -647,8 +784,56 @@ Autonomous exploration is often driven by intrinsic motivations:
 Understanding these dynamic information flows is key to appreciating how the PiaAGI architecture aims to support the emergence of integrated, intelligent, and adaptive behavior. The subsequent sections will elaborate on specific aspects like world modeling and action selection.
 
 ### 4.3. Perception and World Modeling (Conceptual)
-*[Diagram Needed: Illustrating the World Model components (Object/Entity Repository, Spatial, Temporal, Social, Physics, Self-State) and its key interactions with Perception, LTM, WM, Planning, Attention, and Learning modules.]*
-<!-- Diagram Note: The diagram should illustrate how the World Model's consistency checks and the Self-Model's "groundedness scores" for concepts can trigger the Motivational System (specifically curiosity) to initiate information-seeking or experiential learning actions to improve symbol grounding. Show feedback loops from WM/Self-Model to Motivation regarding symbol groundedness. -->
+### Diagram: PiaAGI World Model: Components and Interactions
+
+**DIAGRAM DESCRIPTION START**
+
+**Title:** PiaAGI World Model: Components and Interactions
+
+**Type:** Centralized hub-and-spoke or integrated block diagram.
+
+**Core Element: "World Model"**
+*   Label: **World Model**
+*   Description: A large, central box clearly indicating it's a dynamic, internal representation.
+*   **Internal Components of World Model (shown as distinct sections or sub-boxes within the World Model):**
+    1.  **Object/Entity Repository:** (Properties, States, Affordances, Relationships)
+    2.  **Spatial Model:** (Locations, Spatial Relationships)
+    3.  **Temporal Model:** (Event Sequences, Durations, Causal Links)
+    4.  **Social Model:** (Models of other agents: inferred goals, beliefs, emotions from ToM)
+    5.  **Physics Model (Conceptual):** (Learned common-sense physics)
+    6.  **Self-State Representation:** (AGI's own state in environment, informed by Self-Model)
+    7.  **Uncertainty Representation:** (Indicate that the model handles probabilities/uncertainty across components)
+
+**Interacting Modules (arranged around the World Model):**
+*   **Perception Module:**
+    *   Arrow: From Perception to World Model (labeled "Updates with Structured Percepts / Real-time Data").
+*   **Long-Term Memory (LTM) Module:**
+    *   Arrow: Bidirectional between LTM and World Model (labeled "Provides Background Knowledge (Semantic LTM)" and "Consolidates Stable Knowledge").
+*   **Working Memory (WM) Module:**
+    *   Arrow: Bidirectional between WM and World Model (labeled "Loads Current Context/Updates" and "Receives Processed World State").
+*   **Planning and Decision-Making Module:**
+    *   Arrow: From World Model to Planning (labeled "Provides Situational Awareness for Planning").
+    *   Arrow: From Planning to World Model (labeled "Simulates Action Outcomes / Predicts Future States").
+*   **Attention Module:**
+    *   Arrow: From World Model to Attention (labeled "Generates Expectations, Guides Top-Down Attention").
+    *   Arrow: From Attention to World Model (labeled "Focuses Updates / Prioritizes Information").
+*   **Learning Module(s):**
+    *   Arrow: From World Model to Learning (labeled "Provides Prediction Errors / Data for Refinement").
+    *   Arrow: From Learning to World Model (labeled "Refines Model / Discovers Patterns").
+*   **Theory of Mind (ToM) / Social Cognition Module:**
+    *   Arrow: Bidirectional between ToM and World Model (Social Model component) (labeled "Updates Social Model with Inferences" and "Provides Social Context").
+*   **Self-Model Module:**
+    *   Arrow: From Self-Model to World Model (Self-State Representation component) (labeled "Provides Self-State Information").
+
+**Visual Style:**
+*   The World Model should be clearly the central focus.
+*   Sub-components of the World Model should be distinct but visually integrated.
+*   Arrows should be clearly labeled to show the nature of the interaction.
+*   Emphasize dynamism (e.g., with subtle cycle icons or update annotations).
+
+**Purpose:** To detail the internal structure of the PiaAGI World Model and illustrate its critical role as a hub for integrating perceptual information, leveraging LTM, providing context for reasoning and planning, and being continuously updated through learning and interaction.
+
+**DIAGRAM DESCRIPTION END**
 
 **1. Introduction to Perception and World Modeling in PiaAGI**
 
@@ -730,8 +915,52 @@ The Perception Module and the World Model are hub-like components:
 PiaAGI approaches these challenges through advanced ML (deep learning for perception/representation), probabilistic modeling, symbolic reasoning integration, and leveraging its overall cognitive architecture for context-sensitive interpretation and learning.
 
 ### 4.4. Action Selection and Execution
-*[Diagram Needed: Flowchart for the action selection process, showing inputs from Motivation, World Model, LTM, Self-Model (capabilities, ethics), Emotion, and outputs to Behavior Generation, with feedback loops to Learning.]*
-<!-- Diagram Note: Emphasize the Self-Model's input into Planning/Decision-Making, particularly its ethical framework and self-assessed capabilities. Also, show how the Emotion Module's state (potentially regulated) influences decision criteria, and how the Motivational System (including emergent motivations) provides goals that are subject to Self-Model/ethical evaluation. -->
+### Diagram: PiaAGI Action Selection and Execution Flow
+
+**DIAGRAM DESCRIPTION START**
+
+**Title:** PiaAGI Action Selection and Execution Flow
+
+**Type:** Flowchart
+
+**Flow Elements (Numbered sequence):**
+
+1.  **Input Trigger:** (e.g., Goal from Motivational System, Significant Environmental Event from Perception/World Model)
+2.  **Planning & Decision-Making Module (Central Process):**
+    *   **Inputs feeding into this stage (shown as arrows):**
+        *   From **Motivational System Module:** Active Goals, Priorities.
+        *   From **World Model:** Current Environmental State, Predictions.
+        *   From **LTM Module:** Relevant Knowledge (Semantic), Past Plans (Episodic), Skills (Procedural).
+        *   From **Self-Model Module:** Agent Capabilities, Resource Availability, **Ethical Framework & Constraints**.
+        *   From **Emotion Module:** Current Emotional State (as bias/filter).
+        *   From **Working Memory:** Currently active information.
+    *   **Internal Processes (Conceptual steps within Planning/Decision-Making):**
+        *   Plan Generation / Retrieval
+        *   Action Evaluation (Utility, Cost, Risk, Ethical Alignment Check)
+        *   Action Selection
+3.  **Selected Action/Plan:** (Output of Planning/Decision-Making)
+4.  → **Behavior Generation Module:**
+    *   (If linguistic, shows interaction with **Communication Module** for NLG)
+    *   Translates abstract action into concrete execution commands.
+5.  **Action Execution in Environment:** (Output to external)
+6.  **Feedback Loop:**
+    *   **Environment Outcome** → **Perception Module** → **World Model** (State update)
+    *   Outcome & World Model Update → **Self-Model Module** (Performance Assessment, Goal Status Update)
+    *   Outcome & Assessment → **Learning Module(s):**
+        *   Reinforces/Modifies LTM (Procedural, Episodic).
+        *   Refines Self-Model (capability estimates).
+        *   Updates World Model (predictive accuracy).
+    *   Learning outcomes can influence future **Motivational System** states (e.g., new intrinsic goals).
+
+**Visual Style:**
+*   Standard flowchart symbols (rectangles for processes, diamonds for decisions if any are explicit, arrows for flow).
+*   Clearly label all inputs to the Planning/Decision-Making stage.
+*   Emphasize the "Ethical Framework & Constraints" input from the Self-Model.
+*   The feedback loop to Learning and subsequent influence on other modules should be clearly depicted.
+
+**Purpose:** To illustrate the comprehensive process by which PiaAGI selects and executes actions, highlighting the integration of multiple cognitive inputs (especially goals, world knowledge, self-assessment, and ethical considerations) and the role of feedback in learning and adaptation.
+
+**DIAGRAM DESCRIPTION END**
 
 **1. Introduction to Action Selection and Execution**
 
@@ -864,8 +1093,62 @@ The PiaAGI framework advances the PiaCRUE prompting methodology to serve as a so
 *   **Facilitating Staged Development and Learning (Sections 3.1.3, 3.2.1):** Providing the structured experiences and curricula necessary to scaffold the agent's learning processes and guide its progression through defined developmental stages (e.g., from PiaSeedling to PiaGrove). This fosters capabilities like advanced ToM (3.2.2), robust ethical reasoning (Self-Model 4.1.10, Learning Modules 3.1.3), and complex problem-solving by shaping the interactions between modules like Planning (4.1.8) and Learning (4.1.5).
 *   **Enabling Complex Human-AGI Collaboration:** Supporting nuanced interaction with an AGI that possesses and utilizes its own dynamic internal state (Self-Model 4.1.10, Emotion Module 4.1.7), comprehensive world model (4.3), and sophisticated Theory of Mind (4.1.11).
 This section details the core components and principles of this advanced prompting framework, emphasizing its role in the iterative construction and refinement of AGI.
-*[Diagram Needed: Illustrating the R-U-E model within a Guiding Prompt, and how Developmental Scaffolding uses these prompts over time to influence the PiaAGI Cognitive Architecture.]*
-<!-- Diagram Note: The diagram should clearly show Developmental Scaffolding influencing not just behavior, but the *maturation* of the Self-Model, Motivational System, Emotional Regulation capabilities, and the depth of Symbol Grounding over the AGI developmental stages. -->
+### Diagram: PiaAGI Prompting: R-U-E Model and Developmental Scaffolding
+
+**DIAGRAM DESCRIPTION START**
+
+**Title:** PiaAGI Prompting: R-U-E Model and Developmental Scaffolding
+
+**Type:** Two-part conceptual diagram.
+
+**Part A: R-U-E Model within a Guiding Prompt**
+
+*   **Layout:** A representation of a "Guiding Prompt" document/structure.
+*   **Elements:**
+    1.  **Box: "PiaAGI Guiding Prompt"**
+        *   Contains sections:
+            *   `<System Rules>`
+            *   `<Requirements (R)>` (Subtitle: Defines Needs/Goals)
+            *   `<Users (U)>` (Subtitle: Defines Target Interactors)
+            *   `<Executors (E)>` (Subtitle: Defines AGI Role & Configuration)
+                *   Within `<Executors>`:
+                    *   `<Role>` (Profile, Skills, Knowledge, PersonalityConfig, MotivationalBias, EmotionalProfile)
+                    *   `<RoleWorkflow>`
+                    *   `<Tools>` (if any)
+            *   `<RoleDevelopment>` / `<CBT-AutoTraining>`
+            *   `<DevelopmentalContext>` (links to Part B)
+*   **Arrows/Annotations:**
+    *   Show that `<Executors>` (especially `<Role>` sub-components) directly configure/influence various modules of the **PiaAGI Cognitive Architecture** (represented simply as a cloud or box labeled "PiaAGI Cognitive Modules: Self-Model, Motivation, Emotion, LTM, etc."). For instance:
+        *   `PersonalityConfig` → `Self-Model` → `Emotion Module`, `Motivational System`
+        *   `Knowledge_Domains_Active` → `LTM Module`, `Attention Module`
+        *   `RoleProfile` → `Self-Model`
+
+**Part B: Developmental Scaffolding Over Time**
+
+*   **Layout:** A timeline or staged progression.
+*   **Elements:**
+    1.  **Timeline Axis:** (e.g., "Developmental Time / Interaction Stages")
+    2.  **AGI Developmental Stages (along the timeline, Ref Section 3.2.1):**
+        *   "PiaSeedling" → "PiaSprout" → "PiaSapling" → "PiaArbor" → "PiaGrove"
+    3.  **Series of Guiding Prompts / Scaffolding Interactions:**
+        *   Show multiple "Guiding Prompt" icons/boxes applied at different stages.
+        *   Prompt P1 (at PiaSeedling): Simpler, more explicit instructions.
+        *   Prompt P2 (at PiaSprout): Moderately complex, introduces new concepts.
+        *   Prompt P3 (at PiaSapling/Arbor): Complex, open-ended, requiring more autonomy.
+    4.  **PiaAGI Cognitive Architecture Representation:**
+        *   A simplified representation of the PiaAGI architecture (as a box or cloud).
+        *   Show arrows from each "Guiding Prompt" towards the "PiaAGI Cognitive Architecture".
+        *   Annotation: "Prompts + Interactions → Iterative Refinement & Maturation of Cognitive Modules (Learning, LTM, Self-Model, ToM, etc.) & Potential Architectural Maturation."
+    5.  **Fading Support:** Visually indicate that the explicitness or intensity of scaffolding in prompts may decrease as the AGI develops (e.g., arrows become more dotted, or a "Support Level" graph line decreases over time).
+
+**Visual Style:**
+*   Part A: Clean, structured representation of the prompt.
+*   Part B: Dynamic, showing progression and change.
+*   Use consistent iconography for "Guiding Prompt" and "PiaAGI Cognitive Architecture".
+
+**Purpose:** To visually explain (A) the structure of a PiaAGI Guiding Prompt with its R-U-E core for configuring the AGI's cognitive state for a task, and (B) how the repeated and evolving application of such prompts within a Developmental Scaffolding strategy contributes to the long-term growth and maturation of the AGI's cognitive capabilities and architecture.
+
+**DIAGRAM DESCRIPTION END**
 
 ### 5.1. Core Principle: The R-U-E (Requirements-Users-Executors) Model for Guiding Development and Interaction
 
@@ -920,8 +1203,32 @@ Beyond explicit task instructions, the affective tone of human interaction serve
 *Note: Research by the Chinese Academy of Sciences and Microsoft (EmotionPrompt [Jiang et al., 2023]) has also indicated the positive impact of emotional cues on LLM feedback.*
 
 ### 5.4. Developmental Scaffolding: A Cornerstone of PiaAGI Growth
-*[Diagram Needed: Illustrating the concept of developmental scaffolding, perhaps showing stages of increasing complexity of tasks/environments, corresponding AGI developmental stages (PiaSeedling to PiaGrove), and the gradual fading of explicit support over time as the AGI's internal cognitive architecture matures.]*
-<!-- Diagram Note: This diagram should explicitly link scaffolding techniques to the maturation of specific cognitive functions discussed (e.g., Self-Model development from basic awareness to deep self-understanding, evolution of intrinsic motivations, increasing emotional intelligence and regulation, and progressive symbol grounding). Show how architectural maturation itself can be a result of successful scaffolding. -->
+### Diagram: Developmental Scaffolding Over Time
+
+**Part B: Developmental Scaffolding Over Time**
+
+*   **Layout:** A timeline or staged progression.
+*   **Elements:**
+    1.  **Timeline Axis:** (e.g., "Developmental Time / Interaction Stages")
+    2.  **AGI Developmental Stages (along the timeline, Ref Section 3.2.1):**
+        *   "PiaSeedling" → "PiaSprout" → "PiaSapling" → "PiaArbor" → "PiaGrove"
+    3.  **Series of Guiding Prompts / Scaffolding Interactions:**
+        *   Show multiple "Guiding Prompt" icons/boxes applied at different stages.
+        *   Prompt P1 (at PiaSeedling): Simpler, more explicit instructions.
+        *   Prompt P2 (at PiaSprout): Moderately complex, introduces new concepts.
+        *   Prompt P3 (at PiaSapling/Arbor): Complex, open-ended, requiring more autonomy.
+    4.  **PiaAGI Cognitive Architecture Representation:**
+        *   A simplified representation of the PiaAGI architecture (as a box or cloud).
+        *   Show arrows from each "Guiding Prompt" towards the "PiaAGI Cognitive Architecture".
+        *   Annotation: "Prompts + Interactions → Iterative Refinement & Maturation of Cognitive Modules (Learning, LTM, Self-Model, ToM, etc.) & Potential Architectural Maturation."
+    5.  **Fading Support:** Visually indicate that the explicitness or intensity of scaffolding in prompts may decrease as the AGI develops (e.g., arrows become more dotted, or a "Support Level" graph line decreases over time).
+
+**Visual Style:**
+*   Part A: Clean, structured representation of the prompt.
+*   Part B: Dynamic, showing progression and change.
+*   Use consistent iconography for "Guiding Prompt" and "PiaAGI Cognitive Architecture".
+
+**Purpose:** To visually explain (A) the structure of a PiaAGI Guiding Prompt with its R-U-E core for configuring the AGI's cognitive state for a task, and (B) how the repeated and evolving application of such prompts within a Developmental Scaffolding strategy contributes to the long-term growth and maturation of the AGI's cognitive capabilities and architecture.
 
 Beyond immediate task-oriented prompting, `<DevelopmentalScaffolding>` represents a core methodological principle in the PiaAGI framework, essential for guiding an agent's progression towards advanced AGI capabilities. It acknowledges that sophisticated cognitive functions, as detailed in Section 3 (e.g., robust ToM, intrinsic motivation, complex learning, ethical reasoning), do not arise from isolated prompts but require a sustained, structured, and interactive developmental process, analogous to human learning within rich environments [Vygotsky, 1978; Bruner, 1966].
 
@@ -939,8 +1246,50 @@ Beyond immediate task-oriented prompting, `<DevelopmentalScaffolding>` represent
 Developmental Scaffolding is not a single prompt component but an overarching strategy that utilizes the entire PiaAGI prompting framework (Sections 5.1-5.3). It involves iteratively applying Guiding Prompts within specifically designed contexts (e.g., simulated environments, structured learning tasks, curated datasets, human-led Socratic dialogues) to achieve long-term developmental objectives. This process is inherently interactive, with human developers (or more advanced AGI mentors) acting as facilitators of the AGI's growth, observing its responses (which reflect its internal cognitive state), and adapting the scaffolding strategy accordingly. This iterative loop of interaction, learning, architectural refinement, and potential architectural maturation is central to the PiaAGI vision of cultivating general intelligence. This addresses the challenge of how complex AGI capabilities, which may not arise spontaneously from unguided interaction with large datasets, can be systematically cultivated.
 
 ## 6. Methodology: Constructing PiaAGI Guiding Prompts and Developmental Scaffolding for AGI
-*[Diagram Needed: A flowchart or diagram illustrating the iterative process of designing Guiding Prompts and Developmental Scaffolding, showing the feedback loop from AGI performance back to prompt/scaffolding refinement, with explicit links to how these influence specific cognitive modules and developmental stages.]*
-<!-- Diagram Note: The feedback loop should show that AGI performance evaluation includes assessing the current state of its Self-Model, emotional maturity, motivational stability, symbol grounding depth, and its current tool use/creation capabilities (Sec 3.6), leading to refinements in scaffolding aimed at these specific areas, potentially including exercises that promote internalization of developer tool principles (Sec 4.5). -->
+### Diagram: Iterative Design Methodology for PiaAGI Prompts & Scaffolding
+
+**DIAGRAM DESCRIPTION START**
+
+**Title:** Iterative Design Methodology for PiaAGI Prompts & Scaffolding
+
+**Type:** Cyclical Flowchart or Feedback Loop Diagram
+
+**Core Stages in the Cycle (Numbered):**
+
+1.  **Define Developmental Objectives & Task Requirements:**
+    *   Inputs: AGI's Current Developmental Stage (e.g., PiaSapling), Long-term AGI Goals (from Roadmap).
+    *   Outputs: Specific learning goals for cognitive modules (e.g., "Enhance ToM Module's false-belief reasoning," "Improve Planning Module's resource allocation strategy").
+2.  **Design Guiding Prompt / Scaffolding Interaction:**
+    *   Inputs: Developmental Objectives, PiaAGI Cognitive Architecture Blueprint (Section 4), Psychological Principles (Section 3).
+    *   Process: Utilize R-U-E model, configure Role, Personality, Motivation, Emotion, define Workflow/Curriculum Phase, specify CBT/Exercises.
+    *   Output: A complete "PiaAGI Guiding Prompt" (linking to structure in Diagram 6A).
+3.  **AGI Interaction & Performance:**
+    *   Input: The Guiding Prompt.
+    *   Process: PiaAGI executes the prompt, engaging its cognitive modules (Self-Model, LTM, WM, Planning, Learning, etc.).
+    *   Output: AGI Behavior, Internal State Changes (logged), Task Outcomes.
+4.  **Observe & Evaluate AGI Performance & Internal States:**
+    *   Inputs: AGI Behavior/Outputs, Logs from Cognitive Modules (e.g., Self-Model confidence, LTM retrieval paths, Emotion Module state, Learning Module progress).
+    *   Process: Compare against Developmental Objectives and Success Metrics. Analyze module interactions and learning effectiveness.
+    *   Output: Performance Assessment, Identification of Gaps/Successes.
+5.  **Refine Prompt / Scaffolding Strategy (Feedback Loop):**
+    *   Input: Performance Assessment.
+    *   Process: Adjust prompt components (R-U-E), cognitive configurations, task complexity, feedback mechanisms. Modify future Developmental Objectives if needed.
+    *   Output: Revised Guiding Prompt / Next Scaffolding Interaction.
+    *   Arrow: Loops back to Stage 2 (or Stage 1 if objectives need re-evaluation).
+
+**Annotations & Connections:**
+*   Clearly show how each stage influences specific **PiaAGI Cognitive Modules** (e.g., "Design Prompt" targets Self-Model, Motivation; "AGI Interaction" utilizes Planning, LTM, Learning).
+*   Indicate how the process is sensitive to the AGI's **Developmental Stage**, with complexity increasing over iterations.
+*   Emphasize the **Iterative Nature** with a strong visual flow back from "Refine" to "Design".
+
+**Visual Style:**
+*   Use standard flowchart symbols for clarity.
+*   Highlight the feedback loop.
+*   Use callouts or annotations to link stages to specific `PiaAGI.md` sections or concepts (e.g., Cognitive Modules, Developmental Stages).
+
+**Purpose:** To illustrate the systematic, iterative, and feedback-driven methodology used to create and refine PiaAGI Guiding Prompts and Developmental Scaffolding strategies, emphasizing how this process is deeply tied to understanding and influencing the AGI's cognitive architecture and developmental progression.
+
+**DIAGRAM DESCRIPTION END**
 
 The methodology for constructing PiaAGI Guiding Prompts and implementing Developmental Scaffolding is foundational to the iterative development and refinement of AGI within this framework. It requires a nuanced understanding of PiaAGI's sophisticated cognitive architecture (Section 4), its integrated psychological functions (Section 3), and its progression through developmental stages (Section 3.2.1). This process transcends traditional prompt engineering; it is akin to **designing dynamic learning curricula and interactive developmental environments for an emergent artificial general intelligence**, focusing on the cultivation of deep cognitive capabilities rather than surface-level behaviors. The emphasis is on fostering an AGI that can learn, adapt, and generalize across diverse and complex scenarios.
 
