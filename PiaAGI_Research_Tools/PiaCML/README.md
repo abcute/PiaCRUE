@@ -64,6 +64,10 @@ This initial version of the CML provides abstract base classes for the following
     *   **Purpose:** Manages nuanced natural language interaction (NLU/NLG), implements advanced communication strategies (e.g., CSIM, RaR), and integrates with ToM, Emotion, and Self-Model modules.
     *   **PiaAGI.md Sections:** [2.2 of `PiaAGI.md`](../../PiaAGI.md#22-communication-theory-for-agi-level-interaction) (Communication Theory for AGI-Level Interaction), [4.1.12 of `PiaAGI.md`](../../PiaAGI.md#41-core-modules-and-their-interactions) (Communication Module).
 
+13. **`base_world_model.py` (`BaseWorldModel`)**:
+    *   **Purpose:** Defines the interface for the World Model, PiaAGI's internal, dynamic representation of itself and its environment. It supports understanding, prediction, reasoning, situational awareness, planning, and symbol grounding.
+    *   **PiaAGI.md Sections:** [4.3 of `PiaAGI.md`](../../PiaAGI.md#43-perception-and-world-modeling-conceptual) (Perception and World Modeling).
+
 ## Concrete Implementations
 
 This section lists available concrete implementations of the abstract module interfaces.
@@ -198,11 +202,19 @@ This section lists available concrete implementations of the abstract module int
         *   `get_module_status`: Reports current operational state, confidence, and counts of ethical rules/performance logs.
     *   **Usage:** Suitable for simulations requiring a basic representation of an agent's understanding of itself, its capabilities, and its ethical guidelines.
 
+14. **[`ConcreteWorldModel`](concrete_world_model.py)** ([Tests](tests/test_concrete_world_model.py)):
+    *   **Implements:** `BaseWorldModel`
+    *   **Purpose:** Provides a basic, dictionary-and-list-based concrete implementation of the `BaseWorldModel`. It outlines conceptual data structures for core World Model components (Entity Repository, Spatial, Temporal, Social, Physics, Self-State, Uncertainty).
+    *   **Functionality:**
+        *   Implements methods for updating from perception, querying world state, entity management, conceptual prediction, social model updates, uncertainty management, and consistency checks.
+        *   Uses simple data structures and placeholder logic for complex operations, intended as a foundational example.
+    *   **Usage:** Suitable for initial simulations requiring a basic world state representation and as a template for more advanced, robust World Model implementations.
+
 ## Future Development
 
 The CML will be expanded to include interfaces and foundational implementations for other core PiaAGI cognitive modules, such as:
 *   Attention Module (potentially integrated more deeply with Perception and Working Memory)
-*   World Model (though this might be more of a data structure and service used by many modules)
+*   Further refinement and more sophisticated implementations of the `ConcreteWorldModel` and its sub-components.
 
 Contributions and collaborations are welcome as this library evolves.
 

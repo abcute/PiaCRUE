@@ -77,7 +77,10 @@
 - [x] Developed conceptual design for an integration example of combined CML modules (Simple_Command_Response_Cycle.md).
 - [x] Reviewed conceptual integration example (Examples/Conceptual_Integrations/Simple_Command_Response_Cycle.md); deemed adequate for current conceptual purpose.
 - [ ] Conceptually detail enhancements for 1-2 Concrete CML Modules (e.g., ConcreteLTM retrieval strategies, ConcreteMotivationalSystem intrinsic goal triggering).
-- [ ] Define BaseWorldModel interface and ConcreteWorldModel structure, detailing components and interaction patterns with other CML modules.
+- [x] Defined BaseWorldModel interface (base_world_model.py) and ConcreteWorldModel structure (concrete_world_model.py) with conceptual data stores and method implementations.
+- [ ] Refine `ConcreteWorldModel` data structures for key components (Object/Entity Repository, Spatial, Temporal, Social, Physics, Self-State).
+- [ ] Develop more detailed conceptual algorithms for `ConcreteWorldModel` methods (e.g., `predict_future_state`, `check_consistency`).
+- [ ] Implement basic unit tests for `ConcreteWorldModel` methods based on its conceptual data structures.
 
 ### PiaSE (PiaAGI Simulation Environment)
 - [ ] Detail the core simulation loop (time steps, agent perception/action phases, environment updates).
