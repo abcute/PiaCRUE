@@ -1,9 +1,0 @@
-# Core PiaSE Dependencies
-# (NumPy is used by the visualizer and potentially by agents/environments later)
-numpy>=1.20.0
-
-# Visualization Dependencies
-matplotlib>=3.3.0
-
-# WebApp Dependencies
-Flask>=2.0.0

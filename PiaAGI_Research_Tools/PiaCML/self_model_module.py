@@ -125,7 +125,7 @@ class SelfModelModule(ABC):
                             'new_learning_goals': ['improve_skill_Y']}
         """
         pass
-
+    
     @abstractmethod
     def get_cognitive_load_assessment(self) -> Dict:
         """
@@ -202,12 +202,12 @@ if __name__ == '__main__':
             score = 0.0
             if criteria.get("target_accuracy") and outcome.get("achieved_accuracy"):
                 score = outcome["achieved_accuracy"] / criteria["target_accuracy"]
-
+            
             evaluation = {'task_id': task_description.get('id'), 'performance_score': min(1.0, score), 'achieved': outcome, 'expected': criteria}
             self.model["performance_history"].append(evaluation)
             if len(self.model["performance_history"]) > 10: # Keep history bounded
                 self.model["performance_history"].pop(0)
-
+            
             # Update confidence based on performance (simplified)
             if task_description.get("domain") and outcome.get("achieved_accuracy") is not None:
                 domain = task_description["domain"]
@@ -271,13 +271,13 @@ if __name__ == '__main__':
     # Update self-model
     self_model.update_self_representation("capability_learned", {"id": "advanced_math", "performance": 0.75}, "LearningModule")
     self_model.update_self_representation("current_cognitive_state", {"active_goal": "learn_new_skill"}, "CentralExecutive")
-
+    
     # Evaluate performance
     task1 = {"id": "T1", "description": "Translate complex German text", "domain": "nlp.translation"}
     outcome1 = {"achieved_accuracy": 0.7}
     criteria1 = {"target_accuracy": 0.85}
     eval_result = self_model.evaluate_self_performance(task1, outcome1, criteria1)
-
+    
     # Check confidence
     conf = self_model.get_confidence_level("nlp.translation")
     print(f"Confidence in NLP Translation after eval: {conf}")
@@ -294,6 +294,7 @@ if __name__ == '__main__':
     # Reflect
     reflection_summary = self_model.reflect_on_experience(self_model.model["performance_history"])
     print(f"Reflection Summary: {reflection_summary}")
-
+    
     print(f"Cognitive Load: {self_model.get_cognitive_load_assessment()}")
     print(f"Final status: {self_model.get_status()}")
+

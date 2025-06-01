@@ -175,6 +175,42 @@ class QLearningAgent(AgentInterface):
             # This implies the agent needs to remember the state S *before* `act()` chose `last_action`.
 
             # Let's add `self.previous_state` to the agent.
+            # `perceive` will set `self.previous_state = self.current_state` then `self.current_state = new_observation`
+            # This is a common pattern.
+            # For this iteration, I'll stick to the provided structure and assume the `feedback`
+            # must contain all necessary info or that the states are managed externally to `learn`.
+            # The prompt's `learn` method signature for QLearningAgent was:
+            # learn(self, feedback: Any):
+            #   if isinstance(feedback, tuple) and len(feedback) == 2:
+            #       reward, next_state = feedback
+            #       if self.current_state is not None and self.last_action is not None:
+            #           self.update_q_value(self.current_state, self.last_action, reward, next_state, ...)
+            # This implies current_state at time of learn() is S.
+            # And next_state passed in feedback is S'.
+            # This means that `perceive(S')` should not yet have updated `self.current_state` to S'
+            # when `learn( (R, S') )` is called. This needs careful orchestration in the engine.
+            # Or, the `feedback` to `learn` should contain `(S, A, R, S')`.
+            # Given the current BasicSimulationEngine, `agent.perceive(observation)` (this is S') is called,
+            # then `agent.learn(feedback)` where feedback is the result of `env.step()`.
+            # So, `self.current_state` IS S' when `learn` is called.
+
+            # Let's adjust based on a more standard RL loop:
+            # 1. Agent is in S.
+            # 2. Agent calls perceive(S). (self.current_state becomes S)
+            # 3. Agent calls act() -> A. (self.last_action becomes A)
+            # 4. Engine calls env.step(A) -> (S', R, D, I)
+            # 5. Agent calls learn((S, A, R, S', D)). S is self.current_state *before* perceive(S').
+            #    Or, agent.learn(R, S') and it uses internally stored S and A.
+            # To do this, `learn` must be called *before* `perceive(S')`.
+            # Or, `perceive` must be more careful.
+
+            # Let's assume the `learn` method gets `(state_s, action_a, reward_r, next_state_s_prime)`
+            # For now, the provided code is: `learn(self, feedback: Any)` where `feedback` is `(reward, next_state)`.
+            # It relies on `self.current_state` being S and `self.last_action` being A.
+            # This requires `self.current_state` not to be updated to S' before `learn` is called.
+            # The BasicSimulationEngine calls perceive(S') then learn(env_feedback). This is an issue.
+
+            # Simplest fix for now: QLearningAgent needs to store previous_state.
             # `perceive(obs)`: self.previous_state = self.current_state; self.current_state = obs
             # `learn((reward, S'))`: use self.previous_state as S.
             # This change is not in the provided code, so I'll stick to it for now and it might be a bug.

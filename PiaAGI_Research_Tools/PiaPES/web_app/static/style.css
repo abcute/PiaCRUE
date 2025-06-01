@@ -209,7 +209,7 @@ ul#prompt-list li small, ul#curriculum-list li small {
     display: block;
 }
 ul#prompt-list li a, ul#curriculum-list li a,
-ul#prompt-list li button.delete-btn, ul#curriculum-list li button.delete-btn {
+ul#prompt-list li button.delete-btn {
     margin-right: 12px;
     font-size: 0.95em; /* Slightly larger action links */
 }
@@ -411,3 +411,4 @@ ul#prompt-list li button.delete-btn, ul#curriculum-list li button.delete-btn {
         flex-direction: column;
     }
 }
+```

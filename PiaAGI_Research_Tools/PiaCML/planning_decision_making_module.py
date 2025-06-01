@@ -77,7 +77,7 @@ class PlanningAndDecisionMakingModule(ABC):
             Optional[Dict]: The selected plan, or None if no suitable plan is found.
         """
         pass
-
+    
     @abstractmethod
     def make_decision(self, decision_context: Dict, options: List[Dict], world_model_interface: Any) -> Dict:
         """
@@ -159,7 +159,7 @@ if __name__ == '__main__':
             if action == "ActionA": return {"new_state": {**state, "A_done": True}, "success_prob": 0.9, "cost": 5}
             if action == "ActionB": return {"new_state": {**state, "B_done": True}, "success_prob": 0.7, "cost": 8}
             return {"new_state": state, "success_prob": 0.5, "cost": 1}
-
+        
         def get_knowledge(self, query: str) -> Any:
             if query == "resource_availability": return {"energy": 100}
             return None
@@ -201,14 +201,14 @@ if __name__ == '__main__':
                     total_cost += outcome['cost']
                     overall_success_prob *= outcome['success_prob']
                     temp_state = outcome['new_state']
-
+                
                 plan['scores'] = {'success_prob': overall_success_prob, 'cost': total_cost}
                 # Utility could be success_prob / cost or something more complex
                 plan['expected_utility'] = overall_success_prob / (total_cost + 0.1) # avoid div by zero
                 evaluated.append(plan)
                 print(f"  Evaluated plan {plan['plan_id']}: {plan['scores']}, Utility: {plan['expected_utility']:.2f}")
             return evaluated
-
+        
         def select_best_plan(self, evaluated_plans: List[Dict], selection_strategy: str = "highest_expected_utility") -> Optional[Dict]:
             print(f"ConceptualPlanner: Selecting best plan using strategy: {selection_strategy}")
             if not evaluated_plans: return None
@@ -249,10 +249,10 @@ if __name__ == '__main__':
 
     goal1 = {'id': 'g1', 'type': 'achieve_state', 'target_state': {'A_done': True, 'B_done': True}}
     current_state = {'A_done': False, 'B_done': False}
-
+    
     # Test information request
     resources = planner.request_information_for_planning(
-        {'type': 'get_knowledge', 'query_key': 'resource_availability'},
+        {'type': 'get_knowledge', 'query_key': 'resource_availability'}, 
         target_module_hint="WorldModel"
     )
     print(f"Available resources: {resources}")
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     if best_plan:
         print(f"Executing plan: {best_plan['plan_id']}")
         planner.active_plans[best_plan['plan_id']] = best_plan
-
+        
         # Simulate execution feedback
         feedback_success = {'action_outcome': 'success', 'new_percept': {'A_done': True}}
         monitoring_result = planner.monitor_plan_execution(best_plan['plan_id'], feedback_success, dummy_wm)
@@ -282,7 +282,7 @@ if __name__ == '__main__':
     ]
     decision = planner.make_decision({'type': 'simple_choice'}, decision_options, dummy_wm)
     print(f"Made decision: {decision}")
-
+    
     print(f"Planner status: {planner.get_status()}")
 
 ```

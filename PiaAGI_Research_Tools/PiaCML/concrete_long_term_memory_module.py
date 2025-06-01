@@ -260,5 +260,7 @@ if __name__ == '__main__':
     # It does not use the `criteria` for context matching.
     # So, type-specific retrievals in this LTM example will not filter by ltm_type
     # unless the query itself is structured to hit 'id' or 'concept'.
+    # To make this example fully testable for type-specific retrieval,
+    # ConcreteBaseMemoryModule.retrieve needs modification or these tests need specific queries.
     # Example: ltm.retrieve_semantic_knowledge(query={'concept': 'PiaAGI'}) will work
     #          ltm.retrieve_episodic_events(query={}) will return ALL items from backend.

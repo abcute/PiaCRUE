@@ -22,8 +22,8 @@ class LongTermMemoryModule(BaseMemoryModule):
 
         Args:
             concept_info (dict): A dictionary representing the semantic information.
-                                 Example: {'concept': 'Sun', 'category': 'Star',
-                                           'properties': ['hot', 'bright'],
+                                 Example: {'concept': 'Sun', 'category': 'Star', 
+                                           'properties': ['hot', 'bright'], 
                                            'relations': [{'type': 'is_center_of', 'target': 'Solar System'}]}
             context (dict, optional): Contextual information (e.g., source, certainty).
 
@@ -40,7 +40,7 @@ class LongTermMemoryModule(BaseMemoryModule):
 
         Args:
             concept (str): The concept to query (e.g., "Sun").
-            relations (list, optional): Specific relations to retrieve for the concept.
+            relations (list, optional): Specific relations to retrieve for the concept. 
                                         If None, retrieves general information.
 
         Returns:
@@ -99,7 +99,7 @@ class LongTermMemoryModule(BaseMemoryModule):
             skill_representation (dict): The representation of the skill. This could be
                                          a sequence of steps, a script, a learned policy network's
                                          weights, or another suitable format.
-                                         Example: {'type': 'sequential_steps',
+                                         Example: {'type': 'sequential_steps', 
                                                    'steps': ['step1_description', 'step2_code_ref']}
             context (dict, optional): Context like learning source, proficiency level.
 
@@ -166,7 +166,7 @@ if __name__ == '__main__':
                     if v['info'].get('concept') == query['concept']:
                         results.append(v['info'])
             return results
-
+        
         def manage_capacity(self) -> None:
             print("ConceptualLTMImpl: manage_capacity called.")
             # E.g., check total size, trigger consolidation or pruning if needed
@@ -176,7 +176,7 @@ if __name__ == '__main__':
             print(f"ConceptualLTMImpl: handle_forgetting called with strategy {strategy}.")
             # E.g., implement decay or utility-based removal of old/irrelevant items
             pass
-
+        
         def get_status(self) -> dict:
             return {
                 'semantic_items': len(self.semantic_storage),
@@ -224,7 +224,7 @@ if __name__ == '__main__':
             print(f"ConceptualLTMImpl: Retrieving skill: {skill_name}")
             item = self.procedural_storage.get(skill_name)
             return item['info'] if item else {}
-
+            
         def consolidate_memory(self, type_to_consolidate: str = 'all', intensity: str = 'normal') -> None:
             print(f"ConceptualLTMImpl: consolidate_memory called for '{type_to_consolidate}' with intensity '{intensity}'.")
             # E.g., strengthen links, re-index, prune redundant data
@@ -241,11 +241,11 @@ if __name__ == '__main__':
         {'timestamp': 12345.678}
     )
     ltm_concrete.store_procedural_skill(
-        'greet_user',
+        'greet_user', 
         {'type': 'script', 'steps': ['identify_user_language', 'select_greeting_template', 'personalize_greeting']},
         {'version': 1.0}
     )
-
+    
     print(f"Semantic for Photosynthesis: {ltm_concrete.get_semantic_knowledge('Photosynthesis')}")
     print(f"Episodes with actor 'user_sim': {ltm_concrete.get_episodic_experience({'actor': 'user_sim'})}") # Will be empty
     print(f"Skill 'greet_user': {ltm_concrete.get_procedural_skill('greet_user')}")

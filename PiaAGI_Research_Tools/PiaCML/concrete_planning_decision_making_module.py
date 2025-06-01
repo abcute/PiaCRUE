@@ -115,9 +115,8 @@ class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModul
         # We need to return the original plan structure, not just its evaluation.
         # This assumes the plan_id in evaluation can be used to find the original plan structure
         # if it's not passed in directly with its evaluation.
-        # For this basic version, let's assume the highest scored item in `evaluated_plans`
-        # IS the plan itself, with evaluation data merged into it.
-        # This requires `create_plan` to return a list of plans, and `evaluate_plan` to add score to the plan dict.
+        # For this basic version, let's assume the caller has the original plan if they only got evaluations.
+        # Or, more practically, the input `evaluated_plans` should contain enough info.
         # Let's refine this to expect the full plan within the evaluated_plans structure for simplicity.
         # This means `evaluate_plan` should perhaps return the plan itself along with evaluation,
         # or `select_action_or_plan` receives a list of (plan_structure, plan_evaluation) tuples.

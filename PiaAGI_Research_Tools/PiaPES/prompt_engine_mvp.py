@@ -30,7 +30,7 @@ class BaseElement:
             else:
                 new_dict[k] = v # For non-string/list/dict values, like numbers or booleans
         return new_dict
-
+        
     def fill_placeholders(self, data: Dict[str, str]):
         """Recursively fills placeholders in the element and its children."""
         for attr_name, attr_value in self.__dict__.items():
@@ -77,7 +77,7 @@ class BaseElement:
                     rendered_dict += f"{indent}{k}: {str(v)}\n"
             return rendered_dict
         elif isinstance(value, BaseElement):
-            return value.render(indent_level)
+            return value.render(indent_level) 
         else: # Primitives like str, int, bool
             return f"{indent}{value}\n"
 
@@ -86,7 +86,7 @@ class BaseElement:
         """Renders the element to Markdown, handling None values gracefully."""
         output = ""
         indent = "    " * indent_level
-
+        
         # Special handling for class name as header if it's not a sub-element being rendered by a parent
         class_name = self.__class__.__name__
         # Avoid redundant headers if a parent is already rendering this element under its attribute name
@@ -102,7 +102,7 @@ class BaseElement:
                 continue
 
             formatted_attr_name = attr_name.replace('_', ' ').title()
-
+            
             if isinstance(attr_value, BaseElement):
                 # Render child BaseElement, it will handle its own header if necessary
                 output += f"{indent}## {formatted_attr_name}\n"
@@ -200,7 +200,7 @@ class EmotionalProfile(BaseElement):
         self.baseline_valence = baseline_valence
         self.reactivity_to_failure_intensity = reactivity_to_failure_intensity
         self.empathy_level_target = empathy_level_target
-
+        
 class LearningModuleConfig(BaseElement):
     def __init__(self,
                  primary_learning_mode: Optional[str] = None,
@@ -240,7 +240,7 @@ class Role(BaseElement):
         # Custom render for Role to include its name prominently
         indent = "    " * indent_level
         output = f"{indent}## Role: {self.name}\n"
-
+        
         # Render other attributes, skipping 'name' as it's already rendered
         for attr_name, attr_value in self.__dict__.items():
             if attr_name == 'name' or attr_value is None or (isinstance(attr_value, (list, dict)) and not attr_value):
@@ -337,7 +337,7 @@ class CBTAutoTraining(BaseElement): # Simplified for MVP
         self.self_critique_focus = self_critique_focus if self_critique_focus else []
         self.refinement_mechanism = refinement_mechanism
         self.success_threshold = success_threshold
-
+        
 # --- Main Prompt Class ---
 class PiaAGIPrompt(BaseElement):
     def __init__(self,
@@ -362,7 +362,7 @@ class PiaAGIPrompt(BaseElement):
         self.version = version
         self.date = date
         self.objective = objective
-
+        
         # Core Sections
         self.system_rules = system_rules if system_rules else SystemRules()
         self.requirements = requirements if requirements else Requirements()
@@ -409,7 +409,7 @@ class PiaAGIPrompt(BaseElement):
         if self.initiate_interaction:
             output += "# Initiate_Interaction\n"
             output += f"    {self.initiate_interaction}\n"
-
+            
         return output.strip()
 # --- Export to Markdown Function ---
 
@@ -435,14 +435,14 @@ def export_to_markdown(element: BaseElement, filepath: str):
 
 if __name__ == '__main__':
     # Simple Usage Example
-
+    
     # 1. Define a prompt template structure
     # Define cognitive configurations
     personality = PersonalityConfig(ocean_openness=0.8, ocean_conscientiousness=0.7)
     motivation = MotivationalBias(biases={"IntrinsicGoal_Curiosity": "High", "ExtrinsicGoal_TaskCompletion": "{task_priority}"})
     emotion = EmotionalProfile(baseline_valence="Neutral", empathy_level_target="High_Cognitive")
     learning_config = LearningModuleConfig(primary_learning_mode="SL_From_Feedback")
-
+    
     cognitive_config = CognitiveModuleConfiguration(
         personality_config=personality,
         motivational_bias_config=motivation,
@@ -469,7 +469,7 @@ if __name__ == '__main__':
         success_metrics=["Clarity of arguments.", "Novelty of contribution.", "User_satisfaction_score > 0.9"]
     )
     users = UsersInteractors(type="Human Researcher", profile="Expert in {user_expertise_area}, novice in AGI.")
-
+    
     executors = Executors(role=researcher_role)
 
     workflow_steps = [
@@ -477,7 +477,7 @@ if __name__ == '__main__':
         WorkflowStep(name="Literature Review", action_directive="Summarize 3 key papers for the chosen sub-topic.")
     ]
     workflow = Workflow(steps=workflow_steps)
-
+    
     dev_scaffolding = DevelopmentalScaffolding(
         current_developmental_goal="Improve hypothesis generation skills (PiaSapling Stage 3).",
         scaffolding_techniques_employed=["Example-based learning", "ZPD_Hinting_Allowed"]

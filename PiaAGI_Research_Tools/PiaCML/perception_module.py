@@ -165,13 +165,13 @@ if __name__ == '__main__':
     # Conceptual usage:
     text_perception = ConceptualTextPerception()
     raw_text = "Hello Pia, tell me about dark matter."
-
+    
     processed = text_perception.process_sensory_input(raw_text, "text")
     features = text_perception.extract_features(processed, "text")
     percept = text_perception.generate_structured_percept(features, "text", {'timestamp': 123.45})
-
+    
     print(f"Final Percept: {percept}")
     print(f"Perception Status: {text_perception.get_status()}")
-
+    
     text_perception.set_attentional_focus({'modality': 'text', 'ignore_keywords': ['pia']})
     print(f"Perception Status after focus set: {text_perception.get_status()}")

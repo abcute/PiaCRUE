@@ -170,9 +170,9 @@ if __name__ == '__main__':
             active = [g for g in self.goals.values() if g.get("status") == "active"]
             if priority_threshold is not None:
                 active = [g for g in active if g.get("priority", 0) >= priority_threshold]
-
+            
             active.sort(key=lambda g: g.get("priority", 0), reverse=True)
-
+            
             if top_n is not None:
                 active = active[:top_n]
             print(f"  Found active goals: {[g['id'] for g in active]}")
@@ -232,15 +232,15 @@ if __name__ == '__main__':
 
     # Add goals
     goals_to_add = [
-        {"id": "explore_environment", "description": "Explore the current environment for novelty",
+        {"id": "explore_environment", "description": "Explore the current environment for novelty", 
          "priority": 0.8, "status": "active", "type": "intrinsic_curiosity"},
-        {"id": "learn_physics", "description": "Understand basic physics simulation",
+        {"id": "learn_physics", "description": "Understand basic physics simulation", 
          "priority": 0.7, "status": "active", "type": "knowledge_acquisition"},
         {"id": "complete_assigned_task_1", "description": "User assigned task: summarize report",
          "priority": 0.9, "status": "active", "type": "task_completion_goal"}
     ]
     motivation_system.update_goals(goals_to_add, operation="add")
-
+    
     print(f"Initial Status: {motivation_system.get_status()}")
 
     # Simulate an event
@@ -262,3 +262,4 @@ if __name__ == '__main__':
 
     print(f"Status after task completion: {motivation_system.get_status()}")
     print(f"Goal 'complete_assigned_task_1' status: {motivation_system.get_goal_status('complete_assigned_task_1')}")
+

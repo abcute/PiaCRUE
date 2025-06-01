@@ -149,7 +149,7 @@ if __name__ == '__main__':
         def update_emotional_state(self, appraisal_info: Dict, event_source: Optional[str] = None) -> None:
             print(f"ConceptualEmotion: Updating emotional state from '{event_source}' with appraisal: {appraisal_info}")
             self.last_event = appraisal_info
-
+            
             event_type = appraisal_info.get("event_type")
             pleasantness = appraisal_info.get("pleasantness", 0)
             significance = appraisal_info.get("significance", 0.5)
@@ -164,12 +164,12 @@ if __name__ == '__main__':
                 self.emotions["joy"] = max(0.0, self.emotions.get("joy",0) - abs(pleasantness) * significance * 0.2)
             elif event_type == "threat_detected" and perceived_danger > 0:
                 self.emotions["fear"] = min(1.0, self.emotions.get("fear",0) + perceived_danger * significance * 0.6)
-
+            
             # Apply personality influences (e.g., neuroticism amplifies negative emotions)
             if pleasantness < 0 or perceived_danger > 0:
                  self.emotions["fear"] = min(1.0, self.emotions["fear"] * (1 + self.personality.get("neuroticism", 0.5) * 0.1))
                  self.emotions["sadness"] = min(1.0, self.emotions["sadness"] * (1 + self.personality.get("neuroticism", 0.5) * 0.1))
-
+            
             # General decay and return to baseline (influenced by default_mood_offset)
             for emotion, value in self.emotions.items():
                 if emotion != "curiosity_level": # curiosity might be managed differently
@@ -195,7 +195,7 @@ if __name__ == '__main__':
             print(f"ConceptualEmotion: Regulating emotion using '{strategy}' for {target_emotion_details}")
             emotion = target_emotion_details.get('emotion')
             change = target_emotion_details.get('desired_intensity_change', 0)
-
+            
             if emotion in self.emotions:
                 current_intensity = self.emotions[emotion]
                 self.emotions[emotion] = max(0.0, min(1.0, current_intensity + change))
@@ -242,10 +242,12 @@ if __name__ == '__main__':
 
     appraisal2 = {'event_type': 'threat_detected', 'source': 'perception', 'perceived_danger': 0.6, 'significance': 0.7}
     emotion_system.update_emotional_state(appraisal2, event_source="PerceptionModule")
-
+    
     print(f"Cognitive influence: {emotion_system.get_emotional_influence_on_cognition()}")
-
+    
     emotion_system.express_emotion("joy", emotion_system.emotions["joy"], "communication_module")
-
+    
     emotion_system.regulate_emotion("response_modulation", {'emotion': 'fear', 'desired_intensity_change': -0.3})
     print(f"Status after regulation: {emotion_system.get_status()}")
+
+

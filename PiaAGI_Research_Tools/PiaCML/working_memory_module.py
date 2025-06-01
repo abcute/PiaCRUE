@@ -57,7 +57,7 @@ class WorkingMemoryModule(BaseMemoryModule):
     @abstractmethod
     def update_item_in_workspace(self, item_id: Any, new_content: Any = None, new_context: Dict = None) -> bool:
         """
-        Updates an existing item within the workspace.
+        Updates an existing item within the workspace. 
         This could involve changing its content, its saliency, or other contextual attributes.
 
         Args:
@@ -69,7 +69,7 @@ class WorkingMemoryModule(BaseMemoryModule):
             bool: True if update was successful, False otherwise.
         """
         pass
-
+        
     @abstractmethod
     def remove_item_from_workspace(self, item_id: Any) -> bool:
         """
@@ -135,7 +135,7 @@ class WorkingMemoryModule(BaseMemoryModule):
                   Example: {'status': 'coordination_initiated', 'task_id': 'task_123'}
         """
         pass
-
+        
     # BaseMemoryModule methods that still need to be implemented by concrete classes
     # store, retrieve, manage_capacity, handle_forgetting, get_status
     # Their specific implementations for WM will differ significantly from LTM.
@@ -169,7 +169,7 @@ if __name__ == '__main__':
                     if isinstance(item, dict) and item.get('type') == query['content_type']:
                         results.append(item)
             return results
-
+        
         def manage_capacity(self) -> None:
             print(f"ConceptualWMImpl: Checking capacity. Current items: {len(self.workspace)}/{self.capacity}")
             while len(self.workspace) > self.capacity:
@@ -223,7 +223,7 @@ if __name__ == '__main__':
         def clear_workspace(self) -> None:
             print("ConceptualWMImpl: Clearing workspace.")
             self.workspace = []
-
+            
         def get_cognitive_load(self) -> float:
             return len(self.workspace) / self.capacity if self.capacity > 0 else 1.0
 
@@ -241,13 +241,13 @@ if __name__ == '__main__':
     wm_instance = ConceptualWMImpl(capacity=3)
     wm_instance.add_item_to_workspace({'type': 'perception', 'data': 'user_said_hello'}, "PerceptionModule", {'priority': 'high'})
     wm_instance.add_item_to_workspace({'type': 'ltm_retrieval', 'concept': 'hello_response', 'value': 'Hi there!'}, "LTMModule")
-
+    
     print(f"WM Contents: {wm_instance.get_workspace_contents()}")
     print(f"WM Cognitive Load: {wm_instance.get_cognitive_load()*100:.2f}%")
-
+    
     wm_instance.add_item_to_workspace({'type': 'internal_thought', 'idea': 'consider_context'}, "SelfModel")
     # This should trigger capacity management
-    wm_instance.add_item_to_workspace({'type': 'goal', 'goal_id': 'respond_politely'}, "MotivationalSystem")
+    wm_instance.add_item_to_workspace({'type': 'goal', 'goal_id': 'respond_politely'}, "MotivationalSystem") 
     # This item might not be added if capacity is full and oldest wasn't perception.
 
     print(f"WM Status: {wm_instance.get_status()}")

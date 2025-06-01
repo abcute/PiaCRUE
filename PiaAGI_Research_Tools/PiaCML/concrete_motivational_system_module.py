@@ -11,7 +11,7 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
     A basic, concrete implementation of the BaseMotivationalSystemModule.
     This version manages a list of goals, each represented as a dictionary
     with properties like id, description, type (intrinsic/extrinsic), priority,
-    and status (e.g., 'pending', 'active', 'achieved', 'failed', 'paused').
+    and status (e.g., 'pending', 'active', 'achieved', 'failed').
     """
 
     def __init__(self):
