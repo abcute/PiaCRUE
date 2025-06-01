@@ -4,12 +4,12 @@
 ## 1. Purpose and Goals
 
 **Purpose:**
-The PiaAGI Simulation Environment (PiaSE) is designed to provide a flexible and extensible platform for researchers and developers to instantiate, test, and evaluate PiaAGI agents (Section 4 of `PiaAGI.md`) and their components in controlled, dynamic, and reproducible settings.
+The PiaAGI Simulation Environment (PiaSE) is designed to provide a flexible and extensible platform for researchers and developers to instantiate, test, and evaluate PiaAGI agents ([Section 4 of `PiaAGI.md`](../PiaAGI.md#4-the-piaagi-cognitive-architecture)) and their components in controlled, dynamic, and reproducible settings.
 
 **Goals:**
 *   **Facilitate AGI Research:** Enable empirical investigation of AGI hypotheses related to learning, adaptation, social interaction, motivation, and emergent behavior within the PiaAGI framework.
-*   **Testbed for PiaAGI Agents:** Allow for the deployment and rigorous testing of PiaAGI agents at various developmental stages (Section 3.2.1 of `PiaAGI.md`).
-*   **Environment for Developmental Scaffolding:** Provide tools and functionalities to create and manage complex environments that can deliver the developmental scaffolding curricula described in Section 5.4 and 6.1 of `PiaAGI.md`.
+*   **Testbed for PiaAGI Agents:** Allow for the deployment and rigorous testing of PiaAGI agents at various developmental stages ([Section 3.2.1 of `PiaAGI.md`](../PiaAGI.md#321-stages-of-cognitive-development-and-architectural-maturation)).
+*   **Environment for Developmental Scaffolding:** Provide tools and functionalities to create and manage complex environments that can deliver the developmental scaffolding curricula described in [Section 5.4 of `PiaAGI.md`](../PiaAGI.md#54-developmental-scaffolding-a-cornerstone-of-piaagi-growth) and [Section 6.1 of `PiaAGI.md`](../PiaAGI.md#61-advanced-developmental-scaffolding-techniques-for-agi-cultivation).
 *   **Reproducibility and Comparability:** Ensure experiments can be easily replicated, and results can be compared across different agent configurations or environmental conditions.
 *   **Modular and Extensible:** Allow for the easy integration of new environments, tasks, sensors (simulated), actuators (simulated), and external AI models or services.
 *   **Data Generation:** Generate rich datasets of agent-environment interactions, internal state changes, and performance metrics for analysis with tools like the PiaAGI Agent Analysis & Visualization Toolkit (PiaAVT).
@@ -22,19 +22,19 @@ The PiaAGI Simulation Environment (PiaSE) is designed to provide a flexible and 
     *   Support for dynamic events and stochasticity.
     *   Ability to define and manage multiple interacting entities (other agents, simulated humans).
 *   **Agent Interface:**
-    *   Standardized API for PiaAGI agents to perceive the environment (multi-modal sensory input, Section 4.1.1 of `PiaAGI.md`) and act upon it (behavioral outputs, Section 4.1.9 of `PiaAGI.md`).
+    *   Standardized API for PiaAGI agents to perceive the environment (multi-modal sensory input, [Section 4.1.1 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)) and act upon it (behavioral outputs, [Section 4.1.9 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)).
     *   Support for various action spaces (discrete, continuous, linguistic).
 *   **Scenario and Task Management:**
     *   GUI and/or scripting interface to design and configure experimental scenarios and tasks.
     *   Define specific goals, rewards (if applicable), and success conditions for agents.
     *   Implement complex tasks requiring long-term planning, learning, and adaptation.
 *   **Developmental Scaffolding Tools:**
-    *   Mechanisms to introduce environmental changes or new tasks based on agent developmental stage (Section 3.2.1 of `PiaAGI.md`) or performance.
-    *   Tools to simulate tutors or mentors providing feedback or guidance as part of a curriculum (Section 5.4 of `PiaAGI.md`).
+    *   Mechanisms to introduce environmental changes or new tasks based on agent developmental stage ([Section 3.2.1 of `PiaAGI.md`](../PiaAGI.md#321-stages-of-cognitive-development-and-architectural-maturation)) or performance.
+    *   Tools to simulate tutors or mentors providing feedback or guidance as part of a curriculum ([Section 5.4 of `PiaAGI.md`](../PiaAGI.md#54-developmental-scaffolding-a-cornerstone-of-piaagi-growth)).
 *   **Multi-Agent Simulation:**
     *   Support for deploying multiple PiaAGI agents (or other AI agents) within the same environment.
     *   Configurable communication channels between agents.
-    *   Tools to study emergent collective behaviors and inter-agent learning/collaboration (Section 2.2 of `PiaAGI.md`).
+    *   Tools to study emergent collective behaviors and inter-agent learning/collaboration ([Section 2.2 of `PiaAGI.md`](../PiaAGI.md#22-communication-theory-for-agi-level-interaction)).
 *   **Data Logging and Recording:**
     *   Comprehensive logging of agent-environment interactions, agent's internal states (if exposed via API), events, and performance metrics.
     *   Ability to replay simulations.
@@ -80,12 +80,12 @@ The PiaAGI Simulation Environment (PiaSE) is designed to provide a flexible and 
 
 ## 5. Potential Integration Points with the PiaAGI Framework
 
-*   **PiaAGI Agent Core:** PiaSE will directly host and interact with instantiations of PiaAGI agents, providing them with perceptual input (Section 4.1.1) and receiving action commands (Section 4.1.9).
+*   **PiaAGI Agent Core:** PiaSE will directly host and interact with instantiations of PiaAGI agents, providing them with perceptual input ([Section 4.1.1 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)) and receiving action commands ([Section 4.1.9 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)).
 *   **Cognitive Module Library (PiaCML):** Components from PiaCML can be used to build the PiaAGI agents that run within PiaSE. The simulation environment will provide the necessary stimuli and feedback for these modules to operate and learn.
-*   **World Model (Section 4.3):** PiaSE provides the "ground truth" environment against which an agent's internal World Model is developed, updated, and validated. Discrepancies between PiaSE state and agent's World Model can drive learning.
-*   **Learning Modules (Section 3.1.3, 4.1.5):** PiaSE provides the experiential data (observations, actions, feedback, rewards) necessary for all forms of learning defined in PiaAGI.
-*   **Motivational System (Section 3.3, 4.1.6):** Environmental challenges, opportunities, and feedback within PiaSE can trigger and shape the agent's intrinsic and extrinsic motivations.
-*   **Developmental Scaffolding (Section 5.4, 6.1):** PiaSE is the primary platform for implementing developmental curricula. Its tools will allow researchers to design sequences of environments and tasks that progressively challenge the PiaAGI agent, fostering its cognitive development through stages.
+*   **World Model ([Section 4.3 of `PiaAGI.md`](../PiaAGI.md#43-perception-and-world-modeling-conceptual)):** PiaSE provides the "ground truth" environment against which an agent's internal World Model is developed, updated, and validated. Discrepancies between PiaSE state and agent's World Model can drive learning.
+*   **Learning Modules ([Section 3.1.3 of `PiaAGI.md`](../PiaAGI.md#313-learning-theories-and-mechanisms-for-agi), [Section 4.1.5 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)):** PiaSE provides the experiential data (observations, actions, feedback, rewards) necessary for all forms of learning defined in PiaAGI.
+*   **Motivational System ([Section 3.3 of `PiaAGI.md`](../PiaAGI.md#33-motivational-systems-and-intrinsic-goals), [Section 4.1.6 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)):** Environmental challenges, opportunities, and feedback within PiaSE can trigger and shape the agent's intrinsic and extrinsic motivations.
+*   **Developmental Scaffolding ([Section 5.4 of `PiaAGI.md`](../PiaAGI.md#54-developmental-scaffolding-a-cornerstone-of-piaagi-growth), [Section 6.1 of `PiaAGI.md`](../PiaAGI.md#61-advanced-developmental-scaffolding-techniques-for-agi-cultivation)):** PiaSE is the primary platform for implementing developmental curricula. Its tools will allow researchers to design sequences of environments and tasks that progressively challenge the PiaAGI agent, fostering its cognitive development through stages.
 *   **PiaAGI Prompt Engineering Suite (PiaPES):** Prompts designed with PiaPES can be used to configure the PiaAGI agent's initial state (Self-Model, personality, role) before it is deployed in a PiaSE scenario.
 *   **Agent Analysis & Visualization Toolkit (PiaAVT):** Data logs generated by PiaSE will be a primary input for PiaAVT, allowing for detailed analysis of agent behavior and internal states.
 
