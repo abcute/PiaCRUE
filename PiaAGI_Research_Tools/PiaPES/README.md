@@ -51,7 +51,7 @@ A typical workflow involves:
 
 **Example (Conceptual):**
 ```python
-from PiaAGI_Hub.PiaPES.prompt_engine_mvp import PiaAGIPrompt, Requirements, save_template, load_template
+from PiaAGI_Research_Tools.PiaPES.prompt_engine_mvp import PiaAGIPrompt, Requirements, save_template, load_template
 
 # Create a prompt
 my_prompt = PiaAGIPrompt(
@@ -75,12 +75,12 @@ For detailed examples and usage of all features, please refer to the [USAGE.md](
 
 ### Running Unit Tests
 
-The unit tests verify the core functionalities of the `prompt_engine_mvp.py`. To run the tests, navigate to the parent directory of `PiaAGI_Hub` (or ensure `PiaAGI_Hub` is in your `PYTHONPATH`) and run:
+The unit tests verify the core functionalities of the `prompt_engine_mvp.py`. To run the tests, navigate to the parent directory of `PiaAGI_Research_Tools` (or ensure `PiaAGI_Research_Tools` is in your `PYTHONPATH`) and run:
 
 ```bash
-python -m unittest discover PiaAGI_Hub/PiaPES/tests
+python -m unittest discover PiaAGI_Research_Tools/PiaPES/tests
 ```
-or from within the `PiaAGI_Hub/PiaPES` directory:
+or from within the `PiaAGI_Research_Tools/PiaPES` directory:
 ```bash
 python -m unittest discover tests
 ```
@@ -108,7 +108,7 @@ The web interface aims to simplify the creation, viewing, editing, and managemen
 ### Basic Usage
 
 #### Prompt Management
-*   **Dashboard Listing:** The main page (`/`) lists available prompt templates (`*.json` files) and developmental curricula (`*.curriculum.json` files) from the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory.
+*   **Dashboard Listing:** The main page (`/`) lists available prompt templates (`*.json` files) and developmental curricula (`*.curriculum.json` files) from the `PiaAGI_Research_Tools/PiaPES/web_app/prompt_files/` directory.
 *   **Create New Prompt:**
     *   Accessible via the "Create New Prompt" button.
     *   The form provides specific input fields for common `PiaAGIPrompt` attributes like `objective`, `author`, `version`, `target_agi`, etc.
@@ -154,14 +154,14 @@ The web interface aims to simplify the creation, viewing, editing, and managemen
     *   **Important:** Step editing (adding, removing, or modifying existing steps) for an existing curriculum is **not** supported via this specific edit metadata form; steps are preserved as is. Full step management requires editing the JSON file directly or deleting and recreating the curriculum via the UI.
 
 ### Storage
-Prompt and curriculum files managed by this web interface are stored as `.json` or `.curriculum.json` files in the `PiaAGI_Hub/PiaPES/web_app/prompt_files/` directory. The application will list any compatible files found there.
+Prompt and curriculum files managed by this web interface are stored as `.json` or `.curriculum.json` files in the `PiaAGI_Research_Tools/PiaPES/web_app/prompt_files/` directory. The application will list any compatible files found there.
 
 ### Running Web Application Tests
-Unit and integration tests for the Flask backend are located in `PiaAGI_Hub/PiaPES/web_app/tests/`. To run them:
-1.  Ensure your current directory is the project root (e.g., `PiaAGI_Hub` or its parent).
+Unit and integration tests for the Flask backend are located in `PiaAGI_Research_Tools/PiaPES/web_app/tests/`. To run them:
+1.  Ensure your current directory is the project root (e.g., `PiaAGI_Research_Tools` or its parent).
 2.  Run:
     ```bash
-    python -m unittest discover PiaAGI_Hub/PiaPES/web_app/tests
+    python -m unittest discover PiaAGI_Research_Tools/PiaPES/web_app/tests
     ```
 
 ### Further Design Details
@@ -242,9 +242,9 @@ This guide provides instructions to run the PiaPES WebApp locally for developmen
 
 ### Troubleshooting
 *   **Import Errors for `prompt_engine_mvp`:** If you encounter import errors related to `prompt_engine_mvp` when running `python app.py`, ensure:
-    1.  You are running the command from the `PiaAGI_Hub/PiaPES/web_app/` directory.
-    2.  The `prompt_engine_mvp.py` file is located at `PiaAGI_Hub/PiaPES/prompt_engine_mvp.py`.
-    The `app.py` script includes logic to modify `sys.path` to correctly locate `prompt_engine_mvp.py` relative to its own position. This should generally handle imports correctly when `app.py` is run directly from its directory. If running from a different context or if `PiaAGI_Hub` is not in your `PYTHONPATH`, issues might arise.
+    1.  You are running the command from the `PiaAGI_Research_Tools/PiaPES/web_app/` directory.
+    2.  The `prompt_engine_mvp.py` file is located at `PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py`.
+    The `app.py` script includes logic to modify `sys.path` to correctly locate `prompt_engine_mvp.py` relative to its own position. This should generally handle imports correctly when `app.py` is run directly from its directory. If running from a different context or if `PiaAGI_Research_Tools` is not in your `PYTHONPATH`, issues might arise.
 
 ## Roadmap / Future Development
 
@@ -252,10 +252,10 @@ The `prompt_engine_mvp.py` script is the first step towards a more comprehensive
 
 ## Links
 
-*   **Detailed MVP Usage:** [PiaAGI_Hub/PiaPES/USAGE.md](./USAGE.md)
-*   **Full Conceptual Design for PiaPES:** [PiaAGI_Hub/PiaAGI_Prompt_Engineering_Suite.md](../PiaAGI_Prompt_Engineering_Suite.md)
-*   **Unit Tests (Prompt Engine):** [PiaAGI_Hub/PiaPES/tests/](./tests/)
-*   **Web Interface Design Document:** [PiaAGI_Hub/PiaPES/web_interface_design.md](./web_interface_design.md)
+*   **Detailed MVP Usage:** [USAGE.md](./USAGE.md)
+*   **Full Conceptual Design for PiaPES:** [Full Conceptual Design for PiaPES](../PiaAGI_Prompt_Engineering_Suite.md)
+*   **Unit Tests (Prompt Engine):** [Unit Tests (Prompt Engine)](./tests/)
+*   **Web Interface Design Document:** [Web Interface Design Document](./web_interface_design.md)
 
 ---
 

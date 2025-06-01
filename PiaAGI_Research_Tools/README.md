@@ -17,6 +17,12 @@ This directory contains conceptual design documents for a suite of Python-based 
 4.  **[PiaAGI Prompt Engineering Suite (PiaPES)](PiaAGI_Prompt_Engineering_Suite.md)**
     *   **Description:** A toolkit to assist researchers in the systematic design, construction, management, versioning, and evaluation of complex "Guiding Prompts" and "Developmental Scaffolding" curricula used to configure and guide PiaAGI agents, particularly in the context of AGI development.
 
+## Existing Components and Conceptual Aids
+
+*   **PiaPES MVP:** An initial MVP for the Prompt Templating Engine can be found in `PiaPES/prompt_engine_mvp.py` ([Usage Guide](PiaPES/USAGE.md)).
+*   **PiaCML Interfaces:** Initial Python interfaces for some core cognitive modules are defined in the `PiaCML/` directory ([PiaCML README](PiaCML/README.md)).
+*   **Conceptual Simulations:** The `conceptual_simulations/` directory contains illustrative materials such as textual diagram descriptions (`conceptual_simulations/diagram_descriptions.md`) and a basic Python example of module interactions (`conceptual_simulations/PiaAGI_Behavior_Example.py`).
+
 These tools are envisioned to work together to provide a comprehensive ecosystem for advancing research and development within the PiaAGI framework towards Artificial General Intelligence. Each linked document provides a more detailed conceptual design for the respective tool.
 
 ---

@@ -4,11 +4,11 @@
 ## 1. Purpose and Goals
 
 **Purpose:**
-The PiaAGI Prompt Engineering Suite (PiaPES) is a toolkit designed to assist researchers and developers in the systematic design, construction, management, versioning, and evaluation of complex "Guiding Prompts" and "Developmental Scaffolding" curricula, as described in Sections 5 and 6 of `PiaAGI.md`. It aims to streamline the process of configuring and guiding PiaAGI agents, particularly in the context of AGI development.
+The PiaAGI Prompt Engineering Suite (PiaPES) is a toolkit designed to assist researchers and developers in the systematic design, construction, management, versioning, and evaluation of complex "Guiding Prompts" and "Developmental Scaffolding" curricula, as described in [Sections 5 of `PiaAGI.md`](../PiaAGI.md#5-the-piaagi-prompting-framework-for-agent-interaction-and-development) and [6 of `PiaAGI.md`](../PiaAGI.md#6-methodology-constructing-piaagi-guiding-prompts-and-developmental-scaffolding-for-agi). It aims to streamline the process of configuring and guiding PiaAGI agents, particularly in the context of AGI development.
 
 **Goals:**
 *   **Facilitate Complex Prompt Design:** Provide tools and structures to manage the complexity of multi-component prompts that configure PiaAGI's cognitive architecture (Self-Model, Personality, Motivation, Emotion, etc.).
-*   **Support Developmental Scaffolding:** Enable the creation, organization, and sequencing of prompts into developmental curricula that guide agent learning and maturation through stages (Section 3.2.1, 5.4 of `PiaAGI.md`).
+*   **Support Developmental Scaffolding:** Enable the creation, organization, and sequencing of prompts into developmental curricula that guide agent learning and maturation through stages ([Section 3.2.1 of `PiaAGI.md`](../PiaAGI.md#321-stages-of-cognitive-development-and-architectural-maturation), [5.4 of `PiaAGI.md`](../PiaAGI.md#54-developmental-scaffolding-a-cornerstone-of-piaagi-growth)).
 *   **Promote Reusability and Versioning:** Allow for the creation of reusable prompt templates, components, and configurations, with robust version control.
 *   **Aid in Prompt Evaluation:** Integrate with PiaSE and PiaAVT to help researchers assess the impact of different prompt configurations on agent behavior, learning, and development.
 *   **Standardize Prompting Methodology:** Encourage a more systematic and principled approach to prompting for AGI development, moving beyond ad-hoc prompt creation.
@@ -20,17 +20,17 @@ The PiaAGI Prompt Engineering Suite (PiaPES) is a toolkit designed to assist res
     *   A specialized editor (potentially web-based or a plugin for existing IDEs like VS Code) with syntax highlighting for PiaAGI prompt structures (e.g., Markdown with special tags for R-U-E components, module configurations).
     *   Auto-completion for prompt keywords, module names, and parameters defined in PiaCML.
     *   Visual an/or structured view of prompt components (e.g., R-U-E, Role, Cognitive_Module_Configuration).
-    *   Validation against the PiaAGI prompt schema (defined based on `PiaAGI.md` Section 5 & 6).
+    *   Validation against the PiaAGI prompt schema (defined based on [`PiaAGI.md` Sections 5](../PiaAGI.md#5-the-piaagi-prompting-framework-for-agent-interaction-and-development) & [6](../PiaAGI.md#6-methodology-constructing-piaagi-guiding-prompts-and-developmental-scaffolding-for-agi)).
 *   **Prompt Template Library:**
     *   Repository for storing and managing reusable prompt templates (e.g., for specific roles, developmental stages, or cognitive configurations).
     *   Ability to create new prompts by inheriting from and customizing templates.
     *   Parameterization of templates (e.g., defining variables within prompts that can be filled in for specific experiments).
 *   **Cognitive Configuration Interface:**
-    *   User-friendly interface (GUI or structured text) for setting parameters of cognitive modules (Personality, Motivation, Emotion, Learning) as described in Section 5.2 and example prompts (Section 7 of `PiaAGI.md`).
+    *   User-friendly interface (GUI or structured text) for setting parameters of cognitive modules (Personality, Motivation, Emotion, Learning) as described in [Section 5.2 of `PiaAGI.md`](../PiaAGI.md#52-key-prompt-components-for-piaagi) and example prompts ([Section 7 of `PiaAGI.md`](../PiaAGI.md#7-examples-and-use-cases-from-personalized-agents-to-agi-development)).
     *   Visual aids to understand the range and impact of different parameter settings.
     *   Linkages to PiaCML to ensure parameter compatibility.
 *   **Developmental Curriculum Designer:**
-    *   Tools to sequence Guiding Prompts into curricula for developmental scaffolding (Section 5.4, 6.1 of `PiaAGI.md`).
+    *   Tools to sequence Guiding Prompts into curricula for developmental scaffolding ([Section 5.4 of `PiaAGI.md`](../PiaAGI.md#54-developmental-scaffolding-a-cornerstone-of-piaagi-growth), [6.1 of `PiaAGI.md`](../PiaAGI.md#61-advanced-developmental-scaffolding-techniques-for-agi-cultivation)).
     *   Define prerequisite conditions or agent states for progressing to the next phase of a curriculum.
     *   Visualize developmental pathways and dependencies between scaffolding prompts.
 *   **Prompt Version Control:**
@@ -80,12 +80,12 @@ The PiaAGI Prompt Engineering Suite (PiaPES) is a toolkit designed to assist res
 
 ## 5. Potential Integration Points with the PiaAGI Framework
 
-*   **PiaAGI Cognitive Architecture (Section 4 of `PiaAGI.md`):** PiaPES is the primary tool for *configuring* the initial state and parameters of the cognitive modules that make up a PiaAGI agent, as described in prompts (e.g., setting Personality traits in the Self-Model, biasing the Motivational System, tuning the Emotion Module).
+*   **PiaAGI Cognitive Architecture ([Section 4 of `PiaAGI.md`](../PiaAGI.md#4-the-piaagi-cognitive-architecture)):** PiaPES is the primary tool for *configuring* the initial state and parameters of the cognitive modules that make up a PiaAGI agent, as described in prompts (e.g., setting Personality traits in the Self-Model, biasing the Motivational System, tuning the Emotion Module).
 *   **PiaAGI Simulation Environment (PiaSE):** Prompts designed and managed in PiaPES will be deployed to PiaSE to initialize and guide PiaAGI agents within simulated environments. PiaPES will trigger experiments in PiaSE.
 *   **Cognitive Module Library (PiaCML):** PiaPES will need to be aware of the configurable parameters and interfaces of modules available in PiaCML to provide accurate auto-completion, validation, and configuration options in the prompt editor.
 *   **Agent Analysis & Visualization Toolkit (PiaAVT):** PiaPES will integrate with PiaAVT to retrieve and display results of experiments run with specific prompts, helping users evaluate prompt effectiveness and iterate on designs. For example, comparing the learning trajectories (from PiaAVT) of an agent under two different developmental scaffolding curricula designed in PiaPES.
-*   **Methodology for Prompting and Scaffolding (Section 6 of `PiaAGI.md`):** PiaPES aims to be the practical embodiment of the methodology described, providing the tools to implement architectural awareness, developmental sensitivity, holistic configuration, and iterative refinement.
-*   **PiaAGI Examples (Section 7 of `PiaAGI.md`):** The complex AGI-centric examples would be created, managed, and potentially executed via PiaPES.
+*   **Methodology for Prompting and Scaffolding ([Section 6 of `PiaAGI.md`](../PiaAGI.md#6-methodology-constructing-piaagi-guiding-prompts-and-developmental-scaffolding-for-agi)):** PiaPES aims to be the practical embodiment of the methodology described, providing the tools to implement architectural awareness, developmental sensitivity, holistic configuration, and iterative refinement.
+*   **PiaAGI Examples ([Section 7 of `PiaAGI.md`](../PiaAGI.md#7-examples-and-use-cases-from-personalized-agents-to-agi-development)):** The complex AGI-centric examples would be created, managed, and potentially executed via PiaPES.
 
 PiaPES will serve as a crucial enabler for the structured, systematic, and reproducible guidance of PiaAGI agents, moving beyond manual prompt crafting to a more engineered approach suitable for complex AGI development and research.
 
@@ -107,7 +107,7 @@ Standard yet essential features form the baseline of the editor:
     *   Autocompletion for PiaCML-defined module names (e.g., `PersonalityConfig`, `MotivationalBias`, `LearningRateAdapter`).
     *   Parameter suggestions within module configurations, derived from PiaCML definitions (e.g., suggesting `Openness`, `Conscientiousness` within `PersonalityConfig`).
 *   **Real-time Validation:**
-    *   Live schema validation against definitions in `PiaAGI.md` (specifically Sections 5: Prompt Structure, 6: Cognitive Modules, and Appendices for PiaCML).
+    *   Live schema validation against definitions in `PiaAGI.md` (specifically [Sections 5: Prompt Structure](../PiaAGI.md#5-the-piaagi-prompting-framework-for-agent-interaction-and-development), [6: Cognitive Modules](../PiaAGI.md#6-methodology-constructing-piaagi-guiding-prompts-and-developmental-scaffolding-for-agi), and Appendices for PiaCML).
     *   Error highlighting and tooltips for structural errors (e.g., misplaced R-U-E blocks), incorrect parameter names, invalid value types, or missing mandatory fields.
 *   **Code Folding:**
     *   Ability to collapse and expand major sections of the prompt, such as the entire Requirements, UserContext, or Executor blocks.

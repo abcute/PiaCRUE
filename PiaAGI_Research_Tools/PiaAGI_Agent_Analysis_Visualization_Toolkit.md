@@ -9,9 +9,9 @@ The PiaAGI Agent Analysis & Visualization Toolkit (PiaAVT) is designed to provid
 **Goals:**
 *   **Deepen Understanding of AGI Behavior:** Enable researchers to go beyond observing input-output behavior and gain insights into the internal workings of PiaAGI agents.
 *   **Evaluate Cognitive Module Performance:** Provide tools to assess the functioning and effectiveness of individual cognitive modules (from PiaCML) and their interactions within an agent.
-*   **Track Learning and Development:** Allow for the longitudinal analysis of agent learning, adaptation, and progression through developmental stages (Section 3.2.1 of `PiaAGI.md`).
+*   **Track Learning and Development:** Allow for the longitudinal analysis of agent learning, adaptation, and progression through developmental stages ([Section 3.2.1 of `PiaAGI.md`](../PiaAGI.md#321-stages-of-cognitive-development-and-architectural-maturation)).
 *   **Debug and Refine Agents:** Help developers identify bottlenecks, unintended behaviors, and areas for improvement in PiaAGI agent configurations.
-*   **Facilitate Explainable AI (XAI):** Support the generation of explanations for agent decisions and actions by visualizing internal reasoning paths and state changes (linking to Self-Model outputs, Section 4.1.10 of `PiaAGI.md`).
+*   **Facilitate Explainable AI (XAI):** Support the generation of explanations for agent decisions and actions by visualizing internal reasoning paths and state changes (linking to Self-Model outputs, [Section 4.1.10 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)).
 *   **Compare Agent Performance:** Enable quantitative and qualitative comparison of different PiaAGI agent versions or configurations under various conditions.
 *   **Support Scientific Communication:** Provide tools for generating visualizations and summary statistics suitable for research publications and presentations.
 
@@ -27,21 +27,21 @@ The PiaAGI Agent Analysis & Visualization Toolkit (PiaAVT) is designed to provid
     *   Tools for identifying behavioral patterns, anomalies, and emergent strategies.
     *   Statistical analysis of behavioral data.
 *   **Internal State Visualization:**
-    *   **Cognitive Architecture Graph:** Dynamic visualization of the active PiaAGI cognitive architecture (Section 4 of `PiaAGI.md`), showing active modules and information flow between them in real-time or during replay.
+    *   **Cognitive Architecture Graph:** Dynamic visualization of the active PiaAGI cognitive architecture ([Section 4 of `PiaAGI.md`](../PiaAGI.md#4-the-piaagi-cognitive-architecture)), showing active modules and information flow between them in real-time or during replay.
     *   **Memory Visualization:**
-        *   Tools to inspect contents of LTM (e.g., semantic network graphs for Semantic LTM, timelines for Episodic LTM, Section 4.1.3 of `PiaAGI.md`).
+        *   Tools to inspect contents of LTM (e.g., semantic network graphs for Semantic LTM, timelines for Episodic LTM, [Section 4.1.3 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)).
         *   Visualization of WM content and Central Executive focus over time.
-    *   **Motivational System Visualization:** Display current goal hierarchies, goal priorities, intrinsic/extrinsic motivation levels, and generation of intrinsic reward signals (Section 4.1.6 of `PiaAGI.md`).
-    *   **Emotional State Visualization:** Track and display the agent's emotional state (e.g., valence/arousal graphs, discrete emotion timelines, Section 4.1.7 of `PiaAGI.md`).
-    *   **World Model Visualization:** Tools to inspect the agent's internal World Model (Section 4.3 of `PiaAGI.md`), including its representation of the environment, objects, and other agents (e.g., differences between agent's model and ground truth from PiaSE).
-    *   **Self-Model Visualization:** Display key aspects of the Self-Model, such as confidence levels, self-assessed capabilities, and active ethical principles (Section 4.1.10 of `PiaAGI.md`).
-    *   **ToM Visualization:** Show inferred mental states of other agents (Section 4.1.11 of `PiaAGI.md`).
+    *   **Motivational System Visualization:** Display current goal hierarchies, goal priorities, intrinsic/extrinsic motivation levels, and generation of intrinsic reward signals ([Section 4.1.6 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)).
+    *   **Emotional State Visualization:** Track and display the agent's emotional state (e.g., valence/arousal graphs, discrete emotion timelines, [Section 4.1.7 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)).
+    *   **World Model Visualization:** Tools to inspect the agent's internal World Model ([Section 4.3 of `PiaAGI.md`](../PiaAGI.md#43-perception-and-world-modeling-conceptual)), including its representation of the environment, objects, and other agents (e.g., differences between agent's model and ground truth from PiaSE).
+    *   **Self-Model Visualization:** Display key aspects of the Self-Model, such as confidence levels, self-assessed capabilities, and active ethical principles ([Section 4.1.10 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)).
+    *   **ToM Visualization:** Show inferred mental states of other agents ([Section 4.1.11 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)).
 *   **Learning Trajectory Analysis:**
     *   Plot learning curves for various skills and knowledge domains.
     *   Analyze changes in module parameters or LTM content over time.
     *   Tools for identifying learning plateaus, catastrophic forgetting events, or successful transfer learning.
 *   **Developmental Stage Assessment:**
-    *   Metrics and visualizations to help assess an agent's current developmental stage based on its manifested capabilities (linking to Section 3.2.1 of `PiaAGI.md`).
+    *   Metrics and visualizations to help assess an agent's current developmental stage based on its manifested capabilities (linking to [Section 3.2.1 of `PiaAGI.md`](../PiaAGI.md#321-stages-of-cognitive-development-and-architectural-maturation)).
     *   Comparison of agent behavior against expected milestones for each stage.
 *   **Query and Filtering Interface:**
     *   Allow users to query logged data for specific events, states, or patterns.
@@ -93,8 +93,8 @@ The PiaAGI Agent Analysis & Visualization Toolkit (PiaAVT) is designed to provid
 *   **Cognitive Module Library (PiaCML):** PiaAVT will analyze logs generated directly by PiaCML modules, providing insights into their internal states, processing dynamics, and learning progress. For example, visualizing the changing structure of a Semantic LTM graph or the activation patterns in a WM module.
 *   **PiaAGI Agents:** PiaAVT helps visualize and understand the holistic behavior emerging from the interaction of modules within a complete PiaAGI agent.
 *   **PiaAGI Prompt Engineering Suite (PiaPES):** PiaAVT can help evaluate the effectiveness of prompts and developmental scaffolding designed with PiaPES by analyzing the resulting agent behavior and developmental trajectories. For instance, comparing learning curves of agents trained with different scaffolding strategies.
-*   **Developmental Stages (Section 3.2.1 of `PiaAGI.md`):** PiaAVT will provide tools to track an agent's progress against the defined developmental stages, visualizing the acquisition of milestone capabilities.
-*   **Ethical Framework Analysis:** PiaAVT can be used to trace how ethical principles within the Self-Model (4.1.10) influence decision-making in the Planning Module (4.1.8), particularly when analyzing logs from ethical dilemma scenarios.
+*   **Developmental Stages ([Section 3.2.1 of `PiaAGI.md`](../PiaAGI.md#321-stages-of-cognitive-development-and-architectural-maturation)):** PiaAVT will provide tools to track an agent's progress against the defined developmental stages, visualizing the acquisition of milestone capabilities.
+*   **Ethical Framework Analysis:** PiaAVT can be used to trace how ethical principles within the Self-Model ([Section 4.1.10 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)) influence decision-making in the Planning Module ([Section 4.1.8 of `PiaAGI.md`](../PiaAGI.md#41-core-modules-and-their-interactions)), particularly when analyzing logs from ethical dilemma scenarios.
 
 PiaAVT will be indispensable for making the complex internal dynamics of PiaAGI agents transparent, understandable, and amenable to scientific inquiry and iterative improvement.
 
