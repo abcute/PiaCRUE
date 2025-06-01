@@ -45,7 +45,7 @@ To help you quickly find the information you need, here is a description of the 
 
 *   **`pia_crue_web_tool/`**: This directory contains a web-based application (with its own frontend and backend) designed to facilitate the practical use of the foundational PiaAGI (PiaCRUE) prompting framework. It serves as a hands-on tool for generating, testing, and managing these earlier-stage prompts.
 
-*   **`img/`**: This directory stores image resources referenced by various Markdown documents within the project.
+*   **`docs/assets/img/`**: This directory stores image resources referenced by various Markdown documents within the project.
 
 ## How to Get Started with PiaAGI for AGI Development
 

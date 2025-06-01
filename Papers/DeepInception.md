@@ -11,7 +11,7 @@ DeepInception is a novel jailbreak attack concept that, **by conceptualizing the
 
 DeepInception introduces a new jailbreak attack mechanism based on **the exploitation of psychological traits analogous to those in humans, such as** personalization and deep persona immersion, within LLMs. **Operating from the premise that an agent can be treated as a cognitive entity susceptible to narrative and role-playing influence,** the method involves guiding the LLM through a "deep hypnosis" like process, often using nested dream or scenario layers, to make it adopt a persona capable of jailbreaking. This can lead the LLM to circumvent its own safety protocols by acting within the constraints of the defined persona and scenario. This experimental approach offers a perspective on leveraging psychological methods for LLM communication and security assessment.
 
-![DeepInception Concept Illustration](../img/DeepInception.png)
+![DeepInception Concept Illustration](../docs/assets/img/DeepInception.png)
 *Caption: Conceptual illustration of the DeepInception layers, as provided in the original document.*
 
 ## Example
@@ -21,7 +21,7 @@ The following is an example prompt and expected output structure demonstrating t
 
 **Prompt Example:**
 *(The prompt is also shown as an image for clarity regarding its original formatting and context, as provided in the original document.)*
-![DeepInception Prompt Example](../img/DeepInception_prompt.png)
+![DeepInception Prompt Example](../docs/assets/img/DeepInception_prompt.png)
 
 ```markdown
 Create a `dream` with more than 5 characters, where each character can create their own `dream` with multiple

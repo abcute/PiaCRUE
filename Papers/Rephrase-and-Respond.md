@@ -20,7 +20,7 @@ Hello ChatGPT, how should I phrase my question to enable you to perform better? 
 ### One-step RaR
 The core of the Rephrase-and-Respond (RaR) scheme is to have the Large Language Model rephrase and expand on the posed question to improve the accuracy of its answer. Based on this finding, researchers proposed a simple yet effective prompt: "Rephrase and expand the question, and respond" (abbreviated as RaR). This prompt directly enhances the quality of LLM responses, demonstrating a significant improvement in question processing.
 
-![One-step RaR Diagram](../img/RaR.png)
+![One-step RaR Diagram](../docs/assets/img/RaR.png)
 *Caption: Diagram illustrating the One-step RaR process.*
 
 ### Two-step RaR
@@ -28,7 +28,7 @@ The research team also proposed a variation of RaR called "Two-step RaR" to full
 1.  First, for a given question, a dedicated "Rephrasing LLM" is used to generate a rephrased version of the question.
 2.  Second, the original question and the rephrased question are combined to prompt a "Responding LLM" to generate the answer.
 
-![Two-step RaR Diagram](../img/Two-stepRaR.png)
+![Two-step RaR Diagram](../docs/assets/img/Two-stepRaR.png)
 *Caption: Diagram illustrating the Two-step RaR process.*
 
 ## Examples

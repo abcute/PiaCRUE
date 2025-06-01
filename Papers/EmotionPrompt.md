@@ -23,7 +23,7 @@ Research has found that emotional stimuli via "EmotionPrompt" can enhance the tr
 
 Beyond psychology, research into the emotional aspects of LLMs can also draw inspiration from other social sciences, such as sociology and media studies. Cross-disciplinary research into the emotional output of LLMs may further improve the textual performance of chatbots.
 
-![EmotionPrompt Concept Illustration](../img/EmotionPrompt.png)
+![EmotionPrompt Concept Illustration](../docs/assets/img/EmotionPrompt.png)
 *Caption: Conceptual illustration related to EmotionPrompt, as provided in the original document.*
 
 ## Examples
