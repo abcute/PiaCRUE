@@ -1,3 +1,4 @@
+- [x] Reorganize root `img/` directory: Moved all images to `docs/assets/img/` and updated all markdown references. Removed root `img/` directory. (Task completed on 2024-07-29)
 - [x] Re-evaluate `conceptual_simulations` directory: Moved contents (`diagram_descriptions.md` to `docs/assets/`, `PiaAGI_Behavior_Example.py` to `Examples/`) and removed the directory as it's not a standalone tool following PiaXYZ naming. (Task completed on 2024-07-29)
 # PiaAGI Project Upgrade ToDo List
 - [x] Create a new file named `PiaAGI.md` in the root of the repository. (Placeholder, original task)
