@@ -32,6 +32,9 @@ This directory contains a collection of theoretical research papers, summaries o
 *   **[EmotionPrompt.md](EmotionPrompt.md):**
     *   Discusses the "EmotionPrompt" concept, investigating how incorporating emotional stimuli into prompts can influence the performance (e.g., truthfulness, informativeness) of Large Language Models.
 
+*   **[Human_Inspired_Agent_Blueprint.md](Human_Inspired_Agent_Blueprint.md):** (PiaAGI Foundational Concept)
+    *   Provides a mind map-like overview of multidisciplinary inspirations (biology, cognitive science, anthropology, sociology, psychology) for constructing various facets of human-like agents.
+
 *   **[PiaC.md](PiaC.md):**
     *   Outlines "PiaC" (Personalizing Intelligent Agent Customization), an early conceptual exploration within the PiaAGI project. It proposes methodologies for customizing Large Language Models (LLMs) into domain-specific Personalized Intelligent Agents (Pia) by applying principles from psychology (Cognitive Behavioral Therapy, Social Cognitive Theory, Behaviorism) and structured communication. Key ideas from this document have been expanded and integrated into the main `PiaAGI.md`.
 
