@@ -32,6 +32,8 @@ These examples illustrate core PiaAGI prompting techniques or are original examp
 *   **[`PiaCRUE_mini.md`](./Foundational_And_Refactored/PiaCRUE_mini.md)**: A very basic R-U-E prompt structure, serving as a simple illustration. (Refer to `PiaAGI.md` Appendix A for more complete foundational R-U-E examples).
 *   **[`Hybrid_Agent_Concept_Intro.md`](./Foundational_And_Refactored/Hybrid_Agent_Concept_Intro.md)**: Illustrates the five core characteristics of a PiaAGI Hybrid Agent in a simple, conceptual manner.
 *   **[`RaR_Communication_Principle_Demo.md`](./Foundational_And_Refactored/RaR_Communication_Principle_Demo.md)**: Demonstrates the application of the Reasoning and Reassurance (RaR) communication principle in an agent's response.
+*   **[`CoT_Prompting_PiaAGI_Style.md`](./Foundational_And_Refactored/CoT_Prompting_PiaAGI_Style.md)**: Demonstrates Chain-of-Thought prompting to enhance reasoning transparency, framed with PiaAGI principles.
+*   **[`Rephrase_And_Respond_Demo.md`](./Foundational_And_Refactored/Rephrase_And_Respond_Demo.md)**: Illustrates the 'One-step Rephrase-and-Respond' technique for improved query comprehension before answering.
 
 ### 2. Cognitive Module Configuration
 
