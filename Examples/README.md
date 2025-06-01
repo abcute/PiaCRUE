@@ -26,14 +26,14 @@ This directory is structured into categories to help you find relevant examples.
 
 These examples illustrate core PiaAGI prompting techniques or are original examples refactored to align with the AGI framework.
 
-*   **[`RoleDevelopment.md`](./Foundational_And_Refactored/RoleDevelopment.md)**: Demonstrates initializing an agent's Self-Model and role understanding, a foundational step in cognitive configuration.
-*   **[`CBT-AutoTraining.md`](./Foundational_And_Refactored/CBT-AutoTraining.md)**: Illustrates a simulated Cognitive Behavioral Training loop for agent skill refinement, engaging the Self-Model and Learning Modules.
-*   **[`EmotionPrompt_Demo.md`](./Foundational_And_Refactored/EmotionPrompt_Demo.md)**: Shows how emotional cues in user prompts can influence agent processing via its Emotion Module and other cognitive functions.
-*   **[`PiaCRUE_mini.md`](./Foundational_And_Refactored/PiaCRUE_mini.md)**: A very basic R-U-E prompt structure, serving as a simple illustration. (Refer to `PiaAGI.md` Appendix A for more complete foundational R-U-E examples).
-*   **[`Hybrid_Agent_Concept_Intro.md`](./Foundational_And_Refactored/Hybrid_Agent_Concept_Intro.md)**: Illustrates the five core characteristics of a PiaAGI Hybrid Agent in a simple, conceptual manner.
-*   **[`RaR_Communication_Principle_Demo.md`](./Foundational_And_Refactored/RaR_Communication_Principle_Demo.md)**: Demonstrates the application of the Reasoning and Reassurance (RaR) communication principle in an agent's response.
-*   **[`CoT_Prompting_PiaAGI_Style.md`](./Foundational_And_Refactored/CoT_Prompting_PiaAGI_Style.md)**: Demonstrates Chain-of-Thought prompting to enhance reasoning transparency, framed with PiaAGI principles.
-*   **[`Rephrase_And_Respond_Demo.md`](./Foundational_And_Refactored/Rephrase_And_Respond_Demo.md)**: Illustrates the 'One-step Rephrase-and-Respond' technique for improved query comprehension before answering.
+*   **[`RoleDevelopment.md`](./Foundational_Examples/RoleDevelopment.md)**: Demonstrates initializing an agent's Self-Model and role understanding, a foundational step in cognitive configuration.
+*   **[`CBT-AutoTraining.md`](./Foundational_Examples/CBT-AutoTraining.md)**: Illustrates a simulated Cognitive Behavioral Training loop for agent skill refinement, engaging the Self-Model and Learning Modules.
+*   **[`EmotionPrompt_Demo.md`](./Foundational_Examples/EmotionPrompt_Demo.md)**: Shows how emotional cues in user prompts can influence agent processing via its Emotion Module and other cognitive functions.
+*   **[`PiaCRUE_mini.md`](./Foundational_Examples/PiaCRUE_mini.md)**: A very basic R-U-E prompt structure, serving as a simple illustration. (Refer to `PiaAGI.md` Appendix A for more complete foundational R-U-E examples).
+*   **[`Hybrid_Agent_Concept_Intro.md`](./Foundational_Examples/Hybrid_Agent_Concept_Intro.md)**: Illustrates the five core characteristics of a PiaAGI Hybrid Agent in a simple, conceptual manner.
+*   **[`RaR_Communication_Principle_Demo.md`](./Foundational_Examples/RaR_Communication_Principle_Demo.md)**: Demonstrates the application of the Reasoning and Reassurance (RaR) communication principle in an agent's response.
+*   **[`CoT_Prompting_PiaAGI_Style.md`](./Foundational_Examples/CoT_Prompting_PiaAGI_Style.md)**: Demonstrates Chain-of-Thought prompting to enhance reasoning transparency, framed with PiaAGI principles.
+*   **[`Rephrase_And_Respond_Demo.md`](./Foundational_Examples/Rephrase_And_Respond_Demo.md)**: Illustrates the 'One-step Rephrase-and-Respond' technique for improved query comprehension before answering.
 
 ### 2. Cognitive Module Configuration
 
