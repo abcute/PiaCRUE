@@ -85,3 +85,25 @@
 - [ ] Review all core PiaAGI documents (especially `PiaAGI.md`, `README.md`, `PROJECT_GUIDE.md`, and relevant conceptual papers) to ensure the foundational viewpoint of "treating the agent as a developing, human-like cognitive entity" is consistently and clearly articulated where appropriate, particularly when discussing psychological analogies, agent development, and role cognition.
 - [ ] Further explore the implications of Chain-of-Thought (CoT) prompting, as discussed in `Papers/Chain_of_Thought_Alignment.md`, for PiaAGI's cognitive architecture (e.g., Planning, Self-Model) and developmental scaffolding strategies, reinforcing the "agent as human-like thinker" interaction paradigm.
 - [ ] Expand upon the concepts outlined in `Papers/Human_Inspired_Agent_Blueprint.md` by conducting further research into each multidisciplinary area, identifying specific theories, models, and empirical findings that can concretely inform the design and development of PiaAGI's cognitive modules and overall architecture.
+
+## Examples Directory Enhancement (Post-Refactor)
+- [ ] **Cognitive Configuration Examples:**
+    - [ ] Develop an example for `Configuring_Emotion_Module.md` showing how to set baseline emotional states, reactivity, and empathy levels.
+    - [ ] Create an example for `Configuring_Learning_Module.md` demonstrating how to set primary learning modes, rate adaptation, and ethical heuristic update rules.
+    - [ ] Add an example illustrating the configuration of the `Attention_Module.md`, showing how to set biases for top-down vs. bottom-up attention.
+- [ ] **Developmental Scaffolding Examples:**
+    - [ ] Create a more advanced ToM scaffolding example for a PiaSapling agent, focusing on understanding false beliefs or intentions (e.g., `Scaffolding_Intermediate_ToM.md`).
+    - [ ] Develop a scaffolding example for `Cultivating_Intrinsic_Motivation.md`, showing how to design scenarios that encourage curiosity or competence in an agent.
+    - [ ] Design an example for `Scaffolding_Ethical_Reasoning_Intro.md`, presenting simple ethical dilemmas for a PiaSapling agent.
+- [ ] **Tool Use and Creation Examples:**
+    - [ ] Create an example `Adapting_Conceptual_Tools.md` where an agent modifies a known conceptual tool for a new but related task.
+    - [ ] Conceptualize an example for `Agent_Requesting_New_Tool.md` where an agent identifies a capability gap and requests or describes a new tool it needs.
+    - [ ] (Advanced) Design an example for `Agent_Designing_Simple_Tool.md` where a PiaArbor agent outlines the design for a new simple conceptual or software tool.
+- [ ] **PiaPES Usage Examples:**
+    - [ ] Provide a more concrete example of using `prompt_engine_mvp.py` to generate one of the refactored cognitive configuration prompts, including Python code and the resulting prompt string.
+    - [ ] Illustrate how PiaPES could be used to define and manage a simple `DevelopmentalCurriculum` object.
+- [ ] **Cross-Stage Examples:**
+    - [ ] Develop a set of related examples showing how a prompt for a specific task (e.g., "summarize this text") would differ in complexity and cognitive configuration for a PiaSeedling, PiaSapling, and PiaArbor agent.
+- [ ] **Internalizing Developer Tool Principles (PiaAGI.md Section 4.5):**
+    - [ ] Create a conceptual example: `Self_Monitoring_with_PiaAVT_Principles.md` illustrating how an advanced agent might internally track its performance or cognitive biases.
+    - [ ] Design a conceptual example: `Internal_Experimentation_with_PiaSE_Principles.md` showing how an agent might use its World Model for internal "what-if" scenario testing.
