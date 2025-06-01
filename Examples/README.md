@@ -1,34 +1,65 @@
 # PiaAGI Framework: AGI-Focused Examples
 
-Welcome to the PiaAGI Examples directory! This section provides practical illustrations and templates to help you understand and apply the **PiaAGI AGI Research Framework**. While the main [`PiaAGI.md`](../PiaAGI.md) document contains core AGI-specific examples (Section 7) and foundational R-U-E prompting examples (Appendix A), this directory offers supplementary materials.
+Welcome to the PiaAGI Examples directory! This section provides practical illustrations, detailed deep-dives, and templates to help you understand and apply the **PiaAGI AGI Research Framework**. The primary goal of these examples is to showcase how to conceptually structure "Guiding Prompts" to configure, guide, and develop PiaAGI agents with an emphasis on their psycho-cognitive architecture.
+
+While the main [`PiaAGI.md`](../PiaAGI.md) document contains the core theoretical framework, AGI-specific use case examples (Section 7), and foundational R-U-E prompting examples (Appendix A), this directory offers supplementary and more granular materials.
 
 The examples here aim to provide:
 
-*   **Detailed Deep-Dives:** Focused explorations into configuring specific aspects of the PiaAGI psycho-cognitive architecture (e.g., Self-Model, Motivational System, Personality) as outlined in `PiaAGI.md` (Section 4).
-*   **Practical Templates:** Starting points for users wishing to experiment with "Guiding Prompts" to shape an agent's cognitive setup.
-*   **Illustrations of Core Principles:** Concrete examples of applying PiaAGI concepts like introductory developmental scaffolding or initiating tool understanding.
-*   **Conceptual Use of PiaPES:** Insights into how the PiaAGI Prompt Engineering Suite (PiaPES) (see [`PiaAGI_Research_Tools/PiaPES/`](../PiaAGI_Research_Tools/PiaPES/)) can be used to construct and manage these advanced prompts.
+*   **Detailed Deep-Dives:** Focused explorations into configuring specific aspects of the PiaAGI psycho-cognitive architecture (e.g., Self-Model, Motivational System, Personality, Emotion Module) as outlined in `PiaAGI.md` (Section 4).
+*   **Practical Templates:** Starting points for users wishing to experiment with "Guiding Prompts" to shape an agent's cognitive setup and developmental trajectory.
+*   **Illustrations of Core Principles:** Concrete examples of applying PiaAGI concepts like developmental scaffolding for various cognitive functions (e.g., ethical reasoning, Theory of Mind) or initiating tool understanding.
+*   **PiaPES Usage Examples:** Insights and practical demonstrations of how the PiaAGI Prompt Engineering Suite (PiaPES) (see [`PiaAGI_Research_Tools/PiaPES/`](../PiaAGI_Research_Tools/PiaPES/)) can be used to programmatically construct, manage, and serialize these advanced prompts.
 
 ## How to Use These Examples
 
-*   **Contextual Learning:** Always refer to the main [`PiaAGI.md`](../PiaAGI.md) document to understand the theoretical underpinnings of the concepts demonstrated in these examples. Pay close attention to Sections 3 (Core Psychological Principles), 4 (Cognitive Architecture), 5 (Prompting Framework), and 6 (Methodology).
-*   **Experimentation:** Adapt and test these examples in environments that can interpret PiaAGI's structured prompts. Observe how changes in prompt structure and content influence the conceptualized agent's behavior and internal states.
+*   **Contextual Learning:** Crucially, always refer to the main [`PiaAGI.md`](../PiaAGI.md) document to understand the theoretical underpinnings of the concepts demonstrated. Pay close attention to Sections 3 (Core Psychological Principles), 4 (Cognitive Architecture), 5 (Prompting Framework), and 6 (Methodology). These examples are applications of that core theory.
+*   **Experimentation:** Adapt and test these examples in environments that can interpret PiaAGI's structured prompts. Observe how changes in prompt structure and content conceptually influence an agent's behavior and internal states.
 *   **Building Blocks:** Use these examples as inspiration or foundational templates for developing your own sophisticated Guiding Prompts and Developmental Scaffolding curricula for PiaAGI agents.
+*   **GitHub Rendering Note:** Some examples utilize YAML-like frontmatter for metadata. If you encounter rendering issues on GitHub, please ensure your local viewer or environment correctly parses Markdown with frontmatter. The core content of the examples remains valid Markdown.
 
-## Example Categories
+## Example Categories and Files
 
-This directory will be structured to include examples in categories such as:
+This directory is structured into categories to help you find relevant examples.
 
-1.  **Cognitive Module Configuration:**
-    *   Detailed prompts for setting up and tuning specific cognitive modules (e.g., `Configuring_Motivational_System.md`, `Setting_Personality_Profile.md`).
-2.  **Introductory Developmental Scaffolding:**
-    *   Examples of Guiding Prompts that initiate early-stage developmental processes (e.g., `Scaffolding_Basic_ToM.md` for Theory of Mind development).
-3.  **Initiating Tool Use and Understanding:**
-    *   Prompts designed to introduce conceptual tools to an agent and guide its initial interactions with them (e.g., `Introducing_Conceptual_Tools.md`).
-4.  **PiaPES Usage (Conceptual):**
-    *   Illustrations of how the PiaPES prompt engine could be used to programmatically build and manage complex PiaAGI prompts (e.g., `Building_A_Role_Prompt_With_PiaPES.md`).
+### 1. Foundational Concepts & Refactored Examples
 
-*(This list will be expanded as more examples are developed.)*
+These examples illustrate core PiaAGI prompting techniques or are original examples refactored to align with the AGI framework.
+
+*   **[`RoleDevelopment.md`](./RoleDevelopment.md)**: Demonstrates initializing an agent's Self-Model and role understanding, a foundational step in cognitive configuration.
+*   **[`CBT-AutoTraining.md`](./CBT-AutoTraining.md)**: Illustrates a simulated Cognitive Behavioral Training loop for agent skill refinement, engaging the Self-Model and Learning Modules.
+*   **[`EmotionPrompt_Demo.md`](./EmotionPrompt_Demo.md)**: Shows how emotional cues in user prompts can influence agent processing via its Emotion Module and other cognitive functions.
+*   **[`PiaCRUE_mini.md`](./PiaCRUE_mini.md)**: A very basic R-U-E prompt structure, serving as a simple illustration. (Refer to `PiaAGI.md` Appendix A for more complete foundational R-U-E examples).
+
+### 2. Cognitive Module Configuration
+
+Detailed prompts for setting up and tuning specific cognitive modules of a PiaAGI agent.
+
+*   **[`Cognitive_Configuration/Configuring_Motivational_System.md`](./Cognitive_Configuration/Configuring_Motivational_System.md)**: Focuses on setting up intrinsic and extrinsic goals within the Motivational System.
+*   **[`Cognitive_Configuration/Setting_Personality_Profile.md`](./Cognitive_Configuration/Setting_Personality_Profile.md)**: Demonstrates defining an agent's Big Five (OCEAN) personality traits.
+*   **[`Cognitive_Configuration/Configuring_Emotion_Module.md`](./Cognitive_Configuration/Configuring_Emotion_Module.md)**: Shows how to tune baseline emotional states, reactivity, and empathy levels in the Emotion Module.
+
+### 3. Developmental Scaffolding
+
+Examples of Guiding Prompts that initiate and guide an agent's learning and development for specific capabilities.
+
+*   **[`Developmental_Scaffolding/Scaffolding_Basic_ToM.md`](./Developmental_Scaffolding/Scaffolding_Basic_ToM.md)**: An introductory exercise for developing basic Theory of Mind (emotion recognition) in an early-stage agent.
+*   **[`Developmental_Scaffolding/Scaffolding_Ethical_Reasoning_Intro.md`](./Developmental_Scaffolding/Scaffolding_Ethical_Reasoning_Intro.md)**: Guides a PiaSapling agent through analyzing a simple ethical dilemma to build its ethical reasoning capacity.
+
+### 4. Tool Use and Understanding
+
+Prompts designed to introduce tools (conceptual or otherwise) to an agent and guide its initial interactions.
+
+*   **[`Tool_Use/Introducing_Conceptual_Tools.md`](./Tool_Use/Introducing_Conceptual_Tools.md)**: Teaches an agent to understand and apply a simple conceptual tool (e.g., the "5 Whys" checklist).
+
+### 5. PiaPES Usage
+
+Examples related to the PiaAGI Prompt Engineering Suite (PiaPES).
+
+*   **[`PiaPES_Usage/Building_A_Role_Prompt_With_PiaPES.md`](./PiaPES_Usage/Building_A_Role_Prompt_With_PiaPES.md)**: Conceptually illustrates how the PiaPES Python engine could be used to programmatically construct a complex role definition prompt.
+*   **[`PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md`](./PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md)**: Provides a more concrete Python script using `prompt_engine_mvp.py` to generate and serialize a Guiding Prompt.
+
+*(This list will be expanded as more examples are developed, guided by the `ToDoList.md` in the project root.)*
 
 ## A Note on PiaCRUE
 
