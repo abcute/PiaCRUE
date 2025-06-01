@@ -66,6 +66,9 @@
 - [x] CML: Define Interface for `PlanningAndDecisionMakingModule` in `PiaAGI_Research_Tools/cognitive_module_library/planning_and_decision_making_module.py` (Ref PiaAGI.md Sections 4.1.8, 4.4). (Path updated)
 - [x] CML: Define Interface for `SelfModelModule` in `PiaAGI_Research_Tools/cognitive_module_library/self_model_module.py` (Ref PiaAGI.md Section 4.1.10). (Path updated)
 
+## PiaAGI理论框架构建
+- [ ] 参考 `Papers/AGI_Interdisciplinary_Memorandum.md` 中的多学科交叉备忘录，以获取PiaAGI理论框架升级的灵感。
+
 ## Research Tools - Conceptual Next Steps
 
 ### PiaCML (Cognitive Module Library)
@@ -128,3 +131,5 @@
 - [ ] Example: Examples/Tool_Use/Agent_Designing_Simple_Tool.md (PiaArbor designs tool - conceptual).
 - [ ] Example: Examples/Internal_Metacognition/Self_Monitoring_PiaAVT_Principles.md (conceptual).
 - [ ] Example: Examples/Internal_Metacognition/Internal_Experimentation_PiaSE_Principles.md (conceptual).
+
+[end of ToDoList.md]
