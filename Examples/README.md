@@ -72,3 +72,7 @@ The PiaAGI framework is an evolution of the earlier PiaCRUE methodology. While P
 ---
 
 We encourage community contributions to expand this collection of AGI-focused examples, helping to advance the collective understanding and application of the PiaAGI framework. Please refer to the main project [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+
+## Conceptual Examples
+
+-   **`PiaAGI_Behavior_Example.py`**: A conceptual Python script illustrating simplified interactions between core PiaAGI cognitive modules. Useful for thought experiments and understanding architectural ideas.
