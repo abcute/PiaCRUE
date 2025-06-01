@@ -75,9 +75,12 @@
 - [x] CML: Implement foundational interfaces/ABCs for PlanningAndDecisionMakingModule. (Base class/interface defined)
 - [x] CML: Implement foundational interfaces/ABCs for SelfModelModule. (Base class/interface defined)
 - [x] Developed conceptual design for an integration example of combined CML modules (Simple_Command_Response_Cycle.md).
-- [ ] Review and refine conceptual integration example (Examples/Conceptual_Integrations/Simple_Command_Response_Cycle.md).
+- [x] Reviewed conceptual integration example (Examples/Conceptual_Integrations/Simple_Command_Response_Cycle.md); deemed adequate for current conceptual purpose.
 - [ ] Conceptually detail enhancements for 1-2 Concrete CML Modules (e.g., ConcreteLTM retrieval strategies, ConcreteMotivationalSystem intrinsic goal triggering).
-- [ ] Define BaseWorldModel interface and ConcreteWorldModel structure, detailing components and interaction patterns with other CML modules.
+- [x] Defined BaseWorldModel interface (base_world_model.py) and ConcreteWorldModel structure (concrete_world_model.py) with conceptual data stores and method implementations.
+- [ ] Refine `ConcreteWorldModel` data structures for key components (Object/Entity Repository, Spatial, Temporal, Social, Physics, Self-State).
+- [ ] Develop more detailed conceptual algorithms for `ConcreteWorldModel` methods (e.g., `predict_future_state`, `check_consistency`).
+- [ ] Implement basic unit tests for `ConcreteWorldModel` methods based on its conceptual data structures.
 
 ### PiaSE (PiaAGI Simulation Environment)
 - [ ] Detail the core simulation loop (time steps, agent perception/action phases, environment updates).
@@ -86,9 +89,10 @@
 - [ ] Specify how a simple scenario would be defined and loaded in this TextBasedRoom.
 
 ### PiaAVT (PiaAGI Analysis & Visualization Toolkit)
-- [ ] Define a standardized logging format/schema (e.g., JSON lines) for CML modules and PiaSE to output.
+- [x] Defined standardized logging format/schema (JSONL) and created `PiaAGI_Research_Tools/PiaAVT/Logging_Specification.md`.
 - [ ] Conceptually outline 2-3 basic analyses for early PiaAGI experiments (e.g., emotional valence over time, goal status changes).
 - [ ] Sketch a simple visualization or textual summary for one basic analysis.
+- [ ] Design and implement a prototype Python logger in PiaCML/PiaSE that adheres to Logging_Specification.md.
 
 ### PiaPES (PiaAGI Prompt Engineering Suite)
 - [ ] Ensure prompt_engine_mvp.py classes can fully represent/serialize the detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
