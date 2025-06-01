@@ -95,7 +95,8 @@
 - [ ] Design and implement a prototype Python logger in PiaCML/PiaSE that adheres to Logging_Specification.md.
 
 ### PiaPES (PiaAGI Prompt Engineering Suite)
-- [ ] Ensure prompt_engine_mvp.py classes can fully represent/serialize the detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
+- [x] Ensured prompt_engine_mvp.py classes (with fixes and added unit tests) can represent/serialize detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
+- [ ] Manually update PiaAGI_Research_Tools/PiaPES/USAGE.md with examples of defining detailed cognitive configurations (conceptual outline provided).
 - [ ] Further conceptually detail the DevelopmentalCurriculumDesigner (PiaPES Section 2): structure, metadata, progression logic.
 - [ ] Further conceptually detail the PromptEvaluationModule (PiaPES Section 9): inputs, outputs, integration with PiaSE/PiaAVT.
 

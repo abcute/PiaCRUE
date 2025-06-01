@@ -433,6 +433,166 @@ def export_to_markdown(element: BaseElement, filepath: str):
 
 # --- End of Export to Markdown Function ---
 
+# --- Template Saving and Loading Functions ---
+
+class PiaAGIEncoder(json.JSONEncoder):
+    """Custom JSON encoder for PiaAGI elements."""
+    def default(self, obj):
+        if isinstance(obj, BaseElement):
+            # Create a dictionary that includes the type and all attributes
+            data = {'__type__': obj.__class__.__name__}
+            data.update(obj.__dict__)
+            return data
+        return super().default(obj)
+
+def pia_agi_object_hook(dct: Dict[str, Any]) -> Any:
+    """Custom object hook for deserializing PiaAGI elements."""
+    if '__type__' in dct:
+        class_name = dct.pop('__type__')
+        cls = globals().get(class_name)
+        if cls and issubclass(cls, BaseElement):
+            # Create instance without calling __init__ initially
+            instance = cls.__new__(cls)
+
+            # For each item in dct, if it's a dictionary that represents a nested custom object,
+            # recursively call this hook (or allow json.loads to do it).
+            # If it's a list of such dictionaries, process each one.
+            processed_dct = {}
+            for key, value in dct.items():
+                if isinstance(value, dict): # Potentially a nested object
+                    processed_dct[key] = pia_agi_object_hook(value)
+                elif isinstance(value, list): # Potentially a list of nested objects
+                    processed_dct[key] = [pia_agi_object_hook(item) if isinstance(item, dict) else item for item in value]
+                else:
+                    processed_dct[key] = value
+
+            instance.__dict__.update(processed_dct) # Populate attributes
+            return instance
+    return dct
+
+def save_template(element: BaseElement, filepath: str):
+    """
+    Saves a PiaAGI prompt element (or any BaseElement derivative) to a JSON file.
+    """
+    with open(filepath, 'w') as f:
+        json.dump(element, f, cls=PiaAGIEncoder, indent=4)
+
+def load_template(filepath: str) -> Optional[BaseElement]:
+    """
+    Loads a PiaAGI prompt element from a JSON file.
+    Returns the deserialized object, or None if an error occurs.
+    """
+    try:
+        with open(filepath, 'r') as f:
+            data = json.load(f, object_hook=pia_agi_object_hook)
+        if isinstance(data, BaseElement):
+            return data
+        # If the root object isn't a BaseElement (e.g. loading a simple dict),
+        # this indicates an issue or incorrect file.
+        # For this use case, we expect a BaseElement derivative.
+        print(f"Warning: Loaded data from {filepath} is not a PiaAGI BaseElement derivative. Type: {type(data)}")
+        return None
+    except FileNotFoundError:
+        print(f"Error: Template file not found at {filepath}")
+        return None
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from {filepath}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred while loading template from {filepath}: {e}")
+        return None
+
+# --- End of Template Saving and Loading Functions ---
+
+
+# --- Developmental Curriculum Classes ---
+
+class CurriculumStep(BaseElement):
+    """Represents a single step in a developmental curriculum."""
+    def __init__(self,
+                 name: str,
+                 order: int,
+                 prompt_reference: str, # Filepath to a PiaAGIPrompt template
+                 conditions: Optional[str] = None, # Descriptive conditions
+                 notes: Optional[str] = None):
+        self.name = name
+        self.order = order
+        self.prompt_reference = prompt_reference
+        self.conditions = conditions
+        self.notes = notes
+
+    def render(self, indent_level: int = 0) -> str:
+        indent = "    " * indent_level
+        output = f"{indent}### Step {self.order}: {self.name}\n"
+        output += f"{indent}- **Prompt Template:** {self.prompt_reference}\n"
+        if self.conditions:
+            output += f"{indent}- **Conditions:** {self.conditions}\n"
+        if self.notes:
+            output += f"{indent}- **Notes:** {self.notes}\n"
+        # Potentially load and render the referenced prompt if needed,
+        # but for now, keep it as a reference.
+        # Example:
+        # try:
+        #     referenced_prompt = load_template(self.prompt_reference)
+        #     if referenced_prompt:
+        #         output += f"{indent}    <details><summary>View Prompt Details</summary>\n"
+        #         output += referenced_prompt.render(indent_level + 2)
+        #         output += f"{indent}    </details>\n"
+        # except Exception as e:
+        #     output += f"{indent}    (Could not load/render prompt: {e})\n"
+        return output
+
+class DevelopmentalCurriculum(BaseElement):
+    """Represents a developmental curriculum composed of multiple steps."""
+    def __init__(self,
+                 name: str,
+                 description: str,
+                 target_developmental_stage: str,
+                 steps: Optional[List[CurriculumStep]] = None,
+                 version: Optional[str] = None,
+                 author: Optional[str] = None):
+        self.name = name
+        self.description = description
+        self.target_developmental_stage = target_developmental_stage
+        self.steps = steps if steps else []
+        self.version = version
+        self.author = author
+        self.sort_steps()
+
+    def add_step(self, step: CurriculumStep):
+        self.steps.append(step)
+        self.sort_steps()
+
+    def sort_steps(self):
+        self.steps.sort(key=lambda s: s.order)
+
+    def fill_placeholders(self, data: Dict[str, str]):
+        """Fills placeholders in the curriculum's attributes and its steps."""
+        super().fill_placeholders(data) # Fill placeholders for curriculum's own string attributes
+        for step in self.steps:
+            step.fill_placeholders(data) # Propagate to each step
+        return self
+
+    def render(self, indent_level: int = 0) -> str:
+        indent = "    " * indent_level
+        output = f"{indent}# Curriculum: {self.name}\n"
+        if self.author:
+            output += f"{indent}**Author:** {self.author}\n"
+        if self.version:
+            output += f"{indent}**Version:** {self.version}\n"
+        output += f"{indent}**Description:** {self.description}\n"
+        output += f"{indent}**Target Developmental Stage:** {self.target_developmental_stage}\n\n"
+
+        output += f"{indent}## Curriculum Steps\n"
+        if not self.steps:
+            output += f"{indent}No steps defined for this curriculum.\n"
+        else:
+            for step in self.steps:
+                output += step.render(indent_level + 1)
+        return output
+
+# --- End of Developmental Curriculum Classes ---
+
 if __name__ == '__main__':
     # Simple Usage Example
     
@@ -684,164 +844,3 @@ if __name__ == '__main__':
         print("Skipping Markdown export for curriculum as it was not loaded or is not a DevelopmentalCurriculum.")
 
 
-# --- Template Saving and Loading Functions ---
-
-class PiaAGIEncoder(json.JSONEncoder):
-    """Custom JSON encoder for PiaAGI elements."""
-    def default(self, obj):
-        if isinstance(obj, BaseElement):
-            # Create a dictionary that includes the type and all attributes
-            data = {'__type__': obj.__class__.__name__}
-            data.update(obj.__dict__)
-            return data
-        return super().default(obj)
-
-def pia_agi_object_hook(dct: Dict[str, Any]) -> Any:
-    """Custom object hook for deserializing PiaAGI elements."""
-    if '__type__' in dct:
-        class_name = dct.pop('__type__')
-        cls = globals().get(class_name)
-        if cls and issubclass(cls, BaseElement):
-            # Create instance without calling __init__ initially
-            instance = cls.__new__(cls)
-
-            # For each item in dct, if it's a dictionary that represents a nested custom object,
-            # recursively call this hook (or allow json.loads to do it).
-            # If it's a list of such dictionaries, process each one.
-            processed_dct = {}
-            for key, value in dct.items():
-                if isinstance(value, dict): # Potentially a nested object
-                    processed_dct[key] = pia_agi_object_hook(value)
-                elif isinstance(value, list): # Potentially a list of nested objects
-                    processed_dct[key] = [pia_agi_object_hook(item) if isinstance(item, dict) else item for item in value]
-                else:
-                    processed_dct[key] = value
-
-            instance.__dict__.update(processed_dct) # Populate attributes
-            return instance
-    return dct
-
-def save_template(element: BaseElement, filepath: str):
-    """
-    Saves a PiaAGI prompt element (or any BaseElement derivative) to a JSON file.
-    """
-    with open(filepath, 'w') as f:
-        json.dump(element, f, cls=PiaAGIEncoder, indent=4)
-
-def load_template(filepath: str) -> Optional[BaseElement]:
-    """
-    Loads a PiaAGI prompt element from a JSON file.
-    Returns the deserialized object, or None if an error occurs.
-    """
-    try:
-        with open(filepath, 'r') as f:
-            data = json.load(f, object_hook=pia_agi_object_hook)
-        if isinstance(data, BaseElement):
-            return data
-        # If the root object isn't a BaseElement (e.g. loading a simple dict),
-        # this indicates an issue or incorrect file.
-        # For this use case, we expect a BaseElement derivative.
-        print(f"Warning: Loaded data from {filepath} is not a PiaAGI BaseElement derivative. Type: {type(data)}")
-        return None
-    except FileNotFoundError:
-        print(f"Error: Template file not found at {filepath}")
-        return None
-    except json.JSONDecodeError:
-        print(f"Error: Could not decode JSON from {filepath}")
-        return None
-    except Exception as e:
-        print(f"An unexpected error occurred while loading template from {filepath}: {e}")
-        return None
-
-# --- End of Template Saving and Loading Functions ---
-
-
-# --- Developmental Curriculum Classes ---
-
-class CurriculumStep(BaseElement):
-    """Represents a single step in a developmental curriculum."""
-    def __init__(self,
-                 name: str,
-                 order: int,
-                 prompt_reference: str, # Filepath to a PiaAGIPrompt template
-                 conditions: Optional[str] = None, # Descriptive conditions
-                 notes: Optional[str] = None):
-        self.name = name
-        self.order = order
-        self.prompt_reference = prompt_reference
-        self.conditions = conditions
-        self.notes = notes
-
-    def render(self, indent_level: int = 0) -> str:
-        indent = "    " * indent_level
-        output = f"{indent}### Step {self.order}: {self.name}\n"
-        output += f"{indent}- **Prompt Template:** {self.prompt_reference}\n"
-        if self.conditions:
-            output += f"{indent}- **Conditions:** {self.conditions}\n"
-        if self.notes:
-            output += f"{indent}- **Notes:** {self.notes}\n"
-        # Potentially load and render the referenced prompt if needed,
-        # but for now, keep it as a reference.
-        # Example:
-        # try:
-        #     referenced_prompt = load_template(self.prompt_reference)
-        #     if referenced_prompt:
-        #         output += f"{indent}    <details><summary>View Prompt Details</summary>\n"
-        #         output += referenced_prompt.render(indent_level + 2)
-        #         output += f"{indent}    </details>\n"
-        # except Exception as e:
-        #     output += f"{indent}    (Could not load/render prompt: {e})\n"
-        return output
-
-class DevelopmentalCurriculum(BaseElement):
-    """Represents a developmental curriculum composed of multiple steps."""
-    def __init__(self,
-                 name: str,
-                 description: str,
-                 target_developmental_stage: str,
-                 steps: Optional[List[CurriculumStep]] = None,
-                 version: Optional[str] = None,
-                 author: Optional[str] = None):
-        self.name = name
-        self.description = description
-        self.target_developmental_stage = target_developmental_stage
-        self.steps = steps if steps else []
-        self.version = version
-        self.author = author
-        self.sort_steps()
-
-    def add_step(self, step: CurriculumStep):
-        self.steps.append(step)
-        self.sort_steps()
-
-    def sort_steps(self):
-        self.steps.sort(key=lambda s: s.order)
-
-    def fill_placeholders(self, data: Dict[str, str]):
-        """Fills placeholders in the curriculum's attributes and its steps."""
-        super().fill_placeholders(data) # Fill placeholders for curriculum's own string attributes
-        for step in self.steps:
-            step.fill_placeholders(data) # Propagate to each step
-        return self
-
-    def render(self, indent_level: int = 0) -> str:
-        indent = "    " * indent_level
-        output = f"{indent}# Curriculum: {self.name}\n"
-        if self.author:
-            output += f"{indent}**Author:** {self.author}\n"
-        if self.version:
-            output += f"{indent}**Version:** {self.version}\n"
-        output += f"{indent}**Description:** {self.description}\n"
-        output += f"{indent}**Target Developmental Stage:** {self.target_developmental_stage}\n\n"
-
-        output += f"{indent}## Curriculum Steps\n"
-        if not self.steps:
-            output += f"{indent}No steps defined for this curriculum.\n"
-        else:
-            for step in self.steps:
-                output += step.render(indent_level + 1)
-        return output
-
-# --- End of Developmental Curriculum Classes ---
-
-```
