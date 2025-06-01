@@ -1,3 +1,4 @@
+- [x] Re-evaluate `conceptual_simulations` directory: Moved contents (`diagram_descriptions.md` to `docs/assets/`, `PiaAGI_Behavior_Example.py` to `Examples/`) and removed the directory as it's not a standalone tool following PiaXYZ naming. (Task completed on 2024-07-29)
 # PiaAGI Project Upgrade ToDo List
 - [x] Create a new file named `PiaAGI.md` in the root of the repository. (Placeholder, original task)
 - [x] Add the following content to `PiaAGI.md`: (Placeholder, original task)
@@ -42,11 +43,11 @@
 - [x] Update `PiaAGI.md` Section 12 Acknowledgements.
 - [x] Update `PiaAGI.md` Appendix.
 - [ ] Define near-term (6-12 months) research and development goals based on the PiaAGI framework.
-- [x] Create textual descriptions for all diagrams requested in `PiaAGI.md` (Stored in `PiaAGI_Hub/conceptual_simulations/diagram_descriptions.md`. Future task: Integrate these into `PiaAGI.md`.)
+- [x] Create textual descriptions for all diagrams requested in `PiaAGI.md` (Stored in `docs/assets/diagram_descriptions.md`. Future task: Integrate these into `PiaAGI.md`.)
 - [x] Create `PiaAGI_Hub/conceptual_simulations/` directory.
 - [x] Develop initial conceptual Python script `PiaAGI_Hub/conceptual_simulations/PiaAGI_Behavior_Example.py` illustrating simplified module interactions.
 - [ ] Refine and expand `PiaAGI_Behavior_Example.py` to include more module interactions or a slightly more complex scenario (e.g., involving the Emotion Module's influence).
-- [ ] Integrate textual diagram descriptions from `PiaAGI_Hub/conceptual_simulations/diagram_descriptions.md` into the main `PiaAGI.md` document (requires careful manual editing or a more robust tool).
+- [ ] Integrate textual diagram descriptions from `docs/assets/diagram_descriptions.md` into the main `PiaAGI.md` document (requires careful manual editing or a more robust tool).
 - [ ] Develop a detailed specification document for the **Self-Model Module (Section 4.1.10)**, outlining its proposed data structures, core algorithms for metacognition, self-assessment, and the integration/application of its ethical framework.
 - [ ] Outline a research plan for developing and testing the **Developmental Scaffolding methodology (Section 5.4, 6.1)** specifically for **Theory of Mind (ToM) acquisition (Section 3.2.2)** from PiaSeedling to PiaSapling stages. This plan should include potential simulation environments, interaction protocols, and evaluation metrics.
 - [ ] Conduct a survey and report on existing Python libraries and frameworks that could be suitable for implementing key aspects of the PiaAGI cognitive architecture (e.g., for probabilistic reasoning, knowledge representation, symbolic AI, agent simulation, multi-agent systems).
