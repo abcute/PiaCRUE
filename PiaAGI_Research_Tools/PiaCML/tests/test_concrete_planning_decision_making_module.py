@@ -2,14 +2,11 @@ import unittest
 import os
 import sys
 
-# Adjust path to import from the parent directory (PiaCML)
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Adjust path to ensure PiaAGI_Research_Tools is in the path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-try:
-    from concrete_planning_decision_making_module import ConcretePlanningAndDecisionMakingModule
-except ImportError:
-    if 'ConcretePlanningAndDecisionMakingModule' not in globals(): # Fallback
-        from PiaAGI_Hub.PiaCML.concrete_planning_decision_making_module import ConcretePlanningAndDecisionMakingModule
+from PiaAGI_Research_Tools.PiaCML.concrete_planning_decision_making_module import ConcretePlanningAndDecisionMakingModule
+
 
 class TestConcretePlanningAndDecisionMakingModule(unittest.TestCase):
 
@@ -28,6 +25,10 @@ class TestConcretePlanningAndDecisionMakingModule(unittest.TestCase):
         self.assertEqual(status['known_plan_templates_count'], 3) # Based on concrete impl
         self.assertEqual(status['evaluated_plans_count'], 0)
         self.assertIsNone(status['last_selected_plan_id'])
+
+    def test_generate_possible_actions_placeholder(self):
+        actions = self.pdm.generate_possible_actions("some_state", [{"goal": "g1"}])
+        self.assertEqual(actions, []) # Placeholder returns empty list
 
     def test_create_plan_from_template(self):
         goal = {"description": "achieve_goal_A"}
@@ -68,15 +69,15 @@ class TestConcretePlanningAndDecisionMakingModule(unittest.TestCase):
         evaluation = self.pdm.evaluate_plan(plan, {}, self_context)
         self.assertEqual(evaluation['score'], 9) # 90 * 0.1
 
-    def test_select_action_or_plan_empty_list(self):
-        self.assertIsNone(self.pdm.select_action_or_plan([]))
+    def test_select_plan_empty_list(self): # Renamed
+        self.assertIsNone(self.pdm.select_plan([])) # Renamed
 
-    def test_select_action_or_plan_selects_highest_score(self):
-        eval_plan1 = {"plan_id": "p1", "score": 80, "steps_info_for_selection": []} # Assume steps are part of eval for selection
+    def test_select_plan_selects_highest_score(self): # Renamed
+        eval_plan1 = {"plan_id": "p1", "score": 80, "steps_info_for_selection": []}
         eval_plan2 = {"plan_id": "p2", "score": 95, "steps_info_for_selection": []}
         eval_plan3 = {"plan_id": "p3", "score": 70, "steps_info_for_selection": []}
 
-        selected_eval = self.pdm.select_action_or_plan([eval_plan1, eval_plan2, eval_plan3])
+        selected_eval = self.pdm.select_plan([eval_plan1, eval_plan2, eval_plan3]) # Renamed
         self.assertIsNotNone(selected_eval)
         self.assertEqual(selected_eval['plan_id'], "p2") # Highest score
 
@@ -96,13 +97,12 @@ class TestConcretePlanningAndDecisionMakingModule(unittest.TestCase):
         eval_b = self.pdm.evaluate_plan(plan_b, {}, {})
         eval_a = self.pdm.evaluate_plan(plan_a, {}, {})
 
-        # Make sure scores are as expected
         self.assertEqual(eval_b['score'], 70)
         self.assertEqual(eval_a['score'], 80)
 
-        selected_eval = self.pdm.select_action_or_plan([eval_b, eval_a]) # Pass evaluations
+        selected_eval = self.pdm.select_plan([eval_b, eval_a]) # Renamed
         self.assertIsNotNone(selected_eval)
-        self.assertEqual(selected_eval['plan_id'], plan_a['plan_id']) # Plan A has higher score (80 vs 70)
+        self.assertEqual(selected_eval['plan_id'], plan_a['plan_id'])
 
 
 if __name__ == '__main__':
