@@ -131,9 +131,52 @@ The Self-Model engages in several key ongoing processes:
     *   **Process:** Retrieves relevant rules/principles from `EthicalFramework`. Evaluates action against them (direct matching, consequence projection). If conflicts, uses `value_conflict_resolution_strategies`. Consults past dilemmas.
     *   **Output:** Ethical assessment to Planning Module (e.g., Permissible, Impermissible, Caution).
 *   **B. Ethical Framework Updating (Learning):**
-    *   **Inputs:** Feedback on actions, outcomes of dilemmas, explicit ethical instruction, inputs from Learning Module.
-    *   **Process:** Learning Module, guided by Self-Model, may modify strength/applicability of `learned_ethical_principles`, derive new ones, update `contextual_rules_of_conduct`, log new dilemmas, refine `value_conflict_resolution_strategies`.
-    *   **Output:** Updated `EthicalFramework`.
+    *   This subsection details the conceptual process by which the Learning Module, in conjunction with the Self-Model, updates and evolves the `EthicalFramework`.
+    *   **1. Trigger for Update:**
+        *   The Learning Module identifies a potential update or refinement opportunity for the `EthicalFramework`. Triggers include:
+            *   **Analysis of Ethical Dilemmas:** Review of `ethical_dilemma_resolution_log` entries (potentially via `AutobiographicalLogSummary`) where the application of the current framework led to suboptimal outcomes, significant internal conflict, or negative external feedback.
+            *   **Explicit Feedback:** Direct input from trusted human overseers or designated ethical advisors regarding past decisions or general principles.
+            *   **Meta-Learning Derivations:** Successful generalization of new ethical heuristics or principles from recurring patterns in multiple specific ethical scenarios or dilemmas.
+            *   **Observational Learning:** (If applicable) Analysis of observed ethical behaviors and their consequences in sufficiently rich and reliable simulated or real-world interactions.
+            *   **Internal Consistency Probes:** The Learning Module (or Self-Model itself) might periodically probe the existing framework for internal contradictions or gaps highlighted by new knowledge or capabilities.
+
+    *   **2. Information Provided by Learning Module to Self-Model:**
+        *   The Learning Module packages the proposed ethical update. This data structure might conceptually include:
+            *   `update_type`: (String) e.g., 'new_learned_principle', 'modify_existing_rule_priority', 'new_contextual_rule', 'refine_conflict_strategy', 'deprecate_obsolete_rule'.
+            *   `proposed_content`: (Object/Dict) The detailed content of the new or modified rule, principle, or strategy. This should align with the structures defined in `EthicalFramework` (e.g., fields similar to an `EthicalRule` data class).
+            *   `justification_data_refs`: (List of Strings/URIs) Pointers to supporting evidence, such as LTM references to specific dilemmas, feedback events, observed patterns, or internal reasoning chains.
+            *   `confidence_score_of_proposal`: (Float, 0.0-1.0) The Learning Module's confidence in the validity, utility, and safety of the proposed update.
+            *   `source_of_learning`: (String) Specifies the origin of the learning (e.g., 'experiential_learning_dilemma_ID_XYZ', 'feedback_user_ABC', 'meta_learning_pattern_ID_123', 'observational_scenario_ID_789').
+            *   `estimated_impact`: (String, Optional) Brief summary of expected positive/negative impacts of adopting the update.
+
+    *   **3. Self-Model's Integration Process:**
+        *   The Self-Model receives the proposed update package from the Learning Module.
+        *   **Validation & Consistency Check:**
+            *   **Core Value Alignment:** The proposal is rigorously checked against `core_values`. Any direct contradiction with a core value typically results in rejection or flagging for mandatory high-level (potentially human) review. Core values are designed to be highly resistant to change.
+            *   **Consistency with Existing Framework:** The proposal is checked for consistency with existing `learned_ethical_principles` and `contextual_rules_of_conduct`. The Self-Model assesses potential redundancies, subsumptions, or contradictions.
+        *   **Conflict Resolution (if necessary):**
+            *   If the new proposal conflicts with existing non-core rules or principles:
+                *   The Self-Model may attempt to refine the scope or `applicability_contexts` of the new or existing rules to eliminate the conflict.
+                *   It may consult its `value_conflict_resolution_strategies` to determine if one principle should take precedence in certain situations, potentially leading to a more nuanced rule.
+                *   The `confidence_score_of_proposal` might be adjusted based on the degree of conflict and the effort required for resolution. Highly conflicting proposals might be marked as 'provisional' or require further evidence.
+        *   **Integration into `EthicalFramework`:**
+            *   If validated and conflicts are acceptably resolved, the new or modified rule/principle is integrated into the appropriate list within the `EthicalFramework` (e.g., a new entry in `learned_ethical_principles` or an update to an existing `contextual_rules_of_conduct` entry).
+            *   The `source_of_learning`, `justification_data_refs`, and initial `confidence_score_of_proposal` are stored alongside the new/updated content for future reference and audit.
+        *   **Feedback to Learning Module:** The Self-Model communicates the outcome of the integration attempt to the Learning Module. This could include:
+            *   Confirmation of successful integration.
+            *   Reasons for rejection (e.g., core value conflict, persistent inconsistency).
+            *   Suggestions for modification if the proposal was promising but problematic.
+            *   The final confidence score assigned by the Self-Model to the integrated item.
+
+    *   **4. Traceability and Review:**
+        *   All significant additions, modifications, or deprecations within the `EthicalFramework` are meticulously logged. This log, potentially part of `AutobiographicalLogSummary` or a dedicated ethics audit trail (linked via `ethical_dilemma_resolution_log_refs`), must include:
+            *   The content of the change.
+            *   The `source_of_learning` and `justification_data_refs`.
+            *   The Self-Model's internal reasoning for acceptance/rejection (summary).
+            *   Timestamp of the change.
+        *   This detailed traceability is crucial for understanding the evolution of the agent's ethical reasoning, for external oversight, and for potential rollback or refinement of learned ethical components.
+
+    *   **Output:** An updated `EthicalFramework` reflecting the integrated changes. Feedback to the Learning Module.
 
 ### 3.3. Guiding Self-Improvement & Architectural Maturation
 *   **A. Translation of Self-Assessment into Developmental Goals:**
@@ -145,7 +188,47 @@ The Self-Model engages in several key ongoing processes:
     *   **Process (Conceptual):** Flags systemic limitation. Formulates "developmental imperative" (e.g., "Enhance WM chunking"). This imperative conceptually guides underlying systems/Learning Modules (e.g., prioritize specific internal training, re-allocate resources, suggest external supervisor intervention).
     *   **Output:** Updated `DevelopmentalState.architectural_maturation_targets`; directives to Learning Modules.
 
-### 3.4. ALITA-Inspired Self-Correction Loop for Tool/Script Generation (Interaction with other modules)
+### 3.4. Guiding Architectural Maturation (Interaction with `DevelopmentalState`)
+
+This section outlines the conceptual mechanisms by which the Self-Model identifies the need for, and subsequently guides, deeper architectural or systemic changes within the agent. This process is closely tied to the `DevelopmentalState` data structure and represents a form of meta-learning and self-directed evolution.
+
+*   **1. Populating `DevelopmentalState.architectural_maturation_targets`:**
+    *   These targets are primarily identified by the Self-Model through its ongoing self-assessment processes (see Section 3.1 Metacognition & Self-Assessment), which analyze long-term performance trends and systemic limitations rather than just isolated skill or knowledge gaps.
+    *   **Triggers for identification include:**
+        *   **Persistent Performance Bottlenecks:** Consistent and recurring issues identified through `cognitive_load_metrics` in `SelfAttributes` (e.g., chronic WM overload during specific types of complex tasks, consistently slow LTM retrieval for certain knowledge domains) or through analysis of failure patterns in `AutobiographicalLogSummary` that point to underlying systemic weaknesses rather than specific skill deficiencies.
+        *   **Systemic Knowledge Weaknesses:** Analysis of `KnowledgeMap` revealing broad patterns, such as consistently low `groundedness_score` across an entire sensory modality or conceptual domain, suggesting that improvements in perceptual processing or foundational concept formation might be needed.
+        *   **Capability Acquisition Plateaus:** Analysis of `CapabilityInventory` showing that the acquisition of multiple desired new skills is consistently slow or failing, and the root cause is suspected to be a limitation in an underlying component (e.g., if learning complex planning skills is always failing, the planning algorithm itself might need maturation).
+        *   **Developmental Scaffolding Feedback:** Explicit feedback from external developmental scaffolding processes (e.g., a human overseer or curriculum system) indicating that the agent is consistently failing to meet developmental milestones that require specific architectural capacities not yet manifest.
+    *   **Defining an `ArchitecturalMaturationTarget`:**
+        *   When such a systemic issue is robustly identified, the Self-Model formulates an `ArchitecturalMaturationTarget` entry within its `DevelopmentalState`. This entry serves as a high-level directive or area of focus.
+        *   `target_area`: (String) A descriptor for the component or sub-system suspected to need maturation. Examples: "WorkingMemory.CentralExecutive.TaskSwitchingEfficiency", "LTM.Semantic.AssociativeLinkingAlgorithm", "Perception.Visual.FeatureExtractionDepth", "PlanningModule.HeuristicSearch.Adaptability".
+        *   `enhancement_goal`: (String) A description of the desired improvement. Examples: "Reduce_TaskSwitching_Latency_By_Target_X%", "Improve_CrossModal_Semantic_Relation_Discovery_Rate", "Increase_Visual_Concept_Grounding_Accuracy_For_AbstractShapes", "Enhance_Exploration_Diversity_In_Planning_Heuristics".
+        *   `triggering_condition_summary`: (String) References to logged evidence (e.g., specific entries in `AutobiographicalLogSummary`, trends in `cognitive_load_metrics`, or patterns from `KnowledgeMap` analysis) that justify this target.
+        *   `status`: (String) Initially set to something like "Identified_Pending_Strategy", "Requires_LearningModule_Investigation", or "Requires_External_Guidance".
+
+*   **2. Self-Model's Role in Guiding Maturation (Conceptual):**
+    *   The Self-Model typically does not directly modify core architectural components. Instead, it uses the `architectural_maturation_targets` to guide and influence other modules and processes:
+    *   **Informing Learning Module(s):**
+        *   The Learning Module(s) can access these targets. If a target involves improving an algorithm, heuristic, or internal model that *is* within the Learning Module's capacity to adapt (e.g., refining an LTM indexing strategy through meta-learning, optimizing a WM chunking heuristic based on observed data patterns), the Learning Module can prioritize internal "research," experimentation, or parameter tuning focused on addressing this target.
+    *   **Prioritizing Internal "Training" or "Simulation" via Motivational System:**
+        *   The Self-Model can request the Motivational System to generate intrinsic goals. These goals would aim to create experiences that specifically stress, exercise, or provide rich data for the targeted architectural area. If the underlying systems possess some degree of plasticity, such focused experience might lead to emergent adaptation or allow the Learning Module to gather data for refinement.
+        *   Example: If "WorkingMemory.CentralExecutive.TaskSwitchingEfficiency" is a target, the Self-Model might motivate the agent to engage in complex multi-tasking scenarios within PiaSE, even if those tasks don't directly serve immediate extrinsic goals.
+    *   **Requesting External Assistance (Developmental Scaffolding):**
+        *   If the Self-Model, potentially after consultation with the Learning Module(s), assesses that a maturation target likely requires changes beyond the agent's current self-modification capabilities (e.g., fundamental changes to a core module's compiled algorithm, significant resource reallocation at the infrastructure level, or introduction of entirely new components), it can update the `status` of the target to "Requires_External_Guidance" or "Escalate_To_Overseer".
+        *   This flag serves as a signal to human developers, overseers, or a higher-level "AGI Mentor" system. It indicates that specific developmental input, direct architectural intervention (which is outside the scope of the agent's autonomous learning), or a change in the learning environment might be necessary for the agent to overcome this particular limitation and continue its development.
+    *   **Monitoring Progress:**
+        *   The Self-Model continuously tracks performance metrics, cognitive load indicators, and other relevant data points related to the `target_area` of an active `ArchitecturalMaturationTarget`.
+        *   If improvements are observed (whether due to internal learning efforts or external interventions), the `status` of the `ArchitecturalMaturationTarget` in `DevelopmentalState` is updated (e.g., "Improvement_Detected_Monitoring", "Target_Partially_Achieved", "Target_Achieved_Validation_Pending").
+
+*   **3. Interaction with `DevelopmentalState.active_developmental_goals`:**
+    *   An `ArchitecturalMaturationTarget` is a high-level statement of need. To make progress on it, the Self-Model (often in collaboration with the Learning Module) might break it down into one or more specific, actionable `active_developmental_goals`.
+    *   For example, an `ArchitecturalMaturationTarget` like "Improve_LTM_Semantic_AssociativeLinkingAlgorithm" might lead to `active_developmental_goals` such as:
+        *   "DG_LTM_Research: Investigate alternative LTM indexing heuristics (via simulation)."
+        *   "DG_LTM_Data: Gather more diverse co-occurrence data for semantic training."
+        *   "DG_LTM_Metric: Develop a new internal metric to benchmark associative linking quality."
+    *   These more granular developmental goals can then be pursued via the Motivational System and Learning Module(s).
+
+### 3.5. ALITA-Inspired Self-Correction Loop for Tool/Script Generation (Interaction with other modules)
 *   **Inputs:** Tool/script failure notification (from Behavior Generation sandbox), error details, original specifications, `CapabilityInventory`, `AutobiographicalLogSummary`.
 *   **Process:**
     1.  Log failure (`AutobiographicalLogSummary`, `DevelopmentalState.self_correction_records`).
