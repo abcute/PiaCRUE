@@ -46,7 +46,6 @@
 - [x] Update `PiaAGI.md` Section 11 References.
 - [x] Update `PiaAGI.md` Section 12 Acknowledgements.
 - [x] Update `PiaAGI.md` Appendix.
-- [ ] Define near-term (6-12 months) research and development goals based on the PiaAGI framework.
 - [x] Create textual descriptions for all diagrams requested in PiaAGI.md (Stored in docs/assets/diagram_descriptions.md). (Most descriptions integrated, manual insertion needed for Diagrams 8, 9, 10 in PiaAGI.md as per user instructions).
 - [x] Create `PiaAGI_Hub/conceptual_simulations/` directory. (Directory later removed after refactoring file locations)
 - [x] Develop initial conceptual Python script `Examples/PiaAGI_Behavior_Example.py` illustrating simplified module interactions. (Moved from `PiaAGI_Hub/conceptual_simulations/`)
