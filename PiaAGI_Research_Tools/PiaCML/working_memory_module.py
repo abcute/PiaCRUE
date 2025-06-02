@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Any, List, Dict
 from .base_memory_module import BaseMemoryModule # Assuming base_memory_module.py is in the same directory
 
-class BaseWorkingMemoryModule(BaseMemoryModule):
+class WorkingMemoryModule(BaseMemoryModule):
     """
     Abstract Base Class for the Working Memory (WM) module in the PiaAGI Cognitive Architecture.
 
@@ -144,9 +144,9 @@ class BaseWorkingMemoryModule(BaseMemoryModule):
     # `handle_forgetting` in WM might be rapid decay or displacement.
 
 if __name__ == '__main__':
-    # Conceptual illustration for BaseWorkingMemoryModule
+    # Conceptual illustration for WorkingMemoryModule
 
-    class ConceptualWMImpl(BaseWorkingMemoryModule):
+    class ConceptualWMImpl(WorkingMemoryModule):
         def __init__(self, capacity=5): # Small capacity for demo
             self.workspace = [] # Holds tuples of (item, source_module, context)
             self.capacity = capacity
@@ -253,4 +253,5 @@ if __name__ == '__main__':
     print(f"WM Status: {wm_instance.get_status()}")
     wm_instance.allocate_attentional_resources({'respond_politely_task': 'high'})
     wm_instance.coordinate_modules("respond_to_user", ["LTMModule", "BehaviorGenerationModule"])
-# Removed trailing ```
+
+```
