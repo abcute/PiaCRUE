@@ -1,6 +1,7 @@
 # Core PiaSE Dependencies
 # (NumPy is used by the visualizer and potentially by agents/environments later)
 numpy>=1.20.0
+pydantic>=1.8.0 # For data validation and API data structures
 
 # Visualization Dependencies
 matplotlib>=3.3.0

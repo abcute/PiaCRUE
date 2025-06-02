@@ -13,7 +13,7 @@ class TextBasedRoom(Environment):
         super().__init__()
         self.base_room_layout = copy.deepcopy(room_layout)
         self.base_object_details = copy.deepcopy(object_details)
-
+        
         self.agent_id = agent_id  # Assuming single agent for now in this environment's direct state
         self.agent_start_room = agent_start_room
 
@@ -33,13 +33,13 @@ class TextBasedRoom(Environment):
             "read": {"parameters": {"item_name": {"type": "string"}}},
             "inventory": {"parameters": {}} # Action to check inventory
         }
-
+        
         self.reset()
 
     def reset(self) -> PerceptionData:
         self.current_room_layout = copy.deepcopy(self.base_room_layout)
         self.current_object_details = copy.deepcopy(self.base_object_details)
-
+        
         self.agent_states = {
             self.agent_id: {
                 "current_room": self.agent_start_room,
@@ -66,7 +66,7 @@ class TextBasedRoom(Environment):
             )
 
         visible_text = f"You are in {room_data.get('description', 'an undescribed location')}."
-
+        
         # Exits
         exits = room_data.get("exits", {})
         if exits:
@@ -98,7 +98,7 @@ class TextBasedRoom(Environment):
             "objects_visible": [{"name": obj_name, "description": self.current_object_details.get(obj_name, {}).get('description', obj_name)} for obj_name in room_objects_names],
             "inventory": list(self.agent_states[agent_id]["inventory"]) # Send a copy
         }
-
+        
         return PerceptionData(
             timestamp=time.time(),
             sensor_data=sensor_data,
@@ -167,7 +167,7 @@ class TextBasedRoom(Environment):
                          message += " It is closed."
                 else:
                     message = f"You don't see '{target}' here."
-
+        
         elif action_type == "inventory":
             inventory_items = self.agent_states[agent_id]["inventory"]
             if inventory_items:
@@ -193,28 +193,28 @@ class TextBasedRoom(Environment):
                 # Check if item is in an open container in the room
                 taken_from_container = False
                 container_that_contained_item = None # To prevent modifying list while iterating
-
+                
                 for obj_name_in_room in self.current_room_layout[current_room_name].get("objects", []):
                     container_detail = self.current_object_details.get(obj_name_in_room)
                     if container_detail and container_detail.get("is_container") and container_detail.get("is_open"):
                         if item_name in container_detail.get("contains", []):
                             if obj_detail.get("can_be_taken", False): # Check original item's detail
-                                container_that_contained_item = container_detail
+                                container_that_contained_item = container_detail 
                                 self.agent_states[agent_id]["inventory"].append(item_name)
                                 status = "success"
                                 message = f"You took the {item_name} from the {obj_name_in_room}."
                                 taken_from_container = True
-                                break
+                                break 
                             else:
                                 message = f"You cannot take the {item_name} (from {obj_name_in_room})."
                                 status = "failure" # Explicitly set failure
                                 taken_from_container = True # Found but can't take, stop further search
                                 break
-
+                
                 if container_that_contained_item and status == "success":
                     container_that_contained_item["contains"].remove(item_name)
 
-                if not taken_from_container and status != "failure":
+                if not taken_from_container and status != "failure": 
                     message = f"You don't see a {item_name} here to take."
 
         elif action_type == "drop":
@@ -249,7 +249,7 @@ class TextBasedRoom(Environment):
                     message = f"You cannot open the {target_object_name}."
             else:
                 message = f"You don't see a {target_object_name} here."
-
+        
         elif action_type == "close":
             target_object_name = params.get("target_object")
             obj_detail = self._get_object_in_room(target_object_name, current_room_name)
@@ -270,7 +270,7 @@ class TextBasedRoom(Environment):
             item_name = params.get("item_name")
             obj_in_inv = self._get_object_in_inventory(item_name, agent_id)
             obj_in_room = self._get_object_in_room(item_name, current_room_name)
-            target_obj_detail = obj_in_inv or obj_in_room
+            target_obj_detail = obj_in_inv or obj_in_room 
 
             if target_obj_detail:
                 read_text = target_obj_detail.get("read_text")
@@ -292,7 +292,7 @@ class TextBasedRoom(Environment):
             if not item_detail_inv:
                 message = f"You don't have a {item_name_to_use} in your inventory."
             else:
-                if target_object_name:
+                if target_object_name: 
                     target_obj_detail_room = self._get_object_in_room(target_object_name, current_room_name)
                     if target_obj_detail_room:
                         # Scenario 1: Unlock a locked object
@@ -310,7 +310,7 @@ class TextBasedRoom(Environment):
                             interaction_config = target_obj_detail_room["custom_interactions"][item_name_to_use]
                             status = interaction_config.get("status", "success") # Default to success
                             message = interaction_config.get("message", f"You used the {item_name_to_use} on the {target_object_name}.")
-
+                            
                             if "set_flag_on_target" in interaction_config: # Safely access
                                 flag_info = interaction_config["set_flag_on_target"]
                                 if "name" in flag_info:
@@ -332,7 +332,7 @@ class TextBasedRoom(Environment):
                         if item_detail_inv.get("consumes_on_use"):
                              self.agent_states[agent_id]["inventory"].remove(item_name_to_use)
                              message += f" The {item_name_to_use} was consumed."
-
+                        
                         if "set_flag_on_agent" in item_detail_inv: # Safely access
                             flag_config = item_detail_inv.get("set_flag_on_agent",{})
                             if "name" in flag_config : # ensure flag_name is not None
@@ -364,7 +364,7 @@ class TextBasedRoom(Environment):
     def is_done(self, agent_id: str) -> bool:
         # This environment doesn't have an intrinsic "done" condition for the agent by default.
         # Scenarios will define win/lose conditions that the engine checks.
-        return False
+        return False 
 
     def get_action_space(self, agent_id: Optional[str] = None) -> Dict[str, Any]:
         # In this env, action space is not agent-dependent beyond the agent_id check at start of methods

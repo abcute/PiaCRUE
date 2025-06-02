@@ -101,14 +101,14 @@
 - [x] Defined conceptual Agent-Environment API (EnvironmentInterface, Perception Data, Action Command Data) in PiaAGI_Simulation_Environment.md.
 - [x] Conceptually designed "TextBasedRoom" environment (state representation, perceptions, actions, dynamics) in PiaAGI_Simulation_Environment.md.
 - [x] Specified YAML-based scenario definition format for "TextBasedRoom" with "The Lost Key" example in PiaAGI_Simulation_Environment.md.
-- [ ] Refine data structures for Agent-Environment API (perceptions, actions) with more detailed type hints or Pydantic models.
-- [ ] Develop detailed specifications for core PiaSE components (Environment Abstraction Layer, Agent Management, Scenario Definition Module, Data Logging Service).
-- [ ] Implement a prototype of the TextBasedRoom environment based on the conceptual design.
-- [ ] Implement a prototype of the PiaSE core simulation engine.
+- [x] Refine data structures for Agent-Environment API (perceptions, actions) with more detailed type hints or Pydantic models.
+- [x] Develop detailed specifications for core PiaSE components (Environment Abstraction Layer, Agent Management, Scenario Definition Module, Data Logging Service).
+- [x] Implement a prototype of the TextBasedRoom environment based on the conceptual design.
+- [x] Implement a prototype of the PiaSE core simulation engine.
 - [x] Task: Designed a simple scenario for 'Curiosity and Information Seeking' (documented in `PiaAGI_Research_Tools/PiaSE/Scenarios/Curiosity_Scenario.md`).
 - [x] Task: Designed a simple scenario for 'Competence and Mastery' (documented in `PiaAGI_Research_Tools/PiaSE/Scenarios/Competence_Scenario.md`).
-- [ ] Task: Implement the 'Curiosity in the Unknown Artifact Grid World' scenario (Curiosity_Scenario.md) in the PiaSE prototype.
-- [ ] Task: Implement the 'Competence in the Adaptive Pathfinding Challenge' scenario (Competence_Scenario.md) in the PiaSE prototype.
+- [x] Task: Implement the 'Curiosity in the Unknown Artifact Grid World' scenario (Curiosity_Scenario.md) in the PiaSE prototype.
+- [x] Task: Implement the 'Competence in the Adaptive Pathfinding Challenge' scenario (Competence_Scenario.md) in the PiaSE prototype.
 
 ### PiaAVT (PiaAGI Analysis & Visualization Toolkit)
 - [x] Defined standardized logging format/schema (JSONL) and created `PiaAGI_Research_Tools/PiaAVT/Logging_Specification.md`.

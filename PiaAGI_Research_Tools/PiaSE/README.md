@@ -1,31 +1,57 @@
 <!-- PiaAGI AGI Research Framework Document -->
 # PiaAGI Simulation Environment (PiaSE)
 
-This directory contains the PiaAGI Simulation Environment (PiaSE), a flexible and extensible platform for researchers and developers to instantiate, test, and evaluate PiaAGI agents and their components in controlled, dynamic, and reproducible settings.
+This directory contains the PiaAGI Simulation Environment (PiaSE), a flexible and extensible platform for researchers and developers to instantiate, test, and evaluate PiaAGI agents and their components in controlled, dynamic, and reproducible settings. PiaSE now emphasizes standardized interfaces using Pydantic models for robust agent-environment communication and includes diverse environments like `GridWorld` and the new `TextBasedRoom`.
 
 ## Directory Structure
 
 -   `core_engine/`: Contains the main simulation loop, time management, event system, and core abstract classes.
--   `environments/`: Implementations of various simulation environments (e.g., GridWorld, physics-based).
+-   `environments/`: Implementations of various simulation environments (e.g., `GridWorld`, `TextBasedRoom`).
 -   `agents/`: Agent interfaces and example agent implementations.
 -   `scenarios/`: Scripts and configurations for defining and running specific experimental scenarios.
+-   `docs/specifications/`: Detailed design documents for PiaSE components.
 -   `utils/`: Common utility functions and data structures used across PiaSE.
 -   `tests/`: Unit tests for PiaSE components.
 
-Refer to the main PiaAGI documentation and [`PiaAGI_Hub/PiaAGI_Simulation_Environment.md`](../PiaAGI_Simulation_Environment.md) for more details on the conceptual design and overall goals of PiaSE.
+Refer to the main PiaAGI documentation and [`../PiaAGI_Simulation_Environment.md`](../PiaAGI_Simulation_Environment.md) for more details on the conceptual design and overall goals of PiaSE.
 
-The components implemented in this initial phase include:
-- Core interfaces (`PiaSEEvent`, `SimulationEngine`, `Environment`, `AgentInterface`)
-- Updates to core interfaces to support learning agents.
-- A `BasicSimulationEngine`
-- A `GridWorld` environment
-- Modifications to `GridWorld` to support rewards and goal-oriented tasks.
-- A `BasicGridAgent`
-- A `QLearningAgent` capable of learning in GridWorld.
-- A `GridWorldVisualizer` using Matplotlib to display `GridWorld` states.
-- An example `grid_world_scenario.py` that saves visualization frames.
-- Unit tests for `GridWorld`, `BasicGridAgent`, `QLearningAgent`, and `GridWorldVisualizer`.
-- A simple WebApp interface to run scenarios and view results.
+## Key Implemented Components
+
+PiaSE has evolved to include a more robust and standardized set of components:
+
+-   **Core Interfaces:** Refined `Environment` and `AgentInterface` abstract base classes. Data exchange relies on Pydantic models: `PerceptionData`, `ActionCommand`, and `ActionResult`. `PiaSEEvent` is also a Pydantic model.
+-   **Simulation Engine:** A refactored `BasicSimulationEngine` that manages the simulation lifecycle with an enhanced main loop, clearer agent registration (via initialization), and integrated logging capabilities.
+-   **Environments:**
+    *   `GridWorld`: A configurable grid-based environment, now compliant with new interfaces and supporting static/dynamic objects.
+    *   `TextBasedRoom`: A new interactive fiction-style environment for parsing text commands and interacting with objects in a narrative setting.
+-   **Agents:**
+    *   `QLearningAgent`: An agent capable of learning in `GridWorld`, updated to use the new Pydantic-based interfaces and refined learning logic.
+    *   `InteractiveTextAgent`: A simple agent that allows users to input text commands to interact with the `TextBasedRoom` environment.
+    *   `CuriosityGridAgent`: A basic agent for `GridWorld` that demonstrates simple exploration and artifact discovery.
+-   **Visualization & WebApp:**
+    *   `GridWorldVisualizer`: (Existing) Uses Matplotlib to display `GridWorld` states.
+    *   A simple WebApp interface (existing) to run scenarios and view results, primarily for `GridWorld`.
+
+## Implemented Scenarios
+
+PiaSE now includes several example scenarios to demonstrate its capabilities:
+
+*   **`grid_world_scenario.py`**: The original Q-Learning agent in a basic GridWorld. (Path: `PiaAGI_Research_Tools/PiaSE/scenarios/grid_world_scenario.py`)
+*   **`text_based_the_lost_key.py`**: An interactive text adventure in the `TextBasedRoom` environment where the user plays as the agent to find a lost key and a document. (Path: `PiaAGI_Research_Tools/PiaSE/scenarios/text_based_the_lost_key.py`)
+*   **`grid_world_curiosity_scenario.py`**: A scenario demonstrating a simple `CuriosityGridAgent` that explores a `GridWorld` and identifies predefined "artifact" locations. (Path: `PiaAGI_Research_Tools/PiaSE/scenarios/grid_world_curiosity_scenario.py`)
+*   **`grid_world_competence_scenario.py`**: A scenario featuring a `QLearningAgent` in a `GridWorld` that adapts to changing goals and obstacles, demonstrating competence acquisition and adaptation over multiple tasks. (Path: `PiaAGI_Research_Tools/PiaSE/scenarios/grid_world_competence_scenario.py`)
+
+To run these scenarios, navigate to the `PiaAGI_Research_Tools/PiaSE/` directory (if you are at the project root) and execute the desired scenario script using Python:
+```bash
+# Example from the project root directory:
+cd PiaAGI_Research_Tools/PiaSE
+
+# Example for the text-based scenario
+python scenarios/text_based_the_lost_key.py
+
+# Example for the competence scenario
+python scenarios/grid_world_competence_scenario.py
+```
 
 ## PiaSE WebApp
 PiaSE includes a simple web application to help visualize and interact with simulations.
@@ -34,27 +60,27 @@ PiaSE includes a simple web application to help visualize and interact with simu
 The WebApp allows users to run a predefined PiaSE scenario (currently a Q-Learning agent in GridWorld) and view its step-by-step visual progress and textual logs directly in a web browser. This enhances the usability and understandability of the PiaSE framework.
 
 ### Location
-The WebApp code is located in the `PiaAGI_Hub/PiaSE/WebApp/` directory.
+The WebApp code is located in the `PiaAGI_Research_Tools/PiaSE/WebApp/` directory.
 
 ### PiaSE WebApp Deployment Guide
 
 To run the PiaSE WebApp, follow these steps:
 
 1.  **Navigate to the PiaSE Root Directory:**
-    Open your terminal and change to the `PiaAGI_Hub/PiaSE/` directory.
+    Open your terminal. If you are at the root of the `PiaAGI_Research_Tools` project, navigate to PiaSE:
     ```bash
-    cd path/to/your/PiaAGI_Hub/PiaSE
+    cd PiaAGI_Research_Tools/PiaSE
     ```
 
 2.  **Install Dependencies:**
     Ensure all necessary Python packages are installed by running:
     ```bash
-    pip install -r requirements.txt
+    pip install -r requirements.txt 
     ```
-    This file includes Flask, Matplotlib, NumPy, and other potential dependencies for PiaSE.
+    This file includes Flask, Matplotlib, NumPy, Pydantic, and other potential dependencies for PiaSE.
 
 3.  **Navigate to the WebApp Directory:**
-    Change to the WebApp directory:
+    From the `PiaAGI_Research_Tools/PiaSE/` directory:
     ```bash
     cd WebApp
     ```
@@ -62,11 +88,11 @@ To run the PiaSE WebApp, follow these steps:
 4.  **Run the Flask Application:**
     You can run the development server in one of two main ways:
 
-    *   **Method 1: Directly executing `app.py`** (if it contains `app.run(...)` in an `if __name__ == '__main__':` block):
+    *   **Method 1: Directly executing `app.py`**:
         ```bash
         python app.py
         ```
-    *   **Method 2: Using the `flask` command** (recommended for flexibility):
+    *   **Method 2: Using the `flask` command**:
         First, set the `FLASK_APP` environment variable:
         ```bash
         # On Linux/macOS:
@@ -80,22 +106,26 @@ To run the PiaSE WebApp, follow these steps:
         ```bash
         flask run --host=0.0.0.0 --port=5001
         ```
-        The `--host=0.0.0.0` flag makes the server accessible from other devices on your network (use `127.0.0.1` for local access only). The port is set to `5001` in `app.py`.
+        The `--host=0.0.0.0` flag makes the server accessible from other devices on your network. The port is set to `5001` in `app.py`.
 
 5.  **Access in Browser:**
-    Open your web browser and go to `http://127.0.0.1:5001/` (or `http://localhost:5001/`).
+    Open your web browser and go to `http://120.0.0.1:5001/` (or `http://localhost:5001/`).
 
-You should see the main page of the PiaSE WebApp, from where you can trigger a simulation run.
+You should see the main page of the PiaSE WebApp.
 
 For more details about the WebApp's internal structure, see the [WebApp README](./WebApp/README.md).
 
 ## Dependencies
-Dependencies for PiaSE, including the WebApp and visualizer, are listed in `requirements.txt` (located in the `PiaAGI_Hub/PiaSE/` directory).
-To install them, navigate to the `PiaAGI_Hub/PiaSE/` directory and run:
+Key dependencies for PiaSE, including the WebApp and visualizer, are listed in `requirements.txt` (located in the current `PiaAGI_Research_Tools/PiaSE/` directory).
+To install them, ensure you are in the `PiaAGI_Research_Tools/PiaSE/` directory and run:
 ```bash
-pip install -r requirements.txt
+pip install -r ./requirements.txt 
 ```
-It is highly recommended to use a Python virtual environment.
+It is highly recommended to use a Python virtual environment. Key dependencies include:
+- NumPy
+- Pydantic (for data structures)
+- Matplotlib (for visualization)
+- Flask (for the WebApp)
 
 ---
 Return to [PiaAGI Core Document](../../PiaAGI.md) | [Project README](../../README.md)

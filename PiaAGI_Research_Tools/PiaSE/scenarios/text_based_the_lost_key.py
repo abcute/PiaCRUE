@@ -27,11 +27,11 @@ class InteractiveTextAgent(AgentInterface):
             print(observation.sensor_data["description"])
         else:
             print(f"Received complex observation: {observation.sensor_data}")
-
+        
         if observation.messages:
             for msg in observation.messages:
                 print(f"[Message from {msg.get('sender', 'system')}]: {msg.get('content')}")
-
+        
         if event:
             print(f"[Event Received]: Type: {event.event_type}, Data: {event.data}")
         print("-----------------------------")
@@ -47,7 +47,7 @@ class InteractiveTextAgent(AgentInterface):
                     continue
 
                 action_type = parts[0].lower()
-
+                
                 if action_type == "quit":
                     self.last_action_command = ActionCommand(action_type="quit", parameters={})
                     return self.last_action_command
@@ -85,7 +85,7 @@ class InteractiveTextAgent(AgentInterface):
                         continue
                 elif action_type == "inventory":
                     pass # No params needed
-
+                
                 self.last_action_command = ActionCommand(action_type=action_type, parameters=parameters)
                 return self.last_action_command
             except EOFError: # Handle Ctrl+D for exiting
@@ -94,7 +94,7 @@ class InteractiveTextAgent(AgentInterface):
                 return self.last_action_command
             except Exception as e:
                 print(f"Error processing action: {e}. Try again.")
-
+                
     def learn(self, feedback: ActionResult):
         print(f"--- {self.agent_id}'s Feedback ---")
         print(f"Action Status: {feedback.status}")
@@ -131,20 +131,20 @@ LOST_KEY_OBJECT_DETAILS = {
         "description": "a sturdy oak desk with a single drawer.",
         "is_container": True,
         "is_open": False,
-        "contains": ["old_document"],
+        "contains": ["old_document"], 
         "locked": True,
         "key_required": "brass_key"
     },
     "bookshelf": {
         "description": "a tall bookshelf filled with dusty tomes. One book titled 'Chronicles of Time' looks slightly ajar.",
-        "custom_properties": {"searchable": True}
+        "custom_properties": {"searchable": True} 
     },
     "grandfather_clock": {
         "description": "an old grandfather clock. Its pendulum is still. The time reads 6:05.",
-        "contains": ["brass_key"],
-        "is_container": True,
-        "is_open": False,
-        "locked": False
+        "contains": ["brass_key"], 
+        "is_container": True, 
+        "is_open": False, 
+        "locked": False 
     },
     "brass_key": {
         "description": "a small brass key.",
@@ -163,7 +163,7 @@ def setup_environment(config: Optional[Dict] = None) -> Environment:
         room_layout=LOST_KEY_ROOM_LAYOUT,
         object_details=LOST_KEY_OBJECT_DETAILS,
         agent_start_room="study",
-        agent_id=AGENT_ID_PLAYER
+        agent_id=AGENT_ID_PLAYER 
     )
 
 def setup_agents(env_info: Dict, config: Optional[Dict] = None) -> List[AgentInterface]:
@@ -174,45 +174,45 @@ def setup_agents(env_info: Dict, config: Optional[Dict] = None) -> List[AgentInt
 # --- Main Execution ---
 def run_scenario(max_steps: int = 50, custom_config: Optional[Dict] = None):
     print(f"--- Starting Scenario: {SCENARIO_NAME} ---")
-
+    
     engine = BasicSimulationEngine()
-
+    
     environment = setup_environment(config=custom_config)
-    agent_list = setup_agents(env_info={}, config=custom_config)
-
+    agent_list = setup_agents(env_info={}, config=custom_config) 
+    
     agents_dict = {agent.get_id(): agent for agent in agent_list}
 
     engine.initialize(
-        environment=environment,
+        environment=environment, 
         agents=agents_dict,
         scenario_config={"name": SCENARIO_NAME, "max_steps": max_steps}
     )
-
+    
     for i in range(max_steps):
         print(f"\n--- Scenario Step {engine.current_step + 1}/{max_steps} ---")
         engine.run_step()
-
+        
         player_agent_instance = agents_dict.get(AGENT_ID_PLAYER)
-
+        
         if player_agent_instance and isinstance(player_agent_instance, InteractiveTextAgent):
             if player_agent_instance.last_action_command and \
                player_agent_instance.last_action_command.action_type == "quit":
                 print(f"\n*** {SCENARIO_NAME} EXITED by user. ***")
                 engine.logger.log(engine.current_step, "SCENARIO_QUIT", "scenario_logic", {"reason": "User quit via action"})
                 break
-
+        
         # Check win condition
         if player_agent_instance and player_agent_instance.last_perception and \
            "old_document" in player_agent_instance.last_perception.sensor_data.get("inventory", []):
             print(f"\n*** {SCENARIO_NAME} COMPLETED: You found the old document! ***")
             engine.logger.log(engine.current_step, "SCENARIO_WIN", "scenario_logic", {"reason": "Agent obtained old_document"})
             break
-
+        
         if engine._are_all_agents_done():
              print(f"\n*** {SCENARIO_NAME} ENDED: All agents are done (as per environment). ***")
              engine.logger.log(engine.current_step, "SCENARIO_END", "scenario_logic", {"reason": "All agents done by environment state"})
              break
-    else:
+    else: 
         print(f"\n*** {SCENARIO_NAME} ENDED: Max steps ({max_steps}) reached. ***")
         engine.logger.log(engine.current_step, "SCENARIO_END", "scenario_logic", {"reason": "Max steps reached"})
 
