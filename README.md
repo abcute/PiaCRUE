@@ -34,15 +34,15 @@ To engage with the PiaAGI project, we recommend the following:
 4.  **Discover AGI Research Tools:** Explore the **[`PiaAGI_Research_Tools/`](PiaAGI_Research_Tools/)** directory. This new section contains:
     *   Conceptual design documents for a suite of Python-based tools:
         *   **PiaSE (PiaAGI Simulation Environment):** For testing agents in dynamic environments.
-        *   **PiaCML (PiaAGI Cognitive Module Library):** For constructing agent cognitive modules. This library now includes defined interfaces for core modules such as Perception, Motivation, Emotion, Planning, Self-Model, and various memory systems. More details can be found in the [PiaAGI_Research_Tools/PiaCML/README.md](PiaAGI_Research_Tools/PiaCML/README.md).
+        *   **PiaCML (PiaAGI Cognitive Module Library):** For constructing agent cognitive modules. This library now includes defined Python interfaces for 12+ core cognitive modules (Perception, Memory, Motivation, Emotion, Planning, Self-Model, etc.) and basic concrete MVP implementations for many of them. More details can be found in the [PiaAGI_Research_Tools/PiaCML/README.md](PiaAGI_Research_Tools/PiaCML/README.md).
         *   **PiaAVT (PiaAGI Agent Analysis & Visualization Toolkit):** For analyzing agent behavior and internal states.
         *   **PiaPES (PiaAGI Prompt Engineering Suite):** For designing Guiding Prompts and Developmental Scaffolding.
-    *   An initial **MVP (Minimal Viable Product)** implementation for the **PiaPES Prompt Templating Engine** located in `PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py` with its `USAGE.md`.
+    *   Initial **MVP (Minimal Viable Product) implementations** exist for several tools, including the **PiaPES Prompt Templating Engine** (`PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py`), basic versions of **PiaSE** (GridWorld environment, Q-Learning agent) and **PiaAVT** (logging, basic analysis, Streamlit webapp), and foundational interfaces and concrete classes for **PiaCML**. A **Unified WebApp** (`PiaAGI_Research_Tools/WebApp/`) provides a central interface for interacting with these MVPs.
 
 ## Core Components
 
 *   **[`PiaAGI.md`](PiaAGI.md):** The main, extensively revised document detailing the PiaAGI framework, its psycho-cognitive architecture for AGI, developmental principles, ethical considerations, and advanced methodology for guiding AGI development.
-*   **[`PiaAGI_Research_Tools/`](PiaAGI_Research_Tools/):** Contains conceptual designs for a suite of Python-based tools supporting AGI research (PiaSE, PiaCML, PiaAVT, PiaPES), including the PiaAGI Cognitive Module Library (CML) with defined interfaces for key cognitive functions, and initial MVP implementations (e.g., PiaPES Prompt Templating Engine).
+*   **[`PiaAGI_Research_Tools/`](PiaAGI_Research_Tools/):** Contains conceptual designs and Python MVP implementations for a suite of tools supporting AGI research (PiaSE, PiaCML, PiaAVT, PiaPES). This includes the PiaAGI Cognitive Module Library (PiaCML) with defined interfaces and basic concrete classes for key cognitive functions, the PiaPES prompt engine, basic PiaSE and PiaAVT versions, and a unified WebApp for interaction. See its [README.md](PiaAGI_Research_Tools/README.md) for details.
 *   **[`Papers/`](Papers/):** A collection of documents exploring theoretical concepts and related research relevant to PiaAGI's AGI focus.
 *   **[`Examples/`](Examples/):** Contains various practical examples related to PiaAGI principles and foundational R-U-E prompting. The primary, fully documented foundational examples have been moved to **Appendix A of `PiaAGI.md`**. AGI-specific examples are detailed within the main body of `PiaAGI.md` (Section 7).
 
