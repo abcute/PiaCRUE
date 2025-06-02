@@ -68,6 +68,7 @@
 
 ## File Organization
 - [x] Relocated PiaPES example/test artifact files from the root directory to `PiaAGI_Research_Tools/PiaPES/examples/`. (Task completed on 2024-07-30)
+- [x] Moved `PiaAGI_Research_Tools/Examples/` contents to root `Examples/` directory, merging with existing content. Original `PiaAGI_Research_Tools/Examples/` directory was removed. (Task completed 2024-07-31)
 
 ## PiaAGI理论框架构建
 - [ ] 参考 `Papers/AGI_Interdisciplinary_Memorandum.md` 中的多学科交叉备忘录，以获取PiaAGI理论框架升级的灵感。
