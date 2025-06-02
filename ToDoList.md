@@ -164,4 +164,54 @@
 - [x] Example: Examples/Internal_Metacognition/Self_Monitoring_PiaAVT_Principles.md (conceptual).
 - [x] Example: Examples/Internal_Metacognition/Internal_Experimentation_PiaSE_Principles.md (conceptual).
 
-[end of ToDoList.md]
+## Research Tools - Next Level Enhancements
+
+This section outlines proposed future development directions for the PiaAGI Research Tools Suite, based on the analysis conducted to deepen their support for AGI development.
+
+### PiaCML (Cognitive Module Library) - Enhancements
+- [ ] **Roadmap for Advanced Modules:** Define a phased approach to implement more sophisticated versions of key PiaCML modules.
+  - [ ] *Self-Model:* Implement features for metacognitive monitoring (e.g., tracking confidence, bias detection from PiaAVT logs) and a dynamic, learnable ethical framework.
+  - [ ] *LTM:* Explore and prototype richer LTM implementations (e.g., graph DB for semantic LTM, structured episodic memory with emotional valence and causal links).
+  - [ ] *Motivational System:* Implement computational models of intrinsic motivations (e.g., curiosity, competence) that dynamically generate goals.
+  - [ ] *Emotion Module:* Develop appraisal mechanisms more deeply integrated with World Model, Self-Model, and LTM.
+- [ ] **Standardized Inter-Module Communication:** Design and specify a clear API or message-passing system for modules to exchange information (e.g., defining data structures for "GoalUpdate", "EmotionalStateChange").
+- [ ] **Architectural Maturation Hooks:** Conceptualize how PiaCML module interfaces could support dynamic parameter changes (e.g., WM capacity) or representation of new/strengthened inter-module connections.
+
+### PiaSE (PiaAGI Simulation Environment) - Enhancements
+- [ ] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules).
+- [ ] **Environment API & Library Expansion:**
+  - [ ] Define a more robust Environment API for richer perceptions and actions.
+  - [ ] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World").
+  - [ ] Implement one of the newly conceptualized environment types as a prototype.
+- [ ] **Dynamic Scenario Engine for Scaffolding:** Enhance PiaSE's scenario manager to allow dynamic adjustments (complexity, hints, new challenges) based on agent performance (from PiaAVT) or curriculum triggers (from PiaPES).
+- [ ] **Human-in-the-Loop (HITL) Interface:** Conceptualize how a human user could interact with a PiaSE simulation in real-time (e.g., as a tutor, evaluator, or another agent).
+
+### PiaPES (PiaAGI Prompt Engineering Suite) - Enhancements
+- [ ] **Developmental Curriculum Designer - Advanced:**
+  - [ ] Define a detailed data structure for `DevelopmentalCurriculum` supporting stages, steps, pre-conditions, learning objectives, and links to PiaSE scenarios/PiaAVT metrics.
+  - [ ] Conceptualize how PiaPES would track agent progress through such curricula.
+- [ ] **PiaPES-PiaSE Integration Workflow:** Define the operational workflow for how a curriculum from PiaPES is executed in PiaSE, how progress is reported, and how PiaPES might adapt based on feedback.
+- [ ] **PiaPES-PiaAVT Integration for Evaluation:** Specify data exchange for evaluating prompt/curriculum effectiveness (e.g., "Did agent meet learning objective X as per PiaAVT metric Y?").
+- [ ] **Cognitive Configuration GUI - Deep Dive:** Detail the design for the GUI for configuring PiaCML modules (personality, motivation, etc.), potentially with UI mockups.
+- [ ] **Prompt Editor/IDE Features:** Further conceptualize advanced editor features (PiaAGI-specific syntax highlighting, auto-completion for PiaCML, real-time validation, documentation linking).
+
+### PiaAVT (Agent Analysis & Visualization Toolkit) - Enhancements
+- [ ] **Implement Conceptual Analyses:** Implement the already designed conceptual analyses: Goal Lifecycle Tracking, Emotional State Trajectory, and Task Performance Metrics.
+- [ ] **Advanced Analytical Modules:**
+  - [ ] *Causal Analysis:* Conceptualize tools to infer causal links between agent actions, internal states, and outcomes.
+  - [ ] *Behavioral Pattern Mining:* Design algorithms to identify recurring behavioral or cognitive state patterns.
+  - [ ] *Ethical Reasoning Traceability:* Conceptualize tools to visualize how the Self-Model's ethical framework influences decisions.
+- [ ] **Rich Cognitive Visualizations - Conceptual Designs:**
+  - [ ] *LTM Explorer:* Conceptualize interactive graph/timeline visualizations for LTM.
+  - [ ] *Self-Model Dashboard:* Design a view summarizing key Self-Model aspects (confidence, values, capabilities).
+  - [ ] *World Model Viewer:* Conceptualize tools to inspect and compare agent's World Model with PiaSE ground truth.
+- [ ] **Meta-Cognitive Development Analysis:**
+  - [ ] *Extend Logging Spec:* Propose new conceptual log event types in `Logging_Specification.md` for meta-cognitive activities (e.g., `AGENT_SELF_ANALYSIS_TRIGGERED`, `AGENT_MCP_GENERATED`).
+  - [ ] *Dedicated Analyses:* Conceptualize PiaAVT analyses to detect patterns indicative of these meta-cognitive processes.
+
+### Cross-Cutting: Tooling for AGI's Internalization of Developer Tools & MCPs
+- [ ] **PiaAVT Logging for Meta-Cognition:** Formally propose and document new event types in `Logging_Specification.md` related to AGI self-analysis, internal simulation, MCP generation, and cognitive reconfiguration.
+- [ ] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles (e.g., correlating `AGENT_MCP_GENERATED` with improved task performance).
+- [ ] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
+- [ ] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
+```

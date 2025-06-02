@@ -3,99 +3,72 @@
 
 This directory contains the PiaAGI Simulation Environment (PiaSE), a flexible and extensible platform for researchers and developers to instantiate, test, and evaluate PiaAGI agents and their components in controlled, dynamic, and reproducible settings.
 
-## Directory Structure
+Refer to the main conceptual design document at [`PiaAGI_Simulation_Environment.md`](../PiaAGI_Simulation_Environment.md) for the overarching purpose, goals, and detailed conceptual features of PiaSE, including the core simulation loop, agent-environment API, and example environment designs like "TextBasedRoom."
 
--   `core_engine/`: Contains the main simulation loop, time management, event system, and core abstract classes.
--   `environments/`: Implementations of various simulation environments (e.g., GridWorld, physics-based).
--   `agents/`: Agent interfaces and example agent implementations.
--   `scenarios/`: Scripts and configurations for defining and running specific experimental scenarios.
--   `utils/`: Common utility functions and data structures used across PiaSE.
--   `tests/`: Unit tests for PiaSE components.
+## Current Status & Implemented Components
 
-Refer to the main PiaAGI documentation and [`PiaAGI_Hub/PiaAGI_Simulation_Environment.md`](../PiaAGI_Simulation_Environment.md) for more details on the conceptual design and overall goals of PiaSE.
+PiaSE has foundational elements and some MVP (Minimal Viable Product) implementations:
+-   **Core Interfaces:** Defined for `PiaSEEvent`, `SimulationEngine`, `Environment`, `AgentInterface`.
+-   **Simulation Engine:** A `BasicSimulationEngine` is implemented.
+-   **Environments:**
+    *   A `GridWorld` environment is implemented, supporting rewards and goal-oriented tasks.
+    *   Conceptual design for a "TextBasedRoom" exists, suitable for more complex textual interactions.
+-   **Agents:**
+    *   A `BasicGridAgent`.
+    *   A `QLearningAgent` capable of learning in the `GridWorld`.
+-   **Visualization & Interaction:**
+    *   A `GridWorldVisualizer` using Matplotlib.
+    *   An example `grid_world_scenario.py` that saves visualization frames.
+    *   A simple **WebApp interface** (`PiaAGI_Research_Tools/PiaSE/WebApp/`) to run scenarios (currently Q-Learning in GridWorld) and view visual progress and logs.
+-   **Testing:** Unit tests for `GridWorld`, `BasicGridAgent`, `QLearningAgent`, and `GridWorldVisualizer`.
+-   **Dependencies:** Listed in `requirements.txt` in the PiaSE root.
 
-The components implemented in this initial phase include:
-- Core interfaces (`PiaSEEvent`, `SimulationEngine`, `Environment`, `AgentInterface`)
-- Updates to core interfaces to support learning agents.
-- A `BasicSimulationEngine`
-- A `GridWorld` environment
-- Modifications to `GridWorld` to support rewards and goal-oriented tasks.
-- A `BasicGridAgent`
-- A `QLearningAgent` capable of learning in GridWorld.
-- A `GridWorldVisualizer` using Matplotlib to display `GridWorld` states.
-- An example `grid_world_scenario.py` that saves visualization frames.
-- Unit tests for `GridWorld`, `BasicGridAgent`, `QLearningAgent`, and `GridWorldVisualizer`.
-- A simple WebApp interface to run scenarios and view results.
+## PiaSE WebApp Deployment Guide
 
-## PiaSE WebApp
-PiaSE includes a simple web application to help visualize and interact with simulations.
+To run the PiaSE WebApp for visualizing GridWorld scenarios:
 
-### Purpose
-The WebApp allows users to run a predefined PiaSE scenario (currently a Q-Learning agent in GridWorld) and view its step-by-step visual progress and textual logs directly in a web browser. This enhances the usability and understandability of the PiaSE framework.
+1.  **Navigate to the PiaSE Root Directory:** `cd path/to/your/PiaAGI_Research_Tools/PiaSE`
+2.  **Install Dependencies:** `pip install -r requirements.txt` (preferably in a virtual environment).
+3.  **Navigate to the WebApp Directory:** `cd WebApp`
+4.  **Run the Flask Application:** `python app.py` or `flask run --host=0.0.0.0 --port=5001` (after setting `FLASK_APP=app.py`).
+5.  **Access in Browser:** `http://127.0.0.1:5001/`.
 
-### Location
-The WebApp code is located in the `PiaAGI_Hub/PiaSE/WebApp/` directory.
+For more details, see the [WebApp README](./WebApp/README.md).
 
-### PiaSE WebApp Deployment Guide
+## Future Development & Enhancements
 
-To run the PiaSE WebApp, follow these steps:
+PiaSE is envisioned to grow into a powerful platform for AGI research. Key future directions include:
 
-1.  **Navigate to the PiaSE Root Directory:**
-    Open your terminal and change to the `PiaAGI_Hub/PiaSE/` directory.
-    ```bash
-    cd path/to/your/PiaAGI_Hub/PiaSE
-    ```
+1.  **Full PiaAGI Agent Integration:**
+    *   Developing clear examples, helper classes, or integration layers within PiaSE to demonstrate how to instantiate, configure (potentially using PiaPES outputs), and run a complete PiaAGI agent composed of multiple interacting PiaCML modules.
 
-2.  **Install Dependencies:**
-    Ensure all necessary Python packages are installed by running:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    This file includes Flask, Matplotlib, NumPy, and other potential dependencies for PiaSE.
+2.  **Diverse and Dynamic Environments:**
+    *   Moving beyond `GridWorld` to implement or integrate more complex environments.
+    *   **Social Simulation Environments:** For testing ToM, communication, and emotional modeling (e.g., simulated dialogues, collaborative tasks).
+    *   **Problem-Solving Worlds:** Environments that require multi-step planning, tool use, and creative problem-solving.
+    *   **Multi-Modal Environments:** Conceptual support for environments that could provide visual or other forms of non-textual input to agents.
+    *   Developing a more robust **Environment API** to support these richer interactions.
 
-3.  **Navigate to the WebApp Directory:**
-    Change to the WebApp directory:
-    ```bash
-    cd WebApp
-    ```
+3.  **Advanced Developmental Scaffolding Engine:**
+    *   Enhancing the scenario manager in PiaSE to become a **Dynamic Scenario Engine**. This engine would:
+        *   Interface with PiaPES to load and interpret `DevelopmentalCurricula`.
+        *   Adapt environmental parameters, task complexity, available information, or even simulated tutor behavior based on the agent's performance (metrics from PiaAVT) and its current position in a curriculum.
+        *   Manage the state of an agent's progression through long-term developmental pathways.
 
-4.  **Run the Flask Application:**
-    You can run the development server in one of two main ways:
+4.  **Human-in-the-Loop (HITL) Interaction:**
+    *   Designing and implementing interfaces that allow human users to:
+        *   Act as tutors or mentors, providing real-time feedback, demonstrations, or guidance to the agent within PiaSE.
+        *   Participate as other agents or entities in simulated social scenarios.
+        *   Manually trigger environmental events or override agent actions for experimental purposes.
 
-    *   **Method 1: Directly executing `app.py`** (if it contains `app.run(...)` in an `if __name__ == '__main__':` block):
-        ```bash
-        python app.py
-        ```
-    *   **Method 2: Using the `flask` command** (recommended for flexibility):
-        First, set the `FLASK_APP` environment variable:
-        ```bash
-        # On Linux/macOS:
-        export FLASK_APP=app.py
-        # On Windows (Command Prompt):
-        # set FLASK_APP=app.py
-        # On Windows (PowerShell):
-        # $env:FLASK_APP="app.py"
-        ```
-        Then, run the Flask development server:
-        ```bash
-        flask run --host=0.0.0.0 --port=5001
-        ```
-        The `--host=0.0.0.0` flag makes the server accessible from other devices on your network (use `127.0.0.1` for local access only). The port is set to `5001` in `app.py`.
+5.  **Standardized Logging for PiaAVT:**
+    *   Ensuring PiaSE emits comprehensive logs that adhere to the `PiaAVT/Logging_Specification.md`, covering agent-environment interactions, task outcomes, and any data necessary for advanced analyses in PiaAVT (e.g., data to evaluate goal achievement, learning progress, or ethical decision-making).
 
-5.  **Access in Browser:**
-    Open your web browser and go to `http://127.0.0.1:5001/` (or `http://localhost:5001/`).
+6.  **Multi-Agent Support:**
+    *   Formalizing support for running multiple independent or interacting PiaAGI agents within the same environment, including defining inter-agent communication channels and observation capabilities.
 
-You should see the main page of the PiaSE WebApp, from where you can trigger a simulation run.
-
-For more details about the WebApp's internal structure, see the [WebApp README](./WebApp/README.md).
-
-## Dependencies
-Dependencies for PiaSE, including the WebApp and visualizer, are listed in `requirements.txt` (located in the `PiaAGI_Hub/PiaSE/` directory).
-To install them, navigate to the `PiaAGI_Hub/PiaSE/` directory and run:
-```bash
-pip install -r requirements.txt
-```
-It is highly recommended to use a Python virtual environment.
+PiaSE aims to be a critical testbed for empirically validating the PiaAGI framework and fostering the development of increasingly sophisticated and autonomous agents.
 
 ---
 Return to [PiaAGI Core Document](../../PiaAGI.md) | [Project README](../../README.md)
+```
