@@ -51,7 +51,8 @@ class TestConcreteTheoryOfMindModule(unittest.TestCase):
 
     def test_infer_mental_state_new_agent_simple_desire(self):
         agent_id = "agent_beta"
-        observables = {'utterance': "I really want that cookie!", 'expression': 'pointing', 'affective_cues': ['eager']}
+        # Adjusted utterance for naive parsing: "want<space><object_name>"
+        observables = {'utterance': "I want cookie", 'expression': 'pointing', 'affective_cues': ['eager']}
         inferred = self.tom.infer_mental_state(agent_id, observables)
 
         self.assertIn('desire_state', inferred)

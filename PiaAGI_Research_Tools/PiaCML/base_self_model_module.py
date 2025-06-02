@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-class SelfModelModule(ABC):
+class BaseSelfModelModule(ABC):
     """
     Abstract Base Class for the Self-Model Module in the PiaAGI Cognitive Architecture.
 
@@ -151,9 +151,9 @@ class SelfModelModule(ABC):
         pass
 
 if __name__ == '__main__':
-    # Conceptual illustration for SelfModelModule
+    # Conceptual illustration for BaseSelfModelModule
 
-    class ConceptualSelfModel(SelfModelModule):
+    class ConceptualSelfModel(BaseSelfModelModule):
         def __init__(self):
             self.model = {
                 "capabilities": {"nlp": 0.8, "planning_depth": 4, "image_recognition": 0.6},

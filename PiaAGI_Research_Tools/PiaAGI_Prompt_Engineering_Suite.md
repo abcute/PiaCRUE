@@ -29,10 +29,79 @@ The PiaAGI Prompt Engineering Suite (PiaPES) is a toolkit designed to assist res
     *   User-friendly interface (GUI or structured text) for setting parameters of cognitive modules (Personality, Motivation, Emotion, Learning) as described in [Section 5.2 of `PiaAGI.md`](../PiaAGI.md#52-key-prompt-components-for-piaagi) and example prompts ([Section 7 of `PiaAGI.md`](../PiaAGI.md#7-examples-and-use-cases-from-personalized-agents-to-agi-development)).
     *   Visual aids to understand the range and impact of different parameter settings.
     *   Linkages to PiaCML to ensure parameter compatibility.
-*   **Developmental Curriculum Designer:**
-    *   Tools to sequence Guiding Prompts into curricula for developmental scaffolding ([Section 5.4 of `PiaAGI.md`](../PiaAGI.md#54-developmental-scaffolding-a-cornerstone-of-piaagi-growth), [6.1 of `PiaAGI.md`](../PiaAGI.md#61-advanced-developmental-scaffolding-techniques-for-agi-cultivation)).
-    *   Define prerequisite conditions or agent states for progressing to the next phase of a curriculum.
-    *   Visualize developmental pathways and dependencies between scaffolding prompts.
+#### 2.4 Developmental Curriculum Designer (Detailed)
+
+The Developmental Curriculum Designer is a core component of PiaPES, enabling the structured sequencing of `PiaAGIPrompt` instances to guide an agent's learning and development across PiaAGI stages. It builds upon the `DevelopmentalCurriculum` and `CurriculumStep` classes available in the `prompt_engine_mvp.py`.
+
+**2.4.1 Curriculum Structure (`DevelopmentalCurriculum` Object):**
+
+A `DevelopmentalCurriculum` object serves as the main container and includes:
+
+*   **Metadata:**
+    *   `name` (str): A human-readable name for the curriculum (e.g., "Early Object Permanence Training," "ToM False Belief Scaffolding").
+    *   `description` (str): A brief overview of the curriculum's goals and scope.
+    *   `target_developmental_stage_span` (str): The intended developmental range this curriculum covers (e.g., "PiaSeedling Phase 1 to PiaSprout Phase 2"). This helps in selecting appropriate curricula.
+    *   `version` (str): Version of the curriculum for tracking and updates.
+    *   `author` (str): Creator(s) of the curriculum.
+    *   `creation_date` (str): Date of creation.
+    *   `last_updated_date` (str): Date of last modification.
+    *   `tags_keywords` (List[str]): Keywords for easier searching and categorization (e.g., ["ToM", "Ethics", "PiaSapling", "Social_Interaction"]).
+    *   `overall_learning_objectives` (List[str]): High-level learning outcomes expected upon curriculum completion.
+
+*   **Steps (`List[CurriculumStep]`):**
+    *   An ordered list of `CurriculumStep` objects, sorted by their `order` attribute.
+
+**2.4.2 Step Structure (`CurriculumStep` Object):**
+
+Each `CurriculumStep` defines a specific phase or activity within the curriculum:
+
+*   **Core Attributes:**
+    *   `name` (str): Name of the step (e.g., "Stage 1: Exposure to Hidden Object").
+    *   `order` (int): Defines the sequence.
+    *   `prompt_reference` (str): A filepath or unique identifier pointing to the `PiaAGIPrompt` JSON template to be used for this step. This prompt configures the agent for the specific task/interaction of the step.
+    *   `description` (Optional[str]): More detailed explanation of this step's purpose.
+*   **Progression Logic & Conditions:**
+    *   `entry_conditions` (Optional[List[Dict]]): A list of structured conditions that must be met for the agent to begin this step. This enables adaptive progression. Examples:
+        *   `{"type": "previous_step_completed", "step_order": 0}`
+        *   `{"type": "agent_capability_achieved", "capability_id": "Skill_BasicObjectRecognition", "min_proficiency": 0.7}` (Requires PiaAVT integration for assessment)
+        *   `{"type": "agent_developmental_marker", "marker": "PiaSeedling_Milestone3"}`
+        *   `{"type": "manual_approval_required", "approver_role": "Researcher"}`
+    *   `success_criteria` (Optional[List[Dict]]): Observable outcomes or agent states that define successful completion of this step. Used for evaluation and gating progression. Examples:
+        *   `{"type": "task_performance", "task_id_ref": "from_prompt_requirements", "metric": "accuracy", "threshold": 0.85, "operator": ">="}`
+        *   `{"type": "behavioral_observation", "expected_behavior_pattern_id": "Pattern_SearchHiddenObject", "min_occurrences": 1}` (Requires PiaAVT/PiaSE logging)
+        *   `{"type": "agent_state_change", "module": "SelfModel", "attribute": "KnowledgeMap.concept.object_permanence.understanding_level", "target_value": 0.5, "operator": ">="}`
+    *   `failure_conditions_or_thresholds` (Optional[List[Dict]]): Conditions that might indicate the agent is struggling or the step is failing, potentially triggering alternative paths or human intervention. Examples:
+        *   `{"type": "max_attempts_exceeded", "task_id_ref": "...", "limit": 5}`
+        *   `{"type": "negative_emotional_state_persistent", "emotion": "frustration", "duration_threshold_turns": 10, "intensity_threshold": 0.7}` (Requires EmotionModule logging via PiaAVT)
+*   **Learning & Adaptation Parameters:**
+    *   `learning_focus_override` (Optional[Dict]): Specific parameters for the LearningModule for this step, potentially overriding parts of the agent's general learning configuration from the step's prompt (e.g., temporarily increase learning rate for a critical skill).
+    *   `allowed_tool_ids` (Optional[List[str]]): Specifies which tools (from agent's capability inventory) are permitted or encouraged for this step.
+*   **Instructional Content & Feedback:**
+    *   `guidance_prompts_supplementary` (Optional[List[str]]): Short textual prompts or hints that can be provided to the agent during the step if it struggles (part of ZPD scaffolding).
+    *   `feedback_rules_script` (Optional[str]): Reference to a script or ruleset defining how feedback should be generated and delivered based on agent performance within this step.
+*   **Metadata:**
+    *   `estimated_duration_minutes` (Optional[int]): Expected time for an agent to complete this step.
+    *   `notes` (Optional[str]): For curriculum designers.
+
+**2.4.3 Progression Logic:**
+
+The progression through a curriculum is managed by evaluating the `success_criteria` of the current step and checking the `entry_conditions` of subsequent steps.
+
+*   **Linear Progression:** Default mode is to proceed to the step with the next `order` number upon successful completion.
+*   **Conditional Branching (Conceptual):** Advanced curricula might define branches based on the outcome of a step.
+    *   If `success_criteria` are fully met -> proceed to `next_step_on_success` (could be an `order` number or a specific step ID).
+    *   If specific `failure_conditions_or_thresholds` are met -> proceed to a remedial step (`next_step_on_failure`) or flag for review.
+    *   This requires the curriculum execution engine (likely part of PiaPES or a higher-level orchestrator interacting with PiaSE) to interpret these conditions.
+*   **Mastery Learning:** A step might be repeated until `success_criteria` are met, possibly with varied `guidance_prompts_supplementary` or slight modifications to the main `prompt_reference`.
+
+**2.4.4 Visualization (Conceptual Feature):**
+
+PiaPES should aim to provide a visual interface to:
+*   Display the curriculum as a graph or flowchart, showing steps and their dependencies (derived from `entry_conditions` and `order`).
+*   Highlight the current active step for an agent undergoing the curriculum.
+*   Show an agent's progress and performance against the `success_criteria` for each step (data from PiaAVT).
+
+This detailed structure for the Developmental Curriculum Designer will provide a robust framework for creating and managing the learning pathways of PiaAGI agents.
 *   **Prompt Version Control:**
     *   Integration with Git or a custom versioning system to track changes to prompts and curricula.
     *   Ability to branch, merge, and compare prompt versions.
@@ -485,3 +554,5 @@ By focusing on smart integrations and providing a user-friendly interface to the
 
 ---
 Return to [PiaAGI Core Document](../PiaAGI.md) | [Project README](../README.md)
+
+[end of PiaAGI_Research_Tools/PiaAGI_Prompt_Engineering_Suite.md]
