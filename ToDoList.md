@@ -1,10 +1,5 @@
 # PiaAGI Project Upgrade ToDo List
 
-- [x] Reorganize root `img/` directory: Moved all images to `docs/assets/img/` and updated all markdown references. Removed root `img/` directory. (Task completed on 2024-07-29)
-- [x] Re-evaluate `conceptual_simulations` directory: Moved contents (`diagram_descriptions.md` to `docs/assets/`, `PiaAGI_Behavior_Example.py` to `Examples/`) and removed the directory as it's not a standalone tool following PiaXYZ naming. (Task completed on 2024-07-29)
-- [x] Completed Project Review, Documentation Update, and Next Steps Definition (Nov 2024). This led to the current detailed conceptual tasks for tools and examples.
-- [x] Create a new file named `PiaAGI.md` in the root of the repository. (Placeholder, original task)
-- [x] Add the following content to `PiaAGI.md`: (Placeholder, original task)
   ```markdown
   # PiaAGI
 
@@ -23,6 +18,12 @@
   - [ ] Phase 2: Development and Testing
   - [ ] Phase 3: Deployment and Launch
   ```
+
+- [x] Reorganize root `img/` directory: Moved all images to `docs/assets/img/` and updated all markdown references. Removed root `img/` directory. (Task completed on 2024-07-29)
+- [x] Re-evaluate `conceptual_simulations` directory: Moved contents (`diagram_descriptions.md` to `docs/assets/`, `PiaAGI_Behavior_Example.py` to `Examples/`) and removed the directory as it's not a standalone tool following PiaXYZ naming. (Task completed on 2024-07-29)
+- [x] Completed Project Review, Documentation Update, and Next Steps Definition (Nov 2024). This led to the current detailed conceptual tasks for tools and examples.
+- [x] Create a new file named `PiaAGI.md` in the root of the repository. (Placeholder, original task)
+- [x] Add the following content to `PiaAGI.md`: (Placeholder, original task)
 - [x] Update the `README.md` file to include a link to the new `PiaAGI.md` file. (Placeholder, original task)
 - [x] Update `PiaAGI.md` Section 3.1.1 Memory Systems.
 - [x] Update `PiaAGI.md` Section 3.1.2 Attention and Cognitive Control.
