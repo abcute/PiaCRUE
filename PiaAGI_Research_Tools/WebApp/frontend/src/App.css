@@ -1,47 +1,84 @@
+/* General App Structure */
+.app-container {
+  display: flex;
+  flex-direction: column; /* Stack nav on top of content */
+  height: 100vh;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+}
+
+.app-content {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto; /* Allow content to scroll if it overflows */
+}
+
+/* Navigation Styling */
+.app-nav {
+  background-color: #333;
+  padding: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.app-nav ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: flex-start; /* Align items to the start */
+}
+
+.app-nav ul li {
+  margin-right: 20px; /* Space between nav items */
+}
+
+.app-nav ul li:last-child {
+  margin-right: 0;
+}
+
+.app-nav ul li a {
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.app-nav ul li a:hover,
+.app-nav ul li a.active { /* Example for active link styling if NavLink is used later */
+  background-color: #555;
+}
+
+/* Placeholder Page Content Styling */
+.app-content h1 {
+  border-bottom: 1px solid #444;
+  padding-bottom: 10px;
+  margin-top: 0;
+}
+
+/* Reset some default browser styles that might interfere */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #242424; /* Match app background */
+  color: rgba(255, 255, 255, 0.87); /* Match app text color */
+}
+
 #root {
-  /* max-width: 1280px; */ /* Allow full width */
-  margin: 0 auto; /* Still center content if it has a max-width, but PromptForm is full width */
-  /* padding: 2rem; */ /* Remove padding to allow PromptForm to control its own padding */
-  /* text-align: center; */ /* PromptForm will handle its own text alignment */
+  height: 100%; /* Ensure root takes full height */
 }
 
-.App {
-  /* If specific styling for the App container is needed, add here */
-  /* For now, mostly relying on PromptForm's own styling */
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
+/* Specific CML Dashboard adjustments if needed */
+/* For example, if CMLDashboard's internal padding/margins conflict */
+/* .app-content .CMLDashboard-container { */
+  /* margin: 0; */
+  /* padding: 0; */
+/* } */
