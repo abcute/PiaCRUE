@@ -83,10 +83,14 @@
 - [ ] Implement basic unit tests for `ConcreteWorldModel` methods based on its conceptual data structures.
 
 ### PiaSE (PiaAGI Simulation Environment)
-- [ ] Detail the core simulation loop (time steps, agent perception/action phases, environment updates).
-- [ ] Define a concrete Python API for agent perception and action within PiaSE.
-- [ ] Conceptually design a simple initial environment (e.g., "TextBasedRoom") for PiaSE.
-- [ ] Specify how a simple scenario would be defined and loaded in this TextBasedRoom.
+- [x] Detailed the core simulation loop (Initialization, Main Loop phases A-G, Finalization) in PiaAGI_Simulation_Environment.md.
+- [x] Defined conceptual Agent-Environment API (EnvironmentInterface, Perception Data, Action Command Data) in PiaAGI_Simulation_Environment.md.
+- [x] Conceptually designed "TextBasedRoom" environment (state representation, perceptions, actions, dynamics) in PiaAGI_Simulation_Environment.md.
+- [x] Specified YAML-based scenario definition format for "TextBasedRoom" with "The Lost Key" example in PiaAGI_Simulation_Environment.md.
+- [ ] Refine data structures for Agent-Environment API (perceptions, actions) with more detailed type hints or Pydantic models.
+- [ ] Develop detailed specifications for core PiaSE components (Environment Abstraction Layer, Agent Management, Scenario Definition Module, Data Logging Service).
+- [ ] Implement a prototype of the TextBasedRoom environment based on the conceptual design.
+- [ ] Implement a prototype of the PiaSE core simulation engine.
 
 ### PiaAVT (PiaAGI Analysis & Visualization Toolkit)
 - [x] Defined standardized logging format/schema (JSONL) and created `PiaAGI_Research_Tools/PiaAVT/Logging_Specification.md`.
