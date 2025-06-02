@@ -154,5 +154,89 @@ class TestConcreteBaseMemoryModule(unittest.TestCase):
         except Exception as e:
             self.fail(f"Placeholder method raised an unexpected exception: {e}")
 
+    def test_retrieve_by_context_only(self):
+        info1 = {'data': 'item_ctx1'}
+        ctx1 = {'source': 'sourceA', 'tag': 'tag1'}
+        info2 = {'data': 'item_ctx2'}
+        ctx2 = {'source': 'sourceB', 'tag': 'tag1'}
+        info3 = {'data': 'item_ctx3'}
+        ctx3 = {'source': 'sourceA', 'tag': 'tag2'}
+
+        self.memory.store(info1, ctx1)
+        self.memory.store(info2, ctx2)
+        self.memory.store(info3, ctx3)
+
+        retrieved_source_a = self.memory.retrieve({}, criteria={'match_context': {'source': 'sourceA'}})
+        self.assertEqual(len(retrieved_source_a), 2)
+        for item in retrieved_source_a:
+            self.assertEqual(item['ctx']['source'], 'sourceA')
+
+        retrieved_tag1 = self.memory.retrieve({}, criteria={'match_context': {'tag': 'tag1'}})
+        self.assertEqual(len(retrieved_tag1), 2)
+        for item in retrieved_tag1:
+            self.assertEqual(item['ctx']['tag'], 'tag1')
+
+        retrieved_source_b_tag1 = self.memory.retrieve({}, criteria={'match_context': {'source': 'sourceB', 'tag': 'tag1'}})
+        self.assertEqual(len(retrieved_source_b_tag1), 1)
+        self.assertEqual(retrieved_source_b_tag1[0]['info']['data'], 'item_ctx2')
+
+        retrieved_non_matching_ctx = self.memory.retrieve({}, criteria={'match_context': {'source': 'sourceC'}})
+        self.assertEqual(len(retrieved_non_matching_ctx), 0)
+
+    def test_retrieve_by_concept_and_context(self):
+        info1 = {'concept': 'QueryConcept', 'data': 'item_cc1'}
+        ctx1 = {'status': 'active'}
+        info2 = {'concept': 'QueryConcept', 'data': 'item_cc2'}
+        ctx2 = {'status': 'inactive'}
+        info3 = {'concept': 'OtherConcept', 'data': 'item_cc3'}
+        ctx3 = {'status': 'active'}
+
+        self.memory.store(info1, ctx1)
+        self.memory.store(info2, ctx2)
+        self.memory.store(info3, ctx3)
+
+        retrieved_qc_active = self.memory.retrieve(
+            {'concept': 'QueryConcept'},
+            criteria={'match_context': {'status': 'active'}}
+        )
+        self.assertEqual(len(retrieved_qc_active), 1)
+        self.assertEqual(retrieved_qc_active[0]['info']['data'], 'item_cc1')
+
+        retrieved_qc_inactive = self.memory.retrieve(
+            {'concept': 'QueryConcept'},
+            criteria={'match_context': {'status': 'inactive'}}
+        )
+        self.assertEqual(len(retrieved_qc_inactive), 1)
+        self.assertEqual(retrieved_qc_inactive[0]['info']['data'], 'item_cc2')
+
+        retrieved_qc_no_ctx_match = self.memory.retrieve(
+            {'concept': 'QueryConcept'},
+            criteria={'match_context': {'status': 'pending'}}
+        )
+        self.assertEqual(len(retrieved_qc_no_ctx_match), 0)
+
+    def test_retrieve_by_id_with_matching_context(self):
+        info = {'data': 'id_ctx_item'}
+        ctx = {'project': 'Alpha'}
+        item_id = self.memory.store(info, ctx)
+
+        retrieved = self.memory.retrieve(
+            {'id': item_id},
+            criteria={'match_context': {'project': 'Alpha'}}
+        )
+        self.assertEqual(len(retrieved), 1)
+        self.assertEqual(retrieved[0]['id'], item_id)
+
+    def test_retrieve_by_id_with_non_matching_context(self):
+        info = {'data': 'id_ctx_item_fail'}
+        ctx = {'project': 'Beta'}
+        item_id = self.memory.store(info, ctx)
+
+        retrieved = self.memory.retrieve(
+            {'id': item_id},
+            criteria={'match_context': {'project': 'Gamma'}} # Non-matching context
+        )
+        self.assertEqual(len(retrieved), 0)
+
 if __name__ == '__main__':
     unittest.main()
