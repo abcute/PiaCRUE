@@ -1,3 +1,4 @@
+[中文版](./README_CN.md)
 <!-- PiaAGI AGI Research Framework Document -->
 # PiaAGI: A Psycho-Cognitive Framework for Developing Artificial General Intelligence
 
