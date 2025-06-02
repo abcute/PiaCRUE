@@ -138,5 +138,123 @@ class TestConcreteAttentionModule(unittest.TestCase):
         state = self.attention.get_attentional_state()
         self.assertEqual(state['cognitive_load_level'], 0.95)
 
+    def test_direct_attention_with_filter_management(self):
+        """Test adding and clearing filters via direct_attention context."""
+        # Add a filter
+        filter_to_add = {'type': 'salience_gt', 'key': 'salience', 'threshold': 0.7}
+        self.attention.direct_attention("FocusWithFilter", 0.9, context={'add_filter': filter_to_add})
+        state = self.attention.get_attentional_state()
+        self.assertIn(filter_to_add, state['active_filters'])
+        self.assertEqual(len(state['active_filters']), 1)
+
+        # Add another filter
+        filter_to_add_2 = {'type': 'value_equals', 'key': 'status', 'value': 'critical'}
+        self.attention.direct_attention("FocusWithFilter2", 0.95, context={'add_filter': filter_to_add_2})
+        state = self.attention.get_attentional_state()
+        self.assertIn(filter_to_add, state['active_filters'])
+        self.assertIn(filter_to_add_2, state['active_filters'])
+        self.assertEqual(len(state['active_filters']), 2)
+
+        # Clear filters
+        self.attention.direct_attention("FocusClearFilter", 0.9, context={'clear_filters': True})
+        state = self.attention.get_attentional_state()
+        self.assertEqual(state['active_filters'], [])
+
+    def test_filter_information_with_value_equals_filter(self):
+        """Test filtering with a 'value_equals' active filter."""
+        filter_def = {'type': 'value_equals', 'key': 'status', 'value': 'active'}
+        # Clear any existing filters and set focus to None to ensure only active_filter applies
+        self.attention.direct_attention(None, 0.0, context={'add_filter': filter_def, 'clear_filters': True})
+
+        stream = [
+            {'id': 'item1', 'status': 'active', 'content': 'content1'},
+            {'id': 'item2', 'status': 'inactive', 'content': 'content2'},
+            {'id': 'item3', 'status': 'active', 'content': 'content3'},
+        ]
+
+        filtered_items = self.attention.filter_information(stream)
+        self.assertEqual(len(filtered_items), 2)
+        self.assertTrue(all(item['status'] == 'active' for item in filtered_items))
+        self.assertListEqual([item['id'] for item in filtered_items], ['item1', 'item3'])
+
+    def test_filter_information_with_value_gt_filter(self):
+        """Test filtering with a 'value_gt' active filter."""
+        filter_def = {'type': 'value_gt', 'key': 'score', 'threshold': 0.5}
+        self.attention.direct_attention(None, 0.0, context={'add_filter': filter_def, 'clear_filters': True})
+
+        stream = [
+            {'id': 'item1', 'score': 0.6, 'content': 'A'},
+            {'id': 'item2', 'score': 0.4, 'content': 'B'},
+            {'id': 'item3', 'score': 0.7, 'content': 'C'},
+            {'id': 'item4', 'score': 0.5, 'content': 'D'}, # Should not pass (not strictly greater)
+        ]
+        filtered_items = self.attention.filter_information(stream)
+        self.assertEqual(len(filtered_items), 2)
+        self.assertTrue(all(item['score'] > 0.5 for item in filtered_items))
+        self.assertListEqual([item['id'] for item in filtered_items], ['item1', 'item3'])
+
+    def test_filter_information_with_tag_present_filter(self):
+        """Test filtering with a 'tag_present' active filter."""
+        filter_def = {'type': 'tag_present', 'tag': 'important'}
+        self.attention.direct_attention(None, 0.0, context={'add_filter': filter_def, 'clear_filters': True})
+
+        stream = [
+            {'id': 'item1', 'tags': ['urgent', 'important'], 'content': 'A'},
+            {'id': 'item2', 'tags': ['general'], 'content': 'B'},
+            {'id': 'item3', 'tags': ['important'], 'content': 'C'},
+            {'id': 'item4', 'content': 'D'}, # No tags
+        ]
+        filtered_items = self.attention.filter_information(stream)
+        self.assertEqual(len(filtered_items), 2)
+        self.assertTrue(all('important' in item.get('tags', []) for item in filtered_items))
+        self.assertListEqual([item['id'] for item in filtered_items], ['item1', 'item3'])
+
+    def test_filter_information_with_multiple_filters(self):
+        """Test filtering with multiple active filters applied."""
+        filter1 = {'type': 'value_gt', 'key': 'priority', 'threshold': 3}
+        filter2 = {'type': 'tag_present', 'tag': 'projectX'}
+
+        self.attention.direct_attention(None, 0.0, context={'clear_filters': True})
+        self.attention.direct_attention(None, 0.0, context={'add_filter': filter1})
+        self.attention.direct_attention(None, 0.0, context={'add_filter': filter2})
+
+        stream = [
+            {'id': 'item1', 'priority': 5, 'tags': ['projectX', 'alpha']}, # Passes both
+            {'id': 'item2', 'priority': 2, 'tags': ['projectX']},          # Fails filter1 (priority)
+            {'id': 'item3', 'priority': 6, 'tags': ['projectY']},          # Fails filter2 (tag)
+            {'id': 'item4', 'priority': 4, 'tags': ['projectX', 'beta']},  # Passes both
+            {'id': 'item5', 'priority': 1, 'tags': ['general']},           # Fails both
+        ]
+
+        filtered_items = self.attention.filter_information(stream)
+        self.assertEqual(len(filtered_items), 2)
+        self.assertListEqual([item['id'] for item in filtered_items], ['item1', 'item4'])
+        for item in filtered_items:
+            self.assertTrue(item['priority'] > 3)
+            self.assertIn('projectX', item['tags'])
+
+    def test_filter_information_with_focus_and_active_filters(self):
+        """Test filtering with both a focus and active filters."""
+        active_filter = {'type': 'value_equals', 'key': 'status', 'value': 'pending'}
+        # Set focus and add filter. Clear any previous filters.
+        self.attention.direct_attention("FocusTarget", 0.9, context={'add_filter': active_filter, 'clear_filters': True})
+
+        stream = [
+            {'id': 'itemA', 'content': 'Info about FocusTarget', 'status': 'pending', 'tags': ['FocusTarget']}, # Passes focus and filter
+            {'id': 'itemB', 'content': 'Info about FocusTarget', 'status': 'done', 'tags': ['FocusTarget']},    # Passes focus, fails filter
+            {'id': 'itemC', 'content': 'Other info', 'status': 'pending'},                                     # Fails focus
+            {'id': 'itemD', 'content': 'More FocusTarget data', 'status': 'pending', 'tags': ['FocusTarget']},  # Passes focus and filter
+            {'id': 'itemE', 'content': 'Irrelevant', 'status': 'active'},                                      # Fails focus
+        ]
+
+        filtered_items = self.attention.filter_information(stream) # Uses "FocusTarget" as focus
+        self.assertEqual(len(filtered_items), 2)
+        self.assertListEqual([item['id'] for item in filtered_items], ['itemA', 'itemD'])
+        for item in filtered_items:
+            # Check focus condition (tag presence for this test data)
+            self.assertIn('FocusTarget', item.get('tags', []))
+            # Check active filter condition
+            self.assertEqual(item['status'], 'pending')
+
 if __name__ == '__main__':
     unittest.main()

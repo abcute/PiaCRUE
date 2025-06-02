@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from .base_memory_module import BaseMemoryModule # Assuming base_memory_module.py is in the same directory
 
-class LongTermMemoryModule(BaseMemoryModule):
+class BaseLongTermMemoryModule(BaseMemoryModule):
     """
     Abstract Base Class for the Long-Term Memory (LTM) module in the PiaAGI Cognitive Architecture.
 
@@ -137,8 +137,8 @@ class LongTermMemoryModule(BaseMemoryModule):
 
 
 if __name__ == '__main__':
-    # Conceptual illustration for LongTermMemoryModule
-    class ConceptualLTMImpl(LongTermMemoryModule):
+    # Conceptual illustration for BaseLongTermMemoryModule
+    class ConceptualLTMImpl(BaseLongTermMemoryModule):
         def __init__(self):
             self.semantic_storage = {}
             self.episodic_storage = []
@@ -250,5 +250,4 @@ if __name__ == '__main__':
     print(f"Episodes with actor 'user_sim': {ltm_concrete.get_episodic_experience({'actor': 'user_sim'})}") # Will be empty
     print(f"Skill 'greet_user': {ltm_concrete.get_procedural_skill('greet_user')}")
     print(f"LTM Status: {ltm_concrete.get_status()}")
-
-```
+# Note: The trailing ``` which caused the SyntaxError has been removed from this block.

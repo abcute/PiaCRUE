@@ -82,17 +82,17 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
 
     # --- Implementing BaseLongTermMemoryModule specific abstract methods ---
 
-    def store_episodic_event(self, event_data: Dict[str, Any], context: Dict[str, Any] = None) -> str:
-        """Stores an episodic event, tagging it appropriately."""
+    def store_episodic_experience(self, event_data: Dict[str, Any], context: Dict[str, Any] = None) -> str:
+        """Stores an episodic experience, tagging it appropriately."""
         ltm_context = context or {}
         ltm_context['ltm_type'] = 'episodic'
         memory_id = self._storage_backend.store(event_data, ltm_context)
         self._subcomponent_status['episodic']['items'] += 1
-        print(f"ConcreteLTM: Stored episodic event. ID: {memory_id}")
+        print(f"ConcreteLTM: Stored episodic experience. ID: {memory_id}") # Updated print
         return memory_id
 
-    def retrieve_episodic_events(self, query: Dict[str, Any], criteria: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-        """Retrieves episodic events. Modifies query to target 'episodic' type."""
+    def get_episodic_experience(self, query: Dict[str, Any], criteria: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """Retrieves episodic experiences. Modifies query to target 'episodic' type."""
         # Ensure query targets episodic memory. A more robust way would be to use criteria.
         # This is a simple way; criteria might be better for complex cases
         # e.g., criteria = (criteria or {}).update({'ltm_type_must_match': 'episodic'})
@@ -109,7 +109,7 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
         ltm_criteria = criteria or {}
         ltm_criteria.setdefault('match_context', {})['ltm_type'] = 'episodic'
 
-        print(f"ConcreteLTM: Retrieving episodic events with query: {query}, effective criteria: {ltm_criteria}")
+        print(f"ConcreteLTM: Retrieving episodic experiences with query: {query}, effective criteria: {ltm_criteria}") # Updated print
         results = self._storage_backend.retrieve(query, ltm_criteria)
         self._subcomponent_status['episodic']['queries'] += 1
         return results
@@ -123,7 +123,7 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
         print(f"ConcreteLTM: Stored semantic knowledge. ID: {memory_id}")
         return memory_id
 
-    def retrieve_semantic_knowledge(self, query: Dict[str, Any], criteria: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def get_semantic_knowledge(self, query: Dict[str, Any], criteria: Dict[str, Any] = None) -> List[Dict[str, Any]]: # Renamed from retrieve_semantic_knowledge
         """Retrieves semantic knowledge."""
         ltm_criteria = criteria or {}
         ltm_criteria.setdefault('match_context', {})['ltm_type'] = 'semantic'
@@ -132,23 +132,49 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
         self._subcomponent_status['semantic']['queries'] += 1
         return results
 
-    def store_procedural_skill(self, skill_data: Dict[str, Any], context: Dict[str, Any] = None) -> str:
-        """Stores a procedural skill."""
+    def store_procedural_skill(self, skill_data: Dict[str, Any], context: Dict[str, Any] = None) -> str: # Changed from skill_name: str, skill_representation: dict
+        """Stores a procedural skill. Ensures skill_name is part of skill_data for retrieval."""
+        # The ABC for LTM has store_procedural_skill(self, skill_name: str, skill_representation: dict...)
+        # This concrete class's method signature was store_procedural_skill(self, skill_data: Dict[str, Any]...)
+        # Let's assume skill_data CONTAINS the skill name and representation.
+        # To align with get_procedural_skill(skill_name), we need skill_name to be queryable.
+        # We'll assume skill_data should have a 'skill_name_key' field that holds the skill_name.
+        # Or, the skill_name parameter from ABC could be used as ID, but concrete class doesn't take it.
+        # Let's stick to skill_data having 'skill_name_key'. The caller of store_procedural_skill
+        # must ensure skill_data = {'skill_name_key': 'the_skill_name', ...other_repr...}
+
         ltm_context = context or {}
         ltm_context['ltm_type'] = 'procedural'
+
+        # Ensure skill_name_key is present for querying later by get_procedural_skill
+        if 'skill_name_key' not in skill_data:
+            print(f"ConcreteLTM Warning: 'skill_name_key' not found in skill_data for store_procedural_skill. Retrieval by name might fail for: {skill_data}")
+            # Or, if a skill_name parameter was passed (as per some interpretations of an ABC):
+            # skill_data['skill_name_key'] = skill_name_param_if_it_existed
+
         memory_id = self._storage_backend.store(skill_data, ltm_context)
         self._subcomponent_status['procedural']['items'] += 1
-        print(f"ConcreteLTM: Stored procedural skill. ID: {memory_id}")
+        print(f"ConcreteLTM: Stored procedural skill. ID: {memory_id}. Data: {skill_data}")
         return memory_id
 
-    def retrieve_procedural_skill(self, query: Dict[str, Any], criteria: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-        """Retrieves a procedural skill."""
-        ltm_criteria = criteria or {}
-        ltm_criteria.setdefault('match_context', {})['ltm_type'] = 'procedural'
-        print(f"ConcreteLTM: Retrieving procedural skill with query: {query}, effective criteria: {ltm_criteria}")
-        results = self._storage_backend.retrieve(query, ltm_criteria)
+    def get_procedural_skill(self, skill_name: str) -> Optional[Dict[str, Any]]:
+        """Retrieves a procedural skill by its name."""
+        ltm_criteria = {'match_context': {'ltm_type': 'procedural'}}
+        # We assume the skill_name is stored in a queryable field within the 'info' dict,
+        # e.g., skill_data['skill_name_key'] == skill_name.
+        # Or, skill_name could be the conceptual ID used for storage if skills are unique by name.
+        # For this implementation, let's assume skill_name is stored in info['skill_name_key'].
+        query = {'skill_name_key': skill_name} # This field should be used when storing the skill.
+                                              # Or, if skill_name is the ID, query = {'id': skill_name}
+                                              # The current store_procedural_skill doesn't enforce this.
+                                              # Let's adjust store_procedural_skill to ensure 'skill_name_key' exists.
+
+        print(f"ConcreteLTM: Retrieving procedural skill '{skill_name}'. Query: {query}, Criteria: {ltm_criteria}")
+        results = self._storage_backend.retrieve(query, ltm_criteria) # Pass the constructed query
         self._subcomponent_status['procedural']['queries'] += 1
-        return results
+        if results:
+            return results[0]['info'] # Return the 'info' part of the first match
+        return None
 
     def manage_ltm_subcomponents(self) -> None:
         """Placeholder for managing LTM subcomponents, e.g., balancing resources, consolidation strategies."""
@@ -157,6 +183,13 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
         # for that subcomponent via the backend, using a more specific strategy.
         # For instance, if episodic memory is too large:
         #   self._storage_backend.handle_forgetting(strategy='episodic_specific_decay', criteria={'match_context': {'ltm_type': 'episodic'}})
+        pass
+
+    def consolidate_memory(self, type_to_consolidate: str = 'all', intensity: str = 'normal') -> None:
+        """Placeholder for LTM consolidation process."""
+        print(f"ConcreteLTM: consolidate_memory called for type '{type_to_consolidate}' with intensity '{intensity}'. Placeholder - no action.")
+        # In a real implementation, this might trigger specific backend operations
+        # or internal LTM restructuring.
         pass
 
 if __name__ == '__main__':
@@ -168,11 +201,13 @@ if __name__ == '__main__':
 
     # Store different types of memories
     print("\n--- Storing Memories ---")
-    event_id1 = ltm.store_episodic_event({'event': 'UserLogin', 'user': 'Alice', 'timestamp': 12345}, {'source': 'system_log'})
+    event_id1 = ltm.store_episodic_experience({'event': 'UserLogin', 'user': 'Alice', 'timestamp': 12345}, {'source': 'system_log'})
     fact_id1 = ltm.store_semantic_knowledge({'concept': 'PiaAGI', 'relation': 'is_a', 'value': 'CognitiveArchitecture'}, {'domain': 'AI'})
-    skill_id1 = ltm.store_procedural_skill({'skill_name': 'greet_user', 'steps': ['say_hello', 'ask_name']}, {'complexity': 'low'})
+    # For store_procedural_skill, skill_data now needs skill_name_key
+    skill_data_greet = {'skill_name_key': 'greet_user', 'skill_name': 'greet_user', 'steps': ['say_hello', 'ask_name']}
+    skill_id1 = ltm.store_procedural_skill(skill_data_greet, {'complexity': 'low'})
 
-    event_id2 = ltm.store_episodic_event({'event': 'DataBackup', 'status': 'success', 'timestamp': 12360})
+    event_id2 = ltm.store_episodic_experience({'event': 'DataBackup', 'status': 'success', 'timestamp': 12360})
     fact_id2 = ltm.store_semantic_knowledge({'concept': 'Python', 'property': 'is_dynamic_language'}, {'domain': 'Programming'})
 
     print("\n--- LTM Status After Stores ---")
@@ -221,12 +256,16 @@ if __name__ == '__main__':
     #     return results
     # --- End of conceptual modification ---
 
-    print("Retrieve all episodic events (conceptually):", ltm.retrieve_episodic_events(query={}))
+    print("Retrieve all episodic experiences (conceptually):", ltm.get_episodic_experience(query={}))
     # This will retrieve all if backend doesn't filter by context, or only episodic if it does.
-    # Our ConcreteLTM's retrieve_episodic_events sets criteria={'match_context': {'ltm_type': 'episodic'}}
+    # Our ConcreteLTM's get_episodic_experience sets criteria={'match_context': {'ltm_type': 'episodic'}}
 
-    print("Retrieve semantic 'PiaAGI':", ltm.retrieve_semantic_knowledge(query={'concept': 'PiaAGI'}))
-    print("Retrieve skill 'greet_user':", ltm.retrieve_procedural_skill(query={'skill_name': 'greet_user'}))
+    print("Retrieve semantic 'PiaAGI':", ltm.get_semantic_knowledge(query={'concept': 'PiaAGI'})) # Renamed
+    # Test the new get_procedural_skill
+    retrieved_skill_info = ltm.get_procedural_skill(skill_name='greet_user')
+    print("Retrieve skill 'greet_user' (info only):", retrieved_skill_info)
+    if retrieved_skill_info: # Check if not None before asserting
+        assert retrieved_skill_info['skill_name_key'] == 'greet_user'
 
 
     print("\n--- LTM Status After Retrievals ---")
@@ -247,6 +286,7 @@ if __name__ == '__main__':
     print("\n--- Management ---")
     ltm.manage_capacity()
     ltm.handle_forgetting()
+    ltm.consolidate_memory() # Test new placeholder
 
     print("\nExample Usage Complete.")
 
@@ -262,5 +302,5 @@ if __name__ == '__main__':
     # unless the query itself is structured to hit 'id' or 'concept'.
     # To make this example fully testable for type-specific retrieval,
     # ConcreteBaseMemoryModule.retrieve needs modification or these tests need specific queries.
-    # Example: ltm.retrieve_semantic_knowledge(query={'concept': 'PiaAGI'}) will work
-    #          ltm.retrieve_episodic_events(query={}) will return ALL items from backend.
+    # Example: ltm.get_semantic_knowledge(query={'concept': 'PiaAGI'}) will work # Renamed
+    #          ltm.get_episodic_experience(query={}) will return ALL items from backend if backend is simple.

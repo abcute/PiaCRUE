@@ -16,52 +16,92 @@ class ConcreteAttentionModule(BaseAttentionModule):
     def __init__(self):
         self._current_focus: Optional[Any] = None
         self._current_priority: float = 0.0
-        self._active_filters: List[str] = []
+        self._active_filters: List[Dict[str, Any]] = []
         self._cognitive_load_level: float = 0.0
         print("ConcreteAttentionModule initialized.")
 
     def direct_attention(self, focus_target: Any, priority: float, context: Dict[str, Any] = None) -> bool:
         """Directs attention to a new target if priority is high enough or focus is None."""
         print(f"ConcreteAttentionModule: Attempting to direct attention to '{focus_target}' with priority {priority}.")
+
+        if context:
+            if context.get('clear_filters'):
+                self._active_filters = []
+                print("ConcreteAttentionModule: Cleared active filters due to context.")
+            if 'add_filter' in context and isinstance(context['add_filter'], dict):
+                self._active_filters.append(context['add_filter'])
+                print(f"ConcreteAttentionModule: Added filter: {context['add_filter']}.")
+
         # Simple logic: always shift if new priority is higher, or if no current focus.
         if self._current_focus is None or priority >= self._current_priority:
             self._current_focus = focus_target
             self._current_priority = priority
-            # Example: context might influence active_filters
-            if context and context.get('type') == 'top-down' and 'filter_low_salience' not in self._active_filters:
-                # self._active_filters.append('filter_low_salience') # Example filter
-                pass
             print(f"ConcreteAttentionModule: Attention directed to '{self._current_focus}' with priority {self._current_priority}.")
             return True
         print(f"ConcreteAttentionModule: Attention NOT shifted. Current focus '{self._current_focus}' (priority {self._current_priority}) retained.")
         return False
 
     def filter_information(self, information_stream: List[Dict[str, Any]], current_focus: Any = None) -> List[Dict[str, Any]]:
-        """Filters information based on a simple relevance check to the current focus (if any)."""
+        """Filters information based on a simple relevance check to the current focus (if any) and then applies active filters."""
         effective_focus = current_focus if current_focus is not None else self._current_focus
-        print(f"ConcreteAttentionModule: Filtering {len(information_stream)} items based on focus: '{effective_focus}'.")
-        if not effective_focus:
-            return information_stream # No focus, no filtering
+        print(f"ConcreteAttentionModule: Filtering {len(information_stream)} items based on focus: '{effective_focus}'. Active filters: {self._active_filters}")
 
-        filtered_stream = []
-        for item in information_stream:
-            # Extremely simple relevance: item must have a 'tags' list containing the focus string
-            # or a 'content' string containing the focus string.
-            # This is a placeholder for more sophisticated relevance checking.
-            is_relevant = False
-            if isinstance(effective_focus, str):
-                if 'tags' in item and isinstance(item['tags'], list) and effective_focus in item['tags']:
-                    is_relevant = True
-                elif 'content' in item and isinstance(item['content'], str) and effective_focus in item['content']:
-                    is_relevant = True
-                elif item.get('id') == effective_focus: # Allow focus on item ID
-                    is_relevant = True
+        # Initial focus-based filtering
+        if effective_focus:
+            focused_stream = []
+            for item in information_stream:
+                is_relevant = False
+                if isinstance(effective_focus, str):
+                    if 'tags' in item and isinstance(item['tags'], list) and effective_focus in item['tags']:
+                        is_relevant = True
+                    elif 'content' in item and isinstance(item['content'], str) and effective_focus in item['content']:
+                        is_relevant = True
+                    elif item.get('id') == effective_focus:
+                        is_relevant = True
+                if is_relevant:
+                    focused_stream.append(item)
+        else:
+            focused_stream = list(information_stream) # Work on a copy if no focus filtering
 
-            if is_relevant:
-                filtered_stream.append(item)
+        # Apply active filters progressively
+        if not self._active_filters:
+            print(f"ConcreteAttentionModule: No active filters. Filtered stream (by focus only) contains {len(focused_stream)} items.")
+            return focused_stream
 
-        print(f"ConcreteAttentionModule: Filtered stream contains {len(filtered_stream)} items.")
-        return filtered_stream
+        stream_after_active_filters = list(focused_stream) # Start with focus-filtered (or all if no focus)
+        for f_idx, active_filter in enumerate(self._active_filters):
+            print(f"ConcreteAttentionModule: Applying filter {f_idx + 1}/{len(self._active_filters)}: {active_filter}")
+            next_filtered_stream = []
+            filter_type = active_filter.get('type')
+            filter_key = active_filter.get('key')
+
+            for item in stream_after_active_filters:
+                passes_filter = False
+                if filter_type == 'value_equals':
+                    filter_value = active_filter.get('value')
+                    if item.get(filter_key) == filter_value:
+                        passes_filter = True
+                elif filter_type == 'value_gt':
+                    filter_threshold = active_filter.get('threshold')
+                    if item.get(filter_key, 0) > filter_threshold:
+                        passes_filter = True
+                elif filter_type == 'tag_present':
+                    filter_tag = active_filter.get('tag')
+                    if filter_tag in item.get('tags', []):
+                        passes_filter = True
+                else:
+                    # If filter type is unknown or not implemented, item passes by default
+                    # Or, you could choose to make it fail: passes_filter = False
+                    print(f"ConcreteAttentionModule: Unknown filter type '{filter_type}', item passes by default.")
+                    passes_filter = True
+
+                if passes_filter:
+                    next_filtered_stream.append(item)
+            stream_after_active_filters = next_filtered_stream
+            print(f"ConcreteAttentionModule: Stream size after filter {active_filter}: {len(stream_after_active_filters)}")
+
+        print(f"ConcreteAttentionModule: Filtered stream (focus + active filters) contains {len(stream_after_active_filters)} items.")
+        return stream_after_active_filters
 
     def manage_cognitive_load(self, current_load: float, capacity_thresholds: Dict[str, float]) -> Dict[str, Any]:
         """Manages cognitive load by adjusting internal state or suggesting actions."""

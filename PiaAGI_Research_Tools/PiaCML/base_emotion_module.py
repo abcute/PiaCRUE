@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-class EmotionModule(ABC):
+class BaseEmotionModule(ABC):
     """
     Abstract Base Class for the Emotion Module in the PiaAGI Cognitive Architecture.
 
@@ -137,9 +137,9 @@ class EmotionModule(ABC):
         pass
 
 if __name__ == '__main__':
-    # Conceptual illustration for EmotionModule
+    # Conceptual illustration for BaseEmotionModule
 
-    class ConceptualEmotion(EmotionModule):
+    class ConceptualEmotion(BaseEmotionModule):
         def __init__(self):
             self.emotions = {"joy": 0.2, "sadness": 0.1, "fear": 0.05, "anger": 0.05, "curiosity_level": 0.5}
             self.personality = {"neuroticism": 0.5, "default_mood_offset": 0.05} # default mood is slightly positive

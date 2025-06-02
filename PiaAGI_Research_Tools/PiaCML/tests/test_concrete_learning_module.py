@@ -114,5 +114,25 @@ class TestConcreteLearningModule(unittest.TestCase):
         status = self.learning.get_learning_status('unknown_task_id')
         self.assertEqual(status['status'], 'unknown_task')
 
+    def test_learn_reinforcement_dummy(self):
+        data = {'state': 's1', 'action': 'a1'}
+        context = {'task_id': 'rl_task_1', 'reward_signal': 1.0}
+        outcome = self.learning.learn(data, "reinforcement_dummy", context)
+
+        self.assertEqual(outcome['status'], 'success')
+        self.assertIn('policy_update_for_rl_task_1', outcome['updates_to_ltm'])
+        self.assertIn('value_function_updated_for_rl_task_1', outcome['updated_self_model_params'])
+        self.assertEqual(self.learning.get_learning_status('rl_task_1')['status'], 'processing_reinforcement_dummy')
+
+    def test_learn_unsupervised_dummy(self):
+        data = {'features': [0.1, 0.2, 0.3, 0.4]}
+        context = {'task_id': 'ul_task_1'}
+        outcome = self.learning.learn(data, "unsupervised_dummy", context)
+
+        self.assertEqual(outcome['status'], 'success')
+        self.assertIn('cluster_model_for_ul_task_1', outcome['updates_to_ltm'])
+        self.assertIn('data_representation_learned_for_ul_task_1', outcome['updated_self_model_params'])
+        self.assertEqual(self.learning.get_learning_status('ul_task_1')['status'], 'processing_unsupervised_dummy')
+
 if __name__ == '__main__':
     unittest.main()
