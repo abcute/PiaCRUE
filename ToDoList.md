@@ -217,3 +217,4 @@ This section outlines proposed future development directions for the PiaAGI Rese
 - [ ] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles (e.g., correlating `AGENT_MCP_GENERATED` with improved task performance).
 - [ ] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
 - [ ] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
+- [ ] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02)
