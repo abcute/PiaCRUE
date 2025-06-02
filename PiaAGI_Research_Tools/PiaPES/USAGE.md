@@ -45,6 +45,93 @@ Placeholders can be embedded in any string attribute of these classes using curl
 
 The `render()` method on a `PiaAGIPrompt` object (or any `BaseElement`) will generate a Markdown formatted string representing the prompt structure and its content. Headers are used to delineate sections, and lists/dictionaries are formatted appropriately.
 
+## Detailed Cognitive Configuration Example
+
+The `CognitiveModuleConfiguration` class and its components (`PersonalityConfig`, `MotivationalBias`, `EmotionalProfile`, `LearningModuleConfig`) are central to defining a PiaAGI agent's cognitive posture. Here's a more detailed example of how you might define these, showing all available fields.
+
+```python
+from prompt_engine_mvp import (
+    CognitiveModuleConfiguration, PersonalityConfig, MotivationalBias, 
+    EmotionalProfile, LearningModuleConfig
+)
+
+# 1. Personality Configuration (OCEAN Model)
+# All scores are typically between 0.0 and 1.0
+personality_details = PersonalityConfig(
+    ocean_openness=0.75,              # How open to new experiences
+    ocean_conscientiousness=0.85,     # How organized and dependable
+    ocean_extraversion=0.60,          # How outgoing and energetic
+    ocean_agreeableness=0.70,         # How cooperative and empathetic
+    ocean_neuroticism=0.25            # How prone to negative emotions (lower is more stable)
+)
+
+# 2. Motivational Bias Configuration
+# Biases can be a mix of intrinsic and extrinsic goals with associated weights or priorities
+motivational_details = MotivationalBias(
+    biases={
+        "IntrinsicGoal_Curiosity": "High",
+        "IntrinsicGoal_Competence": "Medium",
+        "IntrinsicGoal_Autonomy": "{autonomy_level_placeholder}", # Example with placeholder
+        "ExtrinsicGoal_TaskCompletion_ProjectX": "Very High",
+        "ExtrinsicGoal_UserSatisfaction": "High"
+    }
+    # You can add other custom fields if your BaseElement-derived class supports them
+)
+
+# 3. Emotional Profile Configuration
+emotional_details = EmotionalProfile(
+    baseline_valence="SlightlyPositive", # e.g., Neutral, SlightlyPositive, Positive
+    reactivity_to_failure_intensity="Moderate", # e.g., Low, Moderate, High
+    empathy_level_target="High_Cognitive_Low_Affective", # Describes the type/level of empathy
+    # Other potential fields can be added if extending the class
+    custom_emotional_responses={ # Example of a more complex attribute
+        "event_user_frustration_detected": "activate_calming_protocol_A"
+    }
+)
+
+# 4. Learning Module Configuration
+learning_details = LearningModuleConfig(
+    primary_learning_mode="RL_PPO_GAE",         # Primary algorithm or strategy
+    learning_rate_adaptation="Annealing",     # e.g., Fixed, Annealing, Adaptive
+    ethical_heuristic_update_rule="Bayesian_Update_From_Dilemma_Outcome_V2",
+    exploration_vs_exploitation_balance="{exploration_focus}" # Example with placeholder
+)
+
+# 5. Combine into CognitiveModuleConfiguration
+full_cognitive_config = CognitiveModuleConfiguration(
+    personality_config=personality_details,
+    motivational_bias_config=motivational_details,
+    emotional_profile_config=emotional_details,
+    learning_module_config=learning_details
+)
+
+# This 'full_cognitive_config' object can then be assigned to the 
+# 'cognitive_module_configuration' attribute of a 'Role' object.
+
+# Example of filling placeholders if used:
+placeholders_for_cognition = {
+    "autonomy_level_placeholder": "Medium_High",
+    "exploration_focus": "Prioritize_Exploration_Early"
+}
+# To fill placeholders, the config objects must be part of a larger structure 
+# (like PiaAGIPrompt) that has the fill_placeholders method, or you'd call it on
+# the specific object if it directly contained placeholders in its string attributes.
+# For instance, if motivational_details was part of a prompt:
+# prompt.fill_placeholders(placeholders_for_cognition) 
+# Or, if you want to fill them individually (less common for nested objects):
+# motivational_details.fill_placeholders(placeholders_for_cognition) # if biases was a simple string attribute
+# learning_details.fill_placeholders(placeholders_for_cognition) # if exploration_vs_exploitation_balance was a string attribute
+
+# For rendering or direct use, the object is ready:
+print("--- Detailed Personality Config ---")
+print(personality_details.render()) # Render method is from BaseElement
+# Individual attributes can be accessed directly:
+print(f"\nOpenness: {personality_details.ocean_openness}")
+print(f"Motivational Biases: {motivational_details.biases}")
+
+```
+This detailed configuration can then be incorporated into the `Role` definition within a `PiaAGIPrompt` template, as shown in the main example below.
+
 ## Python Usage Example
 
 The following example demonstrates how to use the `prompt_engine_mvp.py` script:

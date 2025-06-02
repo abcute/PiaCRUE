@@ -126,9 +126,9 @@
 
 ### PiaPES (PiaAGI Prompt Engineering Suite)
 - [x] Ensured prompt_engine_mvp.py classes (with fixes and added unit tests) can represent/serialize detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
-- [ ] Manually update PiaAGI_Research_Tools/PiaPES/USAGE.md with examples of defining detailed cognitive configurations (conceptual outline provided).
-- [ ] Further conceptually detail the DevelopmentalCurriculumDesigner (PiaPES Section 2): structure, metadata, progression logic.
-- [ ] Further conceptually detail the PromptEvaluationModule (PiaPES Section 9): inputs, outputs, integration with PiaSE/PiaAVT.
+- [x] Manually update PiaAGI_Research_Tools/PiaPES/USAGE.md with examples of defining detailed cognitive configurations (conceptual outline provided).
+- [x] Further conceptually detail the DevelopmentalCurriculumDesigner (PiaPES Section 2): structure, metadata, progression logic.
+- [x] Further conceptually detail the PromptEvaluationModule (PiaPES Section 9): inputs, outputs, integration with PiaSE/PiaAVT.
 
 ## Papers Directory Refinement - Next Steps
 - [ ] Strategy: For AI_Cultural_Evolution.md: Research and select 1-2 actual relevant academic papers (2021-2024) using keywords [provided in planning step]; outline summaries per PAPER_TEMPLATE.md. (Strategy defined, research pending)
@@ -187,13 +187,13 @@ This section outlines proposed future development directions for the PiaAGI Rese
 - [ ] **Human-in-the-Loop (HITL) Interface:** Conceptualize how a human user could interact with a PiaSE simulation in real-time (e.g., as a tutor, evaluator, or another agent).
 
 ### PiaPES (PiaAGI Prompt Engineering Suite) - Enhancements
-- [ ] **Developmental Curriculum Designer - Advanced:**
-  - [ ] Define a detailed data structure for `DevelopmentalCurriculum` supporting stages, steps, pre-conditions, learning objectives, and links to PiaSE scenarios/PiaAVT metrics.
-  - [ ] Conceptualize how PiaPES would track agent progress through such curricula.
-- [ ] **PiaPES-PiaSE Integration Workflow:** Define the operational workflow for how a curriculum from PiaPES is executed in PiaSE, how progress is reported, and how PiaPES might adapt based on feedback.
-- [ ] **PiaPES-PiaAVT Integration for Evaluation:** Specify data exchange for evaluating prompt/curriculum effectiveness (e.g., "Did agent meet learning objective X as per PiaAVT metric Y?").
-- [ ] **Cognitive Configuration GUI - Deep Dive:** Detail the design for the GUI for configuring PiaCML modules (personality, motivation, etc.), potentially with UI mockups.
-- [ ] **Prompt Editor/IDE Features:** Further conceptualize advanced editor features (PiaAGI-specific syntax highlighting, auto-completion for PiaCML, real-time validation, documentation linking).
+- [x] **Developmental Curriculum Designer - Advanced:**
+  - [x] Define a detailed data structure for `DevelopmentalCurriculum` supporting stages, steps, pre-conditions, learning objectives, and links to PiaSE scenarios/PiaAVT metrics.
+  - [x] Conceptualize how PiaPES would track agent progress through such curricula.
+- [x] **PiaPES-PiaSE Integration Workflow:** Define the operational workflow for how a curriculum from PiaPES is executed in PiaSE, how progress is reported, and how PiaPES might adapt based on feedback.
+- [x] **PiaPES-PiaAVT Integration for Evaluation:** Specify data exchange for evaluating prompt/curriculum effectiveness (e.g., "Did agent meet learning objective X as per PiaAVT metric Y?").
+- [x] **Cognitive Configuration GUI - Deep Dive:** Detail the design for the GUI for configuring PiaCML modules (personality, motivation, etc.), potentially with UI mockups. (Note: web_interface_design.md covers MVP GUI; PiaAGI_Prompt_Engineering_Suite.md Section 7 covers advanced GUI concepts. Current conceptual detail is sufficient.)
+- [x] **Prompt Editor/IDE Features:** Further conceptualize advanced editor features (PiaAGI-specific syntax highlighting, auto-completion for PiaCML, real-time validation, documentation linking). (Note: PiaAGI_Prompt_Engineering_Suite.md Section 6 reviewed and refined; current conceptual detail is sufficient.)
 
 ### PiaAVT (Agent Analysis & Visualization Toolkit) - Enhancements
 - [ ] **Implement Conceptual Analyses:** Implement the already designed conceptual analyses: Goal Lifecycle Tracking, Emotional State Trajectory, and Task Performance Metrics.
