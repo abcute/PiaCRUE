@@ -1,430 +1,277 @@
+import time
 from typing import List, Tuple, Dict, Optional, Any
-from PiaAGI_Hub.PiaSE.core_engine.interfaces import Environment
+from dataclasses import dataclass, field
+
+# Assuming core_engine is one level up from environments directory
+from ..core_engine.interfaces import Environment, PerceptionData, ActionCommand, ActionResult
+
+@dataclass
+class GridObject:
+    name: str
+    position: Tuple[int, int]
+    properties: Dict[str, Any] = field(default_factory=dict) # e.g., {"can_be_taken": True, "value": 10}
 
 class GridWorld(Environment):
-    """
-    A simple grid world environment for agents to navigate.
-    The grid is represented by (x, y) coordinates, where (0,0) is the top-left.
-    """
-
     def __init__(self,
                  width: int,
                  height: int,
+                 agent_start_pos: Optional[Tuple[int, int]] = None, # For the default agent
+                 goal_position: Optional[Tuple[int, int]] = None,
                  walls: Optional[List[Tuple[int, int]]] = None,
-                 agent_start_positions: Optional[Dict[str, Tuple[int, int]]] = None,
-                 goal_position: Optional[Tuple[int, int]] = None):
+                 static_objects: Optional[List[GridObject]] = None,
+                 dynamic_objects: Optional[List[GridObject]] = None, # For future use
+                 default_agent_id: str = "agent_0",
+                 reward_goal: float = 10.0,
+                 reward_move: float = -0.1,
+                 reward_hit_wall: float = -1.0,
+                 reward_stay: float = -0.05): # Added reward_stay
+
         if width <= 0 or height <= 0:
             raise ValueError("Grid width and height must be positive integers.")
         self.width = width
         self.height = height
+        
+        self.default_agent_id = default_agent_id
+        self.initial_agent_start_pos = agent_start_pos if agent_start_pos is not None else (0, 0)
+
+        if not self._is_valid_position(self.initial_agent_start_pos[0], self.initial_agent_start_pos[1]):
+            print(f"Warning: Default agent start position {self.initial_agent_start_pos} is outside grid. Defaulting to (0,0).")
+            self.initial_agent_start_pos = (0,0)
+
         self.goal_position = goal_position if goal_position is not None else (width - 1, height - 1)
-
-        # Ensure goal_position is valid and not a wall, if specified
-        if self.goal_position[0] < 0 or self.goal_position[0] >= self.width or \
-           self.goal_position[1] < 0 or self.goal_position[1] >= self.height:
-            print(f"Warning: Goal position {self.goal_position} is outside grid boundaries. Defaulting to ({width-1}, {height-1}).")
+        if not self._is_valid_position(self.goal_position[0], self.goal_position[1]):
+            print(f"Warning: Goal position {self.goal_position} is outside grid. Defaulting to ({width-1},{height-1}).")
             self.goal_position = (width - 1, height - 1)
-
-        self.grid: List[List[int]] = [[0 for _ in range(width)] for _ in range(height)] # 0 for empty, 1 for wall
-
-        if self.grid[self.goal_position[1]][self.goal_position[0]] == 1: # Check if default/chosen goal is a wall
-             print(f"Warning: Goal position {self.goal_position} is a wall. This might be an impossible task.")
-
 
         self.walls: List[Tuple[int, int]] = []
         if walls:
-            self._add_walls(walls)
+            for x, y in walls:
+                if self._is_valid_position(x, y):
+                    if (x,y) == self.initial_agent_start_pos:
+                        print(f"Warning: Wall at {x},{y} conflicts with agent start position. Agent may start on a wall.")
+                    if (x,y) == self.goal_position:
+                        print(f"Warning: Wall at {x},{y} conflicts with goal position. Goal may be unreachable.")
+                    self.walls.append((x,y))
+                else:
+                    print(f"Warning: Wall coordinate ({x},{y}) is outside grid boundaries. Ignoring.")
+        
+        self.static_objects: List[GridObject] = copy.deepcopy(static_objects) if static_objects else []
+        self.dynamic_objects: List[GridObject] = copy.deepcopy(dynamic_objects) if dynamic_objects else []
 
         self.agent_positions: Dict[str, Tuple[int, int]] = {}
-        self.agent_start_positions: Dict[str, Tuple[int, int]] = agent_start_positions if agent_start_positions is not None else {}
+        
+        # Reward configuration
+        self.reward_goal = reward_goal
+        self.reward_move = reward_move
+        self.reward_hit_wall = reward_hit_wall
+        self.reward_stay = reward_stay # Store this
 
-        # Initialize agents to their start positions or a default (0,0) if not specified
-        # This part might be better handled by a separate agent registration in the engine
-        # For now, we'll use it to ensure agents have a starting point if defined at construction
-        for agent_id, pos in self.agent_start_positions.items():
-            if self._is_valid_position(pos[0], pos[1]) and self.grid[pos[1]][pos[0]] == 0:
-                self.agent_positions[agent_id] = pos
-            else:
-                print(f"Warning: Invalid start position {pos} for agent {agent_id}. Using default (0,0) or first available.")
-                # Fallback to (0,0) or first valid non-wall position if (0,0) is a wall
-                if self._is_valid_position(0,0) and self.grid[0][0] == 0:
-                     self.agent_positions[agent_id] = (0,0)
-                     self.agent_start_positions[agent_id] = (0,0) # Update start position too
-                else:
-                    # Find first available
-                    found_fallback = False
-                    for r in range(self.height):
-                        for c in range(self.width):
-                            if self.grid[r][c] == 0:
-                                self.agent_positions[agent_id] = (c,r)
-                                self.agent_start_positions[agent_id] = (c,r)
-                                found_fallback = True
-                                break
-                        if found_fallback:
-                            break
-                    if not found_fallback:
-                        raise Exception(f"Cannot place agent {agent_id}, no valid empty cells in the grid.")
+        self.valid_actions = ["up", "down", "left", "right", "stay"] # Added "stay"
 
-
-        print(f"GridWorld initialized: {width}x{height}. Agents at: {self.agent_positions}")
-
-    def _add_walls(self, walls: List[Tuple[int, int]]):
-        for x, y in walls:
-            if self._is_valid_position(x, y):
-                self.grid[y][x] = 1 # 1 represents a wall
-                self.walls.append((x,y))
-            else:
-                print(f"Warning: Wall coordinate ({x},{y}) is outside grid boundaries. Ignoring.")
+        self.reset() # Initialize agent position and grid
 
     def _is_valid_position(self, x: int, y: int) -> bool:
         return 0 <= x < self.width and 0 <= y < self.height
 
-    def reset(self, agent_id_to_reset: Optional[str] = None) -> Any:
-        """
-        Resets the environment.
-        If agent_id_to_reset is provided, resets only that agent.
-        Otherwise, resets all known agents to their starting positions.
-        Returns the observation for the reset agent(s).
-        """
-        if agent_id_to_reset:
-            if agent_id_to_reset in self.agent_start_positions:
-                start_pos = self.agent_start_positions[agent_id_to_reset]
-                if self._is_valid_position(start_pos[0], start_pos[1]) and self.grid[start_pos[1]][start_pos[0]] == 0:
-                    self.agent_positions[agent_id_to_reset] = start_pos
-                else:
-                    # Fallback if start_pos is invalid (e.g. a wall was added later)
-                    print(f"Warning: Start position {start_pos} for agent {agent_id_to_reset} is invalid. Using (0,0) or first valid.")
-                    self.agent_positions[agent_id_to_reset] = (0,0) # Default, consider a safer fallback
-                    # A safer fallback would be to find the first available non-wall cell
-                    if self.grid[0][0] == 1: # if (0,0) is a wall
-                        found = False
-                        for r in range(self.height):
-                            for c in range(self.width):
-                                if self.grid[r][c] == 0:
-                                    self.agent_positions[agent_id_to_reset] = (c,r)
-                                    found = True
-                                    break
-                            if found: break
-                        if not found: raise Exception(f"No valid cell for agent {agent_id_to_reset} to reset to.")
-                print(f"GridWorld: Agent {agent_id_to_reset} reset to {self.agent_positions[agent_id_to_reset]}.")
-                return self.get_observation(agent_id_to_reset)
-            else:
-                print(f"GridWorld: Warning - Cannot reset agent {agent_id_to_reset}, no start position defined.")
-                return None # Or raise error
-        else:
-            # Reset all agents
-            for agent_id in list(self.agent_positions.keys()): # Iterate over a copy of keys if modifying dict
-                 start_pos = self.agent_start_positions.get(agent_id, (0,0)) # Default to (0,0) if not in start_positions
-                 if self._is_valid_position(start_pos[0], start_pos[1]) and self.grid[start_pos[1]][start_pos[0]] == 0:
-                    self.agent_positions[agent_id] = start_pos
-                 else:
-                    # Fallback logic as above
-                    self.agent_positions[agent_id] = (0,0)
-                    if self.grid[0][0] == 1:
-                        found = False
-                        for r in range(self.height):
-                            for c in range(self.width):
-                                if self.grid[r][c] == 0:
-                                    self.agent_positions[agent_id] = (c,r)
-                                    found = True
-                                    break
-                            if found: break
-                        if not found: raise Exception(f"No valid cell for agent {agent_id} to reset to.")
+    def _is_wall(self, x: int, y: int) -> bool:
+        return (x, y) in self.walls
 
-            print(f"GridWorld: All agent positions reset. Current positions: {self.agent_positions}")
-            # Return observation for the "first" agent if any, or overall state
-            if self.agent_positions:
-                first_agent_id = list(self.agent_positions.keys())[0]
-                return self.get_observation(first_agent_id)
-            return self.get_state()
+    def _is_obstacle(self, x: int, y: int) -> bool: # Considers walls and static objects that block movement
+        if self._is_wall(x,y):
+            return True
+        for obj in self.static_objects + self.dynamic_objects:
+            if obj.position == (x,y) and obj.properties.get("blocks_movement", False): # Assuming a property
+                return True
+        return False
 
+    def reset(self) -> PerceptionData:
+        # For now, reset places/resets the default agent. Multi-agent scenarios might need more.
+        self.agent_positions = {} # Clear all agent positions
+        
+        start_pos_to_set = self.initial_agent_start_pos
+        if self._is_obstacle(start_pos_to_set[0], start_pos_to_set[1]):
+             print(f"Warning: Initial start position {start_pos_to_set} for default agent is an obstacle. Finding fallback.")
+             # Basic fallback: find first non-obstacle cell
+             found_fallback = False
+             for r in range(self.height):
+                 for c in range(self.width):
+                     if not self._is_obstacle(c,r):
+                         start_pos_to_set = (c,r)
+                         found_fallback = True
+                         break
+                 if found_fallback: break
+             if not found_fallback:
+                 raise Exception("GridWorld Reset: No valid non-obstacle cell available to place the agent.")
+        
+        self.agent_positions[self.default_agent_id] = start_pos_to_set
+        # print(f"GridWorld reset. Agent '{self.default_agent_id}' at {self.agent_positions[self.default_agent_id]}.")
+        return self.get_observation(self.default_agent_id)
 
-    def step(self, agent_id: str, action: str) -> Tuple[Any, float]:
-        """
-        Processes an agent's action and updates the environment state.
-        Action can be "N" (North), "S" (South), "E" (East), "W" (West), "Stay".
-        Returns the new observation for the agent and a conceptual reward.
-        """
+    def get_observation(self, agent_id: str) -> PerceptionData:
         if agent_id not in self.agent_positions:
-            raise ValueError(f"Agent {agent_id} not found in the environment.")
+            # If an agent_id is requested that was not the default_agent_id placed during reset,
+            # we need a policy. For now, error or place at default if it's the default_agent_id.
+            if agent_id == self.default_agent_id:
+                 print(f"Warning: Default agent {agent_id} not in agent_positions during get_observation. Resetting position.")
+                 self.agent_positions[agent_id] = self.initial_agent_start_pos # Attempt to recover
+                 if self._is_obstacle(self.initial_agent_start_pos[0], self.initial_agent_start_pos[1]):
+                     # Simplified fallback for this edge case, real one in reset is better
+                     self.agent_positions[agent_id] = next(((c,r) for r in range(self.height) for c in range(self.width) if not self._is_obstacle(c,r)), (0,0) )
+
+            else: # Truly unknown agent for this simple GridWorld that mostly manages one agent
+                return PerceptionData(
+                    timestamp=time.time(),
+                    sensor_data={"error": f"Agent {agent_id} not found or initialized in this GridWorld."},
+                    messages=[{"sender": "system", "content": f"Agent {agent_id} position unknown."}]
+                )
+
+        agent_pos = self.agent_positions[agent_id]
+        
+        # Basic grid view (e.g. local N*N patch or full grid)
+        # For simplicity, let's provide a "local_view" and the full grid for now.
+        # A true local_view would be more complex.
+        grid_representation = [[0]*self.width for _ in range(self.height)]
+        for r in range(self.height):
+            for c in range(self.width):
+                if self._is_wall(c,r):
+                    grid_representation[r][c] = 1 # Wall
+                # Could add numbers for objects if desired
+                
+        objs_on_tile_data = []
+        for obj in self.static_objects + self.dynamic_objects:
+            if obj.position == agent_pos:
+                # Using dict() for properties if it's already a dict, or vars() if it's an object
+                props = obj.properties if isinstance(obj.properties, dict) else vars(obj.properties)
+                objs_on_tile_data.append({"name": obj.name, "properties": copy.deepcopy(props)})
+
+        observation_dict = {
+            "agent_position": agent_pos,
+            "grid_view_full": grid_representation, # Example: full grid
+            "objects_on_tile": objs_on_tile_data,
+            "goal_position": self.goal_position
+        }
+        
+        return PerceptionData(timestamp=time.time(), sensor_data=observation_dict)
+
+    def get_action_space(self, agent_id: Optional[str] = None) -> Dict[str, Any]:
+        return {action: {"parameters": {}} for action in self.valid_actions}
+
+    def step(self, agent_id: str, action: ActionCommand) -> ActionResult:
+        if agent_id not in self.agent_positions:
+            # This should ideally not happen if agents are managed by the engine correctly
+            message = f"Agent {agent_id} not found. Cannot perform action."
+            return ActionResult(timestamp=time.time(), status="failure", message=message)
 
         current_x, current_y = self.agent_positions[agent_id]
         new_x, new_y = current_x, current_y
+        action_name = action.action_type.lower() # Ensure lowercase for matching
 
-        if action == "N":
-            new_y -= 1
-        elif action == "S":
-            new_y += 1
-        elif action == "E":
-            new_x += 1
-        elif action == "W":
-            new_x -= 1
-        elif action == "Stay":
-            pass # Position remains the same
+        moved = False
+        if action_name == "up": # Assuming 'up' corresponds to 'N' (decreasing y)
+            new_y -= 1; moved = True
+        elif action_name == "down": # Assuming 'down' corresponds to 'S' (increasing y)
+            new_y += 1; moved = True
+        elif action_name == "left": # Assuming 'left' corresponds to 'W' (decreasing x)
+            new_x -= 1; moved = True
+        elif action_name == "right": # Assuming 'right' corresponds to 'E' (increasing x)
+            new_x += 1; moved = True
+        elif action_name == "stay":
+            pass # Position remains the same, moved = False
         else:
-            print(f"Warning: Unknown action '{action}' for agent {agent_id}. Agent stays.")
+            message = f"Unknown action '{action_name}'. Agent stays."
+            new_perception_snippet = self.get_observation(agent_id)
+            return ActionResult(timestamp=time.time(), status="failure", message=message, new_perception_snippet=new_perception_snippet, details={"reward": self.reward_hit_wall, "is_terminal": False})
 
-        # Check if the new position is valid and not a wall
-        if self._is_valid_position(new_x, new_y) and self.grid[new_y][new_x] == 0:
-            self.agent_positions[agent_id] = (new_x, new_y)
-        else:
-            # Agent hits a wall or boundary, stays in the current position
-            # print(f"Agent {agent_id} tried to move to ({new_x},{new_y}), but it's a wall or boundary. Stays at ({current_x},{current_y}).")
-            pass
-
-
-        observation = self.get_observation(agent_id)
-
-        current_pos_after_move = self.agent_positions[agent_id]
-        reward = -0.1  # Cost for any valid move
+        reward = 0.0
         done = False
-        info = {}
+        status = "success"
+        message = f"Action {action_name} executed."
 
-        if not self._is_valid_position(new_x, new_y) or self.grid[new_y][new_x] == 1:
-            # Agent attempted to move into a wall or off the grid
-            reward = -1.0
-        elif current_pos_after_move == self.goal_position:
-            reward = 10.0
-            done = True
-
-        # If action was 'Stay' and agent is not at goal, slightly less penalty than moving to non-goal
-        if action == "Stay" and not done:
-            reward = -0.05
-
-
-        observation = self.get_observation(agent_id)
-        return observation, reward, done, info
-
-    def get_observation(self, agent_id: str) -> Dict[str, Any]:
-        """
-        Gets the observation for a specific agent.
-        Returns the agent's current position and the full grid state.
-        """
-        if agent_id not in self.agent_positions:
-            # This case should ideally be handled by ensuring agent is registered/reset first.
-            # If an agent is registered with the engine but not yet given a position by GridWorld's init
-            # or reset, we might need a default position or error.
-            # For now, let's assume if get_observation is called, agent_id should be in self.agent_positions
-            # or an error should be raised earlier.
-            # Fallback: if agent_id is known to start_positions but not yet in agent_positions (e.g. before first reset)
-            if agent_id in self.agent_start_positions:
-                start_pos = self.agent_start_positions[agent_id]
-                if self._is_valid_position(start_pos[0], start_pos[1]) and self.grid[start_pos[1]][start_pos[0]]==0:
-                     self.agent_positions[agent_id] = start_pos
-                else: # Fallback if start pos is bad.
-                    self.agent_positions[agent_id] = (0,0) # Default, or find first valid.
-                    if self.grid[0][0] == 1:
-                        found = False
-                        for r in range(self.height):
-                            for c in range(self.width):
-                                if self.grid[r][c] == 0:
-                                    self.agent_positions[agent_id] = (c,r)
-                                    found = True
-                                    break
-                            if found: break
-                        if not found: raise Exception(f"No valid cell for agent {agent_id} to get observation from.")
-
-            else: # Agent truly unknown
-                 raise ValueError(f"Agent {agent_id} not found in the environment and no start position known.")
+        if moved:
+            if self._is_valid_position(new_x, new_y) and not self._is_obstacle(new_x, new_y):
+                self.agent_positions[agent_id] = (new_x, new_y)
+                reward = self.reward_move
+                if self.agent_positions[agent_id] == self.goal_position:
+                    reward = self.reward_goal
+                    done = True
+                    message = f"Agent {agent_id} reached the goal at {self.goal_position}!"
+            else: # Hit wall or obstacle
+                reward = self.reward_hit_wall
+                status = "failure" # Or success with penalty, depending on philosophy
+                message = f"Agent {agent_id} hit an obstacle trying to move {action_name} to ({new_x},{new_y})."
+        else: # Action was "stay"
+            reward = self.reward_stay
+            if self.agent_positions[agent_id] == self.goal_position: # Staying at goal
+                reward = self.reward_goal # Or a smaller positive reward for staying at goal
+                done = True # If goal is terminal
+                message = f"Agent {agent_id} is at the goal."
 
 
-        return {
-            "agent_position": self.agent_positions[agent_id],
-            "grid_view": [row[:] for row in self.grid] # Return a copy of the grid
-        }
+        new_perception_snippet = self.get_observation(agent_id)
+        
+        return ActionResult(
+            timestamp=time.time(),
+            status=status,
+            message=message,
+            new_perception_snippet=new_perception_snippet,
+            details={"reward": reward, "is_terminal": done}
+        )
 
     def get_state(self) -> Dict[str, Any]:
-        """
-        Gets the overall current state of the environment.
-        Returns the full grid state and all agent positions.
-        """
         return {
-            "grid": [row[:] for row in self.grid], # Return a copy
-            "all_agent_positions": dict(self.agent_positions) # Return a copy
+            "grid_dimensions": (self.width, self.height),
+            "walls": list(self.walls),
+            "static_objects": [vars(obj) for obj in self.static_objects], # Convert GridObjects to dicts
+            "dynamic_objects": [vars(obj) for obj in self.dynamic_objects],
+            "agent_positions": dict(self.agent_positions),
+            "goal_position": self.goal_position
         }
 
     def is_done(self, agent_id: str) -> bool:
-        """
-        Checks if the simulation or the agent's task is completed.
-        For now, always returns False (no specific end condition).
-        """
-        # This could be expanded, e.g., if agent reaches a goal, or max steps reached.
-        # The 'agent_id' parameter allows for agent-specific 'done' conditions.
+        # This method is called by the engine to check if a specific agent is done.
+        # The 'done' flag in ActionResult from step() is often the primary source for this.
         agent_pos = self.agent_positions.get(agent_id)
         if agent_pos and agent_pos == self.goal_position:
             return True
         return False
 
-    def get_action_space(self) -> list:
-        """
-        Returns the list of possible actions in this GridWorld environment.
-        """
-        return ["N", "S", "E", "W", "Stay"]
+    def get_environment_info(self) -> Dict[str, Any]:
+        return {
+            "environment_name": "GridWorld_v1.1",
+            "description": "A configurable grid-based environment for navigation.",
+            "action_schema": self.get_action_space(), # Uses the new format
+            "perception_schema": {
+                "agent_position": {"type": "tuple", "item_type": "int"},
+                "grid_view_full": {"type": "list", "item_schema": {"type": "list", "item_type": "int"}},
+                "objects_on_tile": {"type": "list", "item_schema": {"type": "dict", "keys": {"name": "string", "properties": "dict"}}},
+                "goal_position": {"type": "tuple", "item_type": "int"}
+            },
+            "reward_range": (self.reward_hit_wall, self.reward_goal) # Approx range
+        }
 
-    def add_agent(self, agent_id: str, start_position: Optional[Tuple[int, int]] = None) -> None:
-        """
-        Adds a new agent to the environment or updates its start position.
-        This is useful if agents are not all known at GridWorld construction.
-        """
-        if agent_id in self.agent_start_positions and start_position is None:
-            # Agent already exists, and no new position given, just ensure it's in current positions.
-            if agent_id not in self.agent_positions:
-                 self.agent_positions[agent_id] = self.agent_start_positions[agent_id]
+    def add_agent(self, agent_id: str, start_position: Tuple[int, int], make_default: bool = False):
+        """Adds an agent to the environment. If make_default, sets this agent as the default one."""
+        if not self._is_valid_position(start_position[0], start_position[1]) or self._is_obstacle(start_position[0], start_position[1]):
+            raise ValueError(f"Cannot add agent {agent_id} at invalid or obstacle position {start_position}.")
+        self.agent_positions[agent_id] = start_position
+        if make_default:
+            self.default_agent_id = agent_id
+            self.initial_agent_start_pos = start_position
+        print(f"Agent {agent_id} added at {start_position}.")
+
+    def add_object(self, grid_object: GridObject, is_static: bool = True):
+        """Adds a static or dynamic object to the environment."""
+        if not self._is_valid_position(grid_object.position[0], grid_object.position[1]):
+            print(f"Warning: Object {grid_object.name} position {grid_object.position} is invalid. Not adding.")
             return
+        if self._is_obstacle(grid_object.position[0], grid_object.position[1]):
+             print(f"Warning: Position {grid_object.position} for object {grid_object.name} is already an obstacle. Overlapping or check logic.")
 
-        default_pos = (0, 0)
-        # Find first available if (0,0) is a wall or invalid
-        if not self._is_valid_position(0,0) or self.grid[0][0] == 1:
-            found_fallback = False
-            for r in range(self.height):
-                for c in range(self.width):
-                    if self.grid[r][c] == 0:
-                        default_pos = (c,r)
-                        found_fallback = True
-                        break
-                if found_fallback:
-                    break
-            if not found_fallback:
-                raise Exception(f"Cannot add agent {agent_id}, no valid empty cells in the grid.")
-
-
-        final_position = start_position if start_position is not None else default_pos
-
-        if self._is_valid_position(final_position[0], final_position[1]) and \
-           self.grid[final_position[1]][final_position[0]] == 0:
-            self.agent_start_positions[agent_id] = final_position
-            self.agent_positions[agent_id] = final_position
-            print(f"GridWorld: Agent {agent_id} added/updated to start at {final_position}.")
+        if is_static:
+            self.static_objects.append(grid_object)
         else:
-            print(f"Warning: Invalid start position {final_position} for agent {agent_id}. Using default {default_pos}.")
-            self.agent_start_positions[agent_id] = default_pos
-            self.agent_positions[agent_id] = default_pos
+            self.dynamic_objects.append(grid_object)
 
-if __name__ == '__main__':
-    # Example Usage:
-    print("--- GridWorld Example ---")
-    # Initialize with some walls and specific agent start positions
-    walls_list = [(1,1), (1,2), (2,1)]
-    agent_starts = {"agent1": (0,0), "agent2": (2,2)}
-    goal = (3,3) # Define a goal
-
-    try:
-        gw = GridWorld(width=4, height=4, walls=walls_list, agent_start_positions=agent_starts, goal_position=goal)
-        print(f"GridWorld created with goal: {gw.goal_position}")
-    except ValueError as e:
-        print(f"Error during GridWorld init: {e}")
-        exit()
-
-    print("\nInitial State:")
-    print(gw.get_state())
-
-    print("\nObservation for agent1:")
-    print(gw.get_observation("agent1"))
-
-    print("\nTaking some steps for agent1:")
-    actions = ["S", "E", "E", "S"] # Path towards goal (3,3) for agent1 from (0,0) -> (0,1) -> (1,1) -> (2,1) -> (2,2) -> (3,2) -> (3,3)
-                                    # Correct path: S, E, E, S, S, E
-    # Corrected actions to reach (3,3) from (0,0) in a 4x4 grid with no new walls on path
-    # (0,0) -> S (0,1) -> S (0,2) -> S (0,3) -> E (1,3) -> E (2,3) -> E (3,3)
-    actions_to_goal = ["S","S","S","E","E","E"]
-
-
-    for action_idx, action in enumerate(actions_to_goal):
-        if gw.is_done("agent1"):
-            print(f"Agent1 reached goal at step {action_idx}!")
-            break
-        obs, reward, done, info = gw.step("agent1", action)
-        print(f"Action: {action}, New Pos: {obs['agent_position']}, Reward: {reward:.2f}, Done: {done}")
-        if done:
-            print(f"Agent1 reached goal {gw.goal_position}!")
-            break
-    else: # If loop finishes without break
-        if not gw.is_done("agent1"):
-             print(f"Agent1 did not reach goal. Final position: {gw.agent_positions['agent1']}")
-
-
-    print("\nFinal state for agent1:")
-    print(gw.get_observation("agent1"))
-
-    print("\nResetting agent1:")
-    initial_obs_agent1 = gw.reset("agent1") # reset returns initial observation
-    print(f"Agent1 position after reset: {initial_obs_agent1['agent_position']}")
-    print(f"Is agent1 done after reset? {gw.is_done('agent1')}") # Should be false unless start is goal
-
-    print("\nAdding a new agent 'agent3' at (3,0)")
-    gw.add_agent("agent3", (3,0))
-    print(gw.get_observation("agent3"))
-    obs, reward, done, info = gw.step("agent3", "S") # Move to (3,1)
-    print(f"Agent3 Action: S, New Pos: {obs['agent_position']}, Reward: {reward:.2f}, Done: {done}")
-    obs, reward, done, info = gw.step("agent3", "S") # Move to (3,2)
-    print(f"Agent3 Action: S, New Pos: {obs['agent_position']}, Reward: {reward:.2f}, Done: {done}")
-    obs, reward, done, info = gw.step("agent3", "S") # Move to (3,3) - THE GOAL!
-    print(f"Agent3 Action: S, New Pos: {obs['agent_position']}, Reward: {reward:.2f}, Done: {done}")
-    if done:
-        print(f"Agent3 reached goal {gw.goal_position}!")
-
-
-    print("\nResetting all agents:")
-    initial_state_after_reset = gw.reset() # Reset all returns observation of first agent or overall state
-    print("State after global reset:")
-    print(initial_state_after_reset) # This might be obs of agent1 or full state
-    print(f"Agent1 pos: {gw.agent_positions['agent1']}, Agent2 pos: {gw.agent_positions['agent2']}, Agent3 pos: {gw.agent_positions['agent3']}")
-
-
-    print("\nTrying to move agent2 into a wall:")
-    # agent2 starts at (2,2). Wall at (1,2) and (2,1)
-    gw.reset("agent2") # ensure agent2 is at (2,2)
-    print(f"Agent2 current pos: {gw.get_observation('agent2')['agent_position']}")
-    obs_a2, reward_a2, done_a2, _ = gw.step("agent2", "N") # try to move to (2,1) which is a wall
-    print(f"Agent2 tried N. New pos: {obs_a2['agent_position']}, Reward: {reward_a2:.2f}") # Should be (2,2), reward -1.0
-    obs_a2, reward_a2, done_a2, _ = gw.step("agent2", "W") # try to move to (1,2) which is a wall
-    print(f"Agent2 tried W. New pos: {obs_a2['agent_position']}, Reward: {reward_a2:.2f}") # Should be (2,2), reward -1.0
-    obs_a2, reward_a2, done_a2, _ = gw.step("agent2", "S") # try to move to (2,3) which is valid
-    print(f"Agent2 tried S. New pos: {obs_a2['agent_position']}, Reward: {reward_a2:.2f}") # Should be (2,3), reward -0.1
-
-
-    print("\n--- GridWorld Example with no initial agent positions (and default goal) ---")
-    gw_no_agents = GridWorld(width=3, height=3) # Goal will be (2,2)
-    print(f"Goal for gw_no_agents: {gw_no_agents.goal_position}")
-    print(f"Initial state (no agents): {gw_no_agents.get_state()}")
-    # Add agent after construction
-    gw_no_agents.add_agent("agent_new", (0,0))
-    print(f"State after adding agent: {gw_no_agents.get_state()}")
-    obs_new, reward_new, done_new, _ = gw_no_agents.step("agent_new", "E") # (1,0)
-    print(f"Agent_new action E. Pos: {obs_new['agent_position']}, Reward: {reward_new:.2f}, Done: {done_new}")
-    obs_new, reward_new, done_new, _ = gw_no_agents.step("agent_new", "E") # (2,0)
-    print(f"Agent_new action E. Pos: {obs_new['agent_position']}, Reward: {reward_new:.2f}, Done: {done_new}")
-    obs_new, reward_new, done_new, _ = gw_no_agents.step("agent_new", "S") # (2,1)
-    print(f"Agent_new action S. Pos: {obs_new['agent_position']}, Reward: {reward_new:.2f}, Done: {done_new}")
-    obs_new, reward_new, done_new, _ = gw_no_agents.step("agent_new", "S") # (2,2) - Goal!
-    print(f"Agent_new action S. Pos: {obs_new['agent_position']}, Reward: {reward_new:.2f}, Done: {done_new}")
-    if done_new:
-        print("Agent_new reached the goal!")
-
-
-    print("\n--- GridWorld Example with agent starting on a wall (should fallback) ---")
-    # (1,1) is a wall
-    gw_bad_start = GridWorld(width=3, height=3, walls=[(1,1)], agent_start_positions={"a1": (1,1)}, goal_position=(2,2))
-    print(f"State for gw_bad_start: {gw_bad_start.get_state()}") # a1 should be at (0,0) or other fallback
-    obs_bad, reward_bad, _, _ = gw_bad_start.step("a1", "S")
-    print(f"a1 tried S. New pos: {obs_bad['agent_position']}, Reward: {reward_bad:.2f}")
-
-    print("\n--- GridWorld Example: All cells are walls (goal cannot be placed without wall) ---")
-    try:
-        # Goal will default to (1,0), which is a wall.
-        gw_all_walls = GridWorld(width=2, height=1, walls=[(0,0), (1,0)], agent_start_positions={"a1": (0,0)})
-        print(f"gw_all_walls goal: {gw_all_walls.goal_position}") # Should show warning about goal on wall
-    except Exception as e: # This might not raise error on init, but agent can't be placed
-        print(f"Caught expected error for all-wall grid: {e}")
-
-
-    print("\n--- GridWorld Example: Goal is a wall ---")
-    gw_goal_on_wall = GridWorld(width=3, height=3, walls=[(1,1)], goal_position=(1,1))
-    # Should print a warning that goal is on a wall.
-    print(f"gw_goal_on_wall initialized. Goal: {gw_goal_on_wall.goal_position}")
-    gw_goal_on_wall.add_agent("player1", (0,1))
-    obs_player1, reward_player1, done_player1, _ = gw_goal_on_wall.step("player1", "E") # Try to move to goal (1,1)
-    print(f"Player1 action E. Pos: {obs_player1['agent_position']}, Reward: {reward_player1:.2f}, Done: {done_player1}")
-    # Reward should be -1 (hit wall), done should be False.
-
-    print("--- GridWorld Example End ---")
+# Need to import copy for deepcopy
+import copy
+```

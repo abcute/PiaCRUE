@@ -69,7 +69,7 @@ def setup_environment(config: Optional[Dict] = None) -> Environment:
     # Dynamic config loading or default values
     width = config.get("grid_width", GRID_WIDTH) if config else GRID_WIDTH
     height = config.get("grid_height", GRID_HEIGHT) if config else GRID_HEIGHT
-
+    
     env = GridWorld(width=width, height=height, goal_position=(width-1, height-1))
     # Further environment customization if needed
     # env.place_obstacle((2,2))
@@ -88,25 +88,25 @@ def setup_agents(env: Environment, config: Optional[Dict] = None) -> List[AgentI
 
 def run_scenario(custom_config: Optional[Dict] = None):
     print(f"Starting scenario: My Custom Scenario with config: {custom_config}")
-
+    
     engine = BasicSimulationEngine()
-
+    
     environment = setup_environment(config=custom_config)
     agent_list = setup_agents(env=environment, config=custom_config)
-
+    
     registered_agents = {}
     for i, agent_instance in enumerate(agent_list):
         agent_id = f"agent_{i}"
         # The engine will call agent.set_id(agent_id)
-        registered_agents[agent_id] = agent_instance
+        registered_agents[agent_id] = agent_instance 
         # engine.register_agent(agent_id, agent_instance) # Old way, engine.initialize will handle it
 
     # Initialize the engine with environment and agents
     engine.initialize(environment=environment, agents=registered_agents, scenario_config=custom_config)
-
+    
     # Run the simulation
     engine.run_simulation(num_steps=custom_config.get("max_steps", MAX_STEPS) if custom_config else MAX_STEPS)
-
+    
     print("Scenario finished.")
     # Add any scenario-specific results saving or analysis here
 

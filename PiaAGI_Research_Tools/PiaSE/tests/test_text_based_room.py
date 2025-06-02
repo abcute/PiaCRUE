@@ -66,7 +66,7 @@ class TestTextBasedRoom(unittest.TestCase):
         # Go to hallway
         action_cmd = ActionCommand(action_type="go", parameters={"direction": "north"})
         action_result = self.env.step(AGENT_ID, action_cmd)
-
+        
         self.assertEqual(action_result.status, "success")
         self.assertIn("moved north", action_result.message.lower())
         self.assertEqual(self.env.agent_states[AGENT_ID]["current_room"], "hallway")
@@ -121,7 +121,7 @@ class TestTextBasedRoom(unittest.TestCase):
         self.assertEqual(action_result_drop.status, "success", msg=action_result_drop.message)
         self.assertNotIn("journal_on_floor", self.env.agent_states[AGENT_ID]["inventory"])
         self.assertIn("journal_on_floor", self.env.current_room_layout["study"]["objects"])
-
+        
     def test_action_open_locked_and_unlocked_container(self):
         # Try to open locked desk
         action_cmd_open_locked = ActionCommand(action_type="open", parameters={"target_object": "desk"})
@@ -152,7 +152,7 @@ class TestTextBasedRoom(unittest.TestCase):
         # Take hidden_key from desk
         action_cmd_take = ActionCommand(action_type="take", parameters={"item_name": "hidden_key"})
         action_result_take = self.env.step(AGENT_ID, action_cmd_take)
-
+        
         self.assertEqual(action_result_take.status, "success", msg=action_result_take.message)
         self.assertIn("hidden_key", self.env.agent_states[AGENT_ID]["inventory"])
         self.assertNotIn("hidden_key", self.env.current_object_details["desk"]["contains"])
@@ -161,7 +161,7 @@ class TestTextBasedRoom(unittest.TestCase):
     def test_action_read(self):
         # Take journal first
         self.env.step(AGENT_ID, ActionCommand(action_type="take", parameters={"item_name": "journal_on_floor"}))
-
+        
         action_cmd_read = ActionCommand(action_type="read", parameters={"item_name": "journal_on_floor"})
         action_result_read = self.env.step(AGENT_ID, action_cmd_read)
         self.assertEqual(action_result_read.status, "success", msg=action_result_read.message)

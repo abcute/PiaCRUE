@@ -33,7 +33,7 @@ import json # Added import for json
     def log(self, simulation_step: int, event_type: str, source_component: str, data: Dict, wall_time: Optional[float] = None):
         if wall_time is None:
             wall_time = time.time()
-
+        
         log_entry = {
             "wall_time": wall_time,
             "simulation_step": simulation_step,
@@ -84,9 +84,9 @@ class BasicSimulationEngine(SimulationEngine):
         # Instantiate Logger
         logger_config = self.scenario_config.get("logging_config", {})
         # Ensure log_path is correctly passed if overridden in scenario_config
-        effective_log_path = logger_config.get("log_file_path", log_path)
+        effective_log_path = logger_config.get("log_file_path", log_path) 
         self.logger = PiaSELogger(log_file_path=Path(effective_log_path), config=logger_config)
-
+        
         self.logger.log(
             self.current_step,
             "SIMULATION_START",
@@ -109,7 +109,7 @@ class BasicSimulationEngine(SimulationEngine):
         # Agent initialization
         for agent_id, agent in self.agents.items():
             agent.set_id(agent_id)
-
+            
             # Agent-specific configuration (e.g. Q-table init) should ideally be handled
             # by the agent itself upon receiving first perception or by the scenario script.
             # The engine provides initial perception.
@@ -131,7 +131,7 @@ class BasicSimulationEngine(SimulationEngine):
                 self.current_step, "AGENT_PERCEPTION", agent_id, initial_observation.model_dump()
             )
             agent.perceive(initial_observation)
-
+            
             print(f"BasicSimulationEngine: Agent '{agent_id}' initialized and perceived initial state.")
 
         print("BasicSimulationEngine: Initialization complete.")
@@ -152,7 +152,7 @@ class BasicSimulationEngine(SimulationEngine):
                 # Log this only once or if status changes
                 # self.logger.log(self.current_step, "AGENT_TASK_DONE_SKIP", agent_id, {"message": f"Agent {agent_id} already done."})
                 continue
-
+            
             agent_step_start_time = time.time()
 
             # Perception Phase
@@ -186,7 +186,7 @@ class BasicSimulationEngine(SimulationEngine):
                     agent_id,
                     action_result.new_perception_snippet.model_dump(),
                 )
-
+            
             self.logger.log(self.current_step, "AGENT_STEP_TIMING", agent_id, {"duration_ms": (time.time() - agent_step_start_time) * 1000})
 
             if self.environment.is_done(agent_id):
@@ -197,7 +197,7 @@ class BasicSimulationEngine(SimulationEngine):
                     agent_id,
                     {"message": f"Agent {agent_id} completed its task."},
                 )
-
+        
         # Optional: Log overall environment state (can be verbose)
         # env_state = self.environment.get_state()
         # self.logger.log(self.current_step, "ENVIRONMENT_STATE", "environment", {"state_summary": str(env_state)[:500]})
@@ -217,7 +217,7 @@ class BasicSimulationEngine(SimulationEngine):
         if not self.logger:
             print("BasicSimulationEngine: Logger not initialized. Cannot run simulation.")
             return
-
+            
         print(f"BasicSimulationEngine: Starting simulation run for {num_steps} steps.")
         self.logger.log(self.current_step, "SIMULATION_RUN_START", "engine", {"num_steps_configured": num_steps})
 
@@ -228,7 +228,7 @@ class BasicSimulationEngine(SimulationEngine):
                 self.logger.close()
                 return
             self.run_step()
-
+        
         print(f"BasicSimulationEngine: Simulation finished after {self.current_step} steps (max steps reached: {num_steps}).")
         self.logger.log(self.current_step, "SIMULATION_END", "engine", {"reason": "num_steps_reached", "total_steps": self.current_step})
         self.logger.close()
@@ -259,7 +259,7 @@ class BasicSimulationEngine(SimulationEngine):
         if not self.environment or not self.logger:
             print("BasicSimulationEngine: Engine not initialized. Cannot get environment state.")
             return None
-
+            
         state = self.environment.get_state()
         # Log a summary to avoid overly large log entries by default
         state_summary = str(state)[:200] + "..." if len(str(state)) > 200 else str(state)

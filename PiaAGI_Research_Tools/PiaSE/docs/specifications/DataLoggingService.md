@@ -117,7 +117,7 @@ class PiaSELogger:
     def log(self, simulation_step: int, event_type: str, source_component: str, data: Dict, wall_time: Optional[float] = None):
         if wall_time is None:
             wall_time = time.time()
-
+            
         log_entry = {
             "wall_time": wall_time,
             "simulation_step": simulation_step,
