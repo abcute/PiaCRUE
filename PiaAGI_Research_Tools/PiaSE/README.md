@@ -127,5 +127,39 @@ It is highly recommended to use a Python virtual environment. Key dependencies i
 - Matplotlib (for visualization)
 - Flask (for the WebApp)
 
+## Future Development & Enhancements
+
+PiaSE is envisioned to grow into a powerful platform for AGI research. Key future directions include:
+
+1.  **Full PiaAGI Agent Integration:**
+    *   Developing clear examples, helper classes, or integration layers within PiaSE to demonstrate how to instantiate, configure (potentially using PiaPES outputs), and run a complete PiaAGI agent composed of multiple interacting PiaCML modules.
+
+2.  **Diverse and Dynamic Environments:**
+    *   Moving beyond `GridWorld` to implement or integrate more complex environments.
+    *   **Social Simulation Environments:** For testing ToM, communication, and emotional modeling (e.g., simulated dialogues, collaborative tasks).
+    *   **Problem-Solving Worlds:** Environments that require multi-step planning, tool use, and creative problem-solving.
+    *   **Multi-Modal Environments:** Conceptual support for environments that could provide visual or other forms of non-textual input to agents.
+    *   Developing a more robust **Environment API** to support these richer interactions.
+
+3.  **Advanced Developmental Scaffolding Engine:**
+    *   Enhancing the scenario manager in PiaSE to become a **Dynamic Scenario Engine**. This engine would:
+        *   Interface with PiaPES to load and interpret `DevelopmentalCurricula`.
+        *   Adapt environmental parameters, task complexity, available information, or even simulated tutor behavior based on the agent's performance (metrics from PiaAVT) and its current position in a curriculum.
+        *   Manage the state of an agent's progression through long-term developmental pathways.
+
+4.  **Human-in-the-Loop (HITL) Interaction:**
+    *   Designing and implementing interfaces that allow human users to:
+        *   Act as tutors or mentors, providing real-time feedback, demonstrations, or guidance to the agent within PiaSE.
+        *   Participate as other agents or entities in simulated social scenarios.
+        *   Manually trigger environmental events or override agent actions for experimental purposes.
+
+5.  **Standardized Logging for PiaAVT:**
+    *   Ensuring PiaSE emits comprehensive logs that adhere to the `PiaAVT/Logging_Specification.md`, covering agent-environment interactions, task outcomes, and any data necessary for advanced analyses in PiaAVT (e.g., data to evaluate goal achievement, learning progress, or ethical decision-making).
+
+6.  **Multi-Agent Support:**
+    *   Formalizing support for running multiple independent or interacting PiaAGI agents within the same environment, including defining inter-agent communication channels and observation capabilities.
+
+PiaSE aims to be a critical testbed for empirically validating the PiaAGI framework and fostering the development of increasingly sophisticated and autonomous agents.
 ---
 Return to [PiaAGI Core Document](../../PiaAGI.md) | [Project README](../../README.md)
+```
