@@ -86,10 +86,14 @@
 - [ ] Implement basic unit tests for `ConcreteWorldModel` methods based on its conceptual data structures.
 
 ### PiaSE (PiaAGI Simulation Environment)
-- [ ] Detail the core simulation loop (time steps, agent perception/action phases, environment updates).
-- [ ] Define a concrete Python API for agent perception and action within PiaSE.
-- [ ] Conceptually design a simple initial environment (e.g., "TextBasedRoom") for PiaSE.
-- [ ] Specify how a simple scenario would be defined and loaded in this TextBasedRoom.
+- [x] Detailed the core simulation loop (Initialization, Main Loop phases A-G, Finalization) in PiaAGI_Simulation_Environment.md.
+- [x] Defined conceptual Agent-Environment API (EnvironmentInterface, Perception Data, Action Command Data) in PiaAGI_Simulation_Environment.md.
+- [x] Conceptually designed "TextBasedRoom" environment (state representation, perceptions, actions, dynamics) in PiaAGI_Simulation_Environment.md.
+- [x] Specified YAML-based scenario definition format for "TextBasedRoom" with "The Lost Key" example in PiaAGI_Simulation_Environment.md.
+- [ ] Refine data structures for Agent-Environment API (perceptions, actions) with more detailed type hints or Pydantic models.
+- [ ] Develop detailed specifications for core PiaSE components (Environment Abstraction Layer, Agent Management, Scenario Definition Module, Data Logging Service).
+- [ ] Implement a prototype of the TextBasedRoom environment based on the conceptual design.
+- [ ] Implement a prototype of the PiaSE core simulation engine.
 
 ### PiaAVT (PiaAGI Analysis & Visualization Toolkit)
 - [x] Defined standardized logging format/schema (JSONL) and created `PiaAGI_Research_Tools/PiaAVT/Logging_Specification.md`.
@@ -98,7 +102,8 @@
 - [ ] Design and implement a prototype Python logger in PiaCML/PiaSE that adheres to Logging_Specification.md.
 
 ### PiaPES (PiaAGI Prompt Engineering Suite)
-- [ ] Ensure prompt_engine_mvp.py classes can fully represent/serialize the detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
+- [x] Ensured prompt_engine_mvp.py classes (with fixes and added unit tests) can represent/serialize detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
+- [ ] Manually update PiaAGI_Research_Tools/PiaPES/USAGE.md with examples of defining detailed cognitive configurations (conceptual outline provided).
 - [ ] Further conceptually detail the DevelopmentalCurriculumDesigner (PiaPES Section 2): structure, metadata, progression logic.
 - [ ] Further conceptually detail the PromptEvaluationModule (PiaPES Section 9): inputs, outputs, integration with PiaSE/PiaAVT.
 

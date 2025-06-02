@@ -1,0 +1,53 @@
+{
+    "__type__": "PiaAGIPrompt",
+    "target_agi": null,
+    "developmental_stage_target": null,
+    "author": "CurriculumDesigner",
+    "version": "1.0.1-step1",
+    "date": null,
+    "objective": "Objective for Step 1: Introduce {concept_A}",
+    "system_rules": {
+        "__type__": "SystemRules",
+        "syntax": "Markdown for general interaction, YAML/JSON for specific config blocks if used",
+        "language": "English",
+        "output_format": "Natural language",
+        "logging_level": "Brief",
+        "piaagi_interpretation_mode": "Execute_Immediate"
+    },
+    "requirements": {
+        "__type__": "Requirements",
+        "goal": null,
+        "background_context": null,
+        "constraints_and_boundaries": [],
+        "success_metrics": []
+    },
+    "users_interactors": {
+        "__type__": "UsersInteractors",
+        "type": null,
+        "profile": null,
+        "interaction_history_summary": null
+    },
+    "executors": {
+        "__type__": "Executors",
+        "role": null
+    },
+    "workflow_or_curriculum_phase": {
+        "__type__": "Workflow",
+        "steps": []
+    },
+    "developmental_scaffolding_context": {
+        "__type__": "DevelopmentalScaffolding",
+        "current_developmental_goal": null,
+        "scaffolding_techniques_employed": [],
+        "feedback_level_from_overseer": null
+    },
+    "cbt_autotraining_protocol": {
+        "__type__": "CBTAutoTraining",
+        "training_scenario": null,
+        "execution_loop": null,
+        "self_critique_focus": [],
+        "refinement_mechanism": null,
+        "success_threshold": null
+    },
+    "initiate_interaction": "Explain {concept_A} in simple terms."
+}

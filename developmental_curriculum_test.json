@@ -1,0 +1,34 @@
+{
+    "__type__": "DevelopmentalCurriculum",
+    "name": "Learning Abstraction and Generalization",
+    "description": "A curriculum to teach an agent about two related concepts, Abstraction and Generalization, and their connections.",
+    "target_developmental_stage": "PiaSeedling to PiaSprout",
+    "steps": [
+        {
+            "__type__": "CurriculumStep",
+            "name": "Pre-computation of environment variables",
+            "order": 0,
+            "prompt_reference": "utility_prompt.json",
+            "conditions": null,
+            "notes": "A utility step for environment variables"
+        },
+        {
+            "__type__": "CurriculumStep",
+            "name": "Introduction to Abstraction",
+            "order": 1,
+            "prompt_reference": "prompt_curriculum_step1.json",
+            "conditions": "Agent is at PiaSeedling stage.",
+            "notes": "Focus on basic understanding of Abstraction."
+        },
+        {
+            "__type__": "CurriculumStep",
+            "name": "Relating Abstraction to Generalization",
+            "order": 2,
+            "prompt_reference": "prompt_curriculum_step2.json",
+            "conditions": "Successful completion of Step 1.",
+            "notes": "Encourage agent to find connections."
+        }
+    ],
+    "version": "0.9.5-curriculumtest",
+    "author": "AI Tutor Developer"
+}
