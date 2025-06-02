@@ -50,7 +50,7 @@
 - [x] Create `PiaAGI_Hub/conceptual_simulations/` directory. (Directory later removed after refactoring file locations)
 - [x] Develop initial conceptual Python script `Examples/PiaAGI_Behavior_Example.py` illustrating simplified module interactions. (Moved from `PiaAGI_Hub/conceptual_simulations/`)
 - [ ] Manually integrate textual descriptions for Diagrams 8, 9, and 10 into PiaAGI.md (User task - content provided). Most other diagrams integrated.
-- [x] Developed detailed specification document for the Self-Model Module (Specifications/Self_Model_Module_Specification.md), outlining data structures, conceptual algorithms (metacognition, ethical framework application, self-improvement), interactions, and developmental aspects.
+- [x] Developed detailed specification document for the Self-Model Module (`PiaAGI_Research_Tools/PiaCML/Self_Model_Module_Specification.md`), outlining data structures, conceptual algorithms (metacognition, ethical framework application, self-improvement), interactions, and developmental aspects.
 - [ ] Outline a research plan for developing and testing the **Developmental Scaffolding methodology (Section 5.4, 6.1)** specifically for **Theory of Mind (ToM) acquisition (Section 3.2.2)** from PiaSeedling to PiaSapling stages. This plan should include potential simulation environments, interaction protocols, and evaluation metrics.
 - [ ] Conduct a survey and report on existing Python libraries and frameworks that could be suitable for implementing key aspects of the PiaAGI cognitive architecture (e.g., for probabilistic reasoning, knowledge representation, symbolic AI, agent simulation, multi-agent systems).
 - [ ] Begin drafting specific computational models for the **Motivational System (Section 3.3 and 4.1.6)**, focusing on how intrinsic goals (e.g., curiosity, competence) could be mathematically formulated and algorithmically implemented to drive agent behavior.
@@ -81,7 +81,7 @@
 - [ ] Refine `ConcreteWorldModel` data structures for key components (Object/Entity Repository, Spatial, Temporal, Social, Physics, Self-State).
 - [ ] Develop more detailed conceptual algorithms for `ConcreteWorldModel` methods (e.g., `predict_future_state`, `check_consistency`).
 - [ ] Implement basic unit tests for `ConcreteWorldModel` methods based on its conceptual data structures.
-- [ ] Refine `ConcreteSelfModelModule` data structures based on `Specifications/Self_Model_Module_Specification.md`.
+- [ ] Refine `ConcreteSelfModelModule` data structures based on `PiaAGI_Research_Tools/PiaCML/Self_Model_Module_Specification.md`.
 - [ ] Develop more detailed conceptual algorithms for `ConcreteSelfModelModule` methods (e.g., confidence assessment, ethical evaluation logic).
 - [ ] Design conceptual approach for how the Self-Model's `EthicalFramework` is updated by the Learning Module.
 - [ ] Outline conceptual mechanisms for how the Self-Model guides `ArchitecturalMaturation` (interaction with `DevelopmentalState`).
