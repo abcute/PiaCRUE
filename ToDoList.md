@@ -82,19 +82,19 @@
 - [x] CML: Implement foundational interfaces/ABCs for SelfModelModule. (Base class/interface defined)
 - [x] Developed conceptual design for an integration example of combined CML modules (Simple_Command_Response_Cycle.md).
 - [x] Reviewed conceptual integration example (Examples/Conceptual_Integrations/Simple_Command_Response_Cycle.md); deemed adequate for current conceptual purpose.
-- [ ] Conceptually detail enhancements for 1-2 Concrete CML Modules (e.g., ConcreteLTM retrieval strategies, ConcreteMotivationalSystem intrinsic goal triggering).
+- [x] Conceptually detail enhancements for 1-2 Concrete CML Modules (e.g., ConcreteLTM retrieval strategies, ConcreteMotivationalSystem intrinsic goal triggering). (Completed 2024-07-31 by Jules)
 - [x] Defined BaseWorldModel interface (base_world_model.py) and ConcreteWorldModel structure (concrete_world_model.py) with conceptual data stores and method implementations.
-- [ ] Refine `ConcreteWorldModel` data structures for key components (Object/Entity Repository, Spatial, Temporal, Social, Physics, Self-State).
-- [ ] Develop more detailed conceptual algorithms for `ConcreteWorldModel` methods (e.g., `predict_future_state`, `check_consistency`).
-- [ ] Implement basic unit tests for `ConcreteWorldModel` methods based on its conceptual data structures.
-- [ ] Refine `ConcreteSelfModelModule` data structures based on `PiaAGI_Research_Tools/PiaCML/Self_Model_Module_Specification.md`.
-- [ ] Develop more detailed conceptual algorithms for `ConcreteSelfModelModule` methods (e.g., confidence assessment, ethical evaluation logic).
-- [ ] Design conceptual approach for how the Self-Model's `EthicalFramework` is updated by the Learning Module.
-- [ ] Outline conceptual mechanisms for how the Self-Model guides `ArchitecturalMaturation` (interaction with `DevelopmentalState`).
+- [x] Refine `ConcreteWorldModel` data structures for key components (Object/Entity Repository, Spatial, Temporal, Social, Physics, Self-State). (Completed 2024-07-31 by Jules)
+- [x] Develop more detailed conceptual algorithms for `ConcreteWorldModel` methods (e.g., `predict_future_state`, `check_consistency`). (Completed 2024-07-31 by Jules)
+- [x] Implement basic unit tests for `ConcreteWorldModel` methods based on its conceptual data structures. (Completed 2024-07-31 by Jules)
+- [x] Refine `ConcreteSelfModelModule` data structures based on `PiaAGI_Research_Tools/PiaCML/Self_Model_Module_Specification.md`. (Completed 2024-07-31 by Jules)
+- [x] Develop more detailed conceptual algorithms for `ConcreteSelfModelModule` methods (e.g., confidence assessment, ethical evaluation logic). (Completed 2024-07-31 by Jules)
+- [x] Design conceptual approach for how the Self-Model's `EthicalFramework` is updated by the Learning Module. (Completed 2024-07-31 by Jules)
+- [x] Outline conceptual mechanisms for how the Self-Model guides `ArchitecturalMaturation` (interaction with `DevelopmentalState`). (Completed 2024-07-31 by Jules)
 - [x] Task: Drafted a detailed specification document for core motivational system models (Curiosity, Competence) within PiaCML (`PiaAGI_Research_Tools/PiaCML/Motivational_System_Specification.md`), formalizing their triggers, intensity, outputs, and interactions.
-- [ ] Task: Refine the Motivational_System_Specification.md to include considerations for how multiple intrinsic and extrinsic motivations might interact and be prioritized.
-- [ ] Task: Begin conceptual design for the interface between the Motivational System Module and other key CML modules (e.g., Planning, Learning, Self-Model) based on the new specification.
-- [ ] Task: Develop more detailed conceptual algorithms for how the Motivational System Module would generate the specific goal types and intrinsic rewards discussed in the PiaSE scenarios (Curiosity_Scenario.md, Competence_Scenario.md) and the `Motivational_System_Specification.md`.
+- [x] Task: Refine the Motivational_System_Specification.md to include considerations for how multiple intrinsic and extrinsic motivations might interact and be prioritized. (Completed 2024-07-31 by Jules)
+- [x] Task: Begin conceptual design for the interface between the Motivational System Module and other key CML modules (e.g., Planning, Learning, Self-Model) based on the new specification. (Completed 2024-07-31 by Jules)
+- [x] Task: Develop more detailed conceptual algorithms for how the Motivational System Module would generate the specific goal types and intrinsic rewards discussed in the PiaSE scenarios (Curiosity_Scenario.md, Competence_Scenario.md) and the `Motivational_System_Specification.md`. (Completed 2024-07-31 by Jules)
 
 ### PiaSE (PiaAGI Simulation Environment)
 - [x] Detailed the core simulation loop (Initialization, Main Loop phases A-G, Finalization) in PiaAGI_Simulation_Environment.md.
@@ -214,4 +214,3 @@ This section outlines proposed future development directions for the PiaAGI Rese
 - [ ] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles (e.g., correlating `AGENT_MCP_GENERATED` with improved task performance).
 - [ ] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
 - [ ] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
-```
