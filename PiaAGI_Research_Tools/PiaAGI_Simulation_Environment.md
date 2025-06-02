@@ -104,9 +104,32 @@ The PiaAGI Simulation Environment (PiaSE) is designed to provide a flexible and 
 *   **Environment Abstraction Layer:**
     *   Defines a common interface for different types of environments.
     *   Allows for easy creation of new environments (e.g., `GridWorld`, `SocialDilemmaSim`, `PhysicsPlayground`).
+        ```markdown
+        Conceptually, this layer would define an abstract class, say `AbstractEnvironment`, with methods such
+        as:
+        *   `load_configuration(self, config_data: Dict) -> bool:` Loads environment-specific settings.
+        *   `step(self, current_time_step: int) -> None:` Advances the environment's autonomous dynamics by one step.
+        *   `get_current_state_snapshot(self, scope: Optional[str] = None) -> Dict:` Returns a snapshot of the environment's state.
+        *   `reset_environment(self, scenario_config: Optional[Dict] = None) -> bool:` Resets the environment to an initial or specified state.
+        *   `get_perceptual_data_for_agent(self, agent_id: str) -> PerceptionData:` Gathers and returns perception data for a specific agent. (Refers to the `PerceptionData` Pydantic model).
+        *   `apply_action_from_agent(self, agent_id: str, action_command: ActionCommand) -> ActionResult:` Applies an agent's action and returns the result. (Refers to `ActionCommand` and `ActionResult` Pydantic models).
+        *   `get_environment_info(self) -> EnvironmentInfo:` Returns the environment's schema and capabilities. (Refers to `EnvironmentInfo` Pydantic model).
+
+        Specific environments like `GridWorld` or the conceptual `TextBasedRoom` would then implement this interface, providing concrete logic for these methods.
+        ```
 *   **Agent Management System:**
     *   Handles instantiation, lifecycle, and communication for one or more agents.
     *   Provides the standardized perception/action interface to agents.
+        ```markdown
+        Its key responsibilities include:
+        *   **Agent Registration:** Managing the addition and removal of agents from the simulation.
+        *   **Lifecycle Management:** Handling agent initialization, and potentially suspension/resumption or termination if the simulation supports it.
+        *   **Perception Delivery:** For each agent, invoking the current environment's `get_perceptual_data_for_agent()` method and ensuring the `PerceptionData` is delivered to that agent (e.g., by calling a hypothetical `agent.receive_perception(data: PerceptionData)` method on the agent object).
+        *   **Action Reception & Dispatch:** Receiving `ActionCommand` objects from agents (e.g., via a hypothetical `agent.get_chosen_action() -> ActionCommand` method) and dispatching them to the current environment's `apply_action_from_agent()` method.
+        *   **Communication Relay (for multi-agent scenarios):** If agents communicate directly, this system might relay messages or manage shared communication channels.
+        *   **ID Management:** Assigning and tracking unique IDs for agents within the simulation instance.
+        *   **Synchronization:** Ensuring agent actions and perceptions are processed in a consistent order, especially in multi-agent settings (e.g., turn-based, real-time with event queues). This ties into the Core Simulation Engine's timing model.
+        ```
 
     #### Agent-Environment API
 
@@ -141,88 +164,167 @@ The PiaAGI Simulation Environment (PiaSE) is designed to provide a flexible and 
         # def query_environment_state(self, agent_id: str, query: dict) -> dict: pass
     ```
 
-    **Data Structures (Conceptual JSON/Dict):**
+    **Data Structures (Refined with Pydantic-style Definitions):**
 
-    *   **Perception Data (from `get_perceptions`):**
-        *   Highly dependent on the environment and agent's sensors.
-        *   Example for a simple text-based environment:
-            ```json
-            {
-                "timestamp": 1678886400.5,
-                "visible_text": "You are in a dimly lit study. There is a large desk with a closed drawer and a bookshelf.",
-                "inventory_update": null,
-                "messages": [
-                    {"sender": "system", "content": "The door to the north creaks."}
-                ],
-                "self_stats_feedback": {
-                    "energy_level": 0.85
-                }
-            }
-            ```
+    To provide a more precise definition of the data exchanged between the agent and the environment, we can use Pydantic-style models. These also serve as a clear schema.
 
-    *   **Action Command Data (to `submit_action`):**
-        *   Defined by the environment's supported actions.
-        *   Example for a text-based environment:
-            ```json
-            {
-                "action_type": "go",
-                "parameters": {
-                    "direction": "north"
-                }
-            }
-            ```
-            Another example:
-            ```json
-            {
-                "action_type": "open",
-                "parameters": {
-                    "target": "drawer"
-                }
-            }
-            ```
+    *   **`PerceptionData` (from `get_perceptions`):**
+        ```python
+        from typing import List, Optional, Dict, Any
+        from pydantic import BaseModel, Field # Assuming pydantic is a conceptual choice for schema definition
 
-    *   **Action Result Data (from `submit_action`):**
-        *   Provides feedback on the executed action.
-        *   Example:
-            ```json
-            {
-                "status": "success",
-                "new_perception_snippet": "You moved north. You are now in a dusty hallway.",
-                "message": "You successfully moved north.",
-                "details": {
-                    "energy_consumed": 0.05
-                }
-            }
-            ```
-    *   **`get_environment_info()` Response Example:**
-        ```json
-        {
-            "environment_name": "TextBasedRoom_v1",
-            "description": "A simple text-based adventure environment for testing basic navigation and interaction.",
-            "action_schema": {
-                "go": {"direction": ["north", "south", "east", "west"]},
-                "look": {"target": "optional[string]"},
-                "take": {"item_name": "string", "source": "optional[string]"},
-                "use": {"item_name": "string", "target": "optional[string]"},
-                "open": {"target_object": "string"}
-            },
-            "perception_schema": {
-                "visible_text": "string",
-                "inventory_update": "optional[dict]",
-                "messages": "list[dict]",
-                "self_stats_feedback": "optional[dict]"
-            },
-            "max_agents": 1,
-            "time_model": "discrete_steps"
-        }
+        class Message(BaseModel):
+            sender: str = Field(..., description="ID of the message sender (e.g., 'system', 'agent_2')")
+            content: str = Field(..., description="Text content of the message")
+            timestamp: Optional[float] = Field(None, description="Timestamp of the message")
+
+        class PerceptionData(BaseModel):
+            timestamp: float = Field(..., description="Timestamp of this perception bundle")
+            # General perceptions - highly environment-dependent
+            raw_observations: Dict[str, Any] = Field(default_factory=dict, description="Environment-specific raw observations, e.g., sensor readings")
+
+            # Example for a text-based or explicit communication environment
+            visible_text: Optional[str] = Field(None, description="Primary textual description of the current scene/situation")
+            messages: List[Message] = Field(default_factory=list, description="List of messages received since last perception update")
+
+            # Example for an agent with an inventory
+            inventory_update: Optional[Dict[str, Any]] = Field(None, description="Updates to the agent's inventory, e.g., {'added': ['item_x'], 'removed': ['item_y']}")
+
+            # Feedback related to the agent's own state
+            self_stats_feedback: Optional[Dict[str, Any]] = Field(None, description="Feedback on agent's internal stats, e.g., {'energy_level': 0.8, 'health': 1.0}")
+
+            # For environments with explicit objects
+            visible_entities: Optional[List[Dict[str, Any]]] = Field(None, description="List of entities currently perceivable by the agent, e.g., [{'id': 'obj1', 'type': 'box', 'properties': {'color': 'red'}}]" )
+
+            # Action feedback from previous turn (if not part of a separate call)
+            last_action_result: Optional[Dict[str, Any]] = Field(None, description="Simplified result of the last action, if directly tied to perception. Often handled by ActionCommandResult.")
+
+        # Example Usage (conceptual):
+        # perception = PerceptionData(
+        #     timestamp=1678886400.5,
+        #     visible_text="In a room.",
+        #     messages=[Message(sender="system", content="A door opens.")],
+        #     self_stats_feedback={"energy": 0.9}
+        # )
+        ```
+
+    *   **`ActionCommand` (to `submit_action`):**
+        ```python
+        from typing import Dict, Any, Optional
+        from pydantic import BaseModel, Field # Assuming pydantic
+
+        class ActionCommand(BaseModel):
+            action_type: str = Field(..., description="The type of action to perform, e.g., 'move', 'interact', 'communicate'")
+            parameters: Dict[str, Any] = Field(default_factory=dict, description="Parameters for the action, e.g., {'direction': 'north', 'target_id': 'door_1'}")
+            # Optional fields for more complex action specifications
+            sequence_id: Optional[str] = Field(None, description="Identifier if this action is part of a sequence")
+            execution_priority: Optional[float] = Field(None, description="Priority for this action if multiple can be submitted")
+
+        # Example Usage (conceptual):
+        # action_cmd = ActionCommand(action_type="move", parameters={"direction": "east", "speed": "normal"})
+        # action_cmd_interact = ActionCommand(action_type="interact", parameters={"target_id": "lever_A", "interaction_type": "pull"})
+        ```
+
+    *   **`ActionResult` (from `submit_action`):**
+        ```python
+        from typing import Dict, Any, Optional, List
+        from pydantic import BaseModel, Field # Assuming pydantic
+
+        class ActionResult(BaseModel):
+            status: str = Field(..., description="Status of the action execution (e.g., 'success', 'failure', 'in_progress', 'invalid_action')")
+            message: Optional[str] = Field(None, description="Human-readable message about the action's outcome")
+
+            # Specific outcomes or changes resulting from the action
+            state_changes_summary: Optional[Dict[str, Any]] = Field(None, description="Summary of key state changes in the environment or agent caused by the action")
+            rewards_obtained: Optional[Dict[str, float]] = Field(None, description="Any rewards or penalties incurred, e.g., {'score': 10, 'energy_cost': -0.1}")
+
+            # Optionally, a snippet of new perception data immediately resulting from action.
+            # However, full perception updates are typically handled by a subsequent get_perceptions() call.
+            immediate_perception_snippet: Optional[Dict[str, Any]] = Field(None, description="A small, immediate perceptual update directly resulting from the action, if applicable.")
+
+            error_details: Optional[str] = Field(None, description="Details if the action status is 'failure'")
+
+        # Example Usage (conceptual):
+        # result_success = ActionResult(status="success", message="Moved north successfully.", state_changes_summary={"agent_location": [10,11]})
+        # result_fail = ActionResult(status="failure", message="Cannot move north, path blocked.", error_details="Wall encountered")
+        ```
+
+    *   **`EnvironmentInfo` (from `get_environment_info`):**
+        ```python
+        from typing import Dict, Any, Optional, List
+        from pydantic import BaseModel, Field # Assuming pydantic
+
+        class ActionSchema(BaseModel):
+            description: Optional[str] = None
+            parameters: Dict[str, Any] = Field(default_factory=dict, description="Dictionary of parameter names to their type or allowed values/schema. E.g., {'direction': {'type': 'string', 'enum': ['N','S','E','W']}}")
+
+        class PerceptionFieldSchema(BaseModel):
+            type: str = Field(..., description="Data type of the perception field (e.g., 'string', 'integer', 'list[object]')")
+            description: Optional[str] = None
+            is_optional: bool = False # Default to required unless specified
+
+        class EnvironmentInfo(BaseModel):
+            environment_name: str
+            description: str
+            version: Optional[str] = None
+            action_schema: Dict[str, ActionSchema] = Field(..., description="Defines available actions and their parameters")
+            perception_schema: Dict[str, PerceptionFieldSchema] = Field(..., description="Defines the structure of data returned by get_perceptions()")
+            max_agents: Optional[int] = 1
+            time_model: str = Field(..., description="Model of time progression (e.g., 'discrete_steps', 'real_time_ms')")
+            custom_properties: Optional[Dict[str, Any]] = None
+
+        # Example Usage (conceptual, partial):
+        # env_info = EnvironmentInfo(
+        #     environment_name="TextWorldDeluxe",
+        #     description="...",
+        #     action_schema={
+        #         "move": ActionSchema(parameters={"direction": {"type": "string", "enum": ["N","S","E","W"]}}),
+        #         "examine": ActionSchema(parameters={"target": {"type": "string"}})
+        #     },
+        #     perception_schema={
+        #         "current_room_description": PerceptionFieldSchema(type="string"),
+        #         "visible_objects": PerceptionFieldSchema(type="list[string]", is_optional=True)
+        #     },
+        #     time_model="discrete_steps"
+        # )
         ```
 
 *   **Scenario Definition Module:**
     *   Parses scenario/task definitions (e.g., from XML, JSON, or Python scripts).
     *   Initializes environment and agents according to the scenario.
+        ```markdown
+        The process managed by this module typically involves:
+        1.  **Parsing & Validation:** Reading the scenario definition file (e.g., the YAML example for "The Lost Key") and validating its structure and content against a predefined schema (e.g., ensuring all required fields like `environment_type`, `initial_state`, `win_conditions` are present and correctly formatted).
+        2.  **Environment Instantiation:** Dynamically instantiating the correct environment class (e.g., `TextBasedRoom`, `GridWorld`) based on the `environment_type` specified in the scenario. This uses the Environment Abstraction Layer.
+        3.  **Environment Configuration:** Applying the `initial_state` data from the scenario file to the instantiated environment object (e.g., setting up room layouts, object properties, entity locations).
+        4.  **Agent(s) Instantiation & Setup:**
+            *   Creating instances of the agent(s) specified in the `agent_setup` section.
+            *   If the scenario includes `initial_agent_config` (which might be a PiaPES prompt reference or direct settings), this module would ensure these configurations are passed to the agent during its initialization.
+            *   Placing agents in their defined `start_room` or initial positions.
+            *   Setting up their `initial_inventory` or other starting attributes.
+        5.  **Goal & Condition Registration:** Communicating the `win_conditions` and `lose_conditions` from the scenario file to the Core Simulation Engine, which will monitor them during the simulation loop.
+        6.  **Event Trigger Setup:** If the scenario defines specific event triggers (like the conceptual example in "The Lost Key"), this module configures the Core Simulation Engine or the environment itself to monitor for these triggers and execute their responses.
+        ```
 *   **Data Logging Service:**
     *   Collects and stores data from various sources within the simulation.
     *   Outputs logs in standard formats (e.g., CSV, HDF5, databases).
+        ```markdown
+        Key aspects of this service include:
+        *   **Interface Adherence:** The service should implement a well-defined `LoggerInterface` (conceptual), allowing different logging backends (console, file, database) to be plugged in.
+        *   **Configurable Detail Levels:** Users should be able to configure the verbosity of logs (e.g., "DEBUG", "INFO", "CRITICAL_EVENTS_ONLY") globally or per module/agent.
+        *   **Standardized Log Format:** All log entries must adhere to the format specified in `PiaAGI_Research_Tools/PiaAVT/Logging_Specification.md` to ensure compatibility with the PiaAVT toolkit. This typically involves JSONL (JSON Lines) with common fields like `timestamp`, `source_type` (e.g., "AGENT", "ENVIRONMENT", "SIMULATOR"), `source_id`, `event_type`, and a flexible `payload` dictionary.
+        *   **Data Categories to Log (Examples):**
+            *   `SIMULATOR_EVENT`: e.g., scenario_start, scenario_end, step_begin, max_steps_reached.
+            *   `ENVIRONMENT_STATE_CHANGE`: e.g., object_moved, door_opened, resource_updated.
+            *   `AGENT_PERCEPTION`: The full `PerceptionData` object received by an agent.
+            *   `AGENT_ACTION_SUBMITTED`: The full `ActionCommand` object submitted by an agent.
+            *   `AGENT_ACTION_RESULT`: The full `ActionResult` object received by an agent.
+            *   `AGENT_INTERNAL_STATE` (Optional, if exposed by agent): Snapshots of key internal variables from CML modules (e.g., SelfModel confidence, EmotionModule VAD state, active goals from MotivationalSystem). Requires careful consideration of data volume and agent encapsulation.
+            *   `AGENT_REWARD_PENALTY`: For reinforcement learning scenarios, specific reward/penalty signals received.
+            *   `AGENT_LEARNING_EVENT`: e.g., model_update_in_LearningModule, new_knowledge_consolidated_in_LTM.
+        *   **Output Destinations:** Configurable outputs, minimally to local files (e.g., `.jsonl`). Conceptually, could extend to databases or streaming platforms for larger-scale experiments.
+        *   **Timestamping:** All log entries must be accurately timestamped, using either simulation time steps or wall-clock time as appropriate for the simulation mode.
+        ```
 *   **Visualization Interface (Optional but Recommended):**
     *   Real-time or post-hoc visualization of the environment and agent states (e.g., using Pygame, Matplotlib, or web-based frameworks).
 

@@ -226,7 +226,7 @@ class BasicAnalyzer:
         return time_series_data
 
     def count_unique_values(self,
-                            field_name: str, # e.g., "source", "event_type", or a key within "data"
+                            field_name: str,
                             source: Optional[str] = None,
                             event_type: Optional[str] = None,
                             start_time: Optional[datetime] = None,
@@ -234,72 +234,105 @@ class BasicAnalyzer:
                             is_data_field: bool = False,
                             data_field_path: Optional[Union[str, List[str]]] = None
                            ) -> Counter:
-        """
-        Counts occurrences of unique values for a specified field in filtered log entries.
-
-        The method can count values from a top-level field in the log entry (e.g., "source",
-        "event_type") or from a field within the 'data' dictionary. If the target field's
-        value is a list or dictionary itself, it's converted to its string representation
-        to ensure hashability for counting.
-
-        Args:
-            field_name (str): The name of the top-level field to count values from if
-                              `is_data_field` is False. If `is_data_field` is True,
-                              this argument is effectively a placeholder, and
-                              `data_field_path` is used instead.
-            source (Optional[str]): Filter logs by source before counting.
-            event_type (Optional[str]): Filter logs by event_type before counting.
-            start_time (Optional[datetime]): Filter logs by start_time.
-            end_time (Optional[datetime]): Filter logs by end_time.
-            is_data_field (bool): If True, `data_field_path` is used to find the field
-                                  within the 'data' dictionary. Defaults to False.
-            data_field_path (Optional[Union[str, List[str]]]): The key or path to the
-                                                               field within the 'data'
-                                                               dictionary. Required if
-                                                               `is_data_field` is True.
-
-        Returns:
-            collections.Counter: A Counter object mapping unique values to their frequencies.
-
-        Raises:
-            ValueError: If `is_data_field` is True but `data_field_path` is not provided.
-        """
         logs_to_analyze = self.filter_logs(source, event_type, start_time, end_time)
-
         values_to_count = []
         for entry in logs_to_analyze:
             if is_data_field:
                 if not data_field_path:
                     raise ValueError("data_field_path must be provided if is_data_field is True.")
-
                 data_dict = entry.get("data", {})
                 if not isinstance(data_dict, dict):
                     continue
-
                 current_val = data_dict
                 path_list = [data_field_path] if isinstance(data_field_path, str) else data_field_path
                 try:
                     for key in path_list:
                         current_val = current_val[key]
-                    # Ensure value is hashable for Counter
                     if isinstance(current_val, (list, dict)):
                         current_val = str(current_val)
                     values_to_count.append(current_val)
                 except (KeyError, TypeError):
-                    continue # Field not found or not hashable
+                    continue
             else:
                 if field_name in entry:
                     val = entry[field_name]
                     if isinstance(val, (list, dict)):
-                        val = str(val) # Ensure hashable for Counter
+                        val = str(val)
                     values_to_count.append(val)
-
         return Counter(values_to_count)
 
-# Example Usage (primarily for demonstration or direct script testing)
-# This section will typically not be run when PiaAVT is used as a library.
+    def get_event_frequency(self,
+                            target_event_type: str,
+                            group_by_field_path: Optional[Union[str, List[str]]] = None,
+                            is_group_by_data_field: bool = False,
+                            **filter_kwargs) -> Union[Counter, int]:
+        filter_kwargs['event_type'] = target_event_type
+        logs_to_analyze = self.filter_logs(**filter_kwargs)
+
+        if not group_by_field_path:
+            return len(logs_to_analyze)
+
+        values_to_group = []
+        for entry in logs_to_analyze:
+            base_dict = entry.get("data") if is_group_by_data_field else entry # Corrected "event_data" to "data"
+
+            path_list: List[str]
+            if isinstance(group_by_field_path, str):
+                path_list = [group_by_field_path]
+            elif isinstance(group_by_field_path, list):
+                path_list = [str(p) for p in group_by_field_path] # Ensure all path segments are strings
+            else:
+                path_list = []
+
+            current_val = base_dict
+            path_ok = True
+            value_to_add: Any
+
+            if not path_list:
+                value_to_add = current_val
+            elif not isinstance(base_dict, dict):
+                path_ok = False
+                # value_to_add will be handled by the "if not path_ok" check later
+            else:
+                for key_segment in path_list:
+                    if isinstance(current_val, dict) and key_segment in current_val:
+                        current_val = current_val[key_segment]
+                    else:
+                        path_ok = False
+                        break
+                # value_to_add is current_val if path_ok, otherwise it doesn't matter as path_ok is False
+                value_to_add = current_val
+
+            if not path_ok:
+                 values_to_group.append("NoneOrInvalidPath")
+            elif isinstance(value_to_add, (list, dict)):
+                values_to_group.append(str(value_to_add))
+            elif value_to_add is None:
+                values_to_group.append("NoneValue")
+            else:
+                values_to_group.append(value_to_add)
+
+        return Counter(values_to_group)
+
+    def track_goal_lifecycle(self, goal_id: str, **filter_kwargs) -> List[LogEntry]:
+        goal_event_types = [
+            "GOAL_CREATED", "GOAL_ACTIVATED", "GOAL_DEACTIVATED",
+            "GOAL_PRIORITY_UPDATED", "GOAL_STATUS_CHANGED",
+            "GOAL_ACHIEVED", "GOAL_FAILED"
+        ]
+        relevant_logs = []
+        base_filtered_logs = self.filter_logs(**filter_kwargs)
+        for entry in base_filtered_logs:
+            if entry.get("event_type") in goal_event_types:
+                event_data = entry.get("event_data", {})
+                if isinstance(event_data, dict) and event_data.get("goal_id") == goal_id:
+                    relevant_logs.append(entry)
+        relevant_logs.sort(key=lambda x: datetime.strptime(x["timestamp"], DEFAULT_TIMESTAMP_FORMAT))
+        return relevant_logs
+
+# Example Usage
 if __name__ == "__main__":
-    sample_logs: List[LogEntry] = [ # type: ignore
+    sample_logs: List[LogEntry] = [
         {"timestamp": "2024-01-15T10:00:00.000Z", "source": "PiaCML.Memory", "event_type": "Write", "data": {"size_kb": 10, "success": True}},
         {"timestamp": "2024-01-15T10:00:05.000Z", "source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "move", "reward": 0.5}},
         {"timestamp": "2024-01-15T10:00:10.000Z", "source": "PiaCML.Memory", "event_type": "Read", "data": {"query_time_ms": 150, "success": True}},
@@ -309,16 +342,13 @@ if __name__ == "__main__":
         {"timestamp": "2024-01-15T10:00:30.000Z", "source": "PiaCML.Emotion", "event_type": "Update", "data": {"valence": 0.7, "arousal": 0.4}},
         {"timestamp": "2024-01-15T10:00:35.000Z", "source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "move", "reward": -0.1}},
     ]
-
     analyzer = BasicAnalyzer(sample_logs)
-
+    # ... (rest of __main__ example remains the same) ...
     print("--- Value Counts ---")
     source_counts = analyzer.count_unique_values("source")
     print(f"Source counts: {source_counts}")
-
     event_type_counts = analyzer.count_unique_values("event_type", source="PiaCML.Memory")
     print(f"Event type counts for 'PiaCML.Memory': {event_type_counts}")
-
     action_name_counts = analyzer.count_unique_values(
         "action_name",
         event_type="Action",
@@ -326,57 +356,32 @@ if __name__ == "__main__":
         data_field_path="action_name"
     )
     print(f"Action name counts for 'Action' events: {action_name_counts}")
-
-
     print("\n--- Descriptive Stats ---")
     reward_stats = analyzer.get_descriptive_stats(data_field_path="reward", event_type="Action")
-    if reward_stats:
-        print(f"Reward stats for 'Action' events: {reward_stats}")
-    else:
-        print("No reward data found for 'Action' events.")
-
+    if reward_stats: print(f"Reward stats for 'Action' events: {reward_stats}")
+    else: print("No reward data found for 'Action' events.")
     memory_write_size_stats = analyzer.get_descriptive_stats(
-        data_field_path="size_kb",
-        source="PiaCML.Memory",
-        event_type="Write"
+        data_field_path="size_kb", source="PiaCML.Memory", event_type="Write"
     )
-    if memory_write_size_stats:
-        print(f"Memory write size (KB) stats: {memory_write_size_stats}")
-    else:
-        print("No memory write size data found.")
-
+    if memory_write_size_stats: print(f"Memory write size (KB) stats: {memory_write_size_stats}")
+    else: print("No memory write size data found.")
     print("\n--- Time Series ---")
     reward_series = analyzer.get_time_series(data_field_path="reward", event_type="Action")
     print("Reward time series for 'Action' events:")
-    for ts, val in reward_series:
-        print(f"  {ts.strftime('%H:%M:%S')} - {val}")
-
+    for ts, val in reward_series: print(f"  {ts.strftime('%H:%M:%S')} - {val}")
     valence_series = analyzer.get_time_series(
-        data_field_path="valence",
-        source="PiaCML.Emotion",
-        event_type="Update"
+        data_field_path="valence", source="PiaCML.Emotion", event_type="Update"
     )
     print("\nValence time series for 'PiaCML.Emotion' 'Update' events:")
-    for ts, val in valence_series:
-        print(f"  {ts.strftime('%H:%M:%S')} - {val}")
-
-    # Test filtering by time
+    for ts, val in valence_series: print(f"  {ts.strftime('%H:%M:%S')} - {val}")
     start_dt = datetime.strptime("2024-01-15T10:00:10.000Z", DEFAULT_TIMESTAMP_FORMAT)
     end_dt = datetime.strptime("2024-01-15T10:00:25.000Z", DEFAULT_TIMESTAMP_FORMAT)
-
     print(f"\n--- Filtered Time Series (between {start_dt} and {end_dt}) ---")
     filtered_reward_series = analyzer.get_time_series(
-        data_field_path="reward",
-        event_type="Action",
-        start_time=start_dt,
-        end_time=end_dt
+        data_field_path="reward",event_type="Action",start_time=start_dt,end_time=end_dt
     )
     print("Filtered Reward time series for 'Action' events:")
-    for ts, val in filtered_reward_series:
-        print(f"  {ts.strftime('%H:%M:%S')} - {val}")
-
+    for ts, val in filtered_reward_series: print(f"  {ts.strftime('%H:%M:%S')} - {val}")
     print(f"\n--- Filtered Value Counts (between {start_dt} and {end_dt}) ---")
     filtered_source_counts = analyzer.count_unique_values("source", start_time=start_dt, end_time=end_dt)
     print(f"Filtered Source counts: {filtered_source_counts}")
-
-```
