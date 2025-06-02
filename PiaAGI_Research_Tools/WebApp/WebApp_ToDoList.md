@@ -1,47 +1,47 @@
 # WebApp To-Do List
 
-- [ ] **Analyze Existing WebApp Implementations:**
-    - [ ] Read the code for `PiaAGI_Research_Tools/WebApp/backend/app.py` and `PiaAGI_Research_Tools/WebApp/frontend/src/App.jsx`.
-    - [ ] Read the code for `PiaAGI_Research_Tools/PiaAVT/webapp/app.py` (Streamlit).
-    - [ ] Read the code for `PiaAGI_Research_Tools/PiaPES/web_app/app.py` (Flask) and its `llm_config.ini.template`.
-    - [ ] Read the code for `PiaAGI_Research_Tools/PiaSE/WebApp/app.py` (Flask).
-    - [ ] Understand their current functionalities, UI, and how they might be integrated.
-- [ ] **Design the Unified WebApp Architecture:**
-    - [ ] Decide on a primary web framework (e.g., Flask or FastAPI for the backend, React/Vue for the frontend, or leverage Streamlit if suitable for all tools). The existing `PiaAGI_Research_Tools/WebApp` already uses Flask and React.
-    - [ ] Plan how each toolset (PiaCML, PiaSE, PiaPES, PiaAVT) will be presented and interacted with within the unified interface.
-    - [ ] Design the navigation structure.
-    - [ ] Outline how LLM configuration will be managed globally.
-- [ ] **Develop the Unified WebApp Backend:**
-    - [ ] If Flask is chosen (as per existing `PiaAGI_Research_Tools/WebApp`), consolidate backend functionalities.
-    - [ ] Create API endpoints to serve data and interact with the PiaAGI tools.
-    - [ ] Integrate or adapt the LLM configuration mechanism from PiaPES.
-- [ ] **Develop the Unified WebApp Frontend:**
-    - [ ] Design and implement React components for each toolset's interface.
-    - [ ] Focus on user experience and aesthetics.
-    - [ ] Ensure responsiveness and ease of navigation.
-- [ ] **Integrate PiaCML Interface:**
-    - [ ] Design a way for users to conceptually interact with PiaCML. This might involve:
-        - [ ] Visualizing module connections (based on `PiaAGI.md` diagrams).
-        - [ ] Allowing users to see or set conceptual parameters for modules (similar to PiaPES cognitive configurations).
-        - [ ] Displaying documentation or summaries for each module.
-- [ ] **Integrate PiaSE Interface:**
-    - [ ] Adapt or embed the existing PiaSE WebApp functionality.
-    - [ ] Allow users to select and run simulations.
-    - [ ] Display simulation visualizations.
-- [ ] **Integrate PiaPES Interface:**
-    - [ ] Adapt or embed the existing PiaPES web app functionality.
-    - [ ] Allow users to design and manage prompts and curricula.
-    - [ ] Ensure LLM configuration is handled correctly.
-- [ ] **Integrate PiaAVT Interface:**
-    - [ ] Decide how to integrate the Streamlit-based PiaAVT webapp. Options include:
-        - [ ] Running it as a separate service and linking to it.
-        - [ ] Embedding Streamlit components if possible (can be challenging with Flask/React).
-        - [ ] Re-implementing key PiaAVT visualizations/analyses within the main WebApp framework (Flask/React).
-- [ ] **Documentation and Deployment:**
-    - [ ] Write a comprehensive `README.md` for the `PiaAGI_Research_Tools/WebApp` directory, including:
-        - [ ] Overview of the WebApp.
-        - [ ] Detailed local deployment instructions (backend and frontend).
-        - [ ] Instructions for LLM configuration.
-    - [ ] Update/create the main `requirements.txt` in `PiaAGI_Research_Tools/WebApp/backend/` and any frontend dependencies in `PiaAGI_Research_Tools/WebApp/frontend/package.json`.
-- [ ] **Update Root `ToDoList.md`:** Mark the WebApp task as in progress/completed.
-- [ ] **Submit Changes:** Commit the new WebApp, `WebApp_ToDoList.md`, and updated documentation.
+- [x] **Analyze Existing WebApp Implementations:**
+    - [x] Read the code for `PiaAGI_Research_Tools/WebApp/backend/app.py` and `PiaAGI_Research_Tools/WebApp/frontend/src/App.jsx`.
+    - [x] Read the code for `PiaAGI_Research_Tools/PiaAVT/webapp/app.py` (Streamlit).
+    - [x] Read the code for `PiaAGI_Research_Tools/PiaPES/web_app/app.py` (Flask) and its `llm_config.ini.template`.
+    - [x] Read the code for `PiaAGI_Research_Tools/PiaSE/WebApp/app.py` (Flask).
+    - [x] Understand their current functionalities, UI, and how they might be integrated.
+- [x] **Design the Unified WebApp Architecture:**
+    - [x] Decide on a primary web framework (e.g., Flask or FastAPI for the backend, React/Vue for the frontend, or leverage Streamlit if suitable for all tools). The existing `PiaAGI_Research_Tools/WebApp` already uses Flask and React.
+    - [x] Plan how each toolset (PiaCML, PiaSE, PiaPES, PiaAVT) will be presented and interacted with within the unified interface.
+    - [x] Design the navigation structure.
+    - [x] Outline how LLM configuration will be managed globally.
+- [x] **Develop the Unified WebApp Backend:**
+    - [x] If Flask is chosen (as per existing `PiaAGI_Research_Tools/WebApp`), consolidate backend functionalities.
+    - [x] Create API endpoints to serve data and interact with the PiaAGI tools.
+    - [x] Integrate or adapt the LLM configuration mechanism from PiaPES.
+- [x] **Develop the Unified WebApp Frontend:**
+    - [x] Design and implement React components for each toolset's interface.
+    - [x] Focus on user experience and aesthetics.
+    - [x] Ensure responsiveness and ease of navigation.
+- [x] **Integrate PiaCML Interface:**
+    - [x] Design a way for users to conceptually interact with PiaCML. This might involve:
+        - [x] Visualizing module connections (based on `PiaAGI.md` diagrams).
+        - [x] Allowing users to see or set conceptual parameters for modules (similar to PiaPES cognitive configurations).
+        - [x] Displaying documentation or summaries for each module.
+- [x] **Integrate PiaSE Interface:**
+    - [x] Adapt or embed the existing PiaSE WebApp functionality.
+    - [x] Allow users to select and run simulations.
+    - [x] Display simulation visualizations.
+- [x] **Integrate PiaPES Interface:**
+    - [x] Adapt or embed the existing PiaPES web app functionality.
+    - [x] Allow users to design and manage prompts and curricula.
+    - [x] Ensure LLM configuration is handled correctly.
+- [x] **Integrate PiaAVT Interface:**
+    - [x] Decide how to integrate the Streamlit-based PiaAVT webapp. Options include:
+        - [x] Running it as a separate service and linking to it.
+        - [x] Embedding Streamlit components if possible (can be challenging with Flask/React).
+        - [x] Re-implementing key PiaAVT visualizations/analyses within the main WebApp framework (Flask/React).
+- [x] **Documentation and Deployment:**
+    - [x] Write a comprehensive `README.md` for the `PiaAGI_Research_Tools/WebApp` directory, including:
+        - [x] Overview of the WebApp.
+        - [x] Detailed local deployment instructions (backend and frontend).
+        - [x] Instructions for LLM configuration.
+    - [x] Update/create the main `requirements.txt` in `PiaAGI_Research_Tools/WebApp/backend/` and any frontend dependencies in `PiaAGI_Research_Tools/WebApp/frontend/package.json`.
+- [x] **Update Root `ToDoList.md`:** Mark the WebApp task as in progress/completed.
+- [x] **Submit Changes:** Commit the new WebApp, `WebApp_ToDoList.md`, and updated documentation.
