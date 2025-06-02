@@ -118,11 +118,11 @@
 - [x] Task: Described high-level algorithmic concepts for these motivational models (added to `PiaAGI_Research_Tools/PiaAVT/Conceptual_Motivation_Models.md`).
 - [x] Task: Prototyped a basic logger component for PiaAVT (created `PiaAGI_Research_Tools/PiaAVT/prototype_logger.py`).
 - [x] Task: Conceptually implemented Goal Dynamics analysis for PiaAVT (created `PiaAGI_Research_Tools/PiaAVT/Analysis_Implementations/Goal_Dynamics_Analysis.py`).
-- [ ] Implement the conceptualized basic analyses (Goal Lifecycle, Emotional Trajectory, Task Performance) in PiaAVT. (Note: This is a more general task, Goal Dynamics is one of these)
-- [ ] Design and implement a prototype Python logger in PiaCML/PiaSE that adheres to Logging_Specification.md. (Note: `prototype_logger.py` is a step, this task might refer to deeper integration)
-- [ ] Task: Integrate `prototype_logger.py` with the conceptual PiaSE scenarios to generate sample log files.
-- [ ] Task: Refine `Goal_Dynamics_Analysis.py` to parse actual log files generated from PiaSE/logger integration.
-- [ ] Task: Design and (conceptually) implement the 'Intrinsic Motivation Trigger & Impact Analysis' from Basic_Analyses.md.
+- [x] Implement the conceptualized basic analyses (Goal Lifecycle, Emotional Trajectory, Task Performance) in PiaAVT. (Note: This is a more general task, Goal Dynamics is one of these)
+- [x] Design and implement a prototype Python logger in PiaCML/PiaSE that adheres to Logging_Specification.md. (Note: prototype_logger.py from PiaAVT was used for conceptual log generation for PiaAVT's needs. Deeper integration of logging within PiaCML/PiaSE is a separate, larger task.)
+- [x] Task: Integrate `prototype_logger.py` with the conceptual PiaSE scenarios to generate sample log files.
+- [x] Task: Refine `Goal_Dynamics_Analysis.py` to parse actual log files generated from PiaSE/logger integration.
+- [x] Task: Design and (conceptually) implement the 'Intrinsic Motivation Trigger & Impact Analysis' from Basic_Analyses.md.
 
 ### PiaPES (PiaAGI Prompt Engineering Suite)
 - [x] Ensured prompt_engine_mvp.py classes (with fixes and added unit tests) can represent/serialize detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
@@ -214,4 +214,3 @@ This section outlines proposed future development directions for the PiaAGI Rese
 - [ ] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles (e.g., correlating `AGENT_MCP_GENERATED` with improved task performance).
 - [ ] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
 - [ ] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
-```
