@@ -39,8 +39,44 @@ The Motivational System is deeply interconnected with other PiaCML modules:
 ### 2.3. Goal Management
 *   **Generation:** Goals can be generated extrinsically (e.g., from user prompts, scenario definitions) or intrinsically (e.g., based on curiosity, competence drives).
 *   **Representation:** Each goal is represented as a data structure including: `goal_id`, `description`, `type` (e.g., `EXTRINSIC_TASK`, `INTRINSIC_CURIOSITY`, `INTRINSIC_COMPETENCE`), `priority` (dynamic), `status` (e.g., `PENDING`, `ACTIVE`, `IN_PROGRESS`, `BLOCKED`, `ACHIEVED`, `FAILED`), `creation_timestamp`, `source_trigger_details`, `parent_goal_id` (for hierarchies), associated conditions for success/failure.
-*   **Prioritization:** A dynamic prioritization mechanism (e.g., based on utility theory, considering intensity, urgency, relevance to core values, estimated effort/reward, inter-goal dependencies) is used to rank active goals. This determines which goals are primarily pursued.
+*   **Prioritization:** A dynamic prioritization mechanism is used to rank active goals. This determines which goals are primarily pursued. See Section 2.3.1 for details.
 *   **Tracking:** The module continuously tracks the status of all active goals, updating them based on feedback from other modules (e.g., Planning, Learning, World Model).
+
+#### 2.3.1. Goal Prioritization and Conflict Resolution Strategies
+
+The Motivational System must dynamically manage the priorities of multiple, potentially competing goals. This involves calculating a priority score for each active goal and implementing strategies for handling conflicts.
+
+**A. Priority Score Calculation (Conceptual):**
+
+For each active goal $g$, its current priority $P(g)$ could be a function of:
+$P(g) = w_{base} \cdot 	ext{BasePriority}(g) + w_{int} \cdot 	ext{Intensity}(g) + w_{urg} \cdot 	ext{Urgency}(g) + w_{val} \cdot 	ext{ValueAlignment}(g) + w_{dep} \cdot 	ext{DependencyFactor}(g) - w_{cost} \cdot 	ext{EstimatedCost}(g)$
+
+Where:
+*   $	ext{BasePriority}(g)$: The initial or inherent priority of the goal type (e.g., safety goals > curiosity goals).
+*   $	ext{Intensity}(g)$: For intrinsic goals, the calculated drive intensity (e.g., $I_c$ or $I_m$). For extrinsic goals, this might be user-assigned importance.
+*   $	ext{Urgency}(g)$: Time-sensitivity or deadline associated with the goal.
+*   $	ext{ValueAlignment}(g)$: Score indicating how well the goal aligns with the agent's core values (from Self-Model's `EthicalFramework`).
+*   $	ext{DependencyFactor}(g)$: Increases priority if other important goals depend on this one's completion.
+*   $	ext{EstimatedCost}(g)$: Perceived resources (time, cognitive effort) required, potentially reducing priority for very costly goals if alternatives exist.
+*   $w_...$: Configurable weights.
+
+The list of active goals is then sorted by $P(g)$ to determine the current focus.
+
+**B. Conflict Resolution Strategies:**
+
+When multiple high-priority goals compete for resources or suggest incompatible actions, the system (potentially in concert with the Central Executive or Planning Module) may employ strategies like:
+
+1.  **Strict Prioritization:** Always pursue the single goal with the highest $P(g)$. Simpler, but can lead to goal starvation for lower-priority items.
+2.  **Utility-Based Selection:** If actions can serve multiple goals, favor actions that maximize overall utility across the set of active goals.
+3.  **Time-Sharing/Interleaving:** Allocate processing cycles or time slots to multiple high-priority goals, switching between them. This is suitable if goals are divisible or progress can be made incrementally.
+4.  **Goal Subsumption or Re-evaluation:**
+    *   **Subsumption:** If one goal can be reframed as a sub-goal of another higher-priority goal, its pursuit is integrated.
+    *   **Re-evaluation/Postponement:** If a conflict is severe, re-evaluate goal intensities or dependencies. One goal might be temporarily deactivated or its priority significantly lowered.
+    *   **Compromise Goal Generation (Advanced):** Conceptually, the Planning or Self-Model might attempt to generate a new, intermediate goal that partially satisfies conflicting objectives.
+5.  **Emotional Modulation in Conflict:** The Emotion Module's state (e.g., high frustration from goal blockage) can influence conflict resolution by increasing the urgency to resolve the conflict or by biasing the agent towards strategies that reduce negative affect.
+6.  **Seeking Clarification/External Input:** If internal resolution fails, a high-level goal to seek clarification or guidance (e.g., from a user or a supervisory system) might be generated.
+
+The choice of conflict resolution strategy can itself be context-dependent or learned.
 
 ### 2.4. Intrinsic vs. Extrinsic Motivation Handling
 The system manages both types of goals. Intrinsic motivations are crucial for proactive learning and development in open-ended environments. Extrinsic goals are typically task-specific objectives. The prioritization mechanism must be ableto balance these, allowing, for instance, high-intensity curiosity to sometimes take precedence over a low-priority extrinsic task, or vice-versa.
