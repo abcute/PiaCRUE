@@ -85,6 +85,9 @@
 - [ ] Develop more detailed conceptual algorithms for `ConcreteSelfModelModule` methods (e.g., confidence assessment, ethical evaluation logic).
 - [ ] Design conceptual approach for how the Self-Model's `EthicalFramework` is updated by the Learning Module.
 - [ ] Outline conceptual mechanisms for how the Self-Model guides `ArchitecturalMaturation` (interaction with `DevelopmentalState`).
+- [x] Task: Drafted a detailed specification document for core motivational system models (Curiosity, Competence) within PiaCML (`PiaAGI_Research_Tools/PiaCML/Motivational_System_Specification.md`), formalizing their triggers, intensity, outputs, and interactions.
+- [ ] Task: Refine the Motivational_System_Specification.md to include considerations for how multiple intrinsic and extrinsic motivations might interact and be prioritized.
+- [ ] Task: Begin conceptual design for the interface between the Motivational System Module and other key CML modules (e.g., Planning, Learning, Self-Model) based on the new specification.
 
 ### PiaSE (PiaAGI Simulation Environment)
 - [x] Detailed the core simulation loop (Initialization, Main Loop phases A-G, Finalization) in PiaAGI_Simulation_Environment.md.
@@ -95,13 +98,19 @@
 - [ ] Develop detailed specifications for core PiaSE components (Environment Abstraction Layer, Agent Management, Scenario Definition Module, Data Logging Service).
 - [ ] Implement a prototype of the TextBasedRoom environment based on the conceptual design.
 - [ ] Implement a prototype of the PiaSE core simulation engine.
+- [ ] Task: Design a simple scenario within PiaSE that could be used to test and observe the 'Curiosity and Information Seeking' motivation in an agent (e.g., an agent exploring a small grid world with unknown elements).
+- [ ] Task: Design a simple scenario within PiaSE that could be used to test and observe the 'Competence and Mastery' motivation (e.g., an agent learning to solve a puzzle with increasing difficulty).
 
 ### PiaAVT (PiaAGI Analysis & Visualization Toolkit)
 - [x] Defined standardized logging format/schema (JSONL) and created `PiaAGI_Research_Tools/PiaAVT/Logging_Specification.md`.
-- [x] Conceptually outlined 3 basic analyses (Goal Lifecycle, Emotional Trajectory, Task Performance) for PiaAVT in PiaAGI_Agent_Analysis_Visualization_Toolkit.md.
-- [x] Sketched visualization/summary for Emotional State Trajectory analysis in PiaAGI_Agent_Analysis_Visualization_Toolkit.md.
+- [x] Task: Reviewed PiaAGI.md sections on Motivational Systems (3.3, 4.1.6) to inform relevant analyses.
+- [x] Task: Brainstormed and selected 2-3 basic analyses for PiaAVT related to the Motivational System (documented in `PiaAGI_Research_Tools/PiaAVT/Basic_Analyses.md`).
+- [x] Task: Outlined conceptual computational models for Curiosity and Competence intrinsic motivations to identify data generation needs (documented in `PiaAGI_Research_Tools/PiaAVT/Conceptual_Motivation_Models.md`).
+- [x] Task: Described high-level algorithmic concepts for these motivational models (added to `PiaAGI_Research_Tools/PiaAVT/Conceptual_Motivation_Models.md`).
 - [ ] Implement the conceptualized basic analyses (Goal Lifecycle, Emotional Trajectory, Task Performance) in PiaAVT.
 - [ ] Design and implement a prototype Python logger in PiaCML/PiaSE that adheres to Logging_Specification.md.
+- [ ] Task: Prototype a basic logger component within PiaAVT that can capture events defined in Logging_Specification.md, particularly those relevant to motivational system analyses.
+- [ ] Task: Design and (conceptually) implement one of the selected motivational analyses (e.g., Goal Dynamics & Prioritization Analysis) in PiaAVT, using hypothetical log data based on Conceptual_Motivation_Models.md.
 
 ### PiaPES (PiaAGI Prompt Engineering Suite)
 - [x] Ensured prompt_engine_mvp.py classes (with fixes and added unit tests) can represent/serialize detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
