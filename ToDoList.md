@@ -65,6 +65,7 @@
 - [x] CML: Define Interface for `EmotionModule` in `PiaAGI_Research_Tools/cognitive_module_library/emotion_module.py` (Ref PiaAGI.md Sections 3.4, 4.1.7). (Path updated)
 - [x] CML: Define Interface for `PlanningAndDecisionMakingModule` in `PiaAGI_Research_Tools/cognitive_module_library/planning_and_decision_making_module.py` (Ref PiaAGI.md Sections 4.1.8, 4.4). (Path updated)
 - [x] CML: Define Interface for `SelfModelModule` in `PiaAGI_Research_Tools/cognitive_module_library/self_model_module.py` (Ref PiaAGI.md Section 4.1.10). (Path updated)
+- [ ] Jules - Update root README.md, PROJECT_GUIDE.md, and PiaAGI_Research_Tools/README.md for consistency with PiaAGI.md and current tool status (Current Task).
 
 ## File Organization
 - [x] Relocated PiaPES example/test artifact files from the root directory to `PiaAGI_Research_Tools/PiaPES/examples/`. (Task completed on 2024-07-30)

@@ -26,15 +26,8 @@ To help you quickly find the information you need, here is a description of the 
 *   **`CODE_OF_CONDUCT.md`**: Outlines the code of conduct for all contributors and participants in the PiaAGI community.
 
 *   **`PiaAGI_Research_Tools/`**: This **directory** is central to the project's AGI research toolkit. It contains:
-    *   **Conceptual Design Documents:** Detailed Markdown files for a suite of Python-based tools envisioned to support AGI research within the PiaAGI framework:
-        *   `PiaAGI_Simulation_Environment.md` (PiaSE): For creating dynamic environments to test and develop PiaAGI agents.
-        *   `PiaAGI_Cognitive_Module_Library.md` (PiaCML): For building and experimenting with implementations of PiaAGI's cognitive modules.
-        *   `PiaAGI_Agent_Analysis_Visualization_Toolkit.md` (PiaAVT): For logging, analyzing, and visualizing agent behavior and internal cognitive states.
-        *   `PiaAGI_Prompt_Engineering_Suite.md` (PiaPES): For designing, managing, and evaluating complex Guiding Prompts and Developmental Scaffolding curricula.
-    *   **`PiaPES/` sub-directory:** Houses implementations related to the Prompt Engineering Suite.
-        *   `prompt_engine_mvp.py`: A Minimal Viable Product (MVP) of the PiaAGI Prompt Templating Engine, allowing for programmatic construction and rendering of PiaAGI prompts.
-        *   `USAGE.md`: Instructions and examples for using the `prompt_engine_mvp.py`.
-    *   The main `README.md` in this directory provides an overview of these tools. Researchers and developers interested in practical implementations and experimentation should focus here.
+    *   **Conceptual Design Documents:** Markdown files detailing the design and purpose of tools within the suite (PiaSE, PiaCML, PiaAVT, PiaPES).
+    *   **Sub-directories (e.g., `PiaPES/`, `PiaCML/`, `PiaSE/`, `PiaAVT/`, `WebApp/`):** These directories house the conceptual designs, Python MVP implementations, and any associated web applications for each respective tool. For example, `PiaPES/` contains the `prompt_engine_mvp.py` and its `USAGE.md`. The `WebApp/` directory contains the unified frontend and backend for interacting with the tool suite. The main `README.md` in this directory provides an overview of these tools and their current status. Researchers and developers interested in practical implementations should explore the respective sub-directories and the unified `WebApp/`.
 
 *   **`Papers/`**: This directory ([see its `README.md`](Papers/README.md) for a summary of contents) houses theoretical research papers, conceptual explorations, and in-depth analyses related to the PiaAGI framework and its AGI aspirations. These documents provide academic context and deeper insights into the methodologies.
     *   Key papers discuss the application of communication theories, psychological models, and ethical considerations relevant to building AGI.
@@ -56,7 +49,7 @@ If you are new to the PiaAGI project and interested in its AGI research aspects,
 3.  **Investigate the Research Toolkit**: Navigate to the **[`PiaAGI_Research_Tools/`](PiaAGI_Research_Tools/)** directory.
     *   Read the `README.md` there for an overview of the conceptualized Python tools.
     *   Study the design documents for PiaSE, PiaCML, PiaAVT, and PiaPES to understand their intended roles in AGI research.
-    *   Examine the **PiaPES Prompt Templating Engine MVP** in `PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py` and its `USAGE.md` for a practical starting point in programmatic prompt construction.
+    *   Examine available **MVP implementations**, such as the **PiaPES Prompt Templating Engine** (`PiaPES/prompt_engine_mvp.py`), the basic **PiaCML interfaces and classes** (`PiaCML/`), the initial **PiaSE GridWorld and TextBasedRoom environments** (`PiaSE/`), the basic **PiaAVT logging and analysis tools** (`PiaAVT/`), and the **Unified WebApp** (`WebApp/`) for practical starting points.
 4.  **Delve into Theoretical Background**: If you are interested in the deeper theories underpinning PiaAGI, explore the research papers and conceptual discussions in the `Papers/` directory.
 5.  **Understand Foundational Prompting (Optional):** For context on the evolution of PiaAGI, you can explore the foundational R-U-E examples in **Appendix A of `PiaAGI.md`**, other illustrative examples in the `Examples/` directory, and the `pia_crue_web_tool/`.
 
