@@ -20,23 +20,25 @@ ChartJS.register(
 );
 
 function SimpleLogChart({ analysisData, chartTitle = "Log Event Analysis" }) {
-  if (!analysisData || Object.keys(analysisData).length === 0) {
+  // analysisData is expected to be in the shape: { event_counts: { EventTypeA: 10, ... } }
+  // or null/undefined if no data.
+  
+  const chartableData = analysisData?.event_counts;
+
+  if (!chartableData || Object.keys(chartableData).length === 0) {
     return (
       <div className="p-4 text-center text-gray-500">
-        Upload and analyze a log file to see a basic chart here.
-        <br />
-        (Or data from a conceptual backend endpoint is not available yet).
+        Upload and analyze a log file to see a basic chart of event counts.
       </div>
     );
   }
 
-  // Assuming analysisData is an object like: { eventTypeA: count, eventTypeB: count }
   const data = {
-    labels: Object.keys(analysisData),
+    labels: Object.keys(chartableData),
     datasets: [
       {
         label: 'Event Counts',
-        data: Object.values(analysisData),
+        data: Object.values(chartableData),
         backgroundColor: 'rgba(75, 192, 192, 0.6)',
         borderColor: 'rgba(75, 192, 192, 1)',
         borderWidth: 1,

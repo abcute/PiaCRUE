@@ -174,6 +174,37 @@ if not os.path.exists(PIASE_RUNS_OUTPUT_DIR_ABSOLUTE):
         logger.error(f"Could not create directory {PIASE_RUNS_OUTPUT_DIR_ABSOLUTE}: {e}")
 # --- End PiaSE Configuration ---
 
+# --- PiaAVT Imports & Configuration ---
+# Path to PiaAVT directory
+PIAVT_DIR = os.path.join(path_to_piaagi_hub, 'PiaAVT')
+if PIAVT_DIR not in sys.path:
+    sys.path.insert(0, PIAVT_DIR)
+
+# Attempt to import PiaAVT components
+# Note: PiaAVT's own internal imports might need its CWD to be PiaAVT or for it to be a proper package.
+# The sys.path addition above helps Python find the PiaAVT directory.
+# If PiaAVT/api.py uses relative imports like `from .core.logging_system import ...`,
+# it should work if PiaAVT is treated as a package (i.e. has __init__.py and is discoverable).
+
+# For file uploads
+import tempfile
+from werkzeug.utils import secure_filename
+
+try:
+    from api import PiaAVTAPI # Assuming api.py is in PiaAVT directory
+    # If PiaAVTAPI itself handles imports of BasicAnalyzer and LoggingSystem, this might be enough.
+    # Otherwise, direct imports might be needed if used standalone:
+    # from core.logging_system import LoggingSystem # Example
+    # from analyzers.basic_analyzer import BasicAnalyzer # Example
+    logger.info("PiaAVT API imported successfully.")
+    PIAVT_AVAILABLE = True
+except ImportError as e:
+    logger.error(f"Error importing PiaAVT components: {e}. PiaAVT functionalities will be unavailable.")
+    logger.warning("Please ensure PiaAVT is structured as a package or all its necessary paths are in PYTHONPATH.")
+    class PiaAVTAPI: pass # Dummy class
+    PIAVT_AVAILABLE = False
+# --- End PiaAVT Imports & Configuration ---
+
 
 def sanitize_filename(name):
     """Sanitizes a string to be a safe filename component for PiaPES files."""
@@ -967,6 +998,68 @@ else:
             logger.error(f"Error during PiaSE simulation: {e}", exc_info=True)
             return jsonify({"error": f"An unexpected error occurred during PiaSE simulation: {str(e)}"}), 500
 # --- End PiaSE API Endpoints ---
+
+# --- PiaAVT API Endpoints ---
+if not PIAVT_AVAILABLE:
+    logger.error("PiaAVT components not available. PiaAVT API endpoint '/api/avt/analyze_log_basic' will not be available.")
+else:
+    @app.route('/api/avt/analyze_log_basic', methods=['POST'])
+    def avt_analyze_log_basic():
+        if 'logFile' not in request.files:
+            logger.warning("No log file part in request for /api/avt/analyze_log_basic")
+            return jsonify({"error": "No log file part in the request"}), 400
+        
+        file = request.files['logFile']
+        if file.filename == '':
+            logger.warning("No selected file for /api/avt/analyze_log_basic")
+            return jsonify({"error": "No selected file"}), 400
+
+        if file and (file.filename.endswith('.json') or file.filename.endswith('.jsonl')):
+            original_filename = secure_filename(file.filename)
+            temp_file = None
+            try:
+                # Save to a temporary file
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f"_{original_filename}")
+                file.save(temp_file.name)
+                temp_file.close() # Close it so PiaAVTAPI can open it
+                logger.info(f"Uploaded log file saved temporarily to {temp_file.name}")
+
+                avt_api = PiaAVTAPI()
+                if not avt_api.load_logs_from_json(temp_file.name):
+                    logger.error(f"PiaAVT failed to load logs from {temp_file.name}")
+                    return jsonify({"error": "PiaAVT failed to load the log file."}), 500
+
+                analyzer = avt_api.get_analyzer()
+                if not analyzer:
+                    logger.error("PiaAVT analyzer could not be initialized after loading logs.")
+                    return jsonify({"error": "PiaAVT analyzer initialization failed."}), 500
+                
+                # Perform basic analysis: count event types
+                event_counts = analyzer.count_unique_values('event_type') # is_data_field=False is default
+                logger.info(f"Log analysis successful for {original_filename}. Event counts: {event_counts}")
+
+                return jsonify({
+                    "message": "Log analyzed successfully.",
+                    "original_filename": original_filename,
+                    "analysis_results": { # Nest results for consistency with frontend expectation
+                        "event_counts": dict(event_counts) # Convert Counter to dict for JSON
+                    }
+                }), 200
+
+            except Exception as e:
+                logger.error(f"Error during log analysis for {original_filename}: {e}", exc_info=True)
+                return jsonify({"error": f"An unexpected error occurred during analysis: {str(e)}"}), 500
+            finally:
+                if temp_file and temp_file.name and os.path.exists(temp_file.name):
+                    try:
+                        os.remove(temp_file.name)
+                        logger.info(f"Temporary log file {temp_file.name} deleted.")
+                    except Exception as e_del:
+                        logger.error(f"Error deleting temporary file {temp_file.name}: {e_del}")
+        else:
+            logger.warning(f"Invalid file type uploaded: {file.filename}")
+            return jsonify({"error": "Invalid file type. Please upload .json or .jsonl files."}), 400
+# --- End PiaAVT API Endpoints ---
 
 
 if __name__ == '__main__':

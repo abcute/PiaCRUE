@@ -67,7 +67,8 @@ function AVTInterface() {
         <LogUploader 
           onAnalysisComplete={handleAnalysisComplete} 
           onError={handleAnalysisError}
-          setIsLoading={setIsLoadingAnalysis} // Pass setIsLoading to uploader
+          isLoading={isLoadingAnalysis} // Pass isLoading state
+          setIsLoading={setIsLoadingAnalysis} // Pass setter for isLoading state
         />
         {isLoadingAnalysis && <p className="text-gray-300 mt-2">Analyzing log, please wait...</p>}
         {analysisError && <p className="text-red-400 bg-red-900 p-3 rounded mt-2">Analysis Error: {analysisError}</p>}

@@ -32,7 +32,6 @@ function LogUploader({ onAnalysisComplete, onError, setIsLoading }) {
     formData.append('logFile', selectedFile);
 
     try {
-      // This endpoint doesn't exist yet, this is a conceptual call
       const response = await fetch(`${API_BASE_URL}/api/avt/analyze_log_basic`, {
         method: 'POST',
         body: formData, // FormData sets Content-Type automatically
@@ -73,14 +72,14 @@ function LogUploader({ onAnalysisComplete, onError, setIsLoading }) {
       
       <button 
         onClick={handleUpload} 
-        disabled={!selectedFile || setIsLoading === null} // setIsLoading will be passed as prop
+        disabled={!selectedFile || isLoading} // Use isLoading prop
         className={`${commonButtonClass} mt-3`}
       >
-        Analyze Log (Conceptual)
+        {isLoading ? 'Analyzing...' : 'Analyze Log'}
       </button>
+      {/* Backend note can be removed or updated if feature is considered complete after this subtask */}
       <p className="text-xs text-gray-500 mt-2">
-        Note: The backend endpoint for this feature is not yet implemented. 
-        This is a UI placeholder.
+        Upload a JSON or JSONL log file to get a basic count of event types.
       </p>
     </div>
   );
