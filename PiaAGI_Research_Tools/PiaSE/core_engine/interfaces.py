@@ -1,11 +1,34 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional, Union
 
-@dataclass
-class PiaSEEvent:
-    """A generic event within the PiaSE simulation."""
-    # Add specific event fields as needed, e.g., event_type, data
-    pass
+class BaseDataModel(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+class PerceptionData(BaseDataModel):
+    timestamp: float
+    sensor_data: Dict[str, Any]  # e.g., {"visual": np.array, "text": "description"}
+    messages: List[Dict[str, Any]] = Field(default_factory=list)  # e.g., [{"sender": "system", "content": "event occurred"}]
+    agent_specific_data: Optional[Dict[str, Any]] = None # For data only relevant to a specific agent
+
+class ActionCommand(BaseDataModel):
+    action_type: str
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+
+class ActionResult(BaseDataModel):
+    timestamp: float
+    status: str  # e.g., "success", "failure", "pending"
+    new_perception_snippet: Optional[PerceptionData] = None # Optional immediate perception update after action
+    message: Optional[str] = None
+    details: Dict[str, Any] = Field(default_factory=dict) # e.g., {"energy_consumed": 0.1, "reward_received": 10}
+
+class PiaSEEvent(BaseDataModel): # Changed from @dataclass
+    event_type: str
+    data: Dict[str, Any] = Field(default_factory=dict)
+    source_id: Optional[str] = None # Optional: Who generated the event
+    target_id: Optional[str] = None # Optional: Specific agent/entity this event is for
 
 class SimulationEngine(ABC):
     """
@@ -53,7 +76,7 @@ class Environment(ABC):
         pass
 
     @abstractmethod
-    def step(self, agent_id: str, action: any):
+    def step(self, agent_id: str, action: ActionCommand) -> ActionResult:
         """
         Processes an agent's action and updates the environment state.
         Returns the result of the action, e.g., new observation, reward.
@@ -61,7 +84,7 @@ class Environment(ABC):
         pass
 
     @abstractmethod
-    def get_observation(self, agent_id: str) -> any:
+    def get_observation(self, agent_id: str) -> PerceptionData:
         """Gets the observation for a specific agent."""
         pass
 
@@ -96,14 +119,14 @@ class AgentInterface(ABC):
         pass
 
     @abstractmethod
-    def perceive(self, observation: any, event: PiaSEEvent = None):
+    def perceive(self, observation: PerceptionData, event: Optional[PiaSEEvent] = None): # Optional[PiaSEEvent]
         """
         Provides the agent with an observation from the environment and optional events.
         """
         pass
 
     @abstractmethod
-    def act(self) -> any:
+    def act(self) -> ActionCommand:
         """
         Allows the agent to decide on an action based on its current state/perception.
         Returns the action to be performed in the environment.
@@ -111,7 +134,7 @@ class AgentInterface(ABC):
         pass
 
     @abstractmethod
-    def learn(self, feedback: any):
+    def learn(self, feedback: ActionResult):
         """
         Allows the agent to learn from feedback received after an action.
         (e.g., reward, new state information)

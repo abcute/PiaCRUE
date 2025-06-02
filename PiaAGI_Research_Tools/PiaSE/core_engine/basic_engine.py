@@ -1,151 +1,276 @@
-from .interfaces import SimulationEngine, AgentInterface, PiaSEEvent, Environment
+from .interfaces import (
+    SimulationEngine,
+    AgentInterface,
+    PiaSEEvent,
+    Environment,
+    PerceptionData,
+    ActionCommand,
+    ActionResult,
+)
+from typing import Dict, List, Optional, Any
+import time
+from pathlib import Path
+
+# Placeholder PiaSELogger if not yet implemented in utils
+# from ..utils.logger import PiaSELogger # Adjusted path, use placeholder for now
+
+class PiaSELogger:
+    def __init__(self, log_file_path: Path, config: Optional[Dict] = None):
+        self.log_file_path = log_file_path
+        self.config = config or {}
+        self._ensure_log_file_exists()
+        print(f"Logger initialized for {self.log_file_path}")
+
+    def _ensure_log_file_exists(self):
+        self.log_file_path.parent.mkdir(parents=True, exist_ok=True)
+        # For JSONL, just ensure path exists. File will be appended to.
+        if not self.log_file_path.exists():
+            self.log_file_path.touch()
+
+
+import json # Added import for json
+
+    def log(self, simulation_step: int, event_type: str, source_component: str, data: Dict, wall_time: Optional[float] = None):
+        if wall_time is None:
+            wall_time = time.time()
+
+        log_entry = {
+            "wall_time": wall_time,
+            "simulation_step": simulation_step,
+            "event_type": event_type,
+            "source_component": source_component,
+            "data": data
+        }
+        try:
+            with open(self.log_file_path, 'a') as f:
+                f.write(json.dumps(log_entry) + '\n')
+        except NameError: # json not imported because this is a placeholder
+             print(f"Placeholder Log: {log_entry}")
+        except Exception as e:
+            print(f"Error writing to log (placeholder): {e} - {log_entry}")
+
+
+    def close(self):
+        print(f"Logger closed for {self.log_file_path}")
+        pass # Placeholder
 
 class BasicSimulationEngine(SimulationEngine):
     """
     A basic implementation of the SimulationEngine.
-    Manages the simulation loop and agent interactions.
+    Manages the simulation loop, agent interactions, and logging.
     """
-    def __init__(self, environment: Environment):
+    def __init__(self):
+        self.environment: Optional[Environment] = None
+        self.agents: Dict[str, AgentInterface] = {}
+        self.current_step: int = 0
+        self.logger: Optional[PiaSELogger] = None
+        self.scenario_config: Optional[Dict] = None
+        print("BasicSimulationEngine initialized.")
+
+    def initialize(
+        self,
+        environment: Environment,
+        agents: Dict[str, AgentInterface],
+        scenario_config: Optional[Dict] = None,
+        log_path: str = "logs/simulation_log.jsonl",
+    ):
+        """Initializes the simulation environment, agents, and logger."""
+        print("BasicSimulationEngine: Initializing...")
         self.environment = environment
-        self.agents: dict[str, AgentInterface] = {}
-        print(f"BasicSimulationEngine initialized with environment: {environment}")
+        self.agents = agents
+        self.scenario_config = scenario_config or {}
+        self.current_step = 0
 
-    def initialize(self, **kwargs):
-        """Initializes the simulation environment and all registered agents."""
-        print(f"BasicSimulationEngine: Initializing environment with kwargs: {kwargs}")
-        self.environment.reset() # Resets env and agent positions defined in env.
-        print("BasicSimulationEngine: Environment reset.")
+        # Instantiate Logger
+        logger_config = self.scenario_config.get("logging_config", {})
+        # Ensure log_path is correctly passed if overridden in scenario_config
+        effective_log_path = logger_config.get("log_file_path", log_path)
+        self.logger = PiaSELogger(log_file_path=Path(effective_log_path), config=logger_config)
 
-        action_space = self.environment.get_action_space()
-        if not action_space:
-            print("BasicSimulationEngine: Warning - Environment returned an empty action space.")
-            # Depending on policy, agents might require a non-empty action space.
+        self.logger.log(
+            self.current_step,
+            "SIMULATION_START",
+            "engine",
+            {
+                "scenario_name": self.scenario_config.get("name", "UnknownScenario"),
+                "engine_config": self.__class__.__name__,
+                "environment_config": self.environment.__class__.__name__,
+                "num_agents": len(self.agents)
+            },
+        )
 
+        # Environment and action space info logging
+        try:
+            env_info = self.environment.get_environment_info()
+            self.logger.log(self.current_step, "ENVIRONMENT_INFO", "environment", env_info)
+        except Exception as e:
+            self.logger.log(self.current_step, "ERROR", "engine", {"message": f"Failed to get/log environment info: {e}"})
+
+        # Agent initialization
         for agent_id, agent in self.agents.items():
-            # agent.set_id(agent_id) # ID is set during registration
+            agent.set_id(agent_id)
 
-            # Get initial observation for the agent
-            # GridWorld get_observation returns a dict: {"agent_position": ..., "grid_view": ...}
-            initial_observation_full = self.environment.get_observation(agent_id)
+            # Agent-specific configuration (e.g. Q-table init) should ideally be handled
+            # by the agent itself upon receiving first perception or by the scenario script.
+            # The engine provides initial perception.
 
-            # QLearningAgent uses a simplified state representation (e.g., agent_position)
-            # for its Q-table keys. Other agents might use the full observation.
-            # We need a consistent way to get the "state representation" for the Q-table.
-            # For now, assuming QLearningAgent's perceive method handles the full observation
-            # and extracts what it needs for self.current_state to be used as Q-table key.
-            # The QLearningAgent's initialize_q_table uses the state representation directly.
-            # Let's assume the agent's perceive method correctly sets up its internal state.
+            try:
+                # Get agent-specific action space if method supports agent_id
+                action_space_info = self.environment.get_action_space(agent_id=agent_id)
+                self.logger.log(self.current_step, "AGENT_ACTION_SPACE", agent_id, {"action_space": action_space_info})
+                 # Optional: if agent has a configure method
+                if hasattr(agent, 'configure'):
+                    agent.configure(env_info=env_info, action_space=action_space_info)
 
-            agent.perceive(initial_observation_full) # Agent perceives its initial state S
-                                                     # QLearningAgent's perceive will set self.current_state
-                                                     # and initialize Q-table for this state if action_space is known.
-
-            if hasattr(agent, 'initialize_q_table'):
-                # The state representation for Q-table keys in our QLearningAgent is self.current_state
-                # which is set by perceive().
-                # So, we pass self.current_state (which should be the hashable part of initial_observation_full)
-                # and the action_space.
-                # QLearningAgent's perceive makes self.current_state = observation.
-                # If observation is a dict, this might not be hashable.
-                # Let's refine QLearningAgent's perceive to store a hashable state,
-                # or ensure initial_observation_for_q_table is the hashable part.
-
-                # For GridWorld, the observation is {'agent_position': (x,y), 'grid_view': grid}
-                # The Q-table should use the hashable 'agent_position' tuple as state.
-                initial_state_repr_for_q_table = initial_observation_full.get("agent_position")
-                if initial_state_repr_for_q_table is None:
-                     print(f"Warning: Could not derive a simple state representation (e.g. agent_position) for agent {agent_id} from observation {initial_observation_full}")
-                     # Fallback or error, for now, Q-agent might handle it if it uses the whole dict and it's made hashable
-                     initial_state_repr_for_q_table = tuple(sorted(initial_observation_full.items()))
+            except Exception as e:
+                 self.logger.log(self.current_step, "ERROR", agent_id, {"message": f"Failed to get/log action_space or configure agent: {e}"})
 
 
-                # Ensure agent.action_space is set before initializing Q-table for a state
-                if hasattr(agent, 'action_space'): # QLearningAgent has this attribute
-                    agent.action_space = action_space
+            initial_observation = self.environment.get_observation(agent_id)
+            self.logger.log(
+                self.current_step, "AGENT_PERCEPTION", agent_id, initial_observation.model_dump()
+            )
+            agent.perceive(initial_observation)
 
-                agent.initialize_q_table(initial_state_repr_for_q_table, action_space)
-                print(f"BasicSimulationEngine: Initialized Q-table for agent '{agent_id}' with state {initial_state_repr_for_q_table} and action_space {action_space}")
+            print(f"BasicSimulationEngine: Agent '{agent_id}' initialized and perceived initial state.")
 
-            print(f"BasicSimulationEngine: Agent '{agent_id}' perceived initial state: {initial_observation_full}")
-
-        print("BasicSimulationEngine: All agents initialized and perceived initial state.")
-
-
-    def register_agent(self, agent_id: str, agent: AgentInterface):
-        """Registers an agent with the simulation engine."""
-        if agent_id in self.agents:
-            print(f"BasicSimulationEngine: Warning - Agent with ID '{agent_id}' already registered. Overwriting.")
-        agent.set_id(agent_id) # Set agent's ID
-        self.agents[agent_id] = agent
-        print(f"BasicSimulationEngine: Agent '{agent_id}' registered.")
+        print("BasicSimulationEngine: Initialization complete.")
 
     def run_step(self):
-        """Runs a single step of the simulation."""
-        if not self.agents:
-            print("BasicSimulationEngine: No agents registered. Skipping step.")
+        """Runs a single step of the simulation for all agents."""
+        if not self.environment or not self.agents or not self.logger:
+            print("BasicSimulationEngine: Engine not initialized. Skipping step.")
             return
 
-        print("\nBasicSimulationEngine: --- Starting new simulation step ---")
+        self.current_step += 1
+        step_start_time = time.time()
+        print(f"\nBasicSimulationEngine: --- Starting Step {self.current_step} ---")
+        self.logger.log(self.current_step, "STEP_START", "engine", {"step_number": self.current_step})
+
         for agent_id, agent in self.agents.items():
             if self.environment.is_done(agent_id):
-                print(f"BasicSimulationEngine: Agent '{agent_id}' is done. Skipping.")
+                # Log this only once or if status changes
+                # self.logger.log(self.current_step, "AGENT_TASK_DONE_SKIP", agent_id, {"message": f"Agent {agent_id} already done."})
                 continue
 
-            # 1. Get observation for the agent
+            agent_step_start_time = time.time()
+
+            # Perception Phase
             observation = self.environment.get_observation(agent_id)
-            print(f"BasicSimulationEngine: Providing observation to agent '{agent_id}': {observation}")
+            self.logger.log(
+                self.current_step, "AGENT_PERCEPTION", agent_id, observation.model_dump()
+            )
             agent.perceive(observation)
 
-            # 2. Agent acts
-            action = agent.act()
-            print(f"BasicSimulationEngine: Agent '{agent_id}' performs action: {action}")
+            # Action Submission Phase
+            action_command = agent.act()
+            self.logger.log(
+                self.current_step, "AGENT_ACTION", agent_id, action_command.model_dump()
+            )
 
-            # 3. Environment processes action and returns feedback/result
-            # Assuming step now returns: new_observation, reward, done, info
-            new_observation, reward, done, info = self.environment.step(agent_id, action)
-            print(f"BasicSimulationEngine: Env step for agent '{agent_id}': Action: {action}, Reward: {reward}, Done: {done}")
-            print(f"BasicSimulationEngine: New observation for agent '{agent_id}': {new_observation}")
+            # Environment Action Execution & State Update Phase
+            action_result = self.environment.step(agent_id, action_command)
+            self.logger.log(
+                self.current_step, "ACTION_RESULT", agent_id, action_result.model_dump()
+            )
 
+            # Agent Feedback/Learning Phase
+            agent.learn(action_result)
 
-            # 4. Agent learns from feedback (reward and new_observation)
-            # The QLearningAgent expects feedback as (reward, next_state)
-            # Other agents might have different learn signatures or just pass.
-            agent.learn((reward, new_observation)) # Pass as a tuple
+            # Immediate Consequence Perception (if any)
+            if action_result.new_perception_snippet:
+                agent.perceive(action_result.new_perception_snippet)
+                self.logger.log(
+                    self.current_step,
+                    "AGENT_IMMEDIATE_PERCEPTION",
+                    agent_id,
+                    action_result.new_perception_snippet.model_dump(),
+                )
 
-            # 5. Agent perceives the new state for the next iteration.
-            # The event parameter is None here; events are handled by post_event.
-            agent.perceive(new_observation, None)
+            self.logger.log(self.current_step, "AGENT_STEP_TIMING", agent_id, {"duration_ms": (time.time() - agent_step_start_time) * 1000})
 
+            if self.environment.is_done(agent_id):
+                print(f"BasicSimulationEngine: Agent '{agent_id}' completed its task at step {self.current_step}.")
+                self.logger.log(
+                    self.current_step,
+                    "AGENT_TASK_DONE",
+                    agent_id,
+                    {"message": f"Agent {agent_id} completed its task."},
+                )
 
-            # Check if agent is done after the step
-            if done: # Using 'done' from env.step()
-                print(f"BasicSimulationEngine: Agent '{agent_id}' has completed its task.")
-                # Optionally, handle agent removal or marking as inactive here.
-                # For now, the simulation continues, and is_done() will prevent further actions if implemented correctly.
+        # Optional: Log overall environment state (can be verbose)
+        # env_state = self.environment.get_state()
+        # self.logger.log(self.current_step, "ENVIRONMENT_STATE", "environment", {"state_summary": str(env_state)[:500]})
 
-        print("BasicSimulationEngine: --- Simulation step finished ---")
+        self.logger.log(self.current_step, "STEP_END", "engine", {"step_number": self.current_step, "duration_ms": (time.time() - step_start_time) * 1000})
+        print(f"BasicSimulationEngine: --- Step {self.current_step} Finished ---")
 
+    def _are_all_agents_done(self) -> bool:
+        if not self.environment: return True # Should not happen if initialized
+        for agent_id in self.agents.keys():
+            if not self.environment.is_done(agent_id):
+                return False
+        return True
 
     def run_simulation(self, num_steps: int):
-        """Runs the simulation for a specified number of steps."""
-        print(f"BasicSimulationEngine: Starting simulation for {num_steps} steps.")
-        for step_num in range(num_steps):
-            print(f"\nBasicSimulationEngine: === Running step {step_num + 1}/{num_steps} ===")
+        """Runs the simulation for a specified number of steps or until all agents are done."""
+        if not self.logger:
+            print("BasicSimulationEngine: Logger not initialized. Cannot run simulation.")
+            return
+
+        print(f"BasicSimulationEngine: Starting simulation run for {num_steps} steps.")
+        self.logger.log(self.current_step, "SIMULATION_RUN_START", "engine", {"num_steps_configured": num_steps})
+
+        for _ in range(num_steps):
+            if self._are_all_agents_done():
+                print("BasicSimulationEngine: All agents are done. Ending simulation early.")
+                self.logger.log(self.current_step, "SIMULATION_END", "engine", {"reason": "all_agents_done", "total_steps": self.current_step})
+                self.logger.close()
+                return
             self.run_step()
-            # Potentially add a check here if all agents are done or simulation needs to end early
-        print(f"BasicSimulationEngine: Simulation finished after {num_steps} steps.")
 
-    def post_event(self, event: PiaSEEvent):
-        """Posts an event to the simulation. For now, just prints it."""
-        print(f"BasicSimulationEngine: Event posted: {event}")
-        # Future: This could involve routing the event to specific agents
-        # or modifying the environment directly.
-        for agent in self.agents.values():
-            # Assuming all agents might be interested in all events for now
-            # A more sophisticated system would filter events based on agent subscriptions
-            agent.perceive(observation=None, event=event)
+        print(f"BasicSimulationEngine: Simulation finished after {self.current_step} steps (max steps reached: {num_steps}).")
+        self.logger.log(self.current_step, "SIMULATION_END", "engine", {"reason": "num_steps_reached", "total_steps": self.current_step})
+        self.logger.close()
 
-    def get_environment_state(self):
-        """Retrieves the current state of the environment."""
-        print("BasicSimulationEngine: Retrieving environment state.")
-        return self.environment.get_state()
+    def post_event(self, event: PiaSEEvent, source: str = "external"):
+        """Posts an event to all agents and logs it."""
+        if not self.logger or not self.environment:
+            print("BasicSimulationEngine: Engine not initialized. Cannot post event.")
+            return
+
+        print(f"BasicSimulationEngine: Event posted from '{source}': {event.event_type} - {event.data}")
+        self.logger.log(self.current_step, "PIA_EVENT_POSTED", source, event.model_dump())
+
+        for agent_id, agent in self.agents.items():
+            if self.environment.is_done(agent_id): # Don't post events to done agents
+                continue
+            # Decide if fresh observation is needed with event. For now, providing current one.
+            # This could be configurable or event-specific.
+            current_observation = self.environment.get_observation(agent_id)
+            # Log perception of event by agent
+            self.logger.log(self.current_step, "AGENT_EVENT_PERCEPTION_START", agent_id, {"event_type": event.event_type})
+            agent.perceive(observation=current_observation, event=event)
+            self.logger.log(self.current_step, "AGENT_EVENT_PERCEPTION_END", agent_id, {"event_type": event.event_type})
+
+
+    def get_environment_state(self) -> Optional[Any]:
+        """Retrieves and logs a summary of the current state of the environment."""
+        if not self.environment or not self.logger:
+            print("BasicSimulationEngine: Engine not initialized. Cannot get environment state.")
+            return None
+
+        state = self.environment.get_state()
+        # Log a summary to avoid overly large log entries by default
+        state_summary = str(state)[:200] + "..." if len(str(state)) > 200 else str(state)
+        self.logger.log(
+            self.current_step,
+            "GET_ENVIRONMENT_STATE",
+            "engine_api",
+            {"state_summary": state_summary},
+        )
+        return state
+
+    def get_logger(self) -> Optional[PiaSELogger]:
+        """Returns the logger instance."""
+        return self.logger
