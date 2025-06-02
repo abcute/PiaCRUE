@@ -144,24 +144,24 @@
 - [ ] Further explore the implications of Chain-of-Thought (CoT) prompting, as discussed in `Papers/Chain_of_Thought_Alignment.md`, for PiaAGI's cognitive architecture (e.g., Planning, Self-Model) and developmental scaffolding strategies, reinforcing the "agent as human-like thinker" interaction paradigm.
 - [ ] Expand upon the concepts outlined in `Papers/Human_Inspired_Agent_Blueprint.md` by conducting further research into each multidisciplinary area, identifying specific theories, models, and empirical findings that can concretely inform the design and development of PiaAGI's cognitive modules and overall architecture.
 
-## Examples Directory Enhancement - Prioritized Development Plan
+## [x] Examples Directory Enhancement - Prioritized Development Plan
 ### Priority 1:
-- [ ] Example: Examples/Cognitive_Configuration/Configuring_Emotion_Module.md (baseline states, reactivity, empathy).
-- [ ] Example: Examples/Cognitive_Configuration/Configuring_Learning_Module.md (modes, rate adaptation, ethical heuristic updates).
-- [ ] Example: Examples/Cognitive_Configuration/Configuring_Attention_Module.md (top-down/bottom-up biases).
-- [ ] Example: Examples/Developmental_Scaffolding/Scaffolding_Ethical_Reasoning_Intro.md (PiaSapling, simple dilemmas).
+- [x] Example: Examples/Cognitive_Configuration/Configuring_Emotion_Module.md (baseline states, reactivity, empathy).
+- [x] Example: Examples/Cognitive_Configuration/Configuring_Learning_Module.md (modes, rate adaptation, ethical heuristic updates).
+- [x] Example: Examples/Cognitive_Configuration/Configuring_Attention_Module.md (top-down/bottom-up biases).
+- [x] Example: Examples/Developmental_Scaffolding/Scaffolding_Ethical_Reasoning_Intro.md (PiaSapling, simple dilemmas).
 ### Priority 2:
-- [ ] Example: Examples/Tool_Use/Adapting_Conceptual_Tools.md (agent modifies known conceptual tool).
-- [ ] Example: Examples/Developmental_Scaffolding/Scaffolding_Intermediate_ToM.md (PiaSapling, false beliefs/intentions).
-- [ ] Example: Examples/Developmental_Scaffolding/Cultivating_Intrinsic_Motivation.md (scenarios for curiosity/competence).
+- [x] Example: Examples/Tool_Use/Adapting_Conceptual_Tools.md (agent modifies known conceptual tool).
+- [x] Example: Examples/Developmental_Scaffolding/Scaffolding_Intermediate_ToM.md (PiaSapling, false beliefs/intentions).
+- [x] Example: Examples/Developmental_Scaffolding/Cultivating_Intrinsic_Motivation.md (scenarios for curiosity/competence).
 ### Priority 3:
-- [ ] Example: Examples/PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md (ensure it uses a cognitive config example).
-- [ ] Example: Examples/PiaPES_Usage/Defining_Developmental_Curriculum_PiaPES.md (conceptualizing curriculum object).
-- [ ] Example: Examples/Cross_Stage_Development/Task_Summarization_Evolution.md (task for PiaSeedling, PiaSapling, PiaArbor).
+- [x] Example: Examples/PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md (ensure it uses a cognitive config example).
+- [x] Example: Examples/PiaPES_Usage/Defining_Developmental_Curriculum_PiaPES.md (conceptualizing curriculum object).
+- [x] Example: Examples/Cross_Stage_Development/Task_Summarization_Evolution.md (task for PiaSeedling, PiaSapling, PiaArbor).
 ### Priority 4:
-- [ ] Example: Examples/Tool_Use/Agent_Requesting_New_Tool.md (agent identifies capability gap).
-- [ ] Example: Examples/Tool_Use/Agent_Designing_Simple_Tool.md (PiaArbor designs tool - conceptual).
-- [ ] Example: Examples/Internal_Metacognition/Self_Monitoring_PiaAVT_Principles.md (conceptual).
-- [ ] Example: Examples/Internal_Metacognition/Internal_Experimentation_PiaSE_Principles.md (conceptual).
+- [x] Example: Examples/Tool_Use/Agent_Requesting_New_Tool.md (agent identifies capability gap).
+- [x] Example: Examples/Tool_Use/Agent_Designing_Simple_Tool.md (PiaArbor designs tool - conceptual).
+- [x] Example: Examples/Internal_Metacognition/Self_Monitoring_PiaAVT_Principles.md (conceptual).
+- [x] Example: Examples/Internal_Metacognition/Internal_Experimentation_PiaSE_Principles.md (conceptual).
 
 [end of ToDoList.md]
