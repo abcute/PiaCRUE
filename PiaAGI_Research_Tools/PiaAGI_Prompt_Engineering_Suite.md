@@ -29,10 +29,10 @@ The PiaAGI Prompt Engineering Suite (PiaPES) is a toolkit designed to assist res
     *   User-friendly interface (GUI or structured text) for setting parameters of cognitive modules (Personality, Motivation, Emotion, Learning) as described in [Section 5.2 of `PiaAGI.md`](../PiaAGI.md#52-key-prompt-components-for-piaagi) and example prompts ([Section 7 of `PiaAGI.md`](../PiaAGI.md#7-examples-and-use-cases-from-personalized-agents-to-agi-development)).
     *   Visual aids to understand the range and impact of different parameter settings.
     *   Linkages to PiaCML to ensure parameter compatibility.
-*   **Developmental Curriculum Designer:**
-    *   Tools to sequence Guiding Prompts into curricula for developmental scaffolding ([Section 5.4 of `PiaAGI.md`](../PiaAGI.md#54-developmental-scaffolding-a-cornerstone-of-piaagi-growth), [6.1 of `PiaAGI.md`](../PiaAGI.md#61-advanced-developmental-scaffolding-techniques-for-agi-cultivation)).
-    *   Define prerequisite conditions or agent states for progressing to the next phase of a curriculum.
-    *   Visualize developmental pathways and dependencies between scaffolding prompts.
+*   **Developmental Curriculum Designer:** (See details in Section 2.1)
+        *   Tools to sequence Guiding Prompts into curricula for developmental scaffolding.
+        *   Define prerequisite conditions, learning objectives, and success criteria.
+        *   Visualize developmental pathways and link to simulation/analysis tools.
 *   **Prompt Version Control:**
     *   Integration with Git or a custom versioning system to track changes to prompts and curricula.
     *   Ability to branch, merge, and compare prompt versions.
@@ -45,6 +45,74 @@ The PiaAGI Prompt Engineering Suite (PiaPES) is a toolkit designed to assist res
     *   Commenting and review features for prompts.
 *   **Import/Export Functionality:**
     *   Import/export prompts and curricula in standard formats (e.g., Markdown, JSON, XML).
+
+## 2.1 Advanced Developmental Curriculum Design
+
+The Developmental Curriculum Designer is a core component of PiaPES, enabling the creation of structured learning pathways for PiaAGI agents. It goes beyond simple sequencing of prompts by incorporating features for defining prerequisites, learning objectives, success criteria, and integration with PiaSE (Simulation Environment) and PiaAVT (Analysis & Visualization Toolkit).
+
+### 2.1.1 Data Structures for Advanced Curricula
+
+To support advanced features, the conceptual data structures for `DevelopmentalCurriculum` and `CurriculumStep` (which would be implemented in `prompt_engine_mvp.py` or its successor) are enhanced as follows:
+
+**`CurriculumStep` Enhanced Attributes:**
+
+*   `name: str`: Name of the curriculum step.
+*   `order: int`: Sequence number.
+*   `prompt_reference: str`: Filepath to the `PiaAGIPrompt` JSON template for this step.
+*   `conditions: Optional[str]`: Original field for descriptive prerequisites.
+*   **`developmental_stage_prerequisite: Optional[str]`**: Specifies the minimum PiaAGI developmental stage required to begin this step (e.g., "PiaSeedling_LV3", "PiaSprout_Cognitive_Basics_Met"). This links to [Section 3.2.1 of `PiaAGI.md`](../PiaAGI.md#321-stages-of-cognitive-development-and-architectural-maturation).
+*   **`learning_objectives: Optional[List[Union[str, Dict[str, str]]]]`**: A list of specific learning goals for this step. Can be simple strings or structured objects (e.g., `{"objective_id": "LO_001", "description": "Agent should demonstrate understanding of false beliefs."}`).
+*   **`success_criteria: Optional[List[Union[str, Dict[str, str]]]]`**: Defines how successful completion of the step is measured. Can be descriptive or link to specific metrics. (e.g., `{"metric_id": "PiaAVT_ToM_FalseBelief_Accuracy", "threshold": ">0.8", "description": "Achieve >80% on false belief tasks."}`, or "Qualitative assessment by human reviewer indicates understanding.").
+*   **`piase_scenario_reference: Optional[str]`**: Filepath or identifier for a specific scenario configuration in PiaSE designed for this curriculum step. This allows the curriculum to define the environment and task context.
+*   **`piaavt_metrics_to_track: Optional[List[str]]`**: A list of specific metric IDs that PiaAVT should prioritize or focus on collecting/analyzing for this step, which can then be used to evaluate `success_criteria`.
+*   `notes: Optional[str]`: Additional notes.
+
+**`DevelopmentalCurriculum` Enhanced Attributes:**
+
+*   `name: str`: Name of the curriculum.
+*   `description: str`: Summary of objectives.
+*   `target_developmental_stage: str`: Overall developmental progression.
+*   `steps: List[CurriculumStep]`: Ordered list of enhanced `CurriculumStep` objects.
+*   `author: Optional[str]`.
+*   `version: Optional[str]`.
+*   **`overall_learning_goals: Optional[List[str]]`**: High-level goals for the entire curriculum.
+*   **`evaluation_strategy: Optional[str]`**: Describes how the overall curriculum effectiveness will be assessed (e.g., "Portfolio of completed tasks", "Final comprehensive PiaSE scenario", "PiaAVT trend analysis of key cognitive metrics").
+
+These enhanced structures allow for more precise definition of developmental pathways and better integration with the simulation and analysis tools.
+
+### 2.1.2 Tracking Agent Progress Through Curricula
+
+PiaPES needs a mechanism to conceptualize how an agent's progress through a `DevelopmentalCurriculum` is tracked. This involves:
+
+1.  **Curriculum State Management:**
+    *   PiaPES (or an associated service) would need to maintain the state of an agent's progression through a curriculum. This could involve storing:
+        *   `agent_id`.
+        *   `curriculum_id` (and version).
+        *   `current_step_id`.
+        *   `status_of_steps` (e.g., "not_started", "in_progress", "completed_success", "completed_failure", "skipped").
+        *   `achieved_learning_objectives` (a list of IDs or descriptions).
+        *   Relevant metrics or pointers to PiaAVT reports that evidence completion of success criteria for each step.
+
+2.  **Condition Checking and Progression Logic:**
+    *   Before an agent can start a new curriculum step, PiaPES (potentially in coordination with PiaSE or a human overseer) would check if the `developmental_stage_prerequisite` and other `conditions` for that step are met.
+    *   This might involve:
+        *   Querying the agent's Self-Model (via PiaCML interfaces, if the agent is live and introspectable) for its current assessed developmental stage.
+        *   Checking the curriculum state for completion of previous prerequisite steps.
+        *   For metric-based `success_criteria` from a previous step, PiaPES would query PiaAVT for the relevant metrics for the agent. If the thresholds are met, the step is considered successfully completed.
+
+3.  **Interaction with PiaAVT for Metrics:**
+    *   When a curriculum step specifies `piaavt_metrics_to_track`, PiaPES would ensure that PiaSE is configured (if necessary) to log the data required for these metrics.
+    *   After a step (or a set of attempts for a step) is completed in PiaSE, PiaPES would trigger or query PiaAVT to process the logs and provide the values for the tracked metrics.
+    *   These metrics directly inform the `success_criteria` evaluation.
+
+4.  **Adaptation and Branching (Conceptual Future Extension):**
+    *   In more advanced versions, PiaPES could use the progress tracking and PiaAVT metrics to enable adaptive curricula.
+    *   For example, if an agent repeatedly fails to meet the `success_criteria` for a step, the curriculum might dynamically branch to a remedial sub-curriculum or suggest a different learning approach. Conversely, if an agent demonstrates mastery quickly, it might skip certain introductory steps.
+
+5.  **Visualization of Progress:**
+    *   PiaPES should offer a UI to visualize an agent's progress through a curriculum, showing completed steps, current step, and potentially upcoming steps. This could also display key metrics that led to step completion.
+
+By detailing these data structures and progress tracking mechanisms, the Developmental Curriculum Designer feature of PiaPES becomes a more powerful tool for systematic AGI development.
 
 ## 3. Target Users
 
@@ -101,11 +169,11 @@ Standard yet essential features form the baseline of the editor:
 *   **Syntax Highlighting:**
     *   Custom highlighting for PiaAGI's Markdown extensions (e.g., R-U-E delineators, persona tags).
     *   Distinct highlighting for embedded configuration blocks like YAML or JSON.
-    *   Highlighting for cognitive parameter keywords (e.g., `[Focus: High]`, `[Creativity: 0.7]`) to differentiate them from regular text.
+    *   Highlighting for cognitive parameter keywords (e.g., `[Focus: High]`, `[Creativity: 0.7]`), potentially with different styles for PiaAGI structural tags (e.g., R-U-E), module names, parameter names, and their values to enhance readability.
 *   **Code Completion (IntelliSense-like):**
     *   Context-aware suggestions for PiaAGI keywords such as `<Role>`, `<Requirements>`, `<Executor>`, `<UserContext>`, `<SystemDirectives>`.
     *   Autocompletion for PiaCML-defined module names (e.g., `PersonalityConfig`, `MotivationalBias`, `LearningRateAdapter`).
-    *   Parameter suggestions within module configurations, derived from PiaCML definitions (e.g., suggesting `Openness`, `Conscientiousness` within `PersonalityConfig`).
+    *   Parameter suggestions within module configurations, derived from PiaCML definitions (e.g., suggesting `Openness`, `Conscientiousness` within `PersonalityConfig`). This could also include suggesting valid enumerated values for specific parameters (e.g., for `baseline_valence` in `EmotionalProfile` if defined in PiaCML).
 *   **Real-time Validation:**
     *   Live schema validation against definitions in `PiaAGI.md` (specifically [Sections 5: Prompt Structure](../PiaAGI.md#5-the-piaagi-prompting-framework-for-agent-interaction-and-development), [6: Cognitive Modules](../PiaAGI.md#6-methodology-constructing-piaagi-guiding-prompts-and-developmental-scaffolding-for-agi), and Appendices for PiaCML).
     *   Error highlighting and tooltips for structural errors (e.g., misplaced R-U-E blocks), incorrect parameter names, invalid value types, or missing mandatory fields.
@@ -129,7 +197,7 @@ Features designed specifically to aid PiaAGI prompt development:
     *   Users could manipulate sliders or select from dropdowns, and the editor would translate these actions into the correct prompt syntax (e.g., `[OCEAN.Openness: 0.8]`). This simplifies tuning and reduces syntax errors.
 *   **Direct Linking to Documentation:**
     *   Right-click or hover-over functionality on PiaAGI keywords (e.g., `<Constraint>`), module names (`EthicalGovernor`), or parameters.
-    *   This would trigger a pop-up with a brief description and/or a direct link to the relevant definition or section in `PiaAGI.md` or the PiaCML specification documents.
+    *   This would trigger a pop-up with a brief description and/or a direct link to the relevant definition, specific heading, or anchor within `PiaAGI.md` or the PiaCML specification documents for precise navigation.
 *   **Template Insertion & Snippets:**
     *   A library of predefined templates for common PiaAGI structures.
     *   Examples: Inserting an empty `<Role>` block with placeholder sub-sections, a standard `CognitiveModuleConfiguration` with common modules, or a template for a complete R-U-E cycle.
@@ -363,6 +431,148 @@ A typical prompt evaluation process using PiaPES would involve the following ste
 6.  **Comparative Analysis (A/B Testing):**
     *   The PEM should allow users to easily set up comparative evaluations. For instance, selecting two different versions of a prompt or two distinct curricula.
     *   After both evaluations are run, the PEM would display side-by-side comparisons of their metrics and visualizations, potentially highlighting statistically significant differences identified by PiaAVT.
+
+### 9.3.1 Detailed Operational Workflow for PiaPES-PiaSE-PiaAVT Integration
+
+The following provides a more explicit step-by-step description of the evaluation cycle:
+
+1.  **PiaPES: Experiment Definition by User:**
+    *   User selects a `PiaAGIPrompt` or `DevelopmentalCurriculum` (e.g., `curriculum_v1.json`).
+    *   User specifies the target PiaAGI agent configuration (e.g., `agent_config_alpha.json`).
+    *   User selects one or more PiaSE scenarios (e.g., `scenario_obstacle_course.yaml`, `scenario_social_dialogue_beta.yaml`).
+    *   User defines evaluation parameters: number of repetitions, specific metrics to focus on (linking to `piaavt_metrics_to_track` in the curriculum if applicable).
+
+2.  **PiaPES: Package and Dispatch to PiaSE:**
+    *   PiaPES constructs an "Evaluation Job Package" (e.g., a JSON object). This package contains:
+        *   References to (or content of) the selected prompt/curriculum.
+        *   Reference to the agent configuration.
+        *   List of PiaSE scenario identifiers/configurations.
+        *   Logging directives for PiaSE (e.g., verbosity, specific events to capture for PiaAVT).
+        *   A unique `evaluation_run_id`.
+    *   PiaPES sends this package to PiaSE via an API call (e.g., `PiaSE.start_evaluation_run(job_package)`).
+
+3.  **PiaSE: Simulation Execution and Logging:**
+    *   PiaSE receives the job package.
+    *   For each scenario and repetition:
+        *   Initializes the environment.
+        *   Instantiates and configures the PiaAGI agent using the provided prompt/curriculum and agent configuration.
+        *   Runs the simulation, allowing the agent to interact with the environment.
+        *   Logs all relevant data as per PiaAVT's `Logging_Specification.md` and any specific directives from PiaPES. This includes agent actions, perceptions, internal state changes (if exposed by the agent), environment events, and task outcomes. Logs are tagged with `evaluation_run_id` and `scenario_id`.
+    *   Upon completion, PiaSE notifies PiaPES (e.g., via a callback or status update) that the simulation run is complete and logs are available (potentially providing a path or ID to the raw logs). PiaSE might return a summary like:
+        ```json
+        {
+          "evaluation_run_id": "eval_123",
+          "status": "completed",
+          "total_simulations_run": 10,
+          "log_references": ["/path/to/logs/eval_123_scenario1_run1.log", "..."],
+          "errors_encountered": 0
+        }
+        ```
+
+4.  **PiaAVT: Log Ingestion and Analysis:**
+    *   PiaAVT (either automatically triggered or by PiaPES command) ingests the raw logs from PiaSE associated with the `evaluation_run_id`.
+    *   PiaAVT processes these logs, performing pre-defined analyses (e.g., calculating success rates, learning curves, emotional trajectories) and any custom analyses requested by PiaPES (derived from `piaavt_metrics_to_track` in the curriculum or evaluation setup).
+    *   Processed data and analysis results are stored by PiaAVT, indexed by `evaluation_run_id`.
+
+5.  **PiaPES: Results Retrieval and Presentation:**
+    *   PiaPES queries PiaAVT's API for results related to the `evaluation_run_id`. Example query structure:
+        ```json
+        // GET /api/piaavt/results?run_id=eval_123&metrics=["task_success_rate", "learning_objective_LO_001_status"]
+        ```
+    *   PiaAVT returns the requested analysis results. Example response structure:
+        ```json
+        {
+          "evaluation_run_id": "eval_123",
+          "overall_summary": {
+            "task_success_rate_scenario1": 0.75,
+            "avg_completion_time_scenario1": 120.5
+          },
+          "detailed_metrics": {
+            "learning_objective_LO_001_status": "achieved",
+            "custom_metric_X_value": 0.92
+          },
+          "visualizations": [
+            {"type": "learning_curve", "chart_id": "lc_eval_123_skill_A"},
+            {"type": "state_trajectory_plot", "chart_id": "st_eval_123_emotion"}
+          ],
+          "raw_log_summary_link": "/piaavt/logs/summary/eval_123"
+        }
+        ```
+        (PiaAVT would provide actual chart data or links to chart generation endpoints for the `visualizations`.)
+    *   PiaPES displays these summarized results, metrics, and visualizations in its UI (Results Dashboard, Comparison View).
+
+6.  **User: Review and Iteration:**
+    *   The user reviews the evaluation results in PiaPES.
+    *   Based on the insights, the user may choose to:
+        *   Refine the prompt/curriculum in the PiaPES editor.
+        *   Adjust the agent configuration.
+        *   Modify the PiaSE scenario.
+        *   Define a new evaluation experiment (returning to Step 1).
+
+This explicit workflow highlights the interplay and data handoffs between PiaPES, PiaSE, and PiaAVT, forming a comprehensive loop for prompt/curriculum evaluation and refinement.
+
+### 9.3.2 Data Exchange Details
+
+**PiaPES to PiaSE (Evaluation Job Package - Example JSON):**
+```json
+{
+  "evaluation_run_id": "eval_run_456",
+  "pia_agent_config_ref": "agent_configs/research_agent_v2.json", // Path to agent setup
+  "prompt_or_curriculum": { // Could be one or the other
+    "type": "curriculum", // "prompt" or "curriculum"
+    "reference": "curricula/tom_development_phase1.json" // Path to the curriculum/prompt file
+    // Alternatively, the full prompt/curriculum object could be embedded
+  },
+  "scenarios": [
+    {
+      "scenario_id": "social_interaction_scenario_3",
+      "scenario_config_ref": "piase_scenarios/social_interaction_3.yaml", // Path to scenario definition
+      "repetitions": 5,
+      "max_steps_per_run": 200
+    }
+    // ... more scenarios
+  ],
+  "logging_directives": {
+    "level": "detailed", // "basic", "detailed", "debug"
+    "specific_events_to_capture": ["AGENT_GOAL_SET", "EMOTION_STATE_CHANGE", "LTM_RETRIEVAL_SUCCESS"],
+    "piaavt_metrics_to_enable": ["tom_accuracy_metric_v1", "social_response_appropriateness_v3"]
+  }
+}
+```
+
+**PiaSE to PiaAVT:**
+*   PiaSE produces logs adhering to the `Logging_Specification.md`. These logs are the primary data exchange. Each log entry would typically be a JSON object containing `timestamp`, `evaluation_run_id`, `scenario_id`, `agent_id`, `source_component` (e.g., "PiaSE_Environment", "PiaCML_SelfModel"), `event_type`, and `event_data`.
+
+**PiaPES Query to PiaAVT (Conceptual API Endpoint - GET):**
+*   `GET /piaavt/api/v1/evaluation_results`
+    *   Parameters:
+        *   `evaluation_run_id: str` (required)
+        *   `metrics: List[str]` (optional, e.g., `["task_success_rate", "avg_steps_to_goal"]`)
+        *   `visualizations: List[str]` (optional, e.g., `["learning_curve_skillX", "emotion_trajectory_vad"]`)
+        *   `format: str` (optional, e.g., `"summary"`, `"detailed_timeseries"`)
+
+**PiaAVT Response to PiaPES (Example JSON for a specific metric query):**
+```json
+{
+  "evaluation_run_id": "eval_run_456",
+  "requested_metrics": ["task_success_rate_social_interaction_scenario_3"],
+  "results": [
+    {
+      "metric_name": "task_success_rate_social_interaction_scenario_3",
+      "value": 0.8, // Calculated across repetitions
+      "confidence_interval": [0.72, 0.88], // Optional
+      "details": {
+        "successful_runs": 4,
+        "total_runs": 5
+      },
+      "related_visualization_id": "viz_success_rate_social_interaction_scenario_3_hist" // Link to a PiaAVT viz
+    }
+    // ... other metrics
+  ]
+}
+```
+
+These examples illustrate the nature of data exchanged. Actual implementations would require detailed API specifications for each tool.
 
 ### 9.4 Interface Elements within PiaPES (Conceptual)
 
