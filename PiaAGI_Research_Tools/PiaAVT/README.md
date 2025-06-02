@@ -12,18 +12,18 @@ Details: **[PiaAGI Logging Specification for PiaAVT](Logging_Specification.md)**
 
 ## Current Features (Initial Build)
 
-*   **Logging System (`core/logging_system.py`):** Ingestion, validation, storage of JSON logs.
-*   **Analyzers (`analyzers/`):**
-    *   `basic_analyzer.py`: Filtering, descriptive statistics, time-series extraction.
-    *   `event_sequencer.py`: Extracts defined event sequences.
-    *   Conceptual analyses defined: Goal Lifecycle Tracking, Emotional State Trajectory, Task Performance Metrics.
+*   **Logging System (`core/logging_system.py`):** Ingestion, validation, storage of JSON logs. (Note: `prototype_logger.py` serves as the current reference implementation for generating logs for PiaAVT).
+*   **Analyzers (`Analysis_Implementations/`):**
+    *   `basic_analyzer.py`: Filtering, descriptive statistics, time-series extraction. (Conceptual, path might need update if this is a specific file or integrated elsewhere)
+    *   `event_sequencer.py`: Extracts defined event sequences. (Conceptual, path might need update if this is a specific file or integrated elsewhere)
+    *   Implemented analyses: Goal Dynamics (Lifecycle), Emotional State Trajectory, Basic Task Performance Metrics, and a conceptual Intrinsic Motivation Trigger & Impact Analysis. These can be found in the `Analysis_Implementations/` directory.
 *   **Visualization Components (`visualizers/`):**
     *   `timeseries_plotter.py`: Matplotlib-based time-series plots.
     *   `state_visualizer.py`: Textual representations of agent states.
 *   **API (`api.py`):** `PiaAVTAPI` facade for programmatic access.
 *   **Command-Line Interface (`cli.py`):** CLI access to core functionalities.
 *   **WebApp (`webapp/app.py`):** Streamlit Proof-of-Concept for interactive analysis (log upload, stats, plotting, sequences, raw log view).
-*   **Examples (`examples/`):** Scripts demonstrating API and CLI usage.
+*   **Examples (`examples/`):** Scripts demonstrating API and CLI usage. The main analysis scripts in `Analysis_Implementations/` also serve as usage examples via their `if __name__ == "__main__":` blocks. See also `conceptual_piase_log_generation.md` for how sample logs for these analyses could be produced from PiaSE.
 *   **Unit Tests (`tests/`):** For core components.
 *   **Requirements (`requirements.txt`):** Python dependencies.
 
@@ -43,7 +43,7 @@ Features: Log upload, global filters, overview/stats, time-series plotting, even
 PiaAVT is planned to evolve into a powerful toolkit for deep AGI analysis. Key future directions include:
 
 1.  **Advanced Analytical Modules:**
-    *   Implement the currently conceptualized analyses: Goal Lifecycle Tracking, Emotional State Trajectory, and Task Performance Metrics.
+    *   Further develop and fully implement the 'Intrinsic Motivation Trigger & Impact Analysis'. Refine and extend the existing implemented analyses (Goal Dynamics, Emotional Trajectory, Task Performance) with more advanced features and visualizations.
     *   **Causal Analysis:** Develop tools to help researchers infer potential causal relationships between agent actions, internal cognitive state changes (from PiaCML module logs), environmental events (from PiaSE logs), and observed outcomes.
     *   **Behavioral Pattern Mining:** Implement algorithms to automatically identify recurring sequences of behavior, decision patterns, or cognitive state transitions from extensive log data.
     *   **Ethical Reasoning Traceability:** Design analyses to visualize how an agent's ethical framework (from its Self-Model logs) influences its planning and decision-making processes, especially in scenarios involving ethical dilemmas. This could involve tracing which ethical rules were activated or prioritized.
@@ -71,4 +71,3 @@ PiaAVT's development will focus on providing increasingly deeper and more intuit
 
 ---
 Return to [PiaAGI Core Document](../../PiaAGI.md) | [Project README](../../README.md)
-```
