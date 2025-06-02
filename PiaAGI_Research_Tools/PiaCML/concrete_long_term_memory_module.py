@@ -8,6 +8,19 @@ except ImportError:
     from base_long_term_memory_module import BaseLongTermMemoryModule
     from concrete_base_memory_module import ConcreteBaseMemoryModule
 
+# --- Module-level comments on Backend Expectations ---
+# The advanced retrieval strategies outlined in methods like `get_episodic_experience`
+# and `get_semantic_knowledge` (e.g., temporal proximity, hierarchical traversal)
+# are presented conceptually. For these strategies to be performant:
+# 1. The `_storage_backend` (e.g., `ConcreteBaseMemoryModule`) would ideally need to
+#    support complex queries (e.g., range queries, graph traversals, list containment checks).
+# 2. If the backend offers only basic key-value or simple field matching, then this
+#    `ConcreteLongTermMemoryModule` would need to implement these advanced search
+#    logics as post-processing steps on a potentially large dataset retrieved from
+#    the backend. This would be less efficient but functionally achievable.
+# The current implementation primarily illustrates the interface and conceptual logic,
+# assuming the backend or future post-processing would handle the detailed filtering.
+
 class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
     """
     A concrete implementation of the BaseLongTermMemoryModule.
@@ -110,8 +123,45 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
         ltm_criteria.setdefault('match_context', {})['ltm_type'] = 'episodic'
 
         print(f"ConcreteLTM: Retrieving episodic experiences with query: {query}, effective criteria: {ltm_criteria}") # Updated print
+        
+        # Initial retrieval based on primary query and ltm_type
         results = self._storage_backend.retrieve(query, ltm_criteria)
         self._subcomponent_status['episodic']['queries'] += 1
+        
+        # Conceptual Post-Processing for Advanced Retrieval Strategies:
+        # The following steps would ideally be handled by a more capable backend.
+        # If not, they would be implemented here as filtering on 'results'.
+
+        # 1. Temporal Proximity Search
+        if 'near_timestamp' in query and 'time_window' in query:
+            # Conceptual: Filter 'results' list further.
+            # For each 'item' in 'results':
+            #   if abs(item['info'].get('timestamp', 0) - query['near_timestamp']) <= query['time_window']:
+            #     keep item
+            #   else:
+            #     remove item
+            print(f"ConcreteLTM: Conceptual: Applying temporal proximity filter (ts={query['near_timestamp']}, window={query['time_window']}).")
+
+        # 2. Involved Entity Search
+        if 'involved_entity_id' in query:
+            # Conceptual: Filter 'results' list further.
+            # For each 'item' in 'results':
+            #   event_data = item['info']
+            #   if query['involved_entity_id'] in event_data.get('involved_entities', []):
+            #     keep item
+            #   else:
+            #     remove item
+            print(f"ConcreteLTM: Conceptual: Applying involved entity filter (entity_id={query['involved_entity_id']}).")
+
+        # 3. Associative Retrieval (Conceptual)
+        if 'related_to_event_id' in query:
+            # Conceptual: This is more complex.
+            # 1. Fetch the 'related_to_event_id' event.
+            # 2. Identify its key characteristics (e.g., involved entities, context tags, location).
+            # 3. Filter 'results' for items that share some of these key characteristics.
+            #    This might involve multiple queries to the backend or complex graph traversal if data is linked.
+            print(f"ConcreteLTM: Conceptual: Applying associative retrieval filter (related_to_event_id={query['related_to_event_id']}).")
+
         return results
 
     def store_semantic_knowledge(self, knowledge_item: Dict[str, Any], context: Dict[str, Any] = None) -> str:
@@ -128,8 +178,33 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
         ltm_criteria = criteria or {}
         ltm_criteria.setdefault('match_context', {})['ltm_type'] = 'semantic'
         print(f"ConcreteLTM: Retrieving semantic knowledge with query: {query}, effective criteria: {ltm_criteria}")
+        
         results = self._storage_backend.retrieve(query, ltm_criteria)
         self._subcomponent_status['semantic']['queries'] += 1
+
+        # Conceptual Post-Processing or Advanced Backend Query Logic:
+        
+        # 1. Hierarchical Traversal (Conceptual)
+        if 'concept_id' in query and 'relation_type' in query and 'traversal_depth' in query:
+            # Conceptual: This assumes semantic knowledge is graph-like (e.g., item['info']['relations']).
+            # 1. Start with 'concept_id'.
+            # 2. Iteratively fetch related concepts via 'relation_type' up to 'traversal_depth'.
+            #    - This might involve multiple calls to self._storage_backend.retrieve or a graph query language if supported.
+            # 3. Aggregate results. The current 'results' might be the starting point or be replaced.
+            print(f"ConcreteLTM: Conceptual: Applying hierarchical traversal (concept={query['concept_id']}, relation={query['relation_type']}, depth={query['traversal_depth']}).")
+
+        # 2. Property-Based Search
+        if 'with_property' in query and 'property_value' in query:
+            # Conceptual: Filter 'results' further.
+            # For each 'item' in 'results':
+            #   knowledge_data = item['info']
+            #   if knowledge_data.get(query['with_property']) == query['property_value']:
+            #     keep item
+            #   else:
+            #     remove item
+            # Alternatively, if the backend supports it, this could be part of the initial query.
+            print(f"ConcreteLTM: Conceptual: Applying property-based filter (property='{query['with_property']}', value='{query['property_value']}').")
+            
         return results
 
     def store_procedural_skill(self, skill_data: Dict[str, Any], context: Dict[str, Any] = None) -> str: # Changed from skill_name: str, skill_representation: dict
@@ -172,9 +247,18 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
         print(f"ConcreteLTM: Retrieving procedural skill '{skill_name}'. Query: {query}, Criteria: {ltm_criteria}")
         results = self._storage_backend.retrieve(query, ltm_criteria) # Pass the constructed query
         self._subcomponent_status['procedural']['queries'] += 1
+        
         if results:
             return results[0]['info'] # Return the 'info' part of the first match
-        return None
+        else:
+            # Conceptual: Fuzzy match or keyword search if exact match fails.
+            # This would require iterating through all procedural memories or a more advanced backend search.
+            # For each skill_entry in all_procedural_memories:
+            #   if fuzzy_match(skill_name, skill_entry['info'].get('skill_name_key')) > threshold or \
+            #      skill_name_keywords in skill_entry['info'].get('description', ''):
+            #     return skill_entry['info']
+            print(f"ConcreteLTM: Conceptual: Exact match for skill '{skill_name}' not found. Fuzzy/keyword search could be attempted here.")
+            return None
 
     def manage_ltm_subcomponents(self) -> None:
         """Placeholder for managing LTM subcomponents, e.g., balancing resources, consolidation strategies."""

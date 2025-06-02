@@ -81,6 +81,30 @@ The choice of conflict resolution strategy can itself be context-dependent or le
 ### 2.4. Intrinsic vs. Extrinsic Motivation Handling
 The system manages both types of goals. Intrinsic motivations are crucial for proactive learning and development in open-ended environments. Extrinsic goals are typically task-specific objectives. The prioritization mechanism must be ableto balance these, allowing, for instance, high-intensity curiosity to sometimes take precedence over a low-priority extrinsic task, or vice-versa.
 
+### 2.5. Interaction and Prioritization of Motivations
+The agent frequently encounters situations where multiple motivational drives—both intrinsic (e.g., curiosity, competence) and extrinsic (e.g., user-defined tasks, system-critical objectives)—are active simultaneously. These drives may be complementary, but can also be conflicting, necessitating a robust system for managing and prioritizing them. This subsection outlines conceptual strategies for this prioritization process.
+
+*   **The Challenge:** The core challenge lies in dynamically selecting which motivation(s) should guide behavior at any given moment. This requires balancing immediate opportunities and threats against long-term developmental goals, and resolving conflicts between, for example, exploring a novel stimulus versus completing an urgent assigned task.
+
+*   **Conceptual Strategies for Prioritization:**
+
+    *   **Utility-Based Approach:** This strategy involves calculating a 'current utility' or 'salience score' for each active or potential goal. This score is a composite function considering factors such as:
+        *   *Intrinsic intensity:* The inherent strength of the drive (e.g., level of curiosity, perceived competence gap).
+        *   *Extrinsic reward value:* The magnitude of anticipated reward or penalty associated with an extrinsic task.
+        *   *Likelihood of success:* The agent's estimated probability of achieving the goal.
+        *   *Resource cost:* Estimated cognitive and physical resources required.
+        *   *Alignment with core values:* Consistency with the `EthicalFramework` and other guiding principles from the Self-Model.
+        *   *Urgency:* Time-criticality of the goal.
+        The goal (or set of compatible goals) with the highest current utility is prioritized for action.
+
+    *   **Hierarchical Dominance / Value-Based Prioritization:** Core values, ethical imperatives, or meta-goals defined in the Self-Model's `EthicalFramework` can establish a hierarchy. Motivations and goals that align with higher-order values or ensure safety and integrity may receive precedence. Some motivations, particularly those related to safety or core directives, might act as "vetoes," capable of overriding or significantly down-prioritizing other motivations (e.g., a safety protocol overriding an exploratory drive in a hazardous situation).
+
+    *   **Contextual Switching / Mode-Based Prioritization:** The agent might operate in different "motivational modes," such as "exploration mode," "task-focused mode," "safety mode," or "social interaction mode." The active mode, which could be influenced by the Self-Model's assessment of the current situation, explicit user instruction, or environmental cues, would determine which types of motivations and goals are favored. For example, in "exploration mode," curiosity-driven goals would be up-weighted, while in "task-focused mode," extrinsic objectives would dominate.
+
+    *   **Dynamic Recalculation:** Prioritization is not a static process. The utility or salience of motivations and their corresponding goals must be dynamically recalculated as internal states (e.g., emotional state, cognitive load, resource depletion) and external circumstances (e.g., new opportunities, emerging threats, task updates) change. This ensures adaptive responsiveness to a fluid environment.
+
+    *   **Role of Central Executive:** The Central Executive, likely a function within or closely associated with the Working Memory module, is presumed to play a key role in orchestrating this dynamic prioritization. It would mediate between the Motivational System's raw drive signals, the ongoing assessment of goal utilities, the active motivational mode, and the agent's current operational context and cognitive capacity. It is responsible for allocating cognitive resources to the highest-priority goals.
+
 ## 3. Intrinsic Motivation Model: Curiosity and Information Seeking
 
 This model formalizes the agent's drive to explore, seek novelty, resolve uncertainty, and improve its understanding of the world and itself.
@@ -124,6 +148,37 @@ A scalar value (e.g., normalized between 0.0 and 1.0) associated with each poten
 *   **Parameters:** `target_identifier` (ID of object, concept, region), `information_sought` (optional description), `initial_priority` (derived from intensity).
 *   **Examples:** "Explore [region_ID]", "Investigate [object_ID]", "Understand [concept_ID_from_KnowledgeMap]".
 
+##### 3.4.1.1. Conceptual Algorithm for Goal Generation:
+1.  Continuously monitor input streams for curiosity triggers:
+    *   Novel stimuli from Perception Module (novelty score > threshold).
+    *   Significant prediction errors from World Model (error magnitude > threshold).
+    *   Identified knowledge gaps/uncertainty from Self-Model's `KnowledgeMap` (e.g., low `understanding_level` for a relevant concept).
+2.  Upon detection of a trigger:
+    a.  Identify the `trigger_source_details` (e.g., specific stimulus ID, concept URI, nature of prediction error).
+    b.  Calculate `curiosity_intensity` for the identified target based on the function defined in Section 3.3.1 (considering novelty, error magnitude, uncertainty, complexity, relevance, recency).
+3.  If `curiosity_intensity` surpasses a configurable activation threshold (and is not vetoed by higher-priority systemic needs):
+    a.  Define the `target_identifier` based on the trigger (e.g., the ID of the novel object, the URI of the uncertain concept in `KnowledgeMap`).
+    b.  Formulate a `description` for the goal (e.g., "Investigate [target_identifier] due to novelty score X and relevance Y", "Resolve uncertainty for concept [target_identifier]").
+    c.  Create a new goal object, for example:
+        ```
+        {
+          goal_id: generate_unique_id(),
+          description: "Investigate novel object [object_ID_123]",
+          type: "INTRINSIC_CURIOSITY",
+          priority: map_intensity_to_priority_scale(curiosity_intensity), // Function to scale intensity to a system-wide priority value
+          status: "PENDING",
+          creation_timestamp: current_time(),
+          source_trigger_details: {
+            type: "NOVELTY_DETECTED", // or "PREDICTION_ERROR", "KNOWLEDGE_GAP"
+            trigger_value: specific_novelty_score, // or error_details, concept_uncertainty_metric
+            origin_module: "PerceptionModule" // or "WorldModel", "SelfModel"
+          },
+          target_identifier: "[object_ID_123]", // or "[concept_URI_abc]"
+          information_sought: "Determine properties and function of [object_ID_123]" // Optional
+        }
+        ```
+    d.  Add the newly created goal to the Motivational System's central list of active/pending goals for further processing by the prioritization mechanism (see Section 2.5).
+
 #### 3.4.2. Influence on Planning and Action Selection
 *   Generated curiosity goals are passed to the Planning Module.
 *   High `curiosity_intensity` translates to higher goal priority, influencing the selection of plans.
@@ -140,6 +195,38 @@ A scalar value (e.g., normalized between 0.0 and 1.0) associated with each poten
 *   Significant update to the World Model that resolves a prior prediction error or successfully incorporates a novel stimulus.
 *   Acquisition of new information that demonstrably improves performance on a related task (even if that task is not immediately active).
 *   Confirmation of a hypothesis generated out of curiosity.
+
+##### 3.5.1.1. Conceptual Algorithm for Reward Calculation:
+1.  Monitor internal event bus or receive direct notifications for events that could signify curiosity satisfaction. Key events include:
+    *   `KNOWLEDGE_MAP_CONCEPT_UPDATED` (from Self-Model), with details on `concept_id`, `updated_attributes` (e.g., `understanding_level`, `confidence_score`), and `reason_for_update`.
+    *   `WORLD_MODEL_ERROR_RESOLVED` (from World Model), with details on the error characteristics and the new model state.
+    *   `NOVEL_STIMULUS_INTEGRATED` (from World Model or Perception), indicating a previously unknown entity is now somewhat understood or categorized.
+2.  For each such event, check if it corresponds to an active or recently completed `INTRINSIC_CURIOSITY` goal:
+    a.  Retrieve the `related_goal_id` or `target_identifier` from the event data if available, or infer it (e.g., the `concept_id` from `KNOWLEDGE_MAP_CONCEPT_UPDATED`).
+    b.  Verify if there was an associated curiosity goal targeting this `target_identifier`.
+3.  If the event satisfies the conditions for a curiosity reward (as per Section 3.5.1) for a relevant goal:
+    a.  Calculate the `information_gain` based on the specifics of the event, as outlined in Section 3.5.2. This might involve:
+        *   Quantifying the change in `understanding_level` or `confidence_score` for a `KnowledgeMap` concept.
+        *   Assessing the significance of a resolved prediction error (e.g., magnitude of error reduction).
+        *   Evaluating the complexity or novelty of the information successfully integrated.
+    b.  Generate an intrinsic reward signal object, for example:
+        ```
+        {
+          reward_id: generate_unique_id(),
+          type: "INTRINSIC_CURIOSITY_SATISFACTION", // or "INFORMATION_GAINED"
+          magnitude: calculated_information_gain, // Normalized scalar value
+          timestamp: current_time(),
+          related_goal_id: relevant_goal_id, // ID of the curiosity goal that was satisfied
+          target_identifier: event_target_identifier, // e.g., concept_id, object_id
+          evidence: { // Details supporting the reward
+            event_type: "KNOWLEDGE_MAP_CONCEPT_UPDATED",
+            previous_understanding_level: 0.3,
+            new_understanding_level: 0.7
+          }
+        }
+        ```
+    c.  Send the generated reward signal to the Learning Module(s) to reinforce the behaviors or cognitive processes that led to the information gain.
+    d.  Optionally, update the status of the related curiosity goal (e.g., to `ACHIEVED` or reduce its intensity if partially satisfied).
 
 #### 3.5.2. Magnitude Calculation
 Proportional to the assessed "information gain":
@@ -209,6 +296,38 @@ A scalar value (e.g., normalized 0.0-1.0) associated with each relevant skill ID
 *   **Parameters:** `target_skill_id` or `target_task_domain`, `desired_proficiency_level_change` (optional), `initial_priority`.
 *   **Examples:** "Improve_skill [skill_X]", "Master_task [task_Y]", "Practice_using_tool [tool_Z]".
 
+##### 4.4.1.1. Conceptual Algorithm for Goal Generation:
+1.  Continuously monitor input streams for competence triggers:
+    *   Task performance feedback (e.g., `GOAL_STATUS_CHANGED` with `status: FAILED` or `status: ACHIEVED_SUBOPTIMALLY`, `TASK_STATUS_UPDATE` indicating low efficiency or failure).
+    *   Self-Model assessments (e.g., `CapabilityInventory` review identifies a skill with low `proficiency_level` or `confidence_in_skill` that is relevant to current or anticipated agent goals).
+    *   Detection of Zone of Proximal Development (ZPD) opportunities (e.g., consistent high success in a skill domain suggests readiness for increased challenge).
+2.  Upon detection of a trigger:
+    a.  Identify the `trigger_source_details` (e.g., specific failed `goal_id`, `skill_id` from `CapabilityInventory`, task domain).
+    b.  Calculate `competence_intensity` for the identified skill or task domain based on the function defined in Section 4.3.1 (considering proficiency gap, skill importance, success rate trend, perceived learnability).
+3.  If `competence_intensity` surpasses a configurable activation threshold (and is not vetoed by higher-priority needs):
+    a.  Define the `target_skill_id` (from `CapabilityInventory`) or `target_task_domain`.
+    b.  Formulate a `description` for the goal (e.g., "Improve skill [target_skill_id] due to recent task failures and proficiency gap of Z", "Master advanced aspects of task [target_task_domain]").
+    c.  Create a new goal object, for example:
+        ```
+        {
+          goal_id: generate_unique_id(),
+          description: "Improve_skill [WeldingSkill_003] to increase task success rate",
+          type: "INTRINSIC_COMPETENCE",
+          priority: map_intensity_to_priority_scale(competence_intensity), // Function to scale intensity
+          status: "PENDING",
+          creation_timestamp: current_time(),
+          source_trigger_details: {
+            type: "TASK_PERFORMANCE_FEEDBACK", // or "SELF_MODEL_ASSESSMENT", "ZPD_OPPORTUNITY"
+            trigger_value: "Low success rate in task [Task_RoboticAssembly_7]",
+            skill_id: "[WeldingSkill_003]",
+            current_proficiency: 0.4,
+            target_proficiency: 0.7 // Optional
+          },
+          target_skill_id: "[WeldingSkill_003]"
+        }
+        ```
+    d.  Add the newly created goal to the Motivational System's central list of active/pending goals for prioritization.
+
 #### 4.4.2. Influence on Planning and Action Selection
 *   Generated competence goals are fed to the Planning Module.
 *   Leads to selection/creation of plans involving:
@@ -228,6 +347,39 @@ A scalar value (e.g., normalized 0.0-1.0) associated with each relevant skill ID
 *   Successful completion of a task that was previously failed or challenging, attributed to skill improvement.
 *   Increased efficiency (e.g., faster completion, lower resource use) in a skilled task.
 *   Successfully applying a skill in a new, more complex context.
+
+##### 4.5.1.1. Conceptual Algorithm for Reward Calculation:
+1.  Monitor internal event bus or receive direct notifications for events that could signify competence gain. Key events include:
+    *   `SELF_MODEL_SKILL_PROFICIENCY_UPDATED` (from Self-Model), with `skill_id`, `old_level`, `new_level`, and `reason_for_update` (e.g., "successful_practice_session", "task_milestone_achieved").
+    *   `GOAL_STATUS_CHANGED` or `TASK_STATUS_UPDATE` indicating successful completion of a challenging task, especially if linked to a skill targeted by a competence goal.
+    *   Metrics indicating improved efficiency or effectiveness in task execution (e.g., reduced time, fewer errors, better outcome quality) that can be attributed to skill improvement.
+2.  For each such event, check if it corresponds to an active or recently completed `INTRINSIC_COMPETENCE` goal:
+    a.  Retrieve the `related_goal_id` or `skill_id` from the event data.
+    b.  Verify if there was an associated competence goal targeting this `skill_id` or task domain.
+3.  If the event satisfies the conditions for a competence reward (as per Section 4.5.1) for a relevant goal:
+    a.  Calculate the `proficiency_gain_or_impact` based on the specifics of the event, as outlined in Section 4.5.2. This might involve:
+        *   The delta between `new_level` and `old_level` of proficiency for a `skill_id`.
+        *   The significance of a successfully completed challenging task (e.g., based on its difficulty rating).
+        *   Quantifiable improvements in performance metrics (e.g., percentage reduction in errors).
+    b.  Generate an intrinsic reward signal object, for example:
+        ```
+        {
+          reward_id: generate_unique_id(),
+          type: "INTRINSIC_COMPETENCE_GAINED", // or "MASTERY_ACHIEVED"
+          magnitude: calculated_proficiency_gain_or_impact, // Normalized scalar value
+          timestamp: current_time(),
+          related_goal_id: relevant_goal_id, // ID of the competence goal
+          skill_id: event_skill_id, // Skill that was improved or demonstrated
+          evidence: { // Details supporting the reward
+            event_type: "SELF_MODEL_SKILL_PROFICIENCY_UPDATED",
+            previous_proficiency: 0.4,
+            new_proficiency: 0.55,
+            task_context: "[Task_RoboticAssembly_7]" // Optional: task where skill was shown
+          }
+        }
+        ```
+    c.  Send the generated reward signal to the Learning Module(s) to reinforce the behaviors, strategies, or practice that led to the competence gain.
+    d.  Optionally, update the status of the related competence goal (e.g., to `ACHIEVED` if target proficiency met, or adjust intensity).
 
 #### 4.5.2. Magnitude Calculation
 Proportional to:
@@ -262,6 +414,73 @@ Key events to log:
 *   `PiaAGI.md` (Core framework document, Sections 3.3, 4.1.6)
 *   `PiaAGI_Research_Tools/PiaAVT/Conceptual_Motivation_Models.md`
 *   `PiaAGI_Research_Tools/PiaAVT/Logging_Specification.md`
+
+## 7. Conceptual Interfaces with Other CML Modules
+
+This section outlines the primary conceptual information flows between the Motivational System Module and other key modules within the PiaAGI Cognitive Modular Architecture (PiaCML). These interfaces are crucial for the integrated functioning of the agent, allowing motivations to influence and be influenced by perception, cognition, learning, and self-awareness.
+
+### 7.1. Planning & Decision-Making Module
+
+*   **Information Flow FROM Motivational System:**
+    *   `Prioritized Goal List`: A dynamically updated list of active goals (both intrinsic and extrinsic), ranked by current salience or utility. Each goal entry includes its type, parameters, and priority score.
+    *   `Goal Specifications`: Detailed descriptions for high-priority goals, potentially including success criteria, constraints, or preferred approaches derived from the motivation's nature (e.g., "explore this specific unknown object" for curiosity).
+    *   `Motivational Context`: Information about the currently dominant motivational mode (e.g., "exploration mode," "task-completion mode") which can bias planning heuristics.
+    *   `Requests for Goal Feasibility Assessment`: Queries to the Planning module to evaluate if a potential new goal is achievable given current context and resources.
+
+*   **Information Flow TO Motivational System:**
+    *   `Goal Feasibility Feedback`: Assessment from Planning regarding the likelihood of success, estimated resource cost, or potential conflicts for proposed or active goals. This feedback can influence goal priority or lead to goal abandonment/modification.
+    *   `Plan Execution Status`: Updates on the progress of plans related to active goals (e.g., `PLAN_STARTED`, `PLAN_STEP_COMPLETED`, `PLAN_FAILED`, `PLAN_ACHIEVED`). This informs goal status tracking.
+    *   `Resource Availability Projections`: Information from Planning about current and anticipated cognitive/physical resource levels, which can affect the generation or prioritization of resource-intensive goals.
+    *   `Goal Conflict Reports`: Notification when existing goals are found to be mutually exclusive or when a new plan conflicts with an existing high-priority goal.
+
+### 7.2. Learning Module(s)
+
+*   **Information Flow FROM Motivational System:**
+    *   `Intrinsic Reward Signals`: Scalar or vector signals indicating the satisfaction of intrinsic motivations (e.g., `CURIOSITY_REWARD` upon information gain, `COMPETENCE_REWARD` upon skill improvement). These are used by reinforcement learning algorithms.
+    *   `Learning Directives/Focus`: Signals suggesting specific areas for learning based on active intrinsic motivations (e.g., "focus learning on skill X," "prioritize model updates related to surprising event Y").
+    *   `Context for Learning`: Information about the goal being pursued when a learning opportunity arises, helping the Learning Module to attribute credit appropriately.
+
+*   **Information Flow TO Motivational System:**
+    *   `Learning Progress Updates`: Feedback on the rate or success of learning in areas targeted by intrinsic motivations (e.g., improvements in skill proficiency, reduction in model uncertainty). This can modulate the intensity of related motivations.
+    *   `Novelty/Learnability Assessments`: Information from learning models about how quickly the agent is learning or adapting to new information, which can influence curiosity or competence drives (e.g., faster learning might sustain curiosity).
+    *   `Surprise/Anomaly Detection`: Signals from predictive learning models when unexpected events occur, potentially triggering curiosity or re-evaluation of current goals.
+
+### 7.3. Self-Model Module
+
+*   **Information Flow FROM Motivational System:**
+    *   `Requests for Self-Assessment`: Queries to the Self-Model for information relevant to goal generation and prioritization (e.g., "current proficiency level of skill X?", "knowledge level about concept Y?", "current core values hierarchy?").
+    *   `Goal-Relevant Internal State Monitoring`: Directives to the Self-Model to track specific internal states that are conditions for, or may be affected by, motivational pursuits (e.g., cognitive load during a challenging task).
+    *   `Proposed Goals for Value Alignment Check`: Potential new goals can be sent to the Self-Model to check for consistency with the `EthicalFramework` or long-term developmental objectives.
+
+*   **Information Flow TO Motivational System:**
+    *   `Self-Assessment Data`: Information from the Self-Model's subcomponents like `KnowledgeMap` (e.g., uncertainty levels, knowledge gaps), `CapabilityInventory` (e.g., skill proficiencies, confidence levels), and `EthicalFramework` (e.g., value priorities, ethical constraints). This data directly triggers or modulates intrinsic motivations.
+    *   `Internal State Reports`: Updates on relevant internal states (e.g., cognitive load, fatigue, overall well-being) that can influence the intensity or feasibility of pursuing certain motivations.
+    *   `Value Alignment Feedback`: Assessment from the Self-Model on whether a proposed goal aligns with the agent's core values or ethical guidelines, influencing its priority or viability.
+    *   `Developmental Trajectory Goals`: Long-term goals or areas of focus suggested by the Self-Model as part of the agent's overall development, which the Motivational System can adopt or prioritize.
+
+### 7.4. Emotion Module
+
+*   **Information Flow FROM Motivational System:**
+    *   `Goal Status Updates`: Information about the status of active goals (e.g., `GOAL_ACHIEVED`, `GOAL_FAILED`, `GOAL_BLOCKED`, `GOAL_IN_PROGRESS_DIFFICULTY_HIGH`). These serve as significant inputs for generating emotional responses.
+    *   `Motivational Intensity Signals`: The current strength or urgency of active motivations can be communicated, as high-intensity unsatisfied drives might lead to negative emotions, while progress on strong drives could lead to positive ones.
+    *   `Intrinsic Reward Events`: Notification of intrinsic reward generation (e.g., for curiosity satisfaction or competence gain), which typically correlates with positive emotional states.
+
+*   **Information Flow TO Motivational System:**
+    *   `Emotional State Vector/Descriptors`: The current emotional state of the agent (e.g., joy, frustration, fear, interest, boredom). Emotional states can directly modulate the intensity, priority, and type of active or potential motivations (e.g., fear might suppress curiosity, interest might amplify it).
+    *   `Emotion-Driven Biases`: Signals indicating that the current emotional state should bias goal selection or prioritization (e.g., a state of anxiety might increase the priority of safety-related goals).
+
+### 7.5. Perception Module & World Model
+
+*   **Information Flow FROM Motivational System:**
+    *   `Attentional Focus Directives`: Suggestions to the Perception Module (often mediated by an Attention Module or Central Executive) to prioritize processing of stimuli relevant to active goals (e.g., "look for objects matching X," "monitor region Y for changes").
+    *   `Requests for Information Verification`: Queries to the World Model to confirm or refute hypotheses generated by curiosity (e.g., "is object Z still at location L?").
+    *   `Exploration Imperatives`: High-level directives to explore specific unknown areas or aspects of the environment, driven by curiosity or information-seeking goals.
+
+*   **Information Flow TO Motivational System:**
+    *   `Novel/Salient Stimuli Reports`: Information from the Perception Module about newly detected or highly salient environmental stimuli (e.g., unexpected objects, sudden movements, complex patterns). This can trigger curiosity or alert-driven motivations.
+    *   `Prediction Error Signals`: Notification from the World Model when there is a significant mismatch between its predictions and incoming sensory information. This is a strong trigger for curiosity and model-updating motivations.
+    *   `Environmental Context Updates`: General information about the current state of the environment from the World Model, which can reveal opportunities or threats relevant to goal generation and prioritization.
+    *   `Object/Situation Affordance Information`: Data from Perception/World Model about potential interactions or uses of objects/situations, which can trigger competence or task-related motivations.
 
 ---
 Return to [PiaAGI Core Document](../../PiaAGI.md)
