@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-class BasePerceptionModule(ABC):
+class PerceptionModule(ABC):
     """
     Abstract Base Class for the Perception Module in the PiaAGI Cognitive Architecture.
 
@@ -110,9 +110,9 @@ class BasePerceptionModule(ABC):
         pass
 
 if __name__ == '__main__':
-    # Conceptual illustration for BasePerceptionModule
+    # Conceptual illustration for PerceptionModule
 
-    class ConceptualTextPerception(BasePerceptionModule):
+    class ConceptualTextPerception(PerceptionModule):
         def __init__(self):
             print("ConceptualTextPerception initialized.")
             self.current_focus = {}

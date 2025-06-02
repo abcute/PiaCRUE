@@ -77,8 +77,7 @@ class ConcreteWorldModel(BaseWorldModel):
         if percept_data.get("type") == "entity_observation":
             entity_id = percept_data.get("entity_id")
             observed_state = percept_data.get("state")
-            # Allow observed_state to be an empty dictionary (which is Falsy in boolean context but valid state)
-            if entity_id is not None and observed_state is not None:
+            if entity_id and observed_state:
                 if entity_id not in self._entity_repository:
                     self._entity_repository[entity_id] = {'id': entity_id, 'type': 'unknown'} # Initialize if new
                 self._entity_repository[entity_id]['state'] = observed_state
@@ -243,8 +242,8 @@ if __name__ == '__main__':
 
     print(world.check_consistency())
     print(world.get_world_model_status())
-    # Log printing was causing syntax error due to comment structure
-    # print("Log:")
-    # for entry in world._log[-5:]:
+    # print("
+Log:")
+    # for entry in world._log[-5:]: # Print last 5 log entries
     #     print(entry)
     print("ConcreteWorldModel example finished.")

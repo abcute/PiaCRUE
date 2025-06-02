@@ -382,3 +382,5 @@ class TextBasedRoom(Environment):
                 "inventory": {"type": "list", "item_schema": "string"}
             }
         }
+
+```

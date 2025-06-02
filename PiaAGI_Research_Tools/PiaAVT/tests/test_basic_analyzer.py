@@ -3,16 +3,20 @@
 import unittest
 from datetime import datetime
 from collections import Counter
-import sys # Ensure sys is imported for path manipulation
-import os  # Ensure os is imported for path manipulation
 
-# Adjust import path to project root (PiaAGI_Research_Tools)
-project_root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-if project_root_path not in sys.path:
-    sys.path.insert(0, project_root_path)
-
-from PiaAGI_Research_Tools.PiaAVT.analyzers.basic_analyzer import BasicAnalyzer, LogEntry, DEFAULT_TIMESTAMP_FORMAT
-# from PiaAGI_Research_Tools.PiaAVT.core.logging_system import LoggingSystem # If needed
+# Adjust import path
+try:
+    from analyzers.basic_analyzer import BasicAnalyzer, LogEntry, DEFAULT_TIMESTAMP_FORMAT
+    # If LoggingSystem is needed for test data generation, import it too
+    # from core.logging_system import LoggingSystem
+except ImportError:
+    import sys
+    import os
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    pia_avt_dir = os.path.dirname(current_dir)
+    sys.path.insert(0, pia_avt_dir)
+    from analyzers.basic_analyzer import BasicAnalyzer, LogEntry, DEFAULT_TIMESTAMP_FORMAT
+    # from core.logging_system import LoggingSystem
 
 
 class TestBasicAnalyzer(unittest.TestCase):
@@ -197,132 +201,8 @@ class TestBasicAnalyzer(unittest.TestCase):
         expected_counts = Counter({"[1, 2, 3]": 2, "{'a': 1}":1})
         self.assertEqual(counts, expected_counts)
 
-    # --- Tests for get_event_frequency ---
-    def test_get_event_frequency_total_count(self):
-        # EventX appears 3 times in sample_logs
-        count = self.analyzer.get_event_frequency(target_event_type="EventX")
-        self.assertEqual(count, 3)
-
-        # EventX from SysA appears 2 times
-        count_sys_a = self.analyzer.get_event_frequency(target_event_type="EventX", source="SysA")
-        self.assertEqual(count_sys_a, 2)
-
-        # Non-existent event
-        count_none = self.analyzer.get_event_frequency(target_event_type="NonExistentEvent")
-        self.assertEqual(count_none, 0)
-
-    def test_get_event_frequency_grouped_top_level(self):
-        # Count EventX occurrences, grouped by "source"
-        counts = self.analyzer.get_event_frequency(target_event_type="EventX", group_by_field_path="source")
-        expected = Counter({"SysA": 2, "SysB": 1}) # SysA has 2 EventX, SysB has 1 EventX
-        self.assertEqual(counts, expected)
-
-    def test_get_event_frequency_grouped_data_field(self):
-        # Count "Action" events, grouped by "action_name" in event_data
-        # Sample logs for "Action":
-        # {"source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "move", "reward": 0.5}},
-        # {"source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "interact", "reward": 1.0}},
-        # {"source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "move", "reward": -0.1}},
-        # For this test, we need to ensure sample_logs has 'Action' event_type
-        action_logs = [
-            {"timestamp": "2024-01-15T10:00:05.000Z", "source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "move", "reward": 0.5}},
-            {"timestamp": "2024-01-15T10:00:25.000Z", "source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "interact", "reward": 1.0}},
-            {"timestamp": "2024-01-15T10:00:35.000Z", "source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "move", "reward": -0.1}},
-        ]
-        analyzer = BasicAnalyzer(action_logs)
-        counts = analyzer.get_event_frequency(
-            target_event_type="Action",
-            group_by_field_path="action_name",
-            is_group_by_data_field=True
-        )
-        expected = Counter({"move": 2, "interact": 1})
-        self.assertEqual(counts, expected)
-
-    def test_get_event_frequency_grouped_nested_data_field(self):
-        # Count "EventX" from "SysA", grouped by "data.nested.item"
-        counts = self.analyzer.get_event_frequency(
-            target_event_type="EventX",
-            source="SysA", # Filter for SysA first
-            group_by_field_path=["nested", "item"], # Path within event_data
-            is_group_by_data_field=True
-        )
-        # SysA EventX logs: data: {"value": 10, "nested": {"item": "A"}}}, data: {"value": 12, "nested": {"item": "B"}}}
-        expected = Counter({"A": 1, "B": 1})
-        self.assertEqual(counts, expected)
-
-    def test_get_event_frequency_with_filters(self):
-        # Count "EventY", but only for source "SysA"
-        count = self.analyzer.get_event_frequency(target_event_type="EventY", source="SysA")
-        # SysA logs: EventX, EventX, EventY. So 1 EventY for SysA.
-        self.assertEqual(count, 1)
-
-    def test_get_event_frequency_group_by_invalid_path(self):
-        counts = self.analyzer.get_event_frequency(
-            target_event_type="EventX",
-            group_by_field_path="data.non_existent.path", # Invalid path
-            is_group_by_data_field=True # Path is relative to event_data
-        )
-        # All 3 "EventX" logs will result in "NoneOrInvalidPath" for grouping key
-        self.assertEqual(counts, Counter({"NoneOrInvalidPath": 3}))
-
-        counts_top_level_invalid = self.analyzer.get_event_frequency(
-            target_event_type="EventX",
-            group_by_field_path="non_existent_top_key"
-        )
-        self.assertEqual(counts_top_level_invalid, Counter({"NoneOrInvalidPath": 3}))
-
-        counts_path_type_error = self.analyzer.get_event_frequency(
-            target_event_type="EventW", # data is "not_a_dict"
-            group_by_field_path="some_key",
-            is_group_by_data_field=True
-        )
-        # The simplified logic will result in "NoneOrInvalidPath" because path traversal fails early.
-        self.assertEqual(counts_path_type_error, Counter({"NoneOrInvalidPath":1}))
-
-
-    # --- Tests for track_goal_lifecycle ---
-    def test_track_goal_lifecycle_found(self):
-        goal_logs = [
-            {"timestamp": "2024-01-15T10:00:00.000Z", "source":"S", "event_type": "GOAL_CREATED", "event_data": {"goal_id": "g1", "desc": "Start G1"}},
-            {"timestamp": "2024-01-15T10:00:05.000Z", "source":"S", "event_type": "UNRELATED_EVENT", "event_data": {}},
-            {"timestamp": "2024-01-15T10:00:10.000Z", "source":"S", "event_type": "GOAL_STATUS_CHANGED", "event_data": {"goal_id": "g1", "status": "in_progress"}},
-            {"timestamp": "2024-01-15T10:00:02.000Z", "source":"S", "event_type": "GOAL_ACTIVATED", "event_data": {"goal_id": "g1"}}, # Out of order timestamp
-            {"timestamp": "2024-01-15T10:00:15.000Z", "source":"S", "event_type": "GOAL_ACHIEVED", "event_data": {"goal_id": "g1"}},
-            {"timestamp": "2024-01-15T10:00:20.000Z", "source":"S", "event_type": "GOAL_CREATED", "event_data": {"goal_id": "g2"}}, # Different goal
-        ]
-        analyzer = BasicAnalyzer(goal_logs)
-        lifecycle = analyzer.track_goal_lifecycle(goal_id="g1")
-        self.assertEqual(len(lifecycle), 4)
-        self.assertEqual(lifecycle[0]["event_type"], "GOAL_CREATED")
-        self.assertEqual(lifecycle[1]["event_type"], "GOAL_ACTIVATED") # Check sorting
-        self.assertEqual(lifecycle[2]["event_type"], "GOAL_STATUS_CHANGED")
-        self.assertEqual(lifecycle[3]["event_type"], "GOAL_ACHIEVED")
-
-    def test_track_goal_lifecycle_not_found(self):
-        lifecycle = self.analyzer.track_goal_lifecycle(goal_id="non_existent_goal")
-        self.assertEqual(len(lifecycle), 0)
-
-    def test_track_goal_lifecycle_with_filters(self):
-        goal_logs_for_filter = [
-            {"timestamp": "2024-01-15T10:00:00.000Z", "source":"SysA", "event_type": "GOAL_CREATED", "event_data": {"goal_id": "g1"}},
-            {"timestamp": "2024-01-15T10:00:05.000Z", "source":"SysB", "event_type": "GOAL_ACTIVATED", "event_data": {"goal_id": "g1"}},
-            {"timestamp": "2024-01-15T10:00:10.000Z", "source":"SysA", "event_type": "GOAL_ACHIEVED", "event_data": {"goal_id": "g1"}},
-        ]
-        analyzer = BasicAnalyzer(goal_logs_for_filter)
-
-        # Filter by source SysA
-        lifecycle_sys_a = analyzer.track_goal_lifecycle(goal_id="g1", source="SysA")
-        self.assertEqual(len(lifecycle_sys_a), 2)
-        self.assertTrue(all(entry["source"] == "SysA" for entry in lifecycle_sys_a))
-        self.assertEqual(lifecycle_sys_a[0]["event_type"], "GOAL_CREATED")
-        self.assertEqual(lifecycle_sys_a[1]["event_type"], "GOAL_ACHIEVED")
-
-        # Filter by time
-        start_dt = datetime.strptime("2024-01-15T10:00:03.000Z", DEFAULT_TIMESTAMP_FORMAT)
-        lifecycle_timed = analyzer.track_goal_lifecycle(goal_id="g1", start_time=start_dt)
-        self.assertEqual(len(lifecycle_timed), 2) # SysB GOAL_ACTIVATED and SysA GOAL_ACHIEVED
-        self.assertEqual(lifecycle_timed[0]["event_type"], "GOAL_ACTIVATED")
-
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
+
+```

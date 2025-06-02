@@ -131,10 +131,10 @@
 - [ ] Further conceptually detail the PromptEvaluationModule (PiaPES Section 9): inputs, outputs, integration with PiaSE/PiaAVT.
 
 ## Papers Directory Refinement - Next Steps
-- [x] Strategy: For AI_Cultural_Evolution.md: Research and select 1-2 actual relevant academic papers (2021-2024) using keywords [provided in planning step]; outline summaries per PAPER_TEMPLATE.md. (Task completed on 2024-07-31 by creating placeholder summaries due to research access limitations)
-- [x] Strategy: For AI_Narrative_Understanding.md: Research and select 1-2 actual relevant academic papers (2021-2024) using keywords [provided in planning step]; outline summaries per PAPER_TEMPLATE.md. (Task completed on 2024-07-31 by creating placeholder summaries due to research access limitations)
-- [x] Strategy: For AI_Ethical_Heuristics.md: Research and select 1-2 actual relevant academic papers (2021-2024) using keywords [provided in planning step]; outline summaries per PAPER_TEMPLATE.md. (Task completed on 2024-07-31 by creating placeholder summaries due to research access limitations)
-- [x] Briefly incorporate historical context of PiaC.md into PiaAGI.md (e.g., Section 1 or 2). (Task completed on 2024-07-31)
+- [ ] Strategy: For AI_Cultural_Evolution.md: Research and select 1-2 actual relevant academic papers (2021-2024) using keywords [provided in planning step]; outline summaries per PAPER_TEMPLATE.md. (Strategy defined, research pending)
+- [ ] Strategy: For AI_Narrative_Understanding.md: Research and select 1-2 actual relevant academic papers (2021-2024) using keywords [provided in planning step]; outline summaries per PAPER_TEMPLATE.md. (Strategy defined, research pending)
+- [ ] Strategy: For AI_Ethical_Heuristics.md: Research and select 1-2 actual relevant academic papers (2021-2024) using keywords [provided in planning step]; outline summaries per PAPER_TEMPLATE.md. (Strategy defined, research pending)
+- [ ] Briefly incorporate historical context of PiaC.md into PiaAGI.md (e.g., Section 1 or 2).
 - [x] Explored and integrated Alita agent's MCP concepts into PiaAGI.md (Sections 3.6, 4.1, 4.5). Further specific detailing can be part of ongoing module refinement.
 - [x] Ensured principles from Papers/Agent_Autonomous_Tool_Mastery.md are integrated into PiaAGI.md (Section 3.6, 4.1). Further elaboration can be part of ongoing module refinement.
 - [x] Established Papers/PAPER_TEMPLATE.md for conceptual papers.
