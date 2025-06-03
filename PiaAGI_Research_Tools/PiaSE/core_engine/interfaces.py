@@ -1,17 +1,36 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pydantic import BaseModel, Field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, ByteString # Added ByteString for bytes
 
 class BaseDataModel(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+# New Percept Types
+class VisualPercept(BaseDataModel):
+    image_url: Optional[str] = None
+    raw_image_data: Optional[bytes] = None # Changed from ByteString to bytes
+    detected_objects: Optional[List[Dict[str, Any]]] = None
+
+class AuditoryPercept(BaseDataModel):
+    sound_url: Optional[str] = None
+    raw_sound_data: Optional[bytes] = None # Changed from ByteString to bytes
+    transcribed_text: Optional[str] = None
+    speaker_id: Optional[str] = None
+
+class TextualPercept(BaseDataModel):
+    text: str
+    source: Optional[str] = None
+
 class PerceptionData(BaseDataModel):
     timestamp: float
-    sensor_data: Dict[str, Any]  # e.g., {"visual": np.array, "text": "description"}
-    messages: List[Dict[str, Any]] = Field(default_factory=list)  # e.g., [{"sender": "system", "content": "event occurred"}]
-    agent_specific_data: Optional[Dict[str, Any]] = None # For data only relevant to a specific agent
+    visual_percepts: Optional[List[VisualPercept]] = None
+    auditory_percepts: Optional[List[AuditoryPercept]] = None
+    textual_percepts: Optional[List[TextualPercept]] = None
+    custom_sensor_data: Dict[str, Any] = Field(default_factory=dict) # Renamed from sensor_data
+    messages: List[Dict[str, Any]] = Field(default_factory=list)
+    agent_specific_data: Optional[Dict[str, Any]] = None
 
 class ActionCommand(BaseDataModel):
     action_type: str
