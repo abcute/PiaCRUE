@@ -1,5 +1,6 @@
-from typing import Dict, Callable, List, Any, DefaultDict
+from typing import Dict, Callable, List, Any, DefaultDict, Optional
 from collections import defaultdict
+import traceback # Added
 
 # Attempt relative import, common for package structures
 try:
@@ -11,69 +12,92 @@ except ImportError:
 
 class MessageBus:
     """
-    A simple message bus for inter-module communication within PiaCML.
+    A message bus for inter-module communication within PiaCML.
     Modules can subscribe to specific message types and publish messages to the bus.
+    Enhanced with filtering, conceptual asynchronous dispatch, and improved error handling.
     """
     def __init__(self):
         """
         Initializes the MessageBus.
         _subscribers is a dictionary where keys are message_types (str)
-        and values are lists of tuples, each containing (module_id, callback_function).
+        and values are lists of tuples, each containing
+        (module_id, callback_function, optional_filter_function).
         """
-        # Stores subscribers: message_type -> list of (module_id, callback_function)
-        self._subscribers: DefaultDict[str, List[tuple[str, Callable[[GenericMessage], None]]]] = defaultdict(list)
-        # print("MessageBus initialized.") # Optional: for debugging initialization
+        # Stores subscribers: message_type -> list of (module_id, callback, filter_func)
+        self._subscribers: DefaultDict[str, List[tuple[str, Callable[[GenericMessage], None], Optional[Callable[[GenericMessage], bool]]]]] = defaultdict(list)
+        # print("MessageBus (Phase 2 Enhanced) initialized.") # Optional
 
-    def subscribe(self, module_id: str, message_type: str, callback: Callable[[GenericMessage], None]):
+    def subscribe(self,
+                  module_id: str,
+                  message_type: str,
+                  callback: Callable[[GenericMessage], None],
+                  filter_func: Optional[Callable[[GenericMessage], bool]] = None):
         """
-        Subscribes a module to a specific message type.
+        Subscribes a module to a specific message type, with an optional filter.
 
         Args:
             module_id: The identifier of the subscribing module.
             message_type: The type of message to subscribe to (e.g., "PerceptData").
-            callback: The function to call when a message of this type is published.
-                      The callback should accept a GenericMessage object.
+            callback: The function to call when a message of this type is published
+                      and passes the filter (if any).
+            filter_func: An optional function that takes a GenericMessage and returns True
+                         if the callback should be invoked, False otherwise.
         """
-        # print(f"Module '{module_id}' attempting to subscribe to message type '{message_type}'") # Optional
+        # print(f"Module '{module_id}' attempting to subscribe to '{message_type}' with filter: {filter_func is not None}") # Optional
 
-        # Avoid duplicate subscriptions for the same module_id and callback to the same message_type
-        for sub_module_id, sub_callback in self._subscribers[message_type]:
-            if sub_module_id == module_id and sub_callback == callback:
-                # print(f"Module '{module_id}' already subscribed to '{message_type}' with this callback.") # Optional
+        # Avoid duplicate subscriptions for the same module_id, callback, AND filter_func
+        for sub_module_id, sub_callback, sub_filter in self._subscribers[message_type]:
+            if sub_module_id == module_id and sub_callback == callback and sub_filter == filter_func:
+                # print(f"Module '{module_id}' already subscribed to '{message_type}' with this callback and filter.") # Optional
                 return
-        self._subscribers[message_type].append((module_id, callback))
+        self._subscribers[message_type].append((module_id, callback, filter_func))
         # print(f"Module '{module_id}' successfully subscribed to '{message_type}'.") # Optional
 
-    def publish(self, message: GenericMessage):
+    def publish(self, message: GenericMessage, dispatch_mode: str = "synchronous"):
         """
-        Publishes a message to all subscribed modules for that message type.
+        Publishes a message to all relevant subscribed modules.
 
         Args:
             message: The GenericMessage object to publish.
+            dispatch_mode: "synchronous" or "asynchronous". For PoC, "asynchronous"
+                           is logged but executed synchronously.
         """
         message_type = message.message_type
-        # print(f"Publishing message type '{message_type}' from '{message.source_module_id}' with ID '{message.message_id}'") # Optional
+        # print(f"Publishing message type '{message_type}' from '{message.source_module_id}' (mode: {dispatch_mode})") # Optional
 
-        # Iterate over a copy of the subscriber list for safety,
-        # in case a callback tries to subscribe/unsubscribe during iteration.
         subscribers_to_notify = list(self._subscribers.get(message_type, []))
 
         if not subscribers_to_notify:
             # print(f"No subscribers for message type '{message_type}'.") # Optional
             return
 
-        for module_id, callback in subscribers_to_notify:
+        for module_id, callback, filter_func in subscribers_to_notify:
             try:
+                if filter_func:
+                    if not filter_func(message):
+                        # print(f"  Filter skipped notification for module '{module_id}' on message '{message.message_id}'") # Optional
+                        continue # Skip this callback if filter returns False
+
+                if dispatch_mode == "asynchronous":
+                    print(f"  INFO: Asynchronous dispatch requested for {module_id} on message '{message.message_id}' (actual async execution deferred for PoC).")
+                    # In a real implementation:
+                    # asyncio.create_task(callback(message)) or use a thread pool executor
+
                 # print(f"  Notifying module '{module_id}' for message type '{message_type}'") # Optional
                 callback(message)
             except Exception as e:
-                print(f"Error in callback for module '{module_id}' processing message type '{message_type}' (msg_id: {message.message_id}): {e}")
-                # Potentially add more robust error handling or logging here,
-                # e.g., logging the traceback.
+                err_type = type(e).__name__
+                tb_str = traceback.format_exc()
+                print(f"ERROR: Callback error in module '{module_id}' for message type '{message_type}' (msg_id: {message.message_id}). Exception: {err_type}('{e}'). Traceback:\n{tb_str}")
+                # Future: Add notification to an admin/monitoring component or
+                # mechanism to temporarily disable consistently failing callbacks.
 
     def unsubscribe(self, module_id: str, message_type: str, callback: Callable[[GenericMessage], None]):
         """
         Unsubscribes a module from a specific message type and callback.
+        For this PoC, it removes all subscriptions matching module_id and callback,
+        regardless of the filter function they were subscribed with.
+        A more precise unsubscribe would also take the filter_func if needed.
 
         Args:
             module_id: The identifier of the unsubscribing module.
@@ -82,22 +106,20 @@ class MessageBus:
         """
         if message_type in self._subscribers:
             original_count = len(self._subscribers[message_type])
+            # Remove entries where module_id and callback match. The filter is not considered for removal in this version.
             self._subscribers[message_type] = [
-                (sub_mod_id, sub_call) for sub_mod_id, sub_call in self._subscribers[message_type]
+                (sub_mod_id, sub_call, sub_filter) for sub_mod_id, sub_call, sub_filter in self._subscribers[message_type]
                 if not (sub_mod_id == module_id and sub_call == callback)
             ]
             if len(self._subscribers[message_type]) < original_count:
                 pass
-                # print(f"Module '{module_id}' unsubscribed from '{message_type}' with specific callback.") # Optional
-            # else:
-                # print(f"Module '{module_id}' with callback not found for unsubscribe from '{message_type}'.") # Optional
+                # print(f"Module '{module_id}' (callback: {callback.__name__}) unsubscribed from '{message_type}'.") # Optional
         # else:
-            # print(f"No subscribers for message type '{message_type}' to unsubscribe module '{module_id}'.") # Optional
+            # print(f"No subscribers for message type '{message_type}' to try unsubscribing module '{module_id}'.") # Optional
 
-
-    def get_subscribers_for_type(self, message_type: str) -> List[tuple[str, Callable[[GenericMessage], None]]]:
+    def get_subscribers_for_type(self, message_type: str) -> List[tuple[str, Callable[[GenericMessage], None], Optional[Callable[[GenericMessage], bool]]]]:
         """
-        Returns a list of (module_id, callback) tuples for a given message type.
+        Returns a list of (module_id, callback, filter_func) tuples for a given message type.
         Mainly for introspection or debugging.
         """
         return list(self._subscribers.get(message_type, [])) # Return a copy
