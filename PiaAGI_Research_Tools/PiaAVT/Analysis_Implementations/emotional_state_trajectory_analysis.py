@@ -1,29 +1,42 @@
 # emotional_state_trajectory_analysis.py
 
 import json
-import tempfile
-import os
+import os # Keep os for path operations if needed, but tempfile might not be.
 import statistics
+import argparse # Added for command-line arguments
 
 def load_and_parse_log_data_jsonl(log_file_path: str) -> list:
     """
     Reads a JSONL file, parses each line into a dictionary, and returns a list of these dictionaries.
     Handles potential FileNotFoundError and json.JSONDecodeError.
+    Skips empty lines. Sorts entries by timestamp.
+
+    Args:
+        log_file_path (str): The path to the JSONL log file.
+
+    Returns:
+        list: A list of log entry dictionaries, sorted by 'timestamp'.
+              Returns an empty list if the file is not found, parsing fails, or the file is empty.
     """
     parsed_logs = []
     try:
         with open(log_file_path, 'r') as f:
-            for line in f:
+            for line_number, line in enumerate(f, 1):
                 stripped_line = line.strip()
                 if not stripped_line:  # Skip empty lines
                     continue
                 try:
                     parsed_logs.append(json.loads(stripped_line))
                 except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON from line: {stripped_line} - {e}")
-                    # Optionally, skip corrupted lines or handle them differently
+                    print(f"Error decoding JSON from line {line_number} in {log_file_path}: {stripped_line} - {e}")
+        # Sort by timestamp to ensure chronological processing
+        parsed_logs.sort(key=lambda x: x.get("timestamp", float('inf'))) # float('inf') for entries missing timestamp
     except FileNotFoundError:
         print(f"Error: Log file not found at {log_file_path}")
+        return []
+    except Exception as e:
+        print(f"An unexpected error occurred during log file processing: {e}")
+        return []
     return parsed_logs
 
 def analyze_emotional_trajectory(parsed_logs: list, target_agent_id: str = None, target_simulation_run_id: str = None) -> dict:
@@ -151,81 +164,59 @@ def generate_summary_report_emotional(analysis_results: dict):
         print("No relevant emotional state update events found for the specified criteria.")
     print("--- End of Report ---")
 
+
 if __name__ == "__main__":
-    # Hypothetical JSONL log data
-    log_data_str = """
-    {"timestamp": 1678886400.1, "simulation_run_id": "sim_run_001", "agent_id": "agent_A", "event_type": "AGENT_ACTION", "event_data": {"action": "move_north"}}
-    {"timestamp": 1678886402.3, "simulation_run_id": "sim_run_001", "agent_id": "agent_A", "event_type": "EMOTION_STATE_UPDATED", "event_data": {"current_vad": {"valence": 0.1, "arousal": 0.05, "dominance": 0.1}, "previous_vad": {"valence": 0.0, "arousal": 0.0, "dominance": 0.0}}}
-    {"timestamp": 1678886403.5, "simulation_run_id": "sim_run_001", "agent_id": "agent_B", "event_type": "EMOTION_STATE_UPDATED", "event_data": {"current_vad": {"valence": -0.2, "arousal": 0.3, "dominance": 0.4}, "previous_vad": {"valence": -0.1, "arousal": 0.2, "dominance": 0.3}}}
-    {"timestamp": 1678886405.0, "simulation_run_id": "sim_run_001", "agent_id": "agent_A", "event_type": "EMOTION_STATE_UPDATED", "event_data": {"current_vad": {"valence": 0.15, "arousal": 0.1, "dominance": 0.1}, "previous_vad": {"valence": 0.1, "arousal": 0.05, "dominance": 0.1}}}
-    {"timestamp": 1678886406.0, "simulation_run_id": "sim_run_002", "agent_id": "agent_A", "event_type": "EMOTION_STATE_UPDATED", "event_data": {"current_vad": {"valence": 0.5, "arousal": 0.6, "dominance": 0.7}, "previous_vad": {"valence": 0.4, "arousal": 0.5, "dominance": 0.6}}}
-    {"timestamp": 1678886407.8, "simulation_run_id": "sim_run_001", "agent_id": "agent_A", "event_type": "EMOTION_STATE_UPDATED", "event_data": {"current_vad": {"valence": 0.2, "arousal": 0.15, "dominance": 0.05}, "previous_vad": {"valence": 0.15, "arousal": 0.1, "dominance": 0.1}}}
-    {"timestamp": 1678886408.2, "simulation_run_id": "sim_run_001", "agent_id": "agent_A", "event_type": "OTHER_EVENT", "event_data": {"info": "some other data"}}
-    {"timestamp": 1678886409.5, "simulation_run_id": "sim_run_001", "agent_id": "agent_A", "event_type": "EMOTION_STATE_UPDATED", "event_data": {"NO_current_vad": {}}}
+    parser = argparse.ArgumentParser(
+        description="Analyzes emotional state trajectory from PiaAVT JSONL log files.",
+        epilog="Example: python emotional_state_trajectory_analysis.py /path/to/your/logfile.jsonl --agent_id agent_A --sim_id sim_run_001"
+    )
+    parser.add_argument(
+        "log_file",
+        help="Path to the JSONL log file to analyze."
+    )
+    parser.add_argument(
+        "--agent_id",
+        help="Optional: Target agent ID to filter results for.",
+        default=None
+    )
+    parser.add_argument(
+        "--sim_id",
+        help="Optional: Target simulation run ID to filter results for.",
+        default=None
+    )
+    args = parser.parse_args()
 
-    """
-    # Filter out empty lines from log_data_str before writing to ensure clean JSONL
-    log_data_str_cleaned = "\n".join([line for line in log_data_str.splitlines() if line.strip()])
+    if not args.log_file: # Though argparse handles required arguments, this is a safeguard.
+        parser.print_usage()
+        print("Error: Log file path is required.")
+        exit(1)
 
+    print(f"Starting Emotional State Trajectory Analysis for log file: {args.log_file}...")
+    if args.agent_id:
+        print(f"Filtering for Agent ID: {args.agent_id}")
+    if args.sim_id:
+        print(f"Filtering for Simulation Run ID: {args.sim_id}")
 
-    temp_log_file_path = None # Initialize to prevent UnboundLocalError in finally if NamedTemporaryFile fails
-    try:
-        # Create a temporary file to write the log data
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".jsonl") as tmp_file:
-            tmp_file.write(log_data_str_cleaned)
-            temp_log_file_path = tmp_file.name
+    parsed_logs = load_and_parse_log_data_jsonl(args.log_file)
+
+    if parsed_logs:
+        print(f"\nSuccessfully parsed {len(parsed_logs)} log entries from {args.log_file}.")
         
-        print(f"Temporary log file created at: {temp_log_file_path}")
+        # Analyze emotional trajectory based on provided arguments
+        analysis_results = analyze_emotional_trajectory(
+            parsed_logs,
+            target_agent_id=args.agent_id,
+            target_simulation_run_id=args.sim_id
+        )
+        
+        # Generate summary report
+        generate_summary_report_emotional(analysis_results)
+        
+        # You can add more specific examples here if needed, for instance,
+        # always running an "all events" analysis for comparison:
+        # print("\nAnalyzing all EMOTION_STATE_UPDATED events (for comparison)...")
+        # analysis_all_emotions = analyze_emotional_trajectory(parsed_logs)
+        # generate_summary_report_emotional(analysis_all_emotions)
 
-        # 1. Load and parse log data
-        print("\nLoading and parsing log data...")
-        parsed_data = load_and_parse_log_data_jsonl(temp_log_file_path)
-        if not parsed_data:
-            print("No data parsed, exiting.")
-        else:
-            print(f"Successfully parsed {len(parsed_data)} log entries.")
-
-            # 2. Analyze emotional trajectory for a specific agent and simulation
-            print("\nAnalyzing emotional trajectory for agent_A in sim_run_001...")
-            analysis_results_A_sim1 = analyze_emotional_trajectory(
-                parsed_data,
-                target_agent_id="agent_A",
-                target_simulation_run_id="sim_run_001"
-            )
-            # 3. Generate summary report
-            generate_summary_report_emotional(analysis_results_A_sim1)
-
-            # Example: Analyze for an agent across all simulations
-            print("\nAnalyzing emotional trajectory for agent_B (all simulations)...")
-            analysis_results_B = analyze_emotional_trajectory(
-                parsed_data,
-                target_agent_id="agent_B"
-            )
-            generate_summary_report_emotional(analysis_results_B)
-            
-            # Example: Analyze for a simulation across all agents
-            print("\nAnalyzing emotional trajectory for sim_run_002 (all agents)...")
-            analysis_results_sim2 = analyze_emotional_trajectory(
-                parsed_data,
-                target_simulation_run_id="sim_run_002"
-            )
-            generate_summary_report_emotional(analysis_results_sim2)
-
-            # Example: Analyze all EMOTION_STATE_UPDATED events (no specific agent/sim)
-            print("\nAnalyzing all EMOTION_STATE_UPDATED events...")
-            analysis_all_emotions = analyze_emotional_trajectory(parsed_data)
-            generate_summary_report_emotional(analysis_all_emotions)
-
-            # Example: No matching logs
-            print("\nAnalyzing for a non-existent agent...")
-            analysis_no_match = analyze_emotional_trajectory(
-                parsed_data,
-                target_agent_id="agent_NonExistent"
-            )
-            generate_summary_report_emotional(analysis_no_match)
-
-    finally:
-        # Clean up the temporary file
-        if temp_log_file_path and os.path.exists(temp_log_file_path):
-            os.remove(temp_log_file_path)
-            print(f"\nTemporary log file {temp_log_file_path} deleted.")
+    else:
+        print(f"Log parsing returned no data from {args.log_file}. Ensure the file exists, is not empty, and contains valid JSONL.")

@@ -1,29 +1,42 @@
 # intrinsic_motivation_analysis.py
 
 import json
-import tempfile
-import os
+import os # Keep os for path operations if needed
+import argparse # Added for command-line arguments
 from collections import defaultdict
 
 def load_and_parse_log_data_jsonl(log_file_path: str) -> list:
     """
     Reads a JSONL file, parses each line into a dictionary, and returns a list of these dictionaries.
     Handles potential FileNotFoundError and json.JSONDecodeError.
-    Skips empty lines.
+    Skips empty lines. Sorts entries by timestamp.
+
+    Args:
+        log_file_path (str): The path to the JSONL log file.
+
+    Returns:
+        list: A list of log entry dictionaries, sorted by 'timestamp'.
+              Returns an empty list if the file is not found, parsing fails, or the file is empty.
     """
     parsed_logs = []
     try:
         with open(log_file_path, 'r') as f:
-            for line in f:
+            for line_number, line in enumerate(f, 1):
                 stripped_line = line.strip()
                 if not stripped_line:  # Skip empty lines
                     continue
                 try:
                     parsed_logs.append(json.loads(stripped_line))
                 except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON from line: {stripped_line} - {e}")
+                    print(f"Error decoding JSON from line {line_number} in {log_file_path}: {stripped_line} - {e}")
+        # Sort by timestamp to ensure chronological processing
+        parsed_logs.sort(key=lambda x: x.get("timestamp", float('inf'))) # float('inf') for entries missing timestamp
     except FileNotFoundError:
         print(f"Error: Log file not found at {log_file_path}")
+        return []
+    except Exception as e:
+        print(f"An unexpected error occurred during log file processing: {e}")
+        return []
     return parsed_logs
 
 def analyze_intrinsic_motivation(parsed_logs: list, target_agent_id: str = None, target_simulation_run_id: str = None) -> dict:
@@ -247,56 +260,56 @@ def generate_summary_report_intrinsic_motivation(analysis_results: dict):
             print(f"\n  ... and {len(analysis_results['intrinsic_goals_analyzed']) - 5} more intrinsic goals.")
     print("--- End of Report ---")
 
+
 if __name__ == "__main__":
-    log_data_str = """
-    {"timestamp": 1678886400.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_001", "agent_id": "agent_X", "event_type": "SIMULATION_START"}
-    {"timestamp": 1678886405.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_002", "agent_id": "agent_X", "event_type": "PERCEPTION_INPUT_PROCESSED", "event_data": {"source_stimulus_id": "stim_A", "novelty_score": 0.92, "complexity": 0.7}}
-    {"timestamp": 1678886406.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_003", "agent_id": "agent_X", "event_type": "MOTIVATIONAL_SALIENCE_CALCULATED", "event_data": {"stimulus_id": "stim_A", "salience_score": 0.85, "contributing_factors": ["novelty"]}}
-    {"timestamp": 1678886407.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_004", "agent_id": "agent_X", "event_type": "GOAL_CREATED", "event_data": {"goal_id": "intrinsic_cur_001", "type": "INTRINSIC_CURIOSITY", "target_stimulus_id": "stim_A", "source_trigger_event_id": "event_003", "urgency": 0.7}}
-    {"timestamp": 1678886408.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_005", "agent_id": "agent_X", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"action_name": "explore_stimulus", "target_id": "stim_A", "related_goal_id": "intrinsic_cur_001"}}
-    {"timestamp": 1678886409.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_006", "agent_id": "agent_X", "event_type": "INTRINSIC_REWARD_GENERATED", "event_data": {"reward_type": "CURIOSITY_SATISFIED", "value": 0.5, "related_goal_id": "intrinsic_cur_001"}}
-    {"timestamp": 1678886410.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_007", "agent_id": "agent_X", "event_type": "GOAL_STATUS_UPDATE", "event_data": {"goal_id": "intrinsic_cur_001", "status": "COMPLETED_SATISFIED"}}
+    parser = argparse.ArgumentParser(
+        description="Analyzes intrinsic motivation dynamics from PiaAVT JSONL log files (Conceptual).",
+        epilog="Example: python intrinsic_motivation_analysis.py /path/to/your/logfile.jsonl --agent_id agent_X --sim_id sim_intrinsic_01"
+    )
+    parser.add_argument(
+        "log_file",
+        help="Path to the JSONL log file to analyze."
+    )
+    parser.add_argument(
+        "--agent_id",
+        help="Optional: Target agent ID to filter results for.",
+        default=None
+    )
+    parser.add_argument(
+        "--sim_id",
+        help="Optional: Target simulation run ID to filter results for.",
+        default=None
+    )
+    args = parser.parse_args()
 
-    {"timestamp": 1678886415.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_008", "agent_id": "agent_X", "event_type": "AGENT_INTERNAL_STATE_UPDATED", "event_data": {"competence_need_level": 0.8, "available_skills": ["skill_A"]}}
-    {"timestamp": 1678886416.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_009", "agent_id": "agent_X", "event_type": "GOAL_CREATED", "event_data": {"goal_id": "intrinsic_comp_001", "type": "INTRINSIC_COMPETENCE", "target_skill_id": "skill_B", "source_trigger_event_id": "event_008", "urgency": 0.9}}
-    {"timestamp": 1678886417.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_010", "agent_id": "agent_X", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"action_name": "practice_skill", "skill_id": "skill_B", "related_goal_id": "intrinsic_comp_001"}}
-    {"timestamp": 1678886418.0, "simulation_run_id": "sim_intrinsic_01", "event_id": "event_011", "agent_id": "agent_Y", "event_type": "GOAL_CREATED", "event_data": {"goal_id": "intrinsic_cur_002_agentY", "type": "INTRINSIC_CURIOSITY", "target_stimulus_id": "stim_B", "urgency": 0.6}}
-    """
-    log_data_str_cleaned = "\n".join([line for line in log_data_str.splitlines() if line.strip()])
-    temp_log_file_path = None
-    try:
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".jsonl") as tmp_file:
-            tmp_file.write(log_data_str_cleaned)
-            temp_log_file_path = tmp_file.name
+    if not args.log_file:
+        parser.print_usage()
+        print("Error: Log file path is required.")
+        exit(1)
+
+    print(f"Starting Intrinsic Motivation Analysis for log file: {args.log_file}...")
+    if args.agent_id:
+        print(f"Filtering for Agent ID: {args.agent_id}")
+    if args.sim_id:
+        print(f"Filtering for Simulation Run ID: {args.sim_id}")
+
+    parsed_logs = load_and_parse_log_data_jsonl(args.log_file)
+
+    if parsed_logs:
+        print(f"\nSuccessfully parsed {len(parsed_logs)} log entries from {args.log_file}.")
         
-        print(f"Temporary log file created at: {temp_log_file_path}")
-
-        parsed_data = load_and_parse_log_data_jsonl(temp_log_file_path)
-        print(f"Successfully parsed {len(parsed_data)} log entries.")
-
-        print("\n--- Analyzing intrinsic motivation (all agents, sim_intrinsic_01) ---")
-        all_intrinsic_analysis = analyze_intrinsic_motivation(parsed_data, target_simulation_run_id="sim_intrinsic_01")
-        generate_summary_report_intrinsic_motivation(all_intrinsic_analysis)
-
-        print("\n--- Analyzing intrinsic motivation (agent_X, sim_intrinsic_01) ---")
-        agent_X_intrinsic_analysis = analyze_intrinsic_motivation(
-            parsed_data,
-            target_agent_id="agent_X",
-            target_simulation_run_id="sim_intrinsic_01"
+        analysis_results = analyze_intrinsic_motivation(
+            parsed_logs,
+            target_agent_id=args.agent_id,
+            target_simulation_run_id=args.sim_id
         )
-        generate_summary_report_intrinsic_motivation(agent_X_intrinsic_analysis)
         
-        print("\n--- Analyzing intrinsic motivation (agent_Y, sim_intrinsic_01) ---")
-        agent_Y_intrinsic_analysis = analyze_intrinsic_motivation(
-            parsed_data,
-            target_agent_id="agent_Y",
-            target_simulation_run_id="sim_intrinsic_01"
-        )
-        generate_summary_report_intrinsic_motivation(agent_Y_intrinsic_analysis)
+        generate_summary_report_intrinsic_motivation(analysis_results)
 
-    finally:
-        if temp_log_file_path and os.path.exists(temp_log_file_path):
-            os.remove(temp_log_file_path)
-            print(f"\nTemporary log file {temp_log_file_path} deleted.")
-        else:
-            print(f"\nTemporary log file was not created or already deleted.")
+        # Example of calling with specific parameters for demonstration, if desired
+        # print("\n--- Analyzing intrinsic motivation (all agents, specific sim_id from args if provided, else all) ---")
+        # all_intrinsic_analysis_specific_sim = analyze_intrinsic_motivation(parsed_logs, target_simulation_run_id=args.sim_id)
+        # generate_summary_report_intrinsic_motivation(all_intrinsic_analysis_specific_sim)
+
+    else:
+        print(f"Log parsing returned no data from {args.log_file}. Ensure the file exists, is not empty, and contains valid JSONL.")

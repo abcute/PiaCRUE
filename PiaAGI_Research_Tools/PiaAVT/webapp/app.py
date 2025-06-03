@@ -81,6 +81,7 @@ with st.sidebar:
                     st.session_state.filter_event_type = []
                     st.session_state.filter_start_time = ""
                     st.session_state.filter_end_time = ""
+                    st.session_state.filter_simulation_id = "" # Initialize new filter
                 else:
                     st.session_state.log_file_name = None
                     st.session_state.uploaded_file_name_cache = None
@@ -103,6 +104,7 @@ with st.sidebar:
         if 'filter_event_type' not in st.session_state: st.session_state.filter_event_type = []
         if 'filter_start_time' not in st.session_state: st.session_state.filter_start_time = ""
         if 'filter_end_time' not in st.session_state: st.session_state.filter_end_time = ""
+        if 'filter_simulation_id' not in st.session_state: st.session_state.filter_simulation_id = "" # Add new filter
 
         analyzer = st.session_state.pia_api.get_analyzer()
         if analyzer:
@@ -115,7 +117,8 @@ with st.sidebar:
                 st.session_state.filter_event_type = st.multiselect("Filter by Event Type(s)", options=unique_event_types, default=st.session_state.filter_event_type)
             except Exception as e:
                 st.error(f"Error populating filters: {e}")
-
+        
+        st.session_state.filter_simulation_id = st.text_input("Filter by Simulation ID", value=st.session_state.filter_simulation_id, placeholder="e.g., sim_run_001")
         st.session_state.filter_start_time = st.text_input(f"Filter by Start Timestamp ({DEFAULT_TIMESTAMP_FORMAT})", value=st.session_state.filter_start_time, placeholder="YYYY-MM-DDTHH:MM:SS.sssZ")
         st.session_state.filter_end_time = st.text_input(f"Filter by End Timestamp ({DEFAULT_TIMESTAMP_FORMAT})", value=st.session_state.filter_end_time, placeholder="YYYY-MM-DDTHH:MM:SS.sssZ")
     else:
@@ -128,22 +131,31 @@ if st.session_state.log_file_name:
 
     g_source_filter_list = st.session_state.filter_source if st.session_state.filter_source else []
     g_event_type_filter_list = st.session_state.filter_event_type if st.session_state.filter_event_type else []
+    g_simulation_id_filter = st.session_state.filter_simulation_id.strip() if st.session_state.filter_simulation_id else None
+
 
     # For API methods expecting a single Optional string, we'll pass the first selected one or None.
     # This is a simplification for the PoC. Proper handling of multi-selection might involve
     # iterating API calls or modifying the API to accept lists for these filters.
-    g_source_single = g_source_filter_list[0] if len(g_source_filter_list) == 1 else None
-    g_event_type_single = g_event_type_filter_list[0] if len(g_event_type_filter_list) == 1 else None
+    # For agent_id, we'll use the 'source' filter, assuming agent IDs might appear there.
+    # This might need refinement based on actual log structure.
+    g_agent_id_single_filter = g_source_filter_list[0] if len(g_source_filter_list) == 1 else None
+    g_event_type_single_filter = g_event_type_filter_list[0] if len(g_event_type_filter_list) == 1 else None
+    
     if len(g_source_filter_list) > 1:
-        st.sidebar.warning("Multiple sources selected. Stats/plot will use data from ALL selected sources (if API supports) or first/none if not.")
+        st.sidebar.warning("Multiple sources selected. For analyses requiring a single agent ID, the first selected source will be used if applicable. Other features might use all selected sources.")
     if len(g_event_type_filter_list) > 1:
-        st.sidebar.warning("Multiple event types selected. Stats/plot will use data from ALL selected types (if API supports) or first/none if not.")
+        st.sidebar.warning("Multiple event types selected. Specific stats/plots might use the first selected type or all, depending on the feature.")
 
 
-    tab_titles = ["📊 Overview & Stats", "📈 Time Series Plot", " S─S Event Sequences", "📜 Raw Logs"] # Added new tab & updated Raw Logs
+    tab_titles = [
+        "📊 Overview & Stats", "📈 Time Series Plot", " S─S Event Sequences", 
+        "🎯 Goal Dynamics", "😊 Emotional Trajectory", "💡 Intrinsic Motivation", "🚀 Task Performance",
+        "📜 Raw Logs"
+    ]
     tabs = st.tabs(tab_titles)
 
-    with tabs[0]:
+    with tabs[0]: # Overview & Stats
         st.header("Log Overview & Descriptive Statistics")
         st.write(f"**Loaded File:** {st.session_state.log_file_name}")
         st.write(f"**Total Entries (considering global filters if applicable to source/event counts):** {st.session_state.pia_api.get_log_count()}") # This count is pre-filter.
@@ -179,13 +191,13 @@ if st.session_state.log_file_name:
                 # The API's get_stats_for_field expects single source/event_type if provided
                 stats = st.session_state.pia_api.get_stats_for_field(
                     data_field_path=stats_field_path,
-                    source=g_source_single,
-                    event_type=g_event_type_single,
+                    source=g_agent_id_single_filter, # Using source filter as potential agent_id filter
+                    event_type=g_event_type_single_filter,
                     start_time_str=st.session_state.filter_start_time or None,
                     end_time_str=st.session_state.filter_end_time or None
                 )
                 if stats:
-                    st.write(f"**Statistics for '{stats_field_path}' (with global filters applied):**")
+                    st.write(f"**Statistics for '{stats_field_path}' (with global filters applied where applicable):**")
                     st.json(stats)
                 else:
                     st.warning(f"No statistics found or error for field '{stats_field_path}' with current filters.")
@@ -204,8 +216,8 @@ if st.session_state.log_file_name:
 
                 ts_data = st.session_state.pia_api.get_timeseries_for_field(
                     plot_field_path,
-                    source=g_source_single,
-                    event_type=g_event_type_single,
+                    source=g_agent_id_single_filter, # Using source filter as potential agent_id filter
+                    event_type=g_event_type_single_filter,
                     start_time_str=st.session_state.filter_start_time or None,
                     end_time_str=st.session_state.filter_end_time or None
                 )
@@ -252,17 +264,7 @@ if st.session_state.log_file_name:
             else:
                 st.warning("Please enter a field path to plot.")
 
-    with tabs[2]: # Log Listing
-        st.header("Log Listing")
-        # TODO: Implement log listing with pagination and full view of an entry
-        st.write("Full log listing functionality to be implemented.")
-        st.write("For now, use CLI: `python cli.py list_logs --limit N`")
-        if st.button("Show first 10 logs (raw JSON)", key="show_raw_logs"):
-            logs_to_show = st.session_state.pia_api.get_all_logs()[:10]
-            st.json(logs_to_show)
-
-
-    with tabs[3]: # Event Sequences
+    with tabs[2]: # Event Sequences
         st.header("Event Sequence Analysis")
 
         # Initialize session state for sequence inputs if not present
@@ -361,7 +363,197 @@ if st.session_state.log_file_name:
                     if not all(et.strip() for et in seq_def_str.split(',')):
                          st.error("Invalid sequence definition provided after attempting parsing.")
 
-    with tabs[3]: # Raw Logs Tab (was Log Listing)
+    with tabs[3]: # Goal Dynamics
+        st.header("Goal Dynamics Analysis")
+        if st.button("Run Goal Dynamics Analysis", key="run_goal_dynamics"):
+            with st.spinner("Analyzing goal dynamics..."):
+                results = st.session_state.pia_api.analyze_goal_dynamics()
+                if results:
+                    st.success("Goal dynamics analysis complete.")
+                    st.subheader("Analysis Results")
+                    
+                    # Display summary statistics if available (conceptual)
+                    # summary = results.get("summary_stats", {})
+                    # if summary:
+                    # st.write(f"Total Goals Analyzed: {summary.get('total_goals', 'N/A')}")
+                    # Add more relevant summary points here based on actual output structure
+
+                    goal_ids = list(results.keys())
+                    if not goal_ids:
+                        st.info("No goals found in the analysis results.")
+                    else:
+                        st.write(f"Found {len(goal_ids)} goals.")
+                        
+                        # Prepare data for potential dataframe or charts
+                        goal_data_for_df = []
+                        for goal_id, data in results.items():
+                            if isinstance(data, dict): # Ensure data is a dictionary
+                                goal_data_for_df.append({
+                                    "Goal ID": goal_id,
+                                    "Description": data.get("description", "N/A"),
+                                    "Type": data.get("type", "N/A"),
+                                    "Outcome": data.get("outcome", data.get("current_state", "N/A")),
+                                    "Creation Time": data.get("creation_time"),
+                                    "End Time": data.get("end_time"),
+                                    "Duration (s)": data.get("duration_seconds")
+                                })
+                        if goal_data_for_df:
+                            st.dataframe(pd.DataFrame(goal_data_for_df))
+
+                        # Example: Bar chart of goal types
+                        try:
+                            goal_types = [data.get("type", "UNKNOWN") for data in results.values() if isinstance(data, dict)]
+                            if goal_types:
+                                type_counts = pd.Series(goal_types).value_counts()
+                                st.subheader("Goal Counts by Type")
+                                st.bar_chart(type_counts)
+                        except Exception as e:
+                            st.warning(f"Could not generate goal type chart: {e}")
+
+                    st.subheader("Raw JSON Output (All Goals)")
+                    st.json(results) # Display raw JSON for detailed inspection
+                else:
+                    st.error("Goal dynamics analysis failed or returned no data. Ensure logs are loaded and contain relevant goal events.")
+
+    with tabs[4]: # Emotional Trajectory
+        st.header("Emotional Trajectory Analysis")
+        st.caption(f"Using global Simulation ID filter: '{g_simulation_id_filter if g_simulation_id_filter else 'None'}' and Agent ID (first selected Source): '{g_agent_id_single_filter if g_agent_id_single_filter else 'None'}'.")
+        if st.button("Run Emotional Trajectory Analysis", key="run_emotion_traj"):
+            with st.spinner("Analyzing emotional trajectory..."):
+                results = st.session_state.pia_api.analyze_emotional_trajectory(
+                    target_agent_id=g_agent_id_single_filter,
+                    target_simulation_run_id=g_simulation_id_filter
+                )
+                if results:
+                    st.success("Emotional trajectory analysis complete.")
+                    st.subheader("Summary Statistics")
+                    summary = results.get("summary_stats", {})
+                    st.write(f"Agent ID: {results.get('agent_id', 'N/A')}, Simulation Run ID: {results.get('simulation_run_id', 'N/A')}")
+                    st.write(f"Number of data points: {summary.get('count', 0)}")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("Avg Valence", f"{summary.get('avg_valence', 0):.2f}", f"Std: {summary.get('std_valence', 0):.2f}")
+                    col2.metric("Avg Arousal", f"{summary.get('avg_arousal', 0):.2f}", f"Std: {summary.get('std_arousal', 0):.2f}")
+                    col3.metric("Avg Dominance", f"{summary.get('avg_dominance', 0):.2f}", f"Std: {summary.get('std_dominance', 0):.2f}")
+
+                    trajectory = results.get("trajectory", [])
+                    if trajectory:
+                        st.subheader("Trajectory Plot (VAD)")
+                        df_trajectory = pd.DataFrame(trajectory)
+                        df_trajectory.set_index("timestamp", inplace=True) # Assuming timestamp is suitable for index
+                        st.line_chart(df_trajectory[['valence', 'arousal', 'dominance']])
+                        
+                        st.subheader("Trajectory Data")
+                        st.dataframe(df_trajectory)
+                    else:
+                        st.info("No trajectory data points found in the results.")
+                    
+                    st.subheader("Raw JSON Output")
+                    st.json(results)
+                else:
+                    st.error("Emotional trajectory analysis failed or returned no data. Ensure logs are loaded and contain EMOTION_STATE_UPDATED events.")
+
+    with tabs[5]: # Intrinsic Motivation
+        st.header("Intrinsic Motivation Analysis")
+        st.caption(f"Using global Simulation ID filter: '{g_simulation_id_filter if g_simulation_id_filter else 'None'}' and Agent ID (first selected Source): '{g_agent_id_single_filter if g_agent_id_single_filter else 'None'}'.")
+        if st.button("Run Intrinsic Motivation Analysis", key="run_intrinsic_motiv"):
+            with st.spinner("Analyzing intrinsic motivation..."):
+                results = st.session_state.pia_api.analyze_intrinsic_motivation(
+                    target_agent_id=g_agent_id_single_filter,
+                    target_simulation_run_id=g_simulation_id_filter
+                )
+                if results:
+                    st.success("Intrinsic motivation analysis complete.")
+                    st.subheader("Summary Statistics")
+                    summary = results.get("summary_stats", {})
+                    st.write(f"Agent ID: {results.get('agent_id', 'N/A')}, Simulation Run ID: {results.get('simulation_run_id', 'N/A')}")
+                    st.write(f"Total Intrinsic Goals: {summary.get('total_intrinsic_goals', 0)}")
+                    if summary.get('common_trigger_types'):
+                        st.write("Common Trigger Types:")
+                        st.json(summary.get('common_trigger_types'))
+                    if summary.get('common_impact_types'):
+                        st.write("Common Impact Types:")
+                        st.json(summary.get('common_impact_types'))
+
+                    analyzed_goals = results.get("intrinsic_goals_analyzed", [])
+                    if analyzed_goals:
+                        st.subheader(f"Analyzed Intrinsic Goals ({len(analyzed_goals)})")
+                        # Display as a DataFrame
+                        df_goals = pd.DataFrame(analyzed_goals)
+                        # Select and rename columns for better readability
+                        display_columns = {
+                            "goal_id": "Goal ID", "goal_type": "Type", 
+                            "creation_timestamp": "Created At",
+                            "trigger_characteristics_summary": "Trigger Summary",
+                            "impact_summary": "Impact Summary"
+                        }
+                        df_display = df_goals[list(display_columns.keys())].rename(columns=display_columns)
+                        st.dataframe(df_display)
+
+                        for goal in analyzed_goals[:5]: # Show details for first 5
+                            with st.expander(f"Details for Goal ID: {goal.get('goal_id')}"):
+                                st.json(goal)
+                    else:
+                        st.info("No intrinsic goals found in the analysis results.")
+                    
+                    st.subheader("Raw JSON Output")
+                    st.json(results)
+                else:
+                    st.error("Intrinsic motivation analysis failed or returned no data. Ensure logs are loaded and contain relevant GOAL_CREATED events of intrinsic types.")
+
+    with tabs[6]: # Task Performance
+        st.header("Task Performance Analysis")
+        st.caption(f"Using global Simulation ID filter: '{g_simulation_id_filter if g_simulation_id_filter else 'None'}' and Agent ID (first selected Source): '{g_agent_id_single_filter if g_agent_id_single_filter else 'None'}'.")
+        if st.button("Run Task Performance Analysis", key="run_task_perf"):
+            with st.spinner("Analyzing task performance..."):
+                results = st.session_state.pia_api.analyze_task_performance(
+                    target_agent_id=g_agent_id_single_filter,
+                    target_simulation_run_id=g_simulation_id_filter
+                )
+                if results:
+                    st.success("Task performance analysis complete.")
+                    st.subheader("Summary Statistics")
+                    summary = results.get("summary_stats", {})
+                    st.write(f"Agent ID: {results.get('agent_id', 'N/A')}, Simulation Run ID: {results.get('simulation_run_id', 'N/A')}")
+
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Total Tasks Analyzed", summary.get('total_tasks_analyzed', 0))
+                    col2.metric("Success Rate", f"{summary.get('success_rate', 0):.1%}")
+                    col3.metric("Failure Rate", f"{summary.get('failure_rate', 0):.1%}")
+                    col4.metric("Avg. Duration (Success)", f"{summary.get('avg_duration_success_seconds', 0):.2f}s" if summary.get('avg_duration_success_seconds') is not None else "N/A")
+                    
+                    tasks = results.get("tasks", [])
+                    if tasks:
+                        st.subheader(f"Task Details ({len(tasks)})")
+                        df_tasks = pd.DataFrame(tasks)
+                        # Select and rename columns
+                        task_cols = {
+                            "task_id": "Task ID", "status": "Status", "start_time": "Start Time", 
+                            "end_time": "End Time", "duration_seconds": "Duration (s)", 
+                            "action_count": "Action Count", "involved_agent_ids": "Involved Agents",
+                            "simulation_run_id": "Sim ID"
+                        }
+                        # Filter df_tasks for existing columns before rename
+                        existing_cols_in_df = [col for col in task_cols.keys() if col in df_tasks.columns]
+                        df_display_tasks = df_tasks[existing_cols_in_df].rename(columns=task_cols)
+                        st.dataframe(df_display_tasks)
+
+                        # Example: Bar chart of task statuses
+                        try:
+                            status_counts = df_tasks["status"].value_counts()
+                            st.subheader("Task Counts by Status")
+                            st.bar_chart(status_counts)
+                        except Exception as e:
+                            st.warning(f"Could not generate task status chart: {e}")
+                    else:
+                        st.info("No task data found in the results.")
+
+                    st.subheader("Raw JSON Output")
+                    st.json(results)
+                else:
+                    st.error("Task performance analysis failed or returned no data. Ensure logs are loaded and contain TASK_STATUS_UPDATE events.")
+
+    with tabs[7]: # Raw Logs Tab
         st.header("Raw Log Data")
         st.write("Displaying a limited number of raw log entries.")
         if st.button("Show first 20 logs (raw JSON)", key="show_raw_logs_detail"):

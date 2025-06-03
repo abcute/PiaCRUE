@@ -134,6 +134,27 @@ This is a non-exhaustive list of recommended `event_type` categories. Projects m
     *   `MODULE_WARNING`
     *   `MODULE_ERROR`
     *   `SIMULATION_CONTROL` (e.g., pause, resume, end)
+*   **Meta-Cognitive and Self-Development Events (New Section):**
+    *   `MCP_DEFINITION_REQUESTED`: Agent identifies a need for a Meta-Cognitive Primitive (MCP) to solve a class of problems or improve a process.
+    *   `MCP_GENERATED`: Agent successfully generates or defines a new MCP.
+    *   `MCP_MODIFIED`: Agent modifies an existing MCP based on experience or reflection.
+    *   `MCP_INVOKED`: Agent invokes/applies an MCP to a specific situation or problem.
+    *   `SELF_REFLECTION_TRIGGERED`: A specific event, internal state, or query triggers a self-reflection process.
+    *   `SELF_REFLECTION_INSIGHT`: An insight, conclusion, or hypothesis generated during self-reflection.
+    *   `SELF_CORRECTION_INITIATED`: Agent identifies a flaw in its knowledge, reasoning, or behavior and initiates a correction process.
+    *   `SELF_CORRECTION_APPLIED`: Agent applies a specific correction or modification.
+    *   `INTERNAL_SIMULATION_START`: Agent begins an internal "thought experiment" or simulation of a scenario.
+    *   `INTERNAL_SIMULATION_STEP`: A significant step or event within an ongoing internal simulation.
+    *   `INTERNAL_SIMULATION_OUTCOME`: The outcome or conclusion reached from an internal simulation.
+    *   `AGENT_TOOL_DESIGN_PROPOSED`: Agent proposes the design for a new internal "tool," cognitive strategy, or heuristic.
+    *   `AGENT_TOOL_CREATED`: Agent finalizes the creation or implementation of an internal tool/strategy.
+    *   `AGENT_TOOL_MODIFIED`: Agent modifies an existing internal tool/strategy.
+    *   `AGENT_TOOL_USED`: Agent utilizes one of its internal tools/strategies in a specific context.
+    *   `COGNITIVE_RECONFIGURATION_PROPOSED`: Agent considers significant changes to its own cognitive architecture, parameters, or process flows.
+    *   `COGNITIVE_RECONFIGURATION_APPLIED`: Agent implements changes to its cognitive architecture or core processing.
+    *   `LEARNING_STRATEGY_SELECTED`: Agent explicitly selects or switches its current learning strategy or approach.
+    *   `KNOWLEDGE_GAP_IDENTIFIED`: Agent explicitly identifies a gap in its knowledge base or understanding related to a specific topic or goal.
+    *   `EXPLANATION_GENERATED_SELF`: Agent generates an explanation for its own behavior or reasoning, for internal review or potential future use.
 
 
 ## 5. Example Log Entries
@@ -278,6 +299,70 @@ Below are illustrative examples. Refer to these when implementing logging within
     "agent_id_acting": "PiaAgent_Alpha01",
     "action_details": {"type": "speak", "content_length": 145, "recipient": "user001"},
     "environmental_outcome_summary": "Text message successfully displayed to user interface."
+  }
+}
+```
+
+**8. Meta-Cognitive - MCP Generated (New Example)**
+```json
+{
+  "timestamp": "2024-11-24T11:00:00.000Z",
+  "simulation_run_id": "run_mcp_dev_001",
+  "experiment_id": "exp_mcp_learning_002",
+  "agent_id": "PiaAgent_Beta02",
+  "source_component_id": "PiaCML.SelfModelModule_CognitiveControl",
+  "log_level": "INFO",
+  "event_type": "MCP_GENERATED",
+  "event_data": {
+    "mcp_id": "mcp_resource_allocation_v1",
+    "description": "Dynamically allocate cognitive resources based on task priority and estimated complexity.",
+    "source_problem_id": "problem_context_multi_task_inefficiency_004",
+    "complexity_score": 0.75,
+    "parameters": [{"name": "max_tasks", "type": "int", "default": 3}, {"name": "priority_threshold", "type": "float", "default": 0.8}],
+    "expected_outcome": "Improved throughput on high-priority tasks."
+  }
+}
+```
+
+**9. Meta-Cognitive - Self-Correction Initiated (New Example)**
+```json
+{
+  "timestamp": "2024-11-24T11:05:00.000Z",
+  "simulation_run_id": "run_mcp_dev_001",
+  "experiment_id": "exp_mcp_learning_002",
+  "agent_id": "PiaAgent_Beta02",
+  "source_component_id": "PiaCML.SelfModelModule_ReflectionEngine",
+  "log_level": "INFO",
+  "event_type": "SELF_CORRECTION_INITIATED",
+  "event_data": {
+    "trigger_event_id": "ltm_retrieval_fail_087",
+    "identified_flaw_description": "Repeated failure to retrieve 'concept_X' when context is 'context_Y', suggesting poor indexing or association.",
+    "proposed_correction_strategy": "Re-index 'concept_X' with additional keywords from 'context_Y'; strengthen association between 'concept_X' and 'related_concept_Z'.",
+    "target_module_for_correction": "PiaCML.ConcreteLongTermMemoryModule_Semantic"
+  }
+}
+```
+
+**10. Meta-Cognitive - Agent Tool Used (New Example)**
+```json
+{
+  "timestamp": "2024-11-24T11:10:00.000Z",
+  "simulation_run_id": "run_mcp_dev_001",
+  "experiment_id": "exp_mcp_learning_002",
+  "agent_id": "PiaAgent_Beta02",
+  "source_component_id": "PiaCML.PlanningModule_StrategyApplier",
+  "log_level": "DEBUG",
+  "event_type": "AGENT_TOOL_USED",
+  "event_data": {
+    "tool_id": "tool_analogy_mapper_v1.2",
+    "tool_name": "Analogy Mapping Strategy",
+    "input_parameters": {
+      "source_domain_problem_id": "problem_A_solved_001",
+      "target_domain_problem_id": "problem_B_current_005"
+    },
+    "outcome_summary": "Successfully mapped 2 core structural elements and proposed 1 candidate solution for problem_B.",
+    "confidence_in_outcome": 0.65,
+    "execution_time_ms": 120
   }
 }
 ```

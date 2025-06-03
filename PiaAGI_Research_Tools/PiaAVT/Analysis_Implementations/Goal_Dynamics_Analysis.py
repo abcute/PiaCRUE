@@ -4,51 +4,40 @@
 
 import json
 import time
+import argparse # Added for command-line arguments
 from collections import defaultdict
 
-# Hypothetical Log Data (JSONL format)
-# This data would typically come from the PrototypeLogger or a similar system.
-HYPOTHETICAL_LOG_DATA = """
-{"timestamp": 1678886400.5, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "MotivationalSystem", "event_type": "GOAL_CREATED", "event_data": {"goal_id": "G001", "description": "Explore novel object A", "type": "INTRINSIC_CURIOSITY", "initial_priority": 0.7, "source_trigger_event_id": "perception_event_123", "urgency": 0.7}}
-{"timestamp": 1678886401.0, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "TaskManager", "event_type": "GOAL_CREATED", "event_data": {"goal_id": "G002", "description": "Achieve task X (extrinsic)", "type": "EXTRINSIC_TASK", "initial_priority": 0.9, "source_trigger_event_id": "user_command_abc", "deadline": "1678887000.0"}}
-{"timestamp": 1678886402.0, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "GoalManager", "event_type": "GOAL_ACTIVATED", "event_data": {"goal_id": "G001", "reason": "Sufficient cognitive resources available."}}
-{"timestamp": 1678886402.3, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "GoalManager", "event_type": "GOAL_STATE_CHANGED", "event_data": {"goal_id": "G001", "old_state": "PENDING", "new_state": "ACTIVE", "reason": "Selected for execution."}}
-{"timestamp": 1678886402.5, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "GoalManager", "event_type": "GOAL_STATE_CHANGED", "event_data": {"goal_id": "G002", "old_state": "PENDING", "new_state": "ACTIVE", "reason": "High priority task initiated."}}
-{"timestamp": 1678886405.0, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "GoalManager", "event_type": "GOAL_PRIORITY_UPDATED", "event_data": {"goal_id": "G001", "old_priority": 0.7, "new_priority": 0.75, "reason": "No immediate threats, curiosity heightened."}}
-{"timestamp": 1678886408.0, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "GoalManager", "event_type": "GOAL_DEACTIVATED", "event_data": {"goal_id": "G001", "reason": "Temporarily focusing on G002 due to urgency."}}
-{"timestamp": 1678886410.2, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "GoalManager", "event_type": "GOAL_STATE_CHANGED", "event_data": {"goal_id": "G001", "old_state": "ACTIVE", "new_state": "ACHIEVED", "reason": "Novel object explored, information gained."}}
-{"timestamp": 1678886412.0, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "GoalManager", "event_type": "GOAL_STATE_CHANGED", "event_data": {"goal_id": "G002", "old_state": "ACTIVE", "new_state": "SUSPENDED", "reason": "Precondition for task X not met yet."}}
-{"timestamp": 1678886415.0, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "MotivationalSystem", "event_type": "GOAL_CREATED", "event_data": {"goal_id": "G003", "description": "Improve pathfinding skill", "type": "INTRINSIC_COMPETENCE", "initial_priority": 0.6, "source_trigger_event_id": "task_failure_event_456"}}
-{"timestamp": 1678886416.0, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "GoalManager", "event_type": "GOAL_STATE_CHANGED", "event_data": {"goal_id": "G003", "old_state": "PENDING", "new_state": "ACTIVE"}}
-{"timestamp": 1678886420.0, "simulation_run_id": "SIM_XYZ_001", "agent_id": "Agent007", "source_component_id": "GoalManager", "event_type": "GOAL_STATE_CHANGED", "event_data": {"goal_id": "G002", "old_state": "SUSPENDED", "new_state": "FAILED", "reason": "Timeout or persistent precondition failure."}}
-"""
-
-def load_and_parse_log_data(log_data_string: str) -> list:
+def load_and_parse_log_data_jsonl(log_file_path: str) -> list:
     """
-    Parses a string of JSONL log data into a list of dictionaries.
-    Each line in the string is expected to be a valid JSON object.
-    The list is sorted by timestamp.
+    Reads a JSONL file, parses each line into a dictionary, and returns a list of these dictionaries.
+    Handles potential FileNotFoundError and json.JSONDecodeError.
+    Skips empty lines. Sorts entries by timestamp.
 
     Args:
-        log_data_string (str): A string containing multiple JSON log entries,
-                               each on a new line.
+        log_file_path (str): The path to the JSONL log file.
 
     Returns:
         list: A list of log entry dictionaries, sorted by 'timestamp'.
-              Returns an empty list if parsing fails or input is empty.
+              Returns an empty list if the file is not found, parsing fails, or the file is empty.
     """
     parsed_logs = []
     try:
-        for line in log_data_string.strip().split('\n'):
-            if line: # Ensure line is not empty
-                parsed_logs.append(json.loads(line))
+        with open(log_file_path, 'r') as f:
+            for line_number, line in enumerate(f, 1):
+                stripped_line = line.strip()
+                if not stripped_line:  # Skip empty lines
+                    continue
+                try:
+                    parsed_logs.append(json.loads(stripped_line))
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON from line {line_number} in {log_file_path}: {stripped_line} - {e}")
         # Sort by timestamp to ensure chronological processing
-        parsed_logs.sort(key=lambda x: x.get("timestamp", 0))
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from log string: {e}")
-        return [] # Or raise an exception
+        parsed_logs.sort(key=lambda x: x.get("timestamp", float('inf'))) # float('inf') for entries missing timestamp
+    except FileNotFoundError:
+        print(f"Error: Log file not found at {log_file_path}")
+        return []
     except Exception as e:
-        print(f"An unexpected error occurred during log parsing: {e}")
+        print(f"An unexpected error occurred during log file processing: {e}")
         return []
     return parsed_logs
 
@@ -271,18 +260,33 @@ def generate_summary_report(analyzed_goals_data: dict):
 
 
 if __name__ == "__main__":
-    print("Starting conceptual Goal Dynamics Analysis...")
+    parser = argparse.ArgumentParser(
+        description="Analyzes goal dynamics from PiaAVT JSONL log files.",
+        epilog="Example: python Goal_Dynamics_Analysis.py /path/to/your/logfile.jsonl"
+    )
+    parser.add_argument(
+        "log_file",
+        help="Path to the JSONL log file to analyze."
+    )
+    args = parser.parse_args()
 
-    parsed_logs = load_and_parse_log_data(HYPOTHETICAL_LOG_DATA)
+    if not args.log_file:
+        parser.print_usage()
+        print("Error: Log file path is required.")
+        exit(1)
+
+    print(f"Starting Goal Dynamics Analysis for log file: {args.log_file}...")
+
+    parsed_logs = load_and_parse_log_data_jsonl(args.log_file)
 
     if parsed_logs:
-        print(f"\nSuccessfully parsed {len(parsed_logs)} log entries.")
+        print(f"\nSuccessfully parsed {len(parsed_logs)} log entries from {args.log_file}.")
         analyzed_data = analyze_goal_lifecycles(parsed_logs)
 
         if analyzed_data:
-            print(f"Successfully analyzed {len(analyzed_data)} goals.")
+            print(f"Successfully analyzed {len(analyzed_data)} unique goals.")
             generate_summary_report(analyzed_data)
         else:
-            print("Analysis returned no data.")
+            print("Analysis returned no data for the goals found in the logs.")
     else:
-        print("Log parsing returned no data.")
+        print(f"Log parsing returned no data from {args.log_file}. Ensure the file exists, is not empty, and contains valid JSONL.")
