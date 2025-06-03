@@ -183,7 +183,8 @@ This section outlines proposed future development directions for the PiaAGI Rese
 - [x] **Prototype Advanced LTM (Phase 1):** Implement foundational aspects of a richer LTM structure (e.g., basic graph representation for semantic LTM or structured episodic entries) based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
 - [x] **Prototype Advanced Motivational System (Phase 1):** Implement a computational model for one intrinsic motivation (e.g., curiosity) based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
 - [x] **Prototype Advanced Emotion Module (Phase 1):** Implement enhanced appraisal mechanisms based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
-- [x] **Implement Core Inter-Module Communication System:** Develop a basic version of the message-passing system defined in `PiaCML_InterModule_Communication.md`, supporting 2-3 key message types. (Data structures implemented) (Completed on 2024-03-08 by Jules)
+- [x] **Implement Core Inter-Module Communication System (Phase 1 - Basic Bus & Data Structures):** Defined core message data structures and implemented a basic synchronous in-memory Message Bus with subscribe/publish capabilities. (Completed on 2024-03-08 by Jules)
+- [ ] **Implement Core Inter-Module Communication System (Phase 2 - Advanced Bus Features & Full Module Integration):** Enhance Message Bus (e.g., with asynchronous capabilities, improved error handling, filtering options) and integrate it thoroughly with all relevant CML modules, replacing direct calls where appropriate.
 - [x] **Proof-of-Concept for an Architectural Maturation Hook:** Implement a basic mechanism for one of the conceptualized hooks (e.g., dynamic WM capacity adjustment) in a relevant module prototype. (Completed on 2024-03-08 by Jules)
 
 ### PiaSE (PiaAGI Simulation Environment) - Enhancements
