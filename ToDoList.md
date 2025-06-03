@@ -105,10 +105,10 @@
 - [x] Defined conceptual Agent-Environment API (EnvironmentInterface, Perception Data, Action Command Data) in PiaAGI_Simulation_Environment.md.
 - [x] Conceptually designed "TextBasedRoom" environment (state representation, perceptions, actions, dynamics) in PiaAGI_Simulation_Environment.md.
 - [x] Specified YAML-based scenario definition format for "TextBasedRoom" with "The Lost Key" example in PiaAGI_Simulation_Environment.md.
-- [x] Refine data structures for Agent-Environment API (perceptions, actions) with more detailed type hints or Pydantic models.
-- [x] Develop detailed specifications for core PiaSE components (Environment Abstraction Layer, Agent Management, Scenario Definition Module, Data Logging Service).
-- [x] Implement a prototype of the TextBasedRoom environment based on the conceptual design.
-- [x] Implement a prototype of the PiaSE core simulation engine.
+- [x] Refine data structures for Agent-Environment API (perceptions, actions) with more detailed type hints or Pydantic models. (Verified complete by Jules on 2024-07-31)
+- [x] Develop detailed specifications for core PiaSE components (Environment Abstraction Layer, Agent Management, Scenario Definition Module, Data Logging Service). (Verified complete by Jules on 2024-07-31)
+- [x] Implement a prototype of the TextBasedRoom environment based on the conceptual design. (Verified complete by Jules on 2024-07-31)
+- [x] Implement a prototype of the PiaSE core simulation engine. (Verified complete by Jules on 2024-07-31)
 - [x] Task: Designed a simple scenario for 'Curiosity and Information Seeking' (documented in `PiaAGI_Research_Tools/PiaSE/Scenarios/Curiosity_Scenario.md`).
 - [x] Task: Designed a simple scenario for 'Competence and Mastery' (documented in `PiaAGI_Research_Tools/PiaSE/Scenarios/Competence_Scenario.md`).
 - [x] Task: Implement the 'Curiosity in the Unknown Artifact Grid World' scenario (Curiosity_Scenario.md) in the PiaSE prototype.
