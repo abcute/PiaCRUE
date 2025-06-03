@@ -12,6 +12,13 @@ try:
     from .analyzers.event_sequencer import EventSequencer
     from .visualizers.timeseries_plotter import TimeseriesPlotter
     from .visualizers.state_visualizer import StateVisualizer
+
+    # Imports for refactored analysis scripts
+    from .Analysis_Implementations.Goal_Dynamics_Analysis import analyze_goal_lifecycles
+    from .Analysis_Implementations.emotional_state_trajectory_analysis import analyze_emotional_trajectory
+    from .Analysis_Implementations.intrinsic_motivation_analysis import analyze_intrinsic_motivation
+    from .Analysis_Implementations.task_performance_analysis import analyze_task_performance
+
 except ImportError:
     # Fallback for environments where the relative import doesn't work (e.g., running script directly)
     # This might happen if PiaAVT is not installed as a package and PYTHONPATH isn't set up.
@@ -22,6 +29,14 @@ except ImportError:
     from analyzers.event_sequencer import EventSequencer
     from visualizers.timeseries_plotter import TimeseriesPlotter
     from visualizers.state_visualizer import StateVisualizer
+
+    # Fallback imports for refactored analysis scripts
+    # Assuming Analysis_Implementations is a directory accessible in the fallback path
+    print("PiaAVT API: Attempting fallback imports for Analysis_Implementations.")
+    from Analysis_Implementations.Goal_Dynamics_Analysis import analyze_goal_lifecycles
+    from Analysis_Implementations.emotional_state_trajectory_analysis import analyze_emotional_trajectory
+    from Analysis_Implementations.intrinsic_motivation_analysis import analyze_intrinsic_motivation
+    from Analysis_Implementations.task_performance_analysis import analyze_task_performance
 
 
 class PiaAVTAPI:
@@ -370,15 +385,113 @@ class PiaAVTAPI:
             # This specific message is fine here, as it's a direct user feedback from API.
             return "API Error: Event sequencer not available. Load logs first."
 
-        sequences = self.find_event_sequences(
-            sequence_definition,
+        sequences = self.find_event_sequences( # type: ignore
+            sequence_definition, # type: ignore
             max_time_between_steps_seconds,
             max_intervening_logs,
             allow_repeats_in_definition
         )
         # The format_sequences_for_display method itself handles "No event sequences found."
-        return self.event_sequencer.format_sequences_for_display(sequences)
+        return self.event_sequencer.format_sequences_for_display(sequences) # type: ignore
 
+
+    # --- Integrated Analysis Methods from Analysis_Implementations ---
+
+    def analyze_goal_dynamics(self) -> Optional[Dict[str, Any]]:
+        """
+        Analyzes goal dynamics using the integrated Goal_Dynamics_Analysis script.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing the analysis results,
+                                      or None if logs are not loaded or an error occurs.
+        """
+        if not self.logging_system.get_log_data():
+            print("API Warning: No log data loaded. Cannot analyze goal dynamics.")
+            return None
+        
+        logs = self.logging_system.get_log_data()
+        try:
+            print("API: Calling analyze_goal_lifecycles...")
+            analysis_results = analyze_goal_lifecycles(logs)
+            return analysis_results
+        except Exception as e:
+            print(f"API Error: An error occurred during goal dynamics analysis: {e}")
+            return None
+
+    def analyze_emotional_trajectory(self, target_agent_id: Optional[str] = None, target_simulation_run_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Analyzes emotional trajectory using the integrated emotional_state_trajectory_analysis script.
+
+        Args:
+            target_agent_id (Optional[str]): Filter analysis for a specific agent ID.
+            target_simulation_run_id (Optional[str]): Filter analysis for a specific simulation run ID.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing the analysis results,
+                                      or None if logs are not loaded or an error occurs.
+        """
+        if not self.logging_system.get_log_data():
+            print("API Warning: No log data loaded. Cannot analyze emotional trajectory.")
+            return None
+
+        logs = self.logging_system.get_log_data()
+        try:
+            print(f"API: Calling analyze_emotional_trajectory (Agent: {target_agent_id}, Sim: {target_simulation_run_id})...")
+            analysis_results = analyze_emotional_trajectory(logs, target_agent_id, target_simulation_run_id)
+            return analysis_results
+        except Exception as e:
+            print(f"API Error: An error occurred during emotional trajectory analysis: {e}")
+            return None
+
+    def analyze_intrinsic_motivation(self, target_agent_id: Optional[str] = None, target_simulation_run_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Analyzes intrinsic motivation using the integrated intrinsic_motivation_analysis script.
+
+        Args:
+            target_agent_id (Optional[str]): Filter analysis for a specific agent ID.
+            target_simulation_run_id (Optional[str]): Filter analysis for a specific simulation run ID.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing the analysis results,
+                                      or None if logs are not loaded or an error occurs.
+        """
+        if not self.logging_system.get_log_data():
+            print("API Warning: No log data loaded. Cannot analyze intrinsic motivation.")
+            return None
+
+        logs = self.logging_system.get_log_data()
+        try:
+            print(f"API: Calling analyze_intrinsic_motivation (Agent: {target_agent_id}, Sim: {target_simulation_run_id})...")
+            analysis_results = analyze_intrinsic_motivation(logs, target_agent_id, target_simulation_run_id)
+            return analysis_results
+        except Exception as e:
+            print(f"API Error: An error occurred during intrinsic motivation analysis: {e}")
+            return None
+
+    def analyze_task_performance(self, target_agent_id: Optional[str] = None, target_simulation_run_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Analyzes task performance using the integrated task_performance_analysis script.
+
+        Args:
+            target_agent_id (Optional[str]): Filter analysis for a specific agent ID.
+            target_simulation_run_id (Optional[str]): Filter analysis for a specific simulation run ID.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing the analysis results,
+                                      or None if logs are not loaded or an error occurs.
+        """
+        if not self.logging_system.get_log_data():
+            print("API Warning: No log data loaded. Cannot analyze task performance.")
+            return None
+
+        logs = self.logging_system.get_log_data()
+        try:
+            print(f"API: Calling analyze_task_performance (Agent: {target_agent_id}, Sim: {target_simulation_run_id})...")
+            analysis_results = analyze_task_performance(logs, target_agent_id, target_simulation_run_id)
+            return analysis_results
+        except Exception as e:
+            print(f"API Error: An error occurred during task performance analysis: {e}")
+            return None
 
 # Example Usage (demonstrates the API)
 # This section is intended for direct script execution demonstration and simple testing.
@@ -497,12 +610,36 @@ if __name__ == "__main__":
 
         print("\nSearching with time limit (max 3s between steps, 0 intervening):")
         # This should find no sequences, as the gap between Write and Action is 5s.
-        formatted_sequences_timed = api.get_formatted_event_sequences(
-            seq_def_present,
+        formatted_sequences_timed = api.get_formatted_event_sequences( # type: ignore
+            seq_def_present, # type: ignore
             max_time_between_steps_seconds=3.0,
             max_intervening_logs=0
         )
         print(formatted_sequences_timed)
+        
+        # 7. Demonstrate newly integrated analysis functions
+        print("\n--- Integrated Analysis Function Examples ---")
+        goal_dynamics_results = api.analyze_goal_dynamics()
+        if goal_dynamics_results:
+            # Basic print, actual scripts have more detailed report generators
+            print(f"Goal Dynamics Analysis Results: Found {len(goal_dynamics_results)} goals.")
+            # api.display_formatted_dict(goal_dynamics_results, "Goal Dynamics Results") # Could be very verbose
+
+        emotional_trajectory_results = api.analyze_emotional_trajectory(target_agent_id="PiaSE.Agent0")
+        if emotional_trajectory_results:
+            print(f"Emotional Trajectory (PiaSE.Agent0): {emotional_trajectory_results['summary_stats']['count']} points.")
+            # api.display_formatted_dict(emotional_trajectory_results, "Emotional Trajectory Results for PiaSE.Agent0")
+
+        # For task performance and intrinsic motivation, the dummy logs might not have relevant events
+        # or the analysis functions might expect more specific data structures not present in the simple dummy logs.
+        # These are called to ensure the API plumbing works.
+        task_perf_results = api.analyze_task_performance(target_agent_id="PiaSE.Agent0")
+        if task_perf_results:
+            print(f"Task Performance (PiaSE.Agent0): {task_perf_results['summary_stats']['total_tasks_analyzed']} tasks analyzed.")
+
+        intrinsic_motiv_results = api.analyze_intrinsic_motivation(target_agent_id="PiaSE.Agent0")
+        if intrinsic_motiv_results:
+            print(f"Intrinsic Motivation (PiaSE.Agent0): {intrinsic_motiv_results['summary_stats']['total_intrinsic_goals']} intrinsic goals.")
 
     else:
         print(f"ERROR: Failed to load logs from {dummy_log_file}. API demo cannot proceed fully.")

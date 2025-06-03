@@ -1,30 +1,43 @@
 # task_performance_analysis.py
 
 import json
-import tempfile
-import os
+import os # Keep os for path operations if needed
 import statistics
+import argparse # Added for command-line arguments
 from collections import defaultdict
 
 def load_and_parse_log_data_jsonl(log_file_path: str) -> list:
     """
     Reads a JSONL file, parses each line into a dictionary, and returns a list of these dictionaries.
     Handles potential FileNotFoundError and json.JSONDecodeError.
-    Skips empty lines.
+    Skips empty lines. Sorts entries by timestamp.
+
+    Args:
+        log_file_path (str): The path to the JSONL log file.
+
+    Returns:
+        list: A list of log entry dictionaries, sorted by 'timestamp'.
+              Returns an empty list if the file is not found, parsing fails, or the file is empty.
     """
     parsed_logs = []
     try:
         with open(log_file_path, 'r') as f:
-            for line in f:
+            for line_number, line in enumerate(f, 1):
                 stripped_line = line.strip()
                 if not stripped_line:  # Skip empty lines
                     continue
                 try:
                     parsed_logs.append(json.loads(stripped_line))
                 except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON from line: {stripped_line} - {e}")
+                    print(f"Error decoding JSON from line {line_number} in {log_file_path}: {stripped_line} - {e}")
+        # Sort by timestamp to ensure chronological processing
+        parsed_logs.sort(key=lambda x: x.get("timestamp", float('inf'))) # float('inf') for entries missing timestamp
     except FileNotFoundError:
         print(f"Error: Log file not found at {log_file_path}")
+        return []
+    except Exception as e:
+        print(f"An unexpected error occurred during log file processing: {e}")
+        return []
     return parsed_logs
 
 def analyze_task_performance(parsed_logs: list, target_agent_id: str = None, target_simulation_run_id: str = None) -> dict:
@@ -266,86 +279,53 @@ def generate_summary_report_task_performance(analysis_results: dict):
 
 
 if __name__ == "__main__":
-    log_data_str = """
-    {"timestamp": 1678886400.0, "simulation_run_id": "sim_01", "agent_id": "system", "event_type": "SIMULATION_START"}
-    {"timestamp": 1678886401.0, "simulation_run_id": "sim_01", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_001", "status": "PROPOSED"}}
-    {"timestamp": 1678886402.0, "simulation_run_id": "sim_01", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_001", "status": "STARTED"}}
-    {"timestamp": 1678886403.0, "simulation_run_id": "sim_01", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"agent_id_acting": "agent_A", "action_name": "pickup_item", "object_id": "item_X"}}
-    {"timestamp": 1678886404.0, "simulation_run_id": "sim_01", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"agent_id_acting": "agent_A", "action_name": "move_to", "destination": "loc_Y"}}
-    {"timestamp": 1678886405.0, "simulation_run_id": "sim_01", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_001", "status": "COMPLETED_SUCCESS"}}
+    parser = argparse.ArgumentParser(
+        description="Analyzes task performance from PiaAVT JSONL log files.",
+        epilog="Example: python task_performance_analysis.py /path/to/your/logfile.jsonl --agent_id agent_A --sim_id sim_01"
+    )
+    parser.add_argument(
+        "log_file",
+        help="Path to the JSONL log file to analyze."
+    )
+    parser.add_argument(
+        "--agent_id",
+        help="Optional: Target agent ID to filter results for.",
+        default=None
+    )
+    parser.add_argument(
+        "--sim_id",
+        help="Optional: Target simulation run ID to filter results for.",
+        default=None
+    )
+    args = parser.parse_args()
 
-    {"timestamp": 1678886406.0, "simulation_run_id": "sim_01", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_002", "status": "STARTED"}}
-    {"timestamp": 1678886407.0, "simulation_run_id": "sim_01", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"agent_id_acting": "agent_B", "action_name": "activate_device", "device_id": "device_Z"}}
-    {"timestamp": 1678886408.0, "simulation_run_id": "sim_01", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"agent_id_acting": "agent_A", "action_name": "assist_activation", "target_agent": "agent_B"}}
-    {"timestamp": 1678886409.0, "simulation_run_id": "sim_01", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_002", "status": "COMPLETED_FAILURE", "reason": "Device malfunction"}}
+    if not args.log_file:
+        parser.print_usage()
+        print("Error: Log file path is required.")
+        exit(1)
 
-    {"timestamp": 1678886410.0, "simulation_run_id": "sim_01", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_003", "status": "STARTED"}}
-    {"timestamp": 1678886411.0, "simulation_run_id": "sim_01", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"agent_id_acting": "agent_A", "action_name": "gather_info"}}
-    {"timestamp": 1678886412.0, "simulation_run_id": "sim_01", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"agent_id_acting": "agent_A", "action_name": "report_info"}}
-    {"timestamp": 1678886413.0, "simulation_run_id": "sim_01", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_003", "status": "TIMED_OUT"}}
-    
-    {"timestamp": 1678886414.0, "simulation_run_id": "sim_01", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_004", "status": "STARTED", "details": "This task will remain ongoing in this log sample."}}
-    {"timestamp": 1678886415.0, "simulation_run_id": "sim_01", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"agent_id_acting": "agent_A", "action_name": "work_on_task_004"}}
+    print(f"Starting Task Performance Analysis for log file: {args.log_file}...")
+    if args.agent_id:
+        print(f"Filtering for Agent ID: {args.agent_id}")
+    if args.sim_id:
+        print(f"Filtering for Simulation Run ID: {args.sim_id}")
 
-    {"timestamp": 1678886401.5, "simulation_run_id": "sim_02", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_S2_001", "status": "STARTED"}}
-    {"timestamp": 1678886402.5, "simulation_run_id": "sim_02", "event_type": "AGENT_ACTION_EXECUTED_IN_ENV", "event_data": {"agent_id_acting": "agent_C", "action_name": "s2_action"}}
-    {"timestamp": 1678886403.5, "simulation_run_id": "sim_02", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_S2_001", "status": "COMPLETED_SUCCESS"}}
-    
-    {"timestamp": 1678886500.0, "simulation_run_id": "sim_01", "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_001", "status": "UPDATED", "progress": 0.5}}
-    {"timestamp": 1678886501.0, "event_type": "TASK_STATUS_UPDATE", "event_data": {"task_id": "task_no_sim_id", "status": "STARTED"}}
-    """
-    # Filter out empty lines from log_data_str before writing
-    log_data_str_cleaned = "\n".join([line for line in log_data_str.splitlines() if line.strip()])
-    temp_log_file_path = None
-    try:
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".jsonl") as tmp_file:
-            tmp_file.write(log_data_str_cleaned)
-            temp_log_file_path = tmp_file.name
+    parsed_logs = load_and_parse_log_data_jsonl(args.log_file)
+
+    if parsed_logs:
+        print(f"\nSuccessfully parsed {len(parsed_logs)} log entries from {args.log_file}.")
         
-        print(f"Temporary log file created at: {temp_log_file_path}")
-
-        parsed_data = load_and_parse_log_data_jsonl(temp_log_file_path)
-        print(f"Successfully parsed {len(parsed_data)} log entries.")
-
-        print("\n--- Analyzing all tasks in all simulations ---")
-        all_tasks_analysis = analyze_task_performance(parsed_data)
-        generate_summary_report_task_performance(all_tasks_analysis)
-
-        print("\n--- Analyzing tasks for agent_A in sim_01 ---")
-        agent_A_sim01_analysis = analyze_task_performance(
-            parsed_data,
-            target_agent_id="agent_A",
-            target_simulation_run_id="sim_01"
+        analysis_results = analyze_task_performance(
+            parsed_logs,
+            target_agent_id=args.agent_id,
+            target_simulation_run_id=args.sim_id
         )
-        generate_summary_report_task_performance(agent_A_sim01_analysis)
         
-        print("\n--- Analyzing tasks for agent_B in sim_01 ---")
-        agent_B_sim01_analysis = analyze_task_performance(
-            parsed_data,
-            target_agent_id="agent_B",
-            target_simulation_run_id="sim_01"
-        )
-        generate_summary_report_task_performance(agent_B_sim01_analysis)
+        generate_summary_report_task_performance(analysis_results)
 
-        print("\n--- Analyzing tasks in sim_02 ---")
-        sim02_analysis = analyze_task_performance(
-            parsed_data,
-            target_simulation_run_id="sim_02"
-        )
-        generate_summary_report_task_performance(sim02_analysis)
-        
-        print("\n--- Analyzing tasks for non_existent_agent in sim_01 ---")
-        non_existent_agent_analysis = analyze_task_performance(
-            parsed_data,
-            target_agent_id="non_existent_agent",
-            target_simulation_run_id="sim_01"
-        )
-        generate_summary_report_task_performance(non_existent_agent_analysis)
-
-
-    finally:
-        if temp_log_file_path and os.path.exists(temp_log_file_path):
-            os.remove(temp_log_file_path)
-            print(f"\nTemporary log file {temp_log_file_path} deleted.")
-        else:
-            print(f"\nTemporary log file was not created or already deleted.")
+        # Example: analyze all tasks in all simulations for comparison if desired
+        # print("\n--- Analyzing all tasks in all simulations (for comparison) ---")
+        # all_tasks_analysis_comparison = analyze_task_performance(parsed_logs)
+        # generate_summary_report_task_performance(all_tasks_analysis_comparison)
+    else:
+        print(f"Log parsing returned no data from {args.log_file}. Ensure the file exists, is not empty, and contains valid JSONL.")
