@@ -4,12 +4,24 @@ import time
 
 try:
     from .base_motivational_system_module import BaseMotivationalSystemModule
+    # For MessageBus integration
+    from .message_bus import MessageBus
+    from .core_messages import GenericMessage, GoalUpdatePayload
 except ImportError:
     # Fallback for standalone execution or if .base_motivational_system_module is not found in the current path
     class BaseMotivationalSystemModule: # Minimal stub for standalone running
         def manage_goals(self, action: str, goal_data: Optional[Dict[str, Any]] = None) -> Any: pass
         def get_active_goals(self, N: int = 0, min_priority: float = 0.0) -> List[Dict[str, Any]]: return []
         def update_motivation_state(self, new_state_info: Dict[str, Any]) -> bool: return False
+
+    # Fallback for MessageBus and core_messages if running standalone and they are in the same dir
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, GoalUpdatePayload
+    except ImportError:
+        MessageBus = None # type: ignore
+        GenericMessage = None # type: ignore
+        GoalUpdatePayload = None # type: ignore
 
 
 @dataclass
@@ -28,12 +40,21 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
     """
     A concrete implementation of the BaseMotivationalSystemModule using a structured Goal dataclass.
     Manages a list of goals and includes basic mechanisms for intrinsic motivation (curiosity).
+    Can publish GoalUpdate messages to a MessageBus.
     """
 
-    def __init__(self):
+    def __init__(self, message_bus: Optional[MessageBus] = None):
+        """
+        Initializes the ConcreteMotivationalSystemModule.
+
+        Args:
+            message_bus: An optional instance of MessageBus for publishing goal updates.
+        """
         self.goals: List[Goal] = []
         self.next_goal_id: int = 0
-        print("ConcreteMotivationalSystemModule (Phase 1 Enhanced) initialized.")
+        self.message_bus = message_bus
+        bus_status = "configured" if self.message_bus else "not configured"
+        print(f"ConcreteMotivationalSystemModule (Phase 1 Enhanced) initialized. Message bus {bus_status}.")
 
     def _generate_goal_id(self) -> str:
         """Generates a unique goal ID."""
@@ -70,7 +91,28 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
             parent_id=parent_id
         )
         self.goals.append(new_goal)
-        print(f"ConcreteMotSys: Added goal '{new_id}': {description} (Priority: {initial_priority})")
+        print(f"ConcreteMotSys: Added goal '{new_id}': {description} (Priority: {initial_priority}, Status: {new_goal.status})")
+
+        if self.message_bus and GenericMessage and GoalUpdatePayload:
+            payload = GoalUpdatePayload(
+                goal_id=new_goal.id,
+                goal_description=new_goal.description,
+                priority=new_goal.priority,
+                status=new_goal.status, # Should be "new" or "PENDING" typically
+                originator=new_goal.type, # Or a more specific originator if available
+                criteria_for_completion=getattr(new_goal, 'criteria_for_completion', None), # If added to Goal dataclass
+                associated_rewards_penalties=getattr(new_goal, 'associated_rewards_penalties', None), # If added
+                deadline=getattr(new_goal, 'deadline', None), # If added
+                parent_goal_id=new_goal.parent_id
+            )
+            goal_update_message = GenericMessage(
+                source_module_id="ConcreteMotivationalSystemModule_01", # Example ID
+                message_type="GoalUpdate",
+                payload=payload
+            )
+            self.message_bus.publish(goal_update_message)
+            print(f"ConcreteMotSys: Published GoalUpdate for new goal '{new_id}'.")
+
         return new_id
 
     def get_goal(self, goal_id: str) -> Optional[Goal]:
@@ -84,18 +126,55 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
         """Updates the status of an existing goal."""
         goal = self.get_goal(goal_id)
         if goal:
+            old_status = goal.status
             goal.status = new_status
-            print(f"ConcreteMotSys: Updated status of goal '{goal_id}' to '{new_status}'.")
+            print(f"ConcreteMotSys: Updated status of goal '{goal_id}' from '{old_status}' to '{new_status}'.")
+
+            if self.message_bus and GenericMessage and GoalUpdatePayload:
+                payload = GoalUpdatePayload(
+                    goal_id=goal.id,
+                    goal_description=goal.description,
+                    priority=goal.priority,
+                    status=goal.status,
+                    originator=goal.type, # Or a more specific originator
+                    parent_goal_id=goal.parent_id
+                    # Populate other fields as available/relevant for status update
+                )
+                goal_update_message = GenericMessage(
+                    source_module_id="ConcreteMotivationalSystemModule_01",
+                    message_type="GoalUpdate",
+                    payload=payload
+                )
+                self.message_bus.publish(goal_update_message)
+                print(f"ConcreteMotSys: Published GoalUpdate for status change of goal '{goal_id}'.")
             return True
         print(f"ConcreteMotSys: Goal '{goal_id}' not found for status update.")
         return False
 
     def update_goal_priority(self, goal_id: str, new_priority: float) -> bool:
-        """Updates the priority of an existing goal."""
+        """Updates the priority of an existing goal and publishes an update."""
         goal = self.get_goal(goal_id)
         if goal:
+            old_priority = goal.priority
             goal.priority = new_priority
-            print(f"ConcreteMotSys: Updated priority of goal '{goal_id}' to {new_priority:.2f}.")
+            print(f"ConcreteMotSys: Updated priority of goal '{goal_id}' from {old_priority:.2f} to {new_priority:.2f}.")
+
+            if self.message_bus and GenericMessage and GoalUpdatePayload:
+                payload = GoalUpdatePayload(
+                    goal_id=goal.id,
+                    goal_description=goal.description,
+                    priority=goal.priority,
+                    status=goal.status,
+                    originator=goal.type,
+                    parent_goal_id=goal.parent_id
+                )
+                goal_update_message = GenericMessage(
+                    source_module_id="ConcreteMotivationalSystemModule_01",
+                    message_type="GoalUpdate",
+                    payload=payload
+                )
+                self.message_bus.publish(goal_update_message)
+                print(f"ConcreteMotSys: Published GoalUpdate for priority change of goal '{goal_id}'.")
             return True
         print(f"ConcreteMotSys: Goal '{goal_id}' not found for priority update.")
         return False
