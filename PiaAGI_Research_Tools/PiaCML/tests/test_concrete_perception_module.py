@@ -1,25 +1,48 @@
 import unittest
 import os
 import sys
+import datetime # Added
+from unittest.mock import MagicMock # Added
 
-# Adjust path to import from the parent directory (PiaCML)
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Adjust path for consistent imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 try:
+    # Attempt to import directly from the package level due to __init__.py setup
+    from PiaAGI_Research_Tools.PiaCML import (
+        ConcretePerceptionModule,
+        MessageBus,
+        GenericMessage,
+        PerceptDataPayload
+    )
+except ModuleNotFoundError as e:
+    # print(f"Package-level import error in test_concrete_perception_module.py: {e}")
+    # print("Attempting direct local imports as fallback...")
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # Add PiaCML to path
     from concrete_perception_module import ConcretePerceptionModule
-except ImportError:
-    if 'ConcretePerceptionModule' not in globals(): # Fallback for different execution contexts
-        from PiaAGI_Hub.PiaCML.concrete_perception_module import ConcretePerceptionModule
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, PerceptDataPayload
+    except ImportError: # If they are truly missing during fallback
+        MessageBus = None
+        GenericMessage = None
+        PerceptDataPayload = None
+
 
 class TestConcretePerceptionModule(unittest.TestCase):
 
     def setUp(self):
+        # Note: self.perception is initialized without a bus for some tests
         self.perception = ConcretePerceptionModule()
+        self.mock_message_bus = MagicMock(spec=MessageBus)
+        self.perception_with_bus = ConcretePerceptionModule(message_bus=self.mock_message_bus)
+
         self._original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
+        # Comment out print suppression for easier debugging if tests fail
+        # sys.stdout = open(os.devnull, 'w')
 
     def tearDown(self):
-        sys.stdout.close()
+        # sys.stdout.close()
         sys.stdout = self._original_stdout
 
     def test_initial_status(self):
@@ -29,6 +52,12 @@ class TestConcretePerceptionModule(unittest.TestCase):
         self.assertIn("dict_mock", status['supported_modalities'])
         self.assertEqual(status['processing_log_count'], 0)
         self.assertEqual(status['last_processed_summary'], "None")
+        self.assertIsNone(self.perception.message_bus) # Default no bus
+
+    def test_initial_status_with_bus(self):
+        status = self.perception_with_bus.get_module_status()
+        self.assertIsNotNone(self.perception_with_bus.message_bus)
+
 
     def test_process_text_input_entities_and_actions(self):
         raw_text = "Hello Pia, can user see the big red apple and the small ball?"
@@ -43,18 +72,16 @@ class TestConcretePerceptionModule(unittest.TestCase):
         self.assertEqual(processed_repr['type'], "linguistic_analysis")
         self.assertEqual(processed_repr['text'], raw_text)
 
-        # Check entities (order might vary, so check for presence)
         entity_names_found = [e['name'] for e in processed_repr['entities']]
-        self.assertIn("PiaAGI", entity_names_found) # "pia" becomes "PiaAGI"
+        self.assertIn("PiaAGI", entity_names_found)
         self.assertIn("user", entity_names_found)
         self.assertIn("apple", entity_names_found)
         self.assertIn("ball", entity_names_found)
         self.assertEqual(len(processed_repr['entities']), 4)
 
-        # Check actions
         action_verbs_found = [a['verb'] for a in processed_repr['actions']]
-        self.assertIn("greet", action_verbs_found) # "Hello"
-        self.assertIn("see/look", action_verbs_found) # "see"
+        self.assertIn("greet", action_verbs_found)
+        self.assertIn("see/look", action_verbs_found)
         self.assertEqual(len(processed_repr['actions']), 2)
 
         status = self.perception.get_module_status()
@@ -81,7 +108,7 @@ class TestConcretePerceptionModule(unittest.TestCase):
         self.assertEqual(processed_repr['data'], raw_dict)
 
     def test_process_unsupported_modality(self):
-        raw_data = [1, 2, 3] # e.g. some list data from an unknown sensor
+        raw_data = [1, 2, 3]
         percept = self.perception.process_sensory_input(raw_data, "custom_list_sensor")
         processed_repr = percept['processed_representation']
         self.assertEqual(processed_repr['type'], "unsupported_modality")
@@ -94,6 +121,53 @@ class TestConcretePerceptionModule(unittest.TestCase):
         self.assertEqual(status['processing_log_count'], 2)
         self.assertTrue("second" in status['last_processed_summary'])
 
+    # --- Tests for MessageBus Integration ---
+    def test_process_and_publish_stimulus_with_bus(self):
+        """Test processing and publishing when message bus is configured."""
+        # self.perception_with_bus is initialized with a mock_bus in setUp
+
+        raw_stimulus_data = "Test stimulus for publishing"
+        modality = "text"
+        source_ts = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=10)
+
+        message_id = self.perception_with_bus.process_and_publish_stimulus(raw_stimulus_data, modality, source_ts)
+
+        self.assertIsNotNone(message_id)
+        # Default GenericMessage ID is a UUID string
+        self.assertIsInstance(message_id, str)
+
+        self.mock_message_bus.publish.assert_called_once()
+        args, kwargs = self.mock_message_bus.publish.call_args
+        self.assertEqual(len(args), 1) # Should be called with one positional arg (the message)
+        published_message = args[0]
+
+        self.assertIsInstance(published_message, GenericMessage)
+        self.assertEqual(published_message.message_type, "PerceptData")
+        self.assertEqual(published_message.source_module_id, "ConcretePerceptionModule_01") # Default in module
+
+        self.assertIsInstance(published_message.payload, PerceptDataPayload)
+        self.assertEqual(published_message.payload.modality, modality)
+        self.assertEqual(published_message.payload.content, f"processed_{raw_stimulus_data}")
+        self.assertEqual(published_message.payload.source_timestamp, source_ts)
+
+    def test_process_and_publish_stimulus_without_bus(self):
+        """Test that publishing is skipped if no message bus is configured."""
+        # self.perception is initialized without a bus in setUp
+        raw_stimulus_data = "Another stimulus"
+        modality = "dict_mock"
+        source_ts = datetime.datetime.now(datetime.timezone.utc)
+
+        # Suppress the "Warning: ... no message bus configured" print for this test
+        original_stdout_test = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+        message_id = self.perception.process_and_publish_stimulus(raw_stimulus_data, modality, source_ts)
+        sys.stdout.close()
+        sys.stdout = original_stdout_test # Restore stdout specifically for this test's suppression
+
+        self.assertIsNone(message_id)
+        # If self.perception had a mock bus, we could assert it wasn't called.
+        # Here, we rely on the None return and the warning print (which we suppressed).
+
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(argv=['first-arg-is-ignored'], exit=False)

@@ -13,12 +13,20 @@ class ConcreteWorkingMemoryModule(BaseWorkingMemoryModule):
     It uses simple strategies for adding, removing, and focusing on items.
     The BaseMemoryModule methods (store, retrieve, delete) are adapted for a
     transient, ID-based workspace rather than a persistent LTM-like backend.
-    Includes Proof-of-Concept hooks for dynamic capacity configuration.
+    Includes Proof-of-Concept hooks for dynamic capacity configuration
+    and MessageBus integration for receiving percepts.
     """
 
     DEFAULT_CAPACITY = 7 # Typical psychological estimate for WM capacity (e.g., Miller's Law)
 
-    def __init__(self, capacity: int = DEFAULT_CAPACITY):
+    def __init__(self, capacity: int = DEFAULT_CAPACITY, message_bus: Optional[Any] = None): # Using Any for MessageBus to avoid circular import if MessageBus imports WM
+        """
+        Initializes the ConcreteWorkingMemoryModule.
+
+        Args:
+            capacity: The maximum number of items the workspace can hold.
+            message_bus: An optional instance of MessageBus for subscribing to messages.
+        """
         self._workspace: List[Dict[str, Any]] = [] # Items are dicts, e.g., {'id': unique_id, 'content': data, 'salience': 0.5}
         self._capacity: int = capacity # This remains as the primary operational capacity for now.
         self._current_focus_id: Optional[str] = None # ID of the item currently in focus
@@ -29,7 +37,51 @@ class ConcreteWorkingMemoryModule(BaseWorkingMemoryModule):
             "max_items": capacity, # Initialize max_items with the constructor's capacity
             "max_item_complexity": 5 # Default complexity value
         }
-        print(f"ConcreteWorkingMemoryModule initialized with operational capacity {self._capacity} and params {self.capacity_params}.")
+
+        self.message_bus = message_bus
+        self.received_percepts: List[Any] = [] # Using Any for GenericMessage to avoid import here if core_messages not directly accessible
+                                                 # A better approach might be specific type hint if imports are clean.
+
+        if self.message_bus:
+            try:
+                # Ensure GenericMessage type is available for the callback type hint if possible
+                # from .core_messages import GenericMessage # This would be ideal
+                # For now, assume callback can handle Any or an implicit GenericMessage structure
+                self.message_bus.subscribe(
+                    module_id="ConcreteWorkingMemoryModule_01", # Example ID
+                    message_type="PerceptData",
+                    callback=self.handle_percept_data_message
+                )
+                print(f"ConcreteWorkingMemoryModule initialized with capacity {self._capacity}, params {self.capacity_params}, and subscribed to 'PerceptData' on message bus.")
+            except Exception as e: # Catch if MessageBus or GenericMessage type hints are problematic without import
+                print(f"ConcreteWorkingMemoryModule: Error during MessageBus subscription: {e}. Bus features may be limited.")
+                print(f"ConcreteWorkingMemoryModule initialized with operational capacity {self._capacity} and params {self.capacity_params}. Message bus NOT fully configured due to error.")
+        else:
+            print(f"ConcreteWorkingMemoryModule initialized with operational capacity {self._capacity} and params {self.capacity_params}. Message bus not provided.")
+
+
+    def handle_percept_data_message(self, message: Any) -> None: # Using Any for GenericMessage
+        """
+        Callback method to handle incoming PerceptData messages from the message bus.
+        For this PoC, it stores the received message.
+        """
+        # In a real scenario, you'd validate: if isinstance(message, GenericMessage) and isinstance(message.payload, PerceptDataPayload):
+        try:
+            # Assuming message is GenericMessage and payload is PerceptDataPayload for PoC
+            content_to_log = message.payload.content if hasattr(message, "payload") and hasattr(message.payload, "content") else "Unknown percept structure"
+            print(f"ConcreteWM: Received PerceptData message via bus. Content: '{str(content_to_log)[:100]}'") # Log snippet
+            self.received_percepts.append(message)
+
+            # Conceptual: Add the percept content to the workspace
+            # self.add_item_to_workspace(
+            #     item_content={"type": "percept", "modality": message.payload.modality, "data": message.payload.content},
+            #     salience=0.8, # Example salience for new percepts
+            #     context={"source_message_id": message.message_id, "received_via_bus": True}
+            # )
+        except AttributeError as e:
+            print(f"ConcreteWM: Error processing received message. Expected GenericMessage with PerceptDataPayload. Error: {e}")
+            self.received_percepts.append({"error": "AttributeError processing message", "raw_message": str(message)[:200]})
+
 
     def set_capacity_parameters(self, params: Dict[str, int]) -> None:
         """

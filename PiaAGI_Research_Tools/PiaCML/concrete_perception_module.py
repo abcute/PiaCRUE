@@ -1,10 +1,22 @@
 from typing import Any, Dict, List, Optional
+import datetime # Added for source_timestamp
 
 try:
     from .base_perception_module import BasePerceptionModule
+    from .message_bus import MessageBus # Added
+    from .core_messages import GenericMessage, PerceptDataPayload # Added
 except ImportError:
     # Fallback for scenarios where the relative import might fail
     from base_perception_module import BasePerceptionModule
+    # If MessageBus and core_messages are also in the same flat directory for fallback:
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, PerceptDataPayload
+    except ImportError: # If they are truly missing during fallback
+        MessageBus = None
+        GenericMessage = None
+        PerceptDataPayload = None
+
 
 class ConcretePerceptionModule(BasePerceptionModule):
     """
@@ -12,12 +24,20 @@ class ConcretePerceptionModule(BasePerceptionModule):
     This version performs very simple keyword spotting for text inputs to extract
     conceptual 'objects' and 'actions'. For dictionary inputs (mocking other
     modalities), it wraps them in a standard perceptual representation.
+    It can also publish processed percepts to a MessageBus.
     """
 
-    def __init__(self):
+    def __init__(self, message_bus: Optional[MessageBus] = None):
+        """
+        Initializes the ConcretePerceptionModule.
+
+        Args:
+            message_bus: An optional instance of MessageBus for publishing percepts.
+        """
         self._supported_modalities = ["text", "dict_mock"] # dict_mock for pre-structured data
         self._processing_log: List[str] = []
-        print("ConcretePerceptionModule initialized.")
+        self.message_bus = message_bus
+        print(f"ConcretePerceptionModule initialized. Message bus {'configured' if self.message_bus else 'not configured'}.")
 
     def process_sensory_input(self, raw_input: Any, modality: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -70,6 +90,57 @@ class ConcretePerceptionModule(BasePerceptionModule):
 
         print(f"ConcretePerceptionModule: Generated percept: {percept}")
         return percept
+
+    def process_and_publish_stimulus(self, raw_stimulus: Any, modality: str, source_timestamp: datetime.datetime) -> Optional[str]:
+        """
+        Processes a raw stimulus and publishes it as a PerceptData message via the message bus.
+
+        Args:
+            raw_stimulus: The raw input data.
+            modality: The modality of the stimulus (e.g., "text", "visual").
+            source_timestamp: The timestamp when the original stimulus was captured/generated.
+
+        Returns:
+            The message_id of the published GenericMessage if successful, otherwise None.
+        """
+        if not self.message_bus:
+            print("Warning: ConcretePerceptionModule has no message bus configured. Cannot publish.")
+            return None
+
+        if not PerceptDataPayload or not GenericMessage: # Check if imports failed during fallback
+            print("Error: Core message types (PerceptDataPayload or GenericMessage) not available. Cannot publish.")
+            return None
+
+        # Conceptual processing: For PoC, just package it.
+        # A real module would call self.process_sensory_input or similar internal logic.
+        # Here, we'll create a simplified content string for the payload.
+        processed_content = f"processed_{str(raw_stimulus)[:50]}" # Truncate for brevity
+
+        # For a more integrated approach, you might call self.process_sensory_input:
+        # structured_percept = self.process_sensory_input(raw_stimulus, modality, {"source_timestamp_original": source_timestamp})
+        # processed_content = structured_percept.get("processed_representation", {"error": "processing_failed"})
+
+
+        payload = PerceptDataPayload(
+            modality=modality,
+            content=processed_content,
+            source_timestamp=source_timestamp
+            # processing_timestamp is set by default in PerceptDataPayload
+        )
+
+        msg = GenericMessage(
+            source_module_id="ConcretePerceptionModule_01", # Example ID
+            message_type="PerceptData",
+            payload=payload
+        )
+
+        try:
+            self.message_bus.publish(msg)
+            print(f"ConcretePerceptionModule: Published PerceptData message '{msg.message_id}' for modality '{modality}'.")
+            return msg.message_id
+        except Exception as e:
+            print(f"Error: ConcretePerceptionModule failed to publish message: {e}")
+            return None
 
     def get_module_status(self) -> Dict[str, Any]:
         """Returns the current status of the Perception Module."""
