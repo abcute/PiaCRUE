@@ -1,0 +1,49 @@
+{
+    "name": "Simple Grid Navigation Curriculum",
+    "description": "A basic curriculum to test DSE: navigate to easy, then harder goal.",
+    "target_developmental_stage": "PiaSeedling_GridNav_Test",
+    "author": "DSE_Test_Framework",
+    "version": "0.1.0",
+    "steps": [
+        {
+            "order": 1,
+            "name": "Navigate to Easy Goal",
+            "prompt_reference": "conceptual_prompt_easy_goal.json",
+            "max_interactions": 50,
+            "completion_criteria": [
+                {"metric": "reached_goal_1", "operator": "==", "value": true}
+            ],
+            "adaptation_rules": [
+                ["step_attempts >= 3", "PROCEED"]
+            ],
+            "environment_config": {
+                "grid_size": [5,5], "start_pos": [0,0], "goal_pos": [0,2], "obstacles": []
+            },
+            "agent_config_overrides": {
+                "motivation": {"current_goal_details": {"type": "REACH_LOCATION", "target_coords": [0,2]}}
+            }
+        },
+        {
+            "order": 2,
+            "name": "Navigate to Harder Goal",
+            "prompt_reference": "conceptual_prompt_harder_goal.json",
+            "max_interactions": 100,
+            "completion_criteria": [
+                {"metric": "reached_goal_2", "operator": "==", "value": true}
+            ],
+            "adaptation_rules": [
+                ["step_attempts == 2 && reached_goal_2 == false", "APPLY_HINT_01"],
+                ["step_attempts >= 3 && reached_goal_2 == false", "FAIL_CURRICULUM"]
+            ],
+            "environment_config": {
+                "grid_size": [5,5], "start_pos": [0,0], "goal_pos": [4,4], "obstacles": [[2,2],[2,3]]
+            },
+            "agent_config_overrides": {
+                 "motivation": {"current_goal_details": {"type": "REACH_LOCATION", "target_coords": [4,4]}}
+            },
+            "hints": {
+                "HINT_01": {"type": "EVENT", "event_type": "ENVIRONMENT_HINT", "data": {"message": "Try exploring alternative paths."}}
+            }
+        }
+    ]
+}

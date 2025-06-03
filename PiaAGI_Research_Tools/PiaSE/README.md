@@ -146,6 +146,7 @@ PiaSE is envisioned to grow into a powerful platform for AGI research. Key futur
         *   Interface with PiaPES to load and interpret `DevelopmentalCurricula`.
         *   Adapt environmental parameters, task complexity, available information, or even simulated tutor behavior based on the agent's performance (metrics from PiaAVT) and its current position in a curriculum.
         *   Manage the state of an agent's progression through long-term developmental pathways.
+    *   *(See current progress below under "Dynamic Scenario Engine (DSE) for Developmental Scaffolding")*
 
 4.  **Human-in-the-Loop (HITL) Interaction:**
     *   Designing and implementing interfaces that allow human users to:
@@ -158,6 +159,29 @@ PiaSE is envisioned to grow into a powerful platform for AGI research. Key futur
 
 6.  **Multi-Agent Support:**
     *   Formalizing support for running multiple independent or interacting PiaAGI agents within the same environment, including defining inter-agent communication channels and observation capabilities.
+
+### Dynamic Scenario Engine (DSE) for Developmental Scaffolding
+
+PiaSE now includes an MVP (Minimum Viable Product) of a Dynamic Scenario Engine (DSE).
+
+**Purpose:** The DSE is designed to run agents through predefined curricula, which are sequences of tasks or learning experiences. It allows for the dynamic adaptation of scenarios based on (currently simulated/mocked) agent performance metrics and attempt counts, facilitating developmental scaffolding.
+
+**Key Components:**
+*   **`CurriculumManager`**: Located in `PiaAGI_Research_Tools/PiaSE/core_engine/dynamic_scenario_engine.py`, this component is responsible for loading curriculum JSON files (defining steps, completion criteria, adaptation rules, and configurations) and tracking an agent's progress through them.
+*   **`AdaptationDecisionModule`**: Also in `dynamic_scenario_engine.py`, this module evaluates an agent's performance against a curriculum step's `completion_criteria` and `adaptation_rules` to decide if the agent should proceed, repeat the step, branch to another step, or if a hint should be applied. It uses a `PiaAVTInterface` (currently mocked as `MockPiaAVTInterface`) to get performance data.
+
+**Engine Integration:**
+The `BasicSimulationEngine` (in `PiaAGI_Research_Tools/PiaSE/core_engine/basic_engine.py`) has been integrated with these DSE components. When initializing the engine, a mapping of agent IDs to curriculum filepaths can be provided. The engine's `run_simulation` loop then manages the DSE lifecycle for these agents, including:
+*   Loading and starting curricula.
+*   Executing curriculum steps (which may involve multiple agent-environment interactions, controlled by `max_interactions` in the curriculum step).
+*   Invoking the `AdaptationDecisionModule` to evaluate progress and make decisions.
+*   Updating agent progress in the `CurriculumManager`.
+*   (Conceptually) Reconfiguring the agent and environment based on the current curriculum step's `agent_config_overrides` and `environment_config_overrides`.
+
+**Example:**
+A practical example demonstrating the DSE can be found in `PiaAGI_Research_Tools/PiaSE/scenarios/dynamic_scaffolding_scenario.py`. This scenario uses a `RuleBasedGridAgent` in `GridWorld` and a sample curriculum defined in `PiaAGI_Research_Tools/PiaSE/scenarios/curricula/simple_grid_curriculum.json`. The scenario script also shows how to manually update the `MockPiaAVTInterface` to simulate performance data that drives DSE decisions.
+
+For more detailed information on the DSE's design, refer to the [Full DSE Design document](./docs/specifications/Dynamic_Scenario_Engine.md).
 
 PiaSE aims to be a critical testbed for empirically validating the PiaAGI framework and fostering the development of increasingly sophisticated and autonomous agents.
 ---
