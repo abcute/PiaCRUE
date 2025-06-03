@@ -181,7 +181,7 @@ This section outlines proposed future development directions for the PiaAGI Rese
 - [ ] **Architectural Maturation Hooks:** Conceptualize how PiaCML module interfaces could support dynamic parameter changes (e.g., WM capacity) or representation of new/strengthened inter-module connections.
 
 ### PiaSE (PiaAGI Simulation Environment) - Enhancements
-- [/] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules). (Conceptual design for instantiation guide and example scenarios completed by Jules on 2024-08-05).
+- [x] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules). (MVP implementation of PiaAGIAgent class, basic scenarios, unit tests, and refined guide completed by Jules on 2024-08-05).
 - [/] **Environment API & Library Expansion:** (Conceptual design for API extension and new environments; prototype of CraftingWorld and initial API updates completed by Jules on 2024-08-05).
   - [ ] Define a more robust Environment API for richer perceptions and actions.
   - [ ] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World").
