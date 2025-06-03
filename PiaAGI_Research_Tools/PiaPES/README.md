@@ -57,6 +57,9 @@ PiaPES is envisioned to evolve into a comprehensive suite. Key conceptual featur
 5.  **Enhanced Collaboration & Version Control:**
     *   Improve support for team-based development of prompts and curricula, potentially through tighter Git integration or features for commenting and reviewing within the PiaPES UI.
 
+**Conceptual Curriculum Example for MCP Generalization**
+An example developmental curriculum, `mcp_generalization_curriculum.json` (located in the `examples/` directory along with its constituent prompts and a README), has been designed to conceptually guide a PiaAGI agent through solving problems, reflecting on its strategies, and generalizing them into Meta-Cognitive Patterns (MCPs). This demonstrates how PiaPES can be used for advanced metacognitive scaffolding.
+
 PiaPES aims to be the central hub for designing the interactions and developmental pathways that shape PiaAGI agents, transforming prompt engineering into a more systematic and powerful methodology for AGI development.
 
 ---

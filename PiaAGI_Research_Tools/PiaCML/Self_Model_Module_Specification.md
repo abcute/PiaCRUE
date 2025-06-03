@@ -77,8 +77,16 @@ The Self-Model Module manages several interconnected data structures to represen
             *   `type`: (String) e.g., "ExternalAPI", "ConceptualFramework", "SelfGeneratedScript_MCP", "InternalCognitiveHeuristic".
             *   `description_and_purpose`: (String).
             *   `proficiency_level`: (Float or Categorical).
-            *   `operational_details`: (Object/Dict) How to use, parameters, input/output format, known limitations, dependencies.
-            *   `self_generated_mcp_details`: (Object/Dict, if applicable) Link to ALITA-inspired Model Context Protocol structure if the tool is self-generated/managed.
+            *   `operational_details`: (Object/Dict) How to use, parameters, input/output format, known limitations, dependencies. When a tool is a self-generated MCP, its `operational_details` field might be less structured initially and the `self_generated_mcp_details` provides this richer, evolving metadata.
+            *   `self_generated_mcp_details`: (Object/Dict, if applicable) Link to ALITA-inspired Model Context Protocol (MCP) structure if the tool is self-generated/managed. This includes:
+                *   `mcp_version`: (String) Conceptual version of the MCP (e.g., "1.0", "1.1-alpha", "2.0-refactored").
+                *   `mcp_status`: (String) Current operational status (e.g., "experimental", "validated_internal", "validated_external_review_pending", "deprecated", "archived").
+                *   `mcp_parameters`: (List of Objects/Dicts) Description of parameters the MCP accepts, e.g., `[{"name": "input_data_type", "type": "string", "description": "Specifies expected input format."}]`.
+                *   `mcp_description_logic`: (String) A detailed textual or structured description of the MCP's internal logic, steps, or algorithm.
+                *   `mcp_effectiveness_metrics`: (Object/Dict) Key-value pairs storing metrics about the MCP's performance, e.g., `{"success_rate": 0.95, "avg_execution_time_ms": 150, "last_tested_ts": "timestamp"}`.
+                *   `mcp_generation_context_ref`: (String/URI) Reference to an `AutobiographicalLogSummary` entry or `EpisodicLTM` ID detailing the context (problem, goal) that led to its generation.
+                *   `mcp_refinement_history_refs`: (List of Strings/URIs) References to `AutobiographicalLogSummary` or `DevelopmentalState.self_correction_records` entries detailing significant refinement iterations.
+                *   `mcp_dependencies`: (List of Strings/URIs, Optional) References to other tools or knowledge components it relies on.
             *   `usage_context_appropriateness`: (Dict) Mapping contexts/task-types to suitability scores.
     *   `learning_preferences_and_styles`: (Object/Dict) Self-assessed effectiveness of different learning strategies for itself (e.g., "Prefers_ExampleBasedLearning_for_Skills", "RL_Effective_for_Policy_Optimization"). (Ref: PiaAGI.md Section 3.1.3 on Meta-Learning).
 
@@ -231,10 +239,17 @@ This section outlines the conceptual mechanisms by which the Self-Model identifi
 ### 3.5. ALITA-Inspired Self-Correction Loop for Tool/Script Generation (Interaction with other modules)
 *   **Inputs:** Tool/script failure notification (from Behavior Generation sandbox), error details, original specifications, `CapabilityInventory`, `AutobiographicalLogSummary`.
 *   **Process:**
-    1.  Log failure (`AutobiographicalLogSummary`, `DevelopmentalState.self_correction_records`).
-    2.  Analyze failure with Learning Module (pinpoint error type). Emotion Module may provide affective tag.
-    3.  Propose modifications (script, design, environment) with Learning Module.
-    4.  Iterate (feed back to Planning/Behavior Generation) or abandon (flag issue in `CapabilityInventory`, generate new learning goal in `DevelopmentalState`).
+    *   **Step 1 (Logging & Initial Analysis):** "Log failure in `AutobiographicalLogSummary` and create/update an entry in `DevelopmentalState.self_correction_records`. The **Emotion Module** might tag this event with an affective state (e.g., 'frustration,' 'surprise'), influencing the priority of correction via the **Motivational System**."
+    *   **Step 2 (Diagnostic Analysis - SelfModel & LearningModule):** "The **SelfModelModule** retrieves the MCP's current definition (from `CapabilityInventory.tools.[mcp_id].self_generated_mcp_details`) and relevant contextual data (from `mcp_generation_context_ref`, `AutobiographicalLogSummary`). The **LearningModule(s)**, guided by the SelfModel, analyze the failure type (e.g., logical error, incorrect parameter handling, unmet dependency, flawed underlying assumption in its design). This may involve re-simulating parts of the MCP's logic internally."
+    *   **Step 3 (Modification Proposal - LearningModule & SelfModel):** "Based on the diagnosis, the **LearningModule(s)** propose specific modifications. These could be changes to the `mcp_description_logic`, `mcp_parameters`, or suggestions to acquire new knowledge/skills if a fundamental capability gap is identified. The **SelfModelModule** evaluates these proposals against its overall capabilities and ethical framework."
+    *   **Step 4 (Iteration & Re-testing - BehaviorGeneration & SelfModel):** "Accepted modifications are sent to the **BehaviorGenerationModule** to re-generate or modify the MCP script/logic. The updated MCP is then re-tested in the internal sandbox. The outcome is reported back to the **SelfModelModule**."
+    *   **Step 5 (Update MCP Record - SelfModel):** "The **SelfModelModule** updates the MCP's record in `CapabilityInventory.tools.[mcp_id].self_generated_mcp_details`:
+        *   Increment `mcp_version` (e.g., "1.0" -> "1.1-alpha").
+        *   Update `mcp_effectiveness_metrics` based on test results.
+        *   Add a reference to the `self_correction_records` entry in `mcp_refinement_history_refs`.
+        *   If successful after sufficient testing, change `mcp_status` (e.g., from "experimental" to "validated_internal").
+        *   If consistently failing and unfixable with current capabilities, change `mcp_status` to "deprecated" and potentially generate a new learning goal in `DevelopmentalState` to address the underlying issue."
+    This iterative refinement loop allows the PiaAGI to not only create MCPs but also to maintain, improve, and manage their lifecycle based on empirical performance and evolving understanding.
 *   **Output:** Refined tool/script specs; updated `CapabilityInventory`; new learning goals.
 
 ## 4. Key Interactions with Other CML Modules
