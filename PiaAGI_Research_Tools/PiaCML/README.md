@@ -64,7 +64,7 @@ PiaCML is envisioned to evolve significantly to fully support the PiaAGI framewo
 
 1.  **Advanced Module Implementations:**
     *   Developing more sophisticated concrete implementations for all modules, moving beyond MVPs to versions that more accurately reflect the depth of psychological theories outlined in `PiaAGI.md`.
-    *   **Self-Model:** Enhancing with robust metacognitive capabilities (e.g., self-monitoring of confidence, bias detection) and a dynamic, learnable ethical framework.
+    *   **Self-Model:** Enhancing with robust metacognitive capabilities (e.g., self-monitoring of confidence, bias detection) and a dynamic, learnable ethical framework. Further conceptual details on how the `SelfModelModule` will represent, manage, and iteratively refine self-generated Meta-Cognitive Patterns (MCPs) within its `CapabilityInventory` have been elaborated in the `Self_Model_Module_Specification.md`. This includes versioning, status tracking, and the self-correction loop for MCPs.
     *   **Long-Term Memory (LTM):** Implementing richer LTM structures, such as knowledge graphs for semantic LTM, and episodic memories that capture emotional valence and causal relationships.
     *   **Motivational System:** Creating computational models for intrinsic motivations (e.g., curiosity, competence, coherence) that can dynamically generate agent goals.
     *   **Emotion Module:** Designing appraisal mechanisms more deeply integrated with the World Model, Self-Model, and LTM to produce nuanced emotional responses.

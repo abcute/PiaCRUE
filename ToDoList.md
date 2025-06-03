@@ -230,6 +230,8 @@ This section outlines proposed future development directions for the PiaAGI Rese
 ### Cross-Cutting: Tooling for AGI's Internalization of Developer Tools & MCPs
 - [x] **PiaAVT Logging for Meta-Cognition:** Formally propose and document new event types in `Logging_Specification.md` related to AGI self-analysis, internal simulation, MCP generation, and cognitive reconfiguration. (`Logging_Specification.md` updated with detailed meta-cognitive event types)
 - [x] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles (e.g., correlating `AGENT_MCP_GENERATED` with improved task performance). (Conceptual design document `Advanced_Analyses_Meta_Cognition.md` created)
-- [ ] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
-- [ ] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
+- [x] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
+    *   (Conceptual design for curriculum segment completed 2024-08-06 with the creation of `mcp_generalization_curriculum.json` and related prompts.)
+- [x] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
+    *   (Conceptual design for MCP management in Self-Model completed 2024-08-06 with updates to `Self_Model_Module_Specification.md`.)
 - [ ] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02)

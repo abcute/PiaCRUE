@@ -1,0 +1,50 @@
+```json
+{
+    "__type__": "DevelopmentalCurriculum",
+    "name": "Meta-Cognition: MCP Generalization from Problem Solving",
+    "description": "A 3-step curriculum to guide PiaAGI in solving related problems, reflecting on solution patterns, and generalizing them into conceptual Meta-Cognitive Patterns (MCPs).",
+    "target_developmental_stage": "PiaSapling (Late Stage) to PiaArbor (Early Stage)",
+    "author": "Jules_PiaAGI_Dev",
+    "version": "1.0",
+    "steps": [
+        {
+            "__type__": "CurriculumStep",
+            "name": "Problem Solving Practice",
+            "order": 1,
+            "prompt_reference": "PiaAGI_Research_Tools/PiaPES/examples/mcp_gen_prompt_step1_problem_solving.json",
+            "conditions": "Agent has basic text manipulation and problem decomposition skills. Developmental Stage: PiaSapling_Late.",
+            "learning_objectives": ["Successfully solve a series of related problems.", "Articulate cognitive steps taken for each solution."],
+            "success_criteria": ["All problems solved correctly.", "Cognitive steps for each problem are clearly logged and accessible to the agent for the next step."],
+            "piase_scenario_reference": null,
+            "piaavt_metrics_to_track": ["task_success_rate", "solution_step_clarity_qualitative"],
+            "notes": "Focus is on generating raw material (solved problems and process traces) for reflection."
+        },
+        {
+            "__type__": "CurriculumStep",
+            "name": "Reflection and Pattern Identification",
+            "order": 2,
+            "prompt_reference": "PiaAGI_Research_Tools/PiaPES/examples/mcp_gen_prompt_step2_reflection.json",
+            "conditions": "Successful completion of 'Problem Solving Practice' step. Solution steps are available.",
+            "learning_objectives": ["Agent reflects on its own problem-solving processes.", "Agent identifies common strategies or patterns across multiple solutions."],
+            "success_criteria": ["Agent identifies and describes at least two distinct common patterns from its previous solutions.", "Patterns are described with sufficient clarity for generalization."],
+            "piase_scenario_reference": null,
+            "piaavt_metrics_to_track": ["pattern_identification_count", "pattern_description_clarity_qualitative"],
+            "notes": "Requires agent to query its own (conceptual) LTM/WM for past cognitive traces."
+        },
+        {
+            "__type__": "CurriculumStep",
+            "name": "MCP Generalization and Definition",
+            "order": 3,
+            "prompt_reference": "PiaAGI_Research_Tools/PiaPES/examples/mcp_gen_prompt_step3_generalization.json",
+            "conditions": "Successful completion of 'Reflection and Pattern Identification' step. Common patterns are identified.",
+            "learning_objectives": ["Agent generalizes identified patterns into abstract, reusable strategies (MCPs).", "Agent defines basic metadata for these conceptual MCPs (name, purpose, conceptual I/O, core logic).", "Agent conceptually stores MCPs in its SelfModel.CapabilityInventory."],
+            "success_criteria": ["Agent defines at least one conceptual MCP based on an identified pattern.", "The MCP definition includes name, purpose, conceptual I/O, and core logic.", "Agent confirms conceptual storage of the MCP."],
+            "piase_scenario_reference": null,
+            "piaavt_metrics_to_track": ["mcp_definition_completeness_score", "mcp_generalization_quality_qualitative"],
+            "notes": "This is a key step towards self-improvement and tool creation. The MCP is conceptual at this stage."
+        }
+    ],
+    "overall_learning_goals": ["Enhance agent's metacognitive abilities.", "Develop foundational skills for self-generating cognitive tools (MCPs).", "Promote abstraction and generalization from concrete experiences."],
+    "evaluation_strategy": "Review of agent's output at each step (problem solutions, identified patterns, MCP definitions). Qualitative assessment of the clarity and plausibility of generated MCPs. Future: Integrate with PiaAVT to track if these MCPs are later used by the agent and improve performance."
+}
+```
