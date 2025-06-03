@@ -187,13 +187,13 @@ This section outlines proposed future development directions for the PiaAGI Rese
 - [ ] **Proof-of-Concept for an Architectural Maturation Hook:** Implement a basic mechanism for one of the conceptualized hooks (e.g., dynamic WM capacity adjustment) in a relevant module prototype.
 
 ### PiaSE (PiaAGI Simulation Environment) - Enhancements
-- [ ] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules).
-- [ ] **Environment API & Library Expansion:**
+- [/] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules). (Conceptual design for instantiation guide and example scenarios completed by Jules on 2024-08-05).
+- [/] **Environment API & Library Expansion:** (Conceptual design for API extension and new environments; prototype of CraftingWorld and initial API updates completed by Jules on 2024-08-05).
   - [ ] Define a more robust Environment API for richer perceptions and actions.
   - [ ] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World").
   - [ ] Implement one of the newly conceptualized environment types as a prototype.
-- [ ] **Dynamic Scenario Engine for Scaffolding:** Enhance PiaSE's scenario manager to allow dynamic adjustments (complexity, hints, new challenges) based on agent performance (from PiaAVT) or curriculum triggers (from PiaPES).
-- [ ] **Human-in-the-Loop (HITL) Interface:** Conceptualize how a human user could interact with a PiaSE simulation in real-time (e.g., as a tutor, evaluator, or another agent).
+- [/] **Dynamic Scenario Engine for Scaffolding:** Enhance PiaSE's scenario manager to allow dynamic adjustments (complexity, hints, new challenges) based on agent performance (from PiaAVT) or curriculum triggers (from PiaPES). (Conceptual design completed by Jules on 2024-08-05).
+- [x] **Human-in-the-Loop (HITL) Interface:** Conceptualize how a human user could interact with a PiaSE simulation in real-time (e.g., as a tutor, evaluator, or another agent). (Conceptual design completed by Jules on 2024-08-05).
 
 ### PiaPES (PiaAGI Prompt Engineering Suite) - Enhancements
 - [x] **Developmental Curriculum Designer - Advanced:**
