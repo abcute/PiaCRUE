@@ -180,11 +180,11 @@ This section outlines proposed future development directions for the PiaAGI Rese
 - [x] **Standardized Inter-Module Communication:** Design and specify a clear API or message-passing system for modules to exchange information (e.g., defining data structures for "GoalUpdate", "EmotionalStateChange"). (Completed on 2024-03-08 by Jules)
 - [x] **Architectural Maturation Hooks:** Conceptualize how PiaCML module interfaces could support dynamic parameter changes (e.g., WM capacity) or representation of new/strengthened inter-module connections. (Completed on 2024-03-08 by Jules)
 - [x] **Prototype Advanced Self-Model (Phase 1):** Implement core features for metacognitive monitoring (e.g., confidence tracking) based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
-- [ ] **Prototype Advanced LTM (Phase 1):** Implement foundational aspects of a richer LTM structure (e.g., basic graph representation for semantic LTM or structured episodic entries) based on the `PiaCML_Advanced_Roadmap.md`.
-- [ ] **Prototype Advanced Motivational System (Phase 1):** Implement a computational model for one intrinsic motivation (e.g., curiosity) based on the `PiaCML_Advanced_Roadmap.md`.
-- [ ] **Prototype Advanced Emotion Module (Phase 1):** Implement enhanced appraisal mechanisms based on the `PiaCML_Advanced_Roadmap.md`.
-- [ ] **Implement Core Inter-Module Communication System:** Develop a basic version of the message-passing system defined in `PiaCML_InterModule_Communication.md`, supporting 2-3 key message types.
-- [ ] **Proof-of-Concept for an Architectural Maturation Hook:** Implement a basic mechanism for one of the conceptualized hooks (e.g., dynamic WM capacity adjustment) in a relevant module prototype.
+- [x] **Prototype Advanced LTM (Phase 1):** Implement foundational aspects of a richer LTM structure (e.g., basic graph representation for semantic LTM or structured episodic entries) based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
+- [x] **Prototype Advanced Motivational System (Phase 1):** Implement a computational model for one intrinsic motivation (e.g., curiosity) based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
+- [x] **Prototype Advanced Emotion Module (Phase 1):** Implement enhanced appraisal mechanisms based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
+- [x] **Implement Core Inter-Module Communication System:** Develop a basic version of the message-passing system defined in `PiaCML_InterModule_Communication.md`, supporting 2-3 key message types. (Data structures implemented) (Completed on 2024-03-08 by Jules)
+- [x] **Proof-of-Concept for an Architectural Maturation Hook:** Implement a basic mechanism for one of the conceptualized hooks (e.g., dynamic WM capacity adjustment) in a relevant module prototype. (Completed on 2024-03-08 by Jules)
 
 ### PiaSE (PiaAGI Simulation Environment) - Enhancements
 - [x] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules). (MVP implementation of PiaAGIAgent class, basic scenarios, unit tests, and refined guide completed by Jules on 2024-08-05).

@@ -189,6 +189,77 @@ class TestConcreteWorkingMemoryModule(unittest.TestCase):
         self.assertEqual(contents[0]['id'], id2) # item_s2 should now be less salient
         self.assertEqual(contents[1]['id'], id1)
 
+    # --- Tests for Architectural Maturation Hooks (Capacity Parameters) ---
+
+    def test_capacity_params_initialization(self):
+        """Test that capacity_params is initialized correctly."""
+        self.assertTrue(hasattr(self.wm, 'capacity_params'))
+        self.assertIsInstance(self.wm.capacity_params, dict)
+        # setUp uses capacity=3 for self.wm
+        self.assertEqual(self.wm.capacity_params.get("max_items"), 3)
+        self.assertEqual(self.wm.capacity_params.get("max_item_complexity"), 5) # Default value
+
+        # Test with default capacity in constructor
+        wm_default_cap = ConcreteWorkingMemoryModule() # Default capacity is 7
+        self.assertEqual(wm_default_cap.capacity_params.get("max_items"), ConcreteWorkingMemoryModule.DEFAULT_CAPACITY)
+        self.assertEqual(wm_default_cap.capacity_params.get("max_item_complexity"), 5)
+
+
+    def test_set_capacity_parameters(self):
+        """Test setting capacity parameters."""
+        # Test setting valid parameters
+        params1 = {"max_items": 20, "max_item_complexity": 10}
+        self.wm.set_capacity_parameters(params1)
+        self.assertEqual(self.wm.capacity_params["max_items"], 20)
+        self.assertEqual(self.wm.capacity_params["max_item_complexity"], 10)
+
+        # Test setting only one parameter
+        params2 = {"max_items": 15}
+        self.wm.set_capacity_parameters(params2)
+        self.assertEqual(self.wm.capacity_params["max_items"], 15)
+        self.assertEqual(self.wm.capacity_params["max_item_complexity"], 10) # Should retain previous value
+
+        params3 = {"max_item_complexity": 7}
+        self.wm.set_capacity_parameters(params3)
+        self.assertEqual(self.wm.capacity_params["max_items"], 15) # Should retain previous value
+        self.assertEqual(self.wm.capacity_params["max_item_complexity"], 7)
+
+        # Test with invalid values (should be ignored, values not updated)
+        initial_max_items = self.wm.capacity_params["max_items"]
+        initial_complexity = self.wm.capacity_params["max_item_complexity"]
+
+        self.wm.set_capacity_parameters({"max_items": -5}) # Negative value
+        self.assertEqual(self.wm.capacity_params["max_items"], initial_max_items)
+
+        self.wm.set_capacity_parameters({"max_item_complexity": "not_an_int"}) # Non-integer
+        self.assertEqual(self.wm.capacity_params["max_item_complexity"], initial_complexity)
+
+        self.wm.set_capacity_parameters({"max_items": 5.5}) # Float, should be ignored by current type check
+        self.assertEqual(self.wm.capacity_params["max_items"], initial_max_items)
+
+
+        # Test with unknown parameter keys (should be ignored)
+        self.wm.set_capacity_parameters({"unknown_param": 100, "max_items": 25})
+        self.assertNotIn("unknown_param", self.wm.capacity_params)
+        self.assertEqual(self.wm.capacity_params["max_items"], 25) # Known param should update
+
+        # Test with non-dict input
+        self.wm.set_capacity_parameters("not_a_dict") # Should print error, params not change
+        self.assertEqual(self.wm.capacity_params["max_items"], 25) # Check it didn't change from last valid set
+
+
+    def test_get_capacity_parameters(self):
+        """Test getting capacity parameters and that it returns a copy."""
+        current_params = self.wm.get_capacity_parameters()
+        self.assertEqual(current_params, self.wm.capacity_params)
+
+        # Modify the returned dictionary
+        current_params["max_items"] = 1000
+
+        # Ensure the internal dictionary is not affected
+        self.assertNotEqual(self.wm.capacity_params["max_items"], 1000)
+        self.assertEqual(self.wm.capacity_params["max_items"], 3) # Initial value from setUp
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -13,16 +13,57 @@ class ConcreteWorkingMemoryModule(BaseWorkingMemoryModule):
     It uses simple strategies for adding, removing, and focusing on items.
     The BaseMemoryModule methods (store, retrieve, delete) are adapted for a
     transient, ID-based workspace rather than a persistent LTM-like backend.
+    Includes Proof-of-Concept hooks for dynamic capacity configuration.
     """
 
     DEFAULT_CAPACITY = 7 # Typical psychological estimate for WM capacity (e.g., Miller's Law)
 
     def __init__(self, capacity: int = DEFAULT_CAPACITY):
         self._workspace: List[Dict[str, Any]] = [] # Items are dicts, e.g., {'id': unique_id, 'content': data, 'salience': 0.5}
-        self._capacity: int = capacity
+        self._capacity: int = capacity # This remains as the primary operational capacity for now.
         self._current_focus_id: Optional[str] = None # ID of the item currently in focus
         self._item_counter: int = 0 # For generating simple unique IDs within WM
-        print(f"ConcreteWorkingMemoryModule initialized with capacity {self._capacity}.")
+
+        # Architectural Maturation Hook: Dynamic Capacity Parameters
+        self.capacity_params: Dict[str, int] = {
+            "max_items": capacity, # Initialize max_items with the constructor's capacity
+            "max_item_complexity": 5 # Default complexity value
+        }
+        print(f"ConcreteWorkingMemoryModule initialized with operational capacity {self._capacity} and params {self.capacity_params}.")
+
+    def set_capacity_parameters(self, params: Dict[str, int]) -> None:
+        """
+        Sets new capacity parameters for working memory.
+        For this PoC, it just stores the parameters.
+        Future implementations would make WM behavior (e.g., _capacity) adhere to these.
+        Example params: {"max_items": 20, "max_item_complexity": 10}
+        """
+        if not isinstance(params, dict):
+            print("Error: params must be a dictionary.") # Or raise TypeError
+            return
+
+        updated_any = False
+        for key, value in params.items():
+            if key in self.capacity_params:
+                if isinstance(value, int) and value >= 0:
+                    self.capacity_params[key] = value
+                    updated_any = True
+                    # If 'max_items' is updated, conceptually, self._capacity might also be updated here
+                    # For this PoC, we'll keep them separate to show the hook mechanism.
+                    # if key == "max_items":
+                    #     self._capacity = value
+                    #     print(f"ConcreteWM: Operational capacity _capacity also updated to {self._capacity} via max_items.")
+                else:
+                    print(f"Warning: Invalid value '{value}' for '{key}'. Must be a non-negative integer. Not updated.")
+            else:
+                 print(f"Warning: Unknown capacity parameter '{key}'. Not updated.") # Strict checking
+
+        if updated_any:
+            print(f"ConcreteWM: capacity_params updated to: {self.capacity_params}")
+
+    def get_capacity_parameters(self) -> Dict[str, int]:
+        """Returns a copy of the current capacity parameters of working memory."""
+        return self.capacity_params.copy()
 
     def _generate_wm_id(self) -> str:
         self._item_counter += 1
