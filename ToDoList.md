@@ -172,13 +172,19 @@
 This section outlines proposed future development directions for the PiaAGI Research Tools Suite, based on the analysis conducted to deepen their support for AGI development.
 
 ### PiaCML (Cognitive Module Library) - Enhancements
-- [ ] **Roadmap for Advanced Modules:** Define a phased approach to implement more sophisticated versions of key PiaCML modules.
-  - [ ] *Self-Model:* Implement features for metacognitive monitoring (e.g., tracking confidence, bias detection from PiaAVT logs) and a dynamic, learnable ethical framework.
-  - [ ] *LTM:* Explore and prototype richer LTM implementations (e.g., graph DB for semantic LTM, structured episodic memory with emotional valence and causal links).
-  - [ ] *Motivational System:* Implement computational models of intrinsic motivations (e.g., curiosity, competence) that dynamically generate goals.
-  - [ ] *Emotion Module:* Develop appraisal mechanisms more deeply integrated with World Model, Self-Model, and LTM.
-- [ ] **Standardized Inter-Module Communication:** Design and specify a clear API or message-passing system for modules to exchange information (e.g., defining data structures for "GoalUpdate", "EmotionalStateChange").
-- [ ] **Architectural Maturation Hooks:** Conceptualize how PiaCML module interfaces could support dynamic parameter changes (e.g., WM capacity) or representation of new/strengthened inter-module connections.
+- [x] **Roadmap for Advanced Modules:** Define a phased approach to implement more sophisticated versions of key PiaCML modules. (Completed on 2024-03-08 by Jules)
+  - [x] *Self-Model:* Implement features for metacognitive monitoring (e.g., tracking confidence, bias detection from PiaAVT logs) and a dynamic, learnable ethical framework. (Covered by Roadmap)
+  - [x] *LTM:* Explore and prototype richer LTM implementations (e.g., graph DB for semantic LTM, structured episodic memory with emotional valence and causal links). (Covered by Roadmap)
+  - [x] *Motivational System:* Implement computational models of intrinsic motivations (e.g., curiosity, competence) that dynamically generate goals. (Covered by Roadmap)
+  - [x] *Emotion Module:* Develop appraisal mechanisms more deeply integrated with World Model, Self-Model, and LTM. (Covered by Roadmap)
+- [x] **Standardized Inter-Module Communication:** Design and specify a clear API or message-passing system for modules to exchange information (e.g., defining data structures for "GoalUpdate", "EmotionalStateChange"). (Completed on 2024-03-08 by Jules)
+- [x] **Architectural Maturation Hooks:** Conceptualize how PiaCML module interfaces could support dynamic parameter changes (e.g., WM capacity) or representation of new/strengthened inter-module connections. (Completed on 2024-03-08 by Jules)
+- [ ] **Prototype Advanced Self-Model (Phase 1):** Implement core features for metacognitive monitoring (e.g., confidence tracking) based on the `PiaCML_Advanced_Roadmap.md`.
+- [ ] **Prototype Advanced LTM (Phase 1):** Implement foundational aspects of a richer LTM structure (e.g., basic graph representation for semantic LTM or structured episodic entries) based on the `PiaCML_Advanced_Roadmap.md`.
+- [ ] **Prototype Advanced Motivational System (Phase 1):** Implement a computational model for one intrinsic motivation (e.g., curiosity) based on the `PiaCML_Advanced_Roadmap.md`.
+- [ ] **Prototype Advanced Emotion Module (Phase 1):** Implement enhanced appraisal mechanisms based on the `PiaCML_Advanced_Roadmap.md`.
+- [ ] **Implement Core Inter-Module Communication System:** Develop a basic version of the message-passing system defined in `PiaCML_InterModule_Communication.md`, supporting 2-3 key message types.
+- [ ] **Proof-of-Concept for an Architectural Maturation Hook:** Implement a basic mechanism for one of the conceptualized hooks (e.g., dynamic WM capacity adjustment) in a relevant module prototype.
 
 ### PiaSE (PiaAGI Simulation Environment) - Enhancements
 - [ ] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules).

@@ -70,14 +70,18 @@ PiaCML is envisioned to evolve significantly to fully support the PiaAGI framewo
     *   **Emotion Module:** Designing appraisal mechanisms more deeply integrated with the World Model, Self-Model, and LTM to produce nuanced emotional responses.
     *   **Theory of Mind (ToM):** Building ToM modules capable of more complex inferences about other agents' mental states, aligned with developmental psychology.
 
-2.  **Standardized Inter-Module Communication:**
-    *   Designing and implementing a clear, efficient, and standardized API or message-passing "bus" for information exchange between cognitive modules. This will involve defining common data structures and protocols for typical inter-module interactions (e.g., "GoalUpdate", "EmotionalStateChange", "LTMQueryResult", "PerceptData").
+2.  **Standardized Inter-Module Communication Design:**
+    *   A detailed specification for the standardized communication system, including the chosen paradigm (message bus), core message structures (e.g., `PerceptData`, `LTMQuery`, `GoalUpdate`), and interaction protocols, is available in the [PiaCML Inter-Module Communication Design](./PiaCML_InterModule_Communication.md). This system is crucial for effective module interaction.
 
 3.  **Support for Architectural Maturation:**
     *   Conceptually exploring and defining how PiaCML module interfaces and implementations could support the idea of "architectural maturation" ([`PiaAGI.md` Section 3.2.1](../../PiaAGI.md#321-stages-of-cognitive-development-and-architectural-maturation)). This includes how module parameters (e.g., working memory capacity, learning rates) might change dynamically or how new conceptual pathways between modules could be formed or strengthened based on developmental progress or learning experiences.
 
 4.  **Integration with Other PiaAGI Tools:**
     *   Ensuring seamless integration with PiaSE (for running agents built from CML modules), PiaPES (for configuring CML module parameters via prompts), and PiaAVT (for logging detailed traces from CML modules for analysis).
+
+### Advanced Module Development Roadmap
+
+For a detailed phased development plan for advanced versions of key modules like the Self-Model, LTM, Motivational System, and Emotion Module, please see the [PiaCML Advanced Module Roadmap](./PiaCML_Advanced_Roadmap.md).
 
 Contributions and collaborations are welcome as this library evolves to become the backbone for constructing advanced PiaAGI agents.
 
