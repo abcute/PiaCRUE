@@ -171,6 +171,10 @@ class DevelopmentalState:
 class ConcreteSelfModelModule(BaseSelfModelModule):
     """
     A concrete implementation of the BaseSelfModelModule, using structured data classes.
+    This module maintains a representation of the agent's own attributes, knowledge,
+    capabilities, ethical framework, history, and developmental state.
+    It includes methods for metacognitive monitoring, such as tracking confidence
+    in knowledge and capabilities.
     """
 
     def __init__(self):
@@ -184,6 +188,10 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
         )
         self.knowledge_map: KnowledgeMap = KnowledgeMap()
         self.capabilities: CapabilityInventory = CapabilityInventory()
+
+        # Phase 1 Enhancements: Confidence Tracking
+        self.knowledge_confidence: Dict[str, float] = {} # Maps concept_id to confidence score (0.0-1.0)
+        self.capability_confidence: Dict[str, float] = {} # Maps skill_id/tool_id to confidence score (0.0-1.0)
         self.ethical_framework: EthicalFramework = EthicalFramework()
         self.autobiography: AutobiographicalLogSummary = AutobiographicalLogSummary()
         self.development: DevelopmentalState = DevelopmentalState()
@@ -239,6 +247,77 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
             return getattr(self.attributes, aspect)
             
         return None # Aspect not found
+
+    def update_confidence(self, item_id: str, item_type: str, new_confidence: float, source_of_update: str = "unknown") -> bool:
+        """
+        Updates the confidence score for a given knowledge item or capability.
+
+        Args:
+            item_id: The ID of the concept, skill, or tool.
+            item_type: Type of the item, e.g., "knowledge" or "capability".
+            new_confidence: The new confidence score (float between 0.0 and 1.0).
+            source_of_update: A string describing the reason for the update.
+
+        Returns:
+            True if the update was successful, False otherwise.
+        """
+        clamped_confidence = max(0.0, min(1.0, new_confidence))
+
+        if item_type == "knowledge":
+            self.knowledge_confidence[item_id] = clamped_confidence
+            # Optionally, could also update the KnowledgeConcept.confidence_score if item_id matches a known concept
+            # if item_id in self.knowledge_map.concepts:
+            #    self.knowledge_map.concepts[item_id].confidence_score = clamped_confidence
+            print(f"Confidence for knowledge '{item_id}' updated to {clamped_confidence:.2f} due to '{source_of_update}'.")
+            return True
+        elif item_type == "capability":
+            self.capability_confidence[item_id] = clamped_confidence
+            # Optionally, could also update Skill.confidence_in_skill if item_id matches a known skill
+            # if item_id in self.capabilities.skills:
+            #    self.capabilities.skills[item_id].confidence_in_skill = clamped_confidence
+            print(f"Confidence for capability '{item_id}' updated to {clamped_confidence:.2f} due to '{source_of_update}'.")
+            return True
+        else:
+            print(f"Warning: Invalid item_type '{item_type}' for confidence update. Must be 'knowledge' or 'capability'.")
+            return False
+
+    def get_confidence(self, item_id: str, item_type: str) -> Optional[float]:
+        """
+        Retrieves the confidence score for a given knowledge item or capability.
+
+        Args:
+            item_id: The ID of the concept, skill, or tool.
+            item_type: Type of the item, e.g., "knowledge" or "capability".
+
+        Returns:
+            The confidence score (float) if found, otherwise None.
+        """
+        if item_type == "knowledge":
+            return self.knowledge_confidence.get(item_id)
+        elif item_type == "capability":
+            return self.capability_confidence.get(item_id)
+        else:
+            print(f"Warning: Invalid item_type '{item_type}' for get_confidence. Must be 'knowledge' or 'capability'.")
+            return None
+
+    def log_self_assessment(self, item_id: str, item_type: str) -> str:
+        """
+        Generates a string log of a self-assessment for a given item's confidence.
+
+        Args:
+            item_id: The ID of the concept, skill, or tool.
+            item_type: Type of the item, e.g., "knowledge" or "capability".
+
+        Returns:
+            A string describing the self-assessment.
+        """
+        confidence_score = self.get_confidence(item_id, item_type)
+        if confidence_score is not None:
+            return f"Self-assessment: Confidence in {item_type} '{item_id}' is {confidence_score:.2f}."
+        else:
+            if item_type not in ["knowledge", "capability"]:
+                return f"Self-assessment: Cannot assess confidence for invalid item_type '{item_type}' with ID '{item_id}'."
+            return f"Self-assessment: Confidence in {item_type} '{item_id}' is not found."
 
     def update_self_representation(self, updates: Dict[str, Any]) -> bool:
         """
