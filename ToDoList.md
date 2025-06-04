@@ -192,6 +192,7 @@ This section outlines proposed future development directions for the PiaAGI Rese
     - [x] Integrated Message Bus with `ConcreteWorkingMemoryModule` to subscribe to "PerceptData" messages. (Completed on 2024-03-08 by Jules)
     - [x] Integrated Message Bus with `ConcreteLongTermMemoryModule` for handling "LTMQuery" messages and publishing "LTMQueryResult" messages. (Completed on 2024-03-08 by Jules)
     - [x] Integrated Message Bus with `ConcreteMotivationalSystemModule` for publishing "GoalUpdate" messages. (Completed on 2024-03-08 by Jules)
+    - [x] Integrated Message Bus with `ConcreteSelfModelModule` to publish "SelfKnowledgeConfidenceUpdate" and subscribe to "GoalUpdate" messages. (Completed on 2024-03-08 by Jules)
 - [x] **Proof-of-Concept for an Architectural Maturation Hook:** Implement a basic mechanism for one of the conceptualized hooks (e.g., dynamic WM capacity adjustment) in a relevant module prototype. (Completed on 2024-03-08 by Jules)
 
 ### PiaSE (PiaAGI Simulation Environment) - Enhancements
