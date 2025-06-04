@@ -8,7 +8,8 @@ from .core_messages import (
     MemoryItem,
     PerceptDataPayload,
     GoalUpdatePayload,
-    LTMQueryResultPayload
+    LTMQueryResultPayload,
+    SelfKnowledgeConfidenceUpdatePayload # Added
     # Add other specific payloads here as they are defined and needed for top-level access
 )
 
@@ -33,7 +34,7 @@ from .concrete_motivational_system_module import ConcreteMotivationalSystemModul
 
 # Optional: Define __all__ if you want to control `from PiaAGI_Research_Tools.PiaCML import *`
 __all__ = [
-    "GenericMessage", "MemoryItem", "PerceptDataPayload", "GoalUpdatePayload", "LTMQueryResultPayload",
+    "GenericMessage", "MemoryItem", "PerceptDataPayload", "GoalUpdatePayload", "LTMQueryResultPayload", "SelfKnowledgeConfidenceUpdatePayload", # Added
     "MessageBus",
     "BaseMemoryModule", "BaseLongTermMemoryModule", "BaseWorkingMemoryModule",
     "BaseEmotionModule", "BaseMotivationalSystemModule",

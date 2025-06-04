@@ -69,6 +69,19 @@ class LTMQueryResultPayload:
     error_message: Optional[str] = None # Description of error if success_status is False
     metadata: Dict[str, Any] = field(default_factory=dict) # E.g., number of results, confidence
 
+@dataclass
+class SelfKnowledgeConfidenceUpdatePayload:
+    """
+    Payload for the Self-Model to communicate updates to its confidence
+    in a particular piece of knowledge or a capability.
+    """
+    item_id: str  # ID of the knowledge concept, skill, or tool
+    item_type: str  # e.g., "knowledge", "capability"
+    new_confidence: float  # The updated confidence score (e.g., 0.0 to 1.0)
+    previous_confidence: Optional[float] = None # Optional: good for logging change
+    source_of_update: Optional[str] = None # E.g., "task_success", "user_feedback", "learning_event"
+
+
 # Example LTMQueryPayload (not explicitly requested to be created in this file by the prompt,
 # but useful for context with LTMQueryResultPayload).
 # If needed, it would be defined here as well.
@@ -156,5 +169,16 @@ if __name__ == '__main__':
     print(ltm_res1)
     assert len(ltm_res1.results) == 2
     assert ltm_res1.results[0].content == "Result for LTM query"
+
+    # Test SelfKnowledgeConfidenceUpdatePayload
+    skcup1 = SelfKnowledgeConfidenceUpdatePayload(
+        item_id="concept_gravity",
+        item_type="knowledge",
+        new_confidence=0.95,
+        previous_confidence=0.90,
+        source_of_update="successful_experiment"
+    )
+    print(skcup1)
+    assert skcup1.new_confidence == 0.95
 
     print("\nCore messages example usage complete.")

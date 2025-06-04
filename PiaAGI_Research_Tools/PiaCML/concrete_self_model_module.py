@@ -1,15 +1,24 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union # Added Union
 import time
 
 try:
     from .base_self_model_module import BaseSelfModelModule
+    from .message_bus import MessageBus
+    from .core_messages import GenericMessage, GoalUpdatePayload, SelfKnowledgeConfidenceUpdatePayload
 except ImportError:
-    # Fallback for standalone execution or if .base_self_model_module is not found in the current path
-    class BaseSelfModelModule: # Minimal stub for standalone running
+    # Fallback for standalone execution
+    class BaseSelfModelModule:
         def get_self_representation(self, aspect: Optional[str] = None) -> Any: pass
-        def update_self_representation(self, updates: Dict[str, Any]) -> bool: pass
-        def evaluate_self_performance(self, task_id: str, outcome: Any, criteria: Dict[str, Any]) -> Dict[str, Any]: pass
-        def get_ethical_framework(self) -> List[Dict[str, str]]: pass
+        # Add other methods if they are called by the modified code and not defined by a later import
+
+    try: # Attempt to import bus/messages assuming they are in the same directory for fallback
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, GoalUpdatePayload, SelfKnowledgeConfidenceUpdatePayload
+    except ImportError:
+        MessageBus = None # type: ignore
+        GenericMessage = None # type: ignore
+        GoalUpdatePayload = None # type: ignore
+        SelfKnowledgeConfidenceUpdatePayload = None # type: ignore
 
 
 # --- Data Classes Definition ---
@@ -175,26 +184,50 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
     capabilities, ethical framework, history, and developmental state.
     It includes methods for metacognitive monitoring, such as tracking confidence
     in knowledge and capabilities.
+    It can publish confidence updates and subscribe to goal updates via a MessageBus.
     """
 
-    def __init__(self):
-        # Initialize main components with data classes
+    def __init__(self, message_bus: Optional[MessageBus] = None):
+        """
+        Initializes the ConcreteSelfModelModule.
+
+        Args:
+            message_bus: An optional instance of MessageBus for communication.
+        """
         self.attributes: SelfAttributes = SelfAttributes(
-            agent_id="PiaAGI_ConcreteSelf_v1.0", # Default from old structure
-            personality_profile={"OCEAN_Openness": 0.7, "OCEAN_Conscientiousness": 0.8}, # Default
-            capabilities=["basic_text_processing", "simple_planning", "dictionary_based_memory"], # Default
-            limitations=["complex_reasoning", "real_world_interaction", "deep_emotional_understanding"], # Default
-            confidence_in_capabilities=0.6 # Default
+            agent_id="PiaAGI_ConcreteSelf_v1.0",
+            personality_profile={"OCEAN_Openness": 0.7, "OCEAN_Conscientiousness": 0.8},
+            capabilities=["basic_text_processing", "simple_planning"],
+            limitations=["complex_reasoning", "deep_emotional_understanding"],
+            confidence_in_capabilities=0.6
         )
         self.knowledge_map: KnowledgeMap = KnowledgeMap()
         self.capabilities: CapabilityInventory = CapabilityInventory()
 
-        # Phase 1 Enhancements: Confidence Tracking
-        self.knowledge_confidence: Dict[str, float] = {} # Maps concept_id to confidence score (0.0-1.0)
-        self.capability_confidence: Dict[str, float] = {} # Maps skill_id/tool_id to confidence score (0.0-1.0)
+        self.knowledge_confidence: Dict[str, float] = {}
+        self.capability_confidence: Dict[str, float] = {}
+
         self.ethical_framework: EthicalFramework = EthicalFramework()
         self.autobiography: AutobiographicalLogSummary = AutobiographicalLogSummary()
         self.development: DevelopmentalState = DevelopmentalState()
+
+        self.message_bus = message_bus
+        self.handled_goal_updates: List[GoalUpdatePayload] = [] # For testing subscription
+
+        bus_status_msg = "not configured"
+        if self.message_bus:
+            if GenericMessage and GoalUpdatePayload: # Check if imports were successful
+                try:
+                    self.message_bus.subscribe(
+                        module_id="ConcreteSelfModelModule_01", # Example ID
+                        message_type="GoalUpdate",
+                        callback=self.handle_goal_update_message
+                    )
+                    bus_status_msg = "configured and subscribed to GoalUpdate"
+                except Exception as e:
+                    bus_status_msg = f"configured but FAILED to subscribe to GoalUpdate: {e}"
+            else:
+                bus_status_msg = "configured but core message types for subscription not available"
 
         # Adapt existing ethical framework to new structure
         old_ethical_rules = [
@@ -261,25 +294,43 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
         Returns:
             True if the update was successful, False otherwise.
         """
+        previous_confidence: Optional[float] = self.get_confidence(item_id, item_type)
         clamped_confidence = max(0.0, min(1.0, new_confidence))
 
+        updated = False
         if item_type == "knowledge":
             self.knowledge_confidence[item_id] = clamped_confidence
-            # Optionally, could also update the KnowledgeConcept.confidence_score if item_id matches a known concept
-            # if item_id in self.knowledge_map.concepts:
-            #    self.knowledge_map.concepts[item_id].confidence_score = clamped_confidence
             print(f"Confidence for knowledge '{item_id}' updated to {clamped_confidence:.2f} due to '{source_of_update}'.")
-            return True
+            updated = True
         elif item_type == "capability":
             self.capability_confidence[item_id] = clamped_confidence
-            # Optionally, could also update Skill.confidence_in_skill if item_id matches a known skill
-            # if item_id in self.capabilities.skills:
-            #    self.capabilities.skills[item_id].confidence_in_skill = clamped_confidence
             print(f"Confidence for capability '{item_id}' updated to {clamped_confidence:.2f} due to '{source_of_update}'.")
-            return True
+            updated = True
         else:
             print(f"Warning: Invalid item_type '{item_type}' for confidence update. Must be 'knowledge' or 'capability'.")
             return False
+
+        if updated and self.message_bus and GenericMessage and SelfKnowledgeConfidenceUpdatePayload:
+            current_confidence = self.get_confidence(item_id, item_type) # Should be clamped_confidence
+            payload = SelfKnowledgeConfidenceUpdatePayload(
+                item_id=item_id,
+                item_type=item_type,
+                new_confidence=current_confidence if current_confidence is not None else -1.0, # Should always exist here
+                previous_confidence=previous_confidence,
+                source_of_update=source_of_update
+            )
+            message = GenericMessage(
+                source_module_id="ConcreteSelfModelModule_01", # Example ID
+                message_type="SelfKnowledgeConfidenceUpdate",
+                payload=payload
+            )
+            try:
+                self.message_bus.publish(message)
+                print(f"ConcreteSelfModel: Published SelfKnowledgeConfidenceUpdate for '{item_id}'.")
+            except Exception as e:
+                print(f"ConcreteSelfModel: Error publishing confidence update: {e}")
+
+        return updated
 
     def get_confidence(self, item_id: str, item_type: str) -> Optional[float]:
         """

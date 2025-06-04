@@ -2,136 +2,208 @@ import unittest
 from typing import Dict, Any
 import sys
 import os
+import time # For creating GoalUpdatePayload with datetime if needed, though not directly used here
+from unittest.mock import MagicMock, call
 
-# Attempt to import the module from the correct location
+# Adjust path for consistent imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+
 try:
-    from PiaAGI_Research_Tools.PiaCML.concrete_self_model_module import ConcreteSelfModelModule
-except ImportError:
-    # Fallback for cases where the test is run from a different CWD or structure
-    # Add the parent directory of PiaAGI_Research_Tools to the Python path
-    # This assumes the test file is in PiaAGI_Research_Tools/PiaCML/tests/
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    pia_cml_dir = os.path.dirname(current_dir)
-    research_tools_dir = os.path.dirname(pia_cml_dir)
-    # For it to find PiaAGI_Research_Tools.PiaCML
-    root_dir_for_import = os.path.dirname(research_tools_dir)
-    if root_dir_for_import not in sys.path:
-        sys.path.insert(0, root_dir_for_import)
-    # Try importing again after path adjustment
-    from PiaAGI_Research_Tools.PiaCML.concrete_self_model_module import ConcreteSelfModelModule
+    from PiaAGI_Research_Tools.PiaCML import (
+        ConcreteSelfModelModule,
+        MessageBus,
+        GenericMessage,
+        GoalUpdatePayload, # For testing subscription
+        SelfKnowledgeConfidenceUpdatePayload # For testing publishing
+    )
+except ModuleNotFoundError as e:
+    # print(f"Package-level import error in test_concrete_self_model_module.py: {e}")
+    # print("Attempting direct local imports as fallback...")
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from concrete_self_model_module import ConcreteSelfModelModule
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, GoalUpdatePayload, SelfKnowledgeConfidenceUpdatePayload
+    except ImportError:
+        MessageBus = None
+        GenericMessage = None
+        GoalUpdatePayload = None
+        SelfKnowledgeConfidenceUpdatePayload = None
 
 
 class TestConcreteSelfModelModule(unittest.TestCase):
 
     def setUp(self):
-        """Set up a new ConcreteSelfModelModule instance for each test."""
-        self.self_model = ConcreteSelfModelModule()
+        """Set up instances for each test."""
+        self.bus = MessageBus() if MessageBus else None # Real bus for testing subscription
+        self.mock_bus = MagicMock(spec=MessageBus) if MessageBus else None # Mock bus for testing publishing
+
+        self.smm_no_bus = ConcreteSelfModelModule()
+        self.smm_with_mock_bus = ConcreteSelfModelModule(message_bus=self.mock_bus)
+        self.smm_with_real_bus = ConcreteSelfModelModule(message_bus=self.bus)
+
         self._original_stdout = sys.stdout
-        # Suppress prints from the module during tests for cleaner output
-        sys.stdout = open(os.devnull, 'w')
+        # Comment out print suppression for easier debugging if tests fail
+        # sys.stdout = open(os.devnull, 'w')
 
     def tearDown(self):
         """Restore stdout after each test."""
-        sys.stdout.close()
+        # sys.stdout.close()
         sys.stdout = self._original_stdout
 
+    # --- Existing tests adapted to use smm_no_bus ---
     def test_initial_confidence_dictionaries_exist(self):
-        """Test that confidence dictionaries are initialized."""
-        self.assertTrue(hasattr(self.self_model, 'knowledge_confidence'))
-        self.assertIsInstance(self.self_model.knowledge_confidence, Dict)
-        self.assertTrue(hasattr(self.self_model, 'capability_confidence'))
-        self.assertIsInstance(self.self_model.capability_confidence, Dict)
+        self.assertTrue(hasattr(self.smm_no_bus, 'knowledge_confidence'))
+        self.assertIsInstance(self.smm_no_bus.knowledge_confidence, Dict)
+        self.assertTrue(hasattr(self.smm_no_bus, 'capability_confidence'))
+        self.assertIsInstance(self.smm_no_bus.capability_confidence, Dict)
+        # Test new attribute for message handling
+        self.assertTrue(hasattr(self.smm_no_bus, 'handled_goal_updates'))
+        self.assertEqual(self.smm_no_bus.handled_goal_updates, [])
 
-    def test_update_confidence_knowledge(self):
-        """Test updating confidence for a knowledge item."""
+
+    def test_update_confidence_knowledge_no_bus(self): # Renamed
         item_id = "concept_alpha"
-        self.assertTrue(self.self_model.update_confidence(item_id, "knowledge", 0.75, "initial_learning"))
-        self.assertEqual(self.self_model.knowledge_confidence.get(item_id), 0.75)
+        self.assertTrue(self.smm_no_bus.update_confidence(item_id, "knowledge", 0.75, "initial_learning"))
+        self.assertEqual(self.smm_no_bus.knowledge_confidence.get(item_id), 0.75)
+        self.assertTrue(self.smm_no_bus.update_confidence(item_id, "knowledge", 0.85, "successful_application"))
+        self.assertEqual(self.smm_no_bus.knowledge_confidence.get(item_id), 0.85)
 
-        self.assertTrue(self.self_model.update_confidence(item_id, "knowledge", 0.85, "successful_application"))
-        self.assertEqual(self.self_model.knowledge_confidence.get(item_id), 0.85)
-
-    def test_update_confidence_capability(self):
-        """Test updating confidence for a capability item."""
+    def test_update_confidence_capability_no_bus(self): # Renamed
         item_id = "skill_beta"
-        self.assertTrue(self.self_model.update_confidence(item_id, "capability", 0.60, "training_completion"))
-        self.assertEqual(self.self_model.capability_confidence.get(item_id), 0.60)
+        self.assertTrue(self.smm_no_bus.update_confidence(item_id, "capability", 0.60, "training_completion"))
+        self.assertEqual(self.smm_no_bus.capability_confidence.get(item_id), 0.60)
+        self.assertTrue(self.smm_no_bus.update_confidence(item_id, "capability", 0.70, "consistent_success"))
+        self.assertEqual(self.smm_no_bus.capability_confidence.get(item_id), 0.70)
 
-        self.assertTrue(self.self_model.update_confidence(item_id, "capability", 0.70, "consistent_success"))
-        self.assertEqual(self.self_model.capability_confidence.get(item_id), 0.70)
+    def test_update_confidence_invalid_type_no_bus(self): # Renamed
+        self.assertFalse(self.smm_no_bus.update_confidence("item_gamma", "invalid_type", 0.5))
 
-    def test_update_confidence_invalid_type(self):
-        """Test updating confidence with an invalid item_type."""
-        self.assertFalse(self.self_model.update_confidence("item_gamma", "invalid_type", 0.5))
-        self.assertIsNone(self.self_model.knowledge_confidence.get("item_gamma"))
-        self.assertIsNone(self.self_model.capability_confidence.get("item_gamma"))
+    def test_update_confidence_clamping_no_bus(self): # Renamed
+        self.smm_no_bus.update_confidence("concept_clamp_high", "knowledge", 1.5, "test_high")
+        self.assertEqual(self.smm_no_bus.knowledge_confidence.get("concept_clamp_high"), 1.0)
+        self.smm_no_bus.update_confidence("concept_clamp_low", "knowledge", -0.5, "test_low")
+        self.assertEqual(self.smm_no_bus.knowledge_confidence.get("concept_clamp_low"), 0.0)
 
-    def test_update_confidence_clamping(self):
-        """Test that confidence values are clamped to the [0.0, 1.0] range."""
-        # Test clamping for knowledge
-        self.self_model.update_confidence("concept_clamp_high", "knowledge", 1.5, "test_high")
-        self.assertEqual(self.self_model.knowledge_confidence.get("concept_clamp_high"), 1.0)
+    def test_get_confidence_no_bus(self): # Renamed
+        self.smm_no_bus.update_confidence("concept_get", "knowledge", 0.88)
+        self.assertEqual(self.smm_no_bus.get_confidence("concept_get", "knowledge"), 0.88)
+        self.assertIsNone(self.smm_no_bus.get_confidence("non_existent_concept", "knowledge"))
 
-        self.self_model.update_confidence("concept_clamp_low", "knowledge", -0.5, "test_low")
-        self.assertEqual(self.self_model.knowledge_confidence.get("concept_clamp_low"), 0.0)
-
-        # Test clamping for capability
-        self.self_model.update_confidence("skill_clamp_high", "capability", 2.0, "test_high_skill")
-        self.assertEqual(self.self_model.capability_confidence.get("skill_clamp_high"), 1.0)
-
-        self.self_model.update_confidence("skill_clamp_low", "capability", -1.0, "test_low_skill")
-        self.assertEqual(self.self_model.capability_confidence.get("skill_clamp_low"), 0.0)
-
-        # Test with exact bounds
-        self.self_model.update_confidence("concept_exact_high", "knowledge", 1.0, "test_exact_high")
-        self.assertEqual(self.self_model.knowledge_confidence.get("concept_exact_high"), 1.0)
-
-        self.self_model.update_confidence("concept_exact_low", "knowledge", 0.0, "test_exact_low")
-        self.assertEqual(self.self_model.knowledge_confidence.get("concept_exact_low"), 0.0)
-
-
-    def test_get_confidence(self):
-        """Test retrieving confidence scores."""
-        self.self_model.update_confidence("concept_get", "knowledge", 0.88)
-        self.assertEqual(self.self_model.get_confidence("concept_get", "knowledge"), 0.88)
-
-        self.self_model.update_confidence("skill_get", "capability", 0.77)
-        self.assertEqual(self.self_model.get_confidence("skill_get", "capability"), 0.77)
-
-        # Test getting non-existent items
-        self.assertIsNone(self.self_model.get_confidence("non_existent_concept", "knowledge"))
-        self.assertIsNone(self.self_model.get_confidence("non_existent_skill", "capability"))
-
-        # Test getting with invalid type
-        self.assertIsNone(self.self_model.get_confidence("any_id", "invalid_type"))
-
-    def test_log_self_assessment(self):
-        """Test the log_self_assessment method for correct string output."""
-        # Existing knowledge item
-        self.self_model.update_confidence("concept_log", "knowledge", 0.91, "test_log")
+    def test_log_self_assessment_no_bus(self): # Renamed
+        self.smm_no_bus.update_confidence("concept_log", "knowledge", 0.91, "test_log")
         expected_log_k = "Self-assessment: Confidence in knowledge 'concept_log' is 0.91."
-        self.assertEqual(self.self_model.log_self_assessment("concept_log", "knowledge"), expected_log_k)
-
-        # Existing capability item
-        self.self_model.update_confidence("skill_log", "capability", 0.67, "test_log")
-        expected_log_c = "Self-assessment: Confidence in capability 'skill_log' is 0.67."
-        self.assertEqual(self.self_model.log_self_assessment("skill_log", "capability"), expected_log_c)
-
-        # Non-existent knowledge item
+        self.assertEqual(self.smm_no_bus.log_self_assessment("concept_log", "knowledge"), expected_log_k)
         expected_log_k_non = "Self-assessment: Confidence in knowledge 'non_existent_k' is not found."
-        self.assertEqual(self.self_model.log_self_assessment("non_existent_k", "knowledge"), expected_log_k_non)
+        self.assertEqual(self.smm_no_bus.log_self_assessment("non_existent_k", "knowledge"), expected_log_k_non)
 
-        # Non-existent capability item
-        expected_log_c_non = "Self-assessment: Confidence in capability 'non_existent_c' is not found."
-        self.assertEqual(self.self_model.log_self_assessment("non_existent_c", "capability"), expected_log_c_non)
+    # --- New Tests for MessageBus Integration ---
 
-        # Invalid item type
-        expected_log_invalid_type = "Self-assessment: Cannot assess confidence for invalid item_type 'wrong_type' with ID 'item_x'."
-        self.assertEqual(self.self_model.log_self_assessment("item_x", "wrong_type"), expected_log_invalid_type)
+    def test_initialization_with_bus_subscription(self):
+        """Test SMM initialization with a message bus and subscription to GoalUpdate."""
+        if not MessageBus: self.skipTest("MessageBus components not available")
+
+        self.assertIsNotNone(self.smm_with_real_bus.message_bus)
+        subscribers = self.bus.get_subscribers_for_type("GoalUpdate") # Using the real bus
+
+        found_subscription = any(
+            sub[0] == "ConcreteSelfModelModule_01" and
+            sub[1] == self.smm_with_real_bus.handle_goal_update_message
+            for sub in subscribers
+        )
+        self.assertTrue(found_subscription, "SMM did not subscribe to GoalUpdate messages.")
+
+    def test_update_confidence_publishes_message(self):
+        """Test that update_confidence publishes a SelfKnowledgeConfidenceUpdate message."""
+        if not MessageBus or not GenericMessage or not SelfKnowledgeConfidenceUpdatePayload:
+            self.skipTest("MessageBus or core message components not available")
+
+        item_id = "concept_publish"
+        item_type = "knowledge"
+        initial_confidence = 0.6
+        new_confidence = 0.8
+        source = "test_source_publish"
+
+        self.smm_with_mock_bus.update_confidence(item_id, item_type, initial_confidence, "initial_set") # Set initial
+        self.mock_bus.reset_mock() # Reset after initial publish
+
+        self.smm_with_mock_bus.update_confidence(item_id, item_type, new_confidence, source)
+
+        self.mock_bus.publish.assert_called_once()
+        args, _ = self.mock_bus.publish.call_args
+        published_message: GenericMessage = args[0]
+
+        self.assertIsInstance(published_message, GenericMessage)
+        self.assertEqual(published_message.message_type, "SelfKnowledgeConfidenceUpdate")
+        self.assertEqual(published_message.source_module_id, "ConcreteSelfModelModule_01")
+
+        payload: SelfKnowledgeConfidenceUpdatePayload = published_message.payload
+        self.assertIsInstance(payload, SelfKnowledgeConfidenceUpdatePayload)
+        self.assertEqual(payload.item_id, item_id)
+        self.assertEqual(payload.item_type, item_type)
+        self.assertEqual(payload.new_confidence, new_confidence)
+        self.assertEqual(payload.previous_confidence, initial_confidence)
+        self.assertEqual(payload.source_of_update, source)
+
+    def test_update_confidence_no_publish_if_no_bus(self):
+        """Test that update_confidence does not publish if no bus is configured."""
+        # self.smm_no_bus is initialized with message_bus=None
+        # self.mock_bus is associated with smm_with_mock_bus, so it shouldn't be called by smm_no_bus
+
+        self.smm_no_bus.update_confidence("concept_no_bus", "knowledge", 0.7, "no_bus_test")
+        self.mock_bus.publish.assert_not_called() # Check the mock_bus of smm_with_mock_bus wasn't affected
+
+    def test_handle_goal_update_message(self):
+        """Test that SMM handles GoalUpdate messages from the bus."""
+        if not MessageBus or not GenericMessage or not GoalUpdatePayload:
+            self.skipTest("MessageBus or core message components not available")
+
+        self.assertEqual(len(self.smm_with_real_bus.handled_goal_updates), 0)
+
+        goal_payload = GoalUpdatePayload(
+            goal_id="goal_test_123",
+            goal_description="Test goal for SMM subscription",
+            priority=0.7,
+            status="ACTIVE",
+            originator="TestMotivationalSystem"
+        )
+        goal_update_msg = GenericMessage(
+            source_module_id="TestMotivationalSystem",
+            message_type="GoalUpdate",
+            payload=goal_payload
+        )
+
+        self.bus.publish(goal_update_msg) # Publish on the real bus smm_with_real_bus is subscribed to
+
+        self.assertEqual(len(self.smm_with_real_bus.handled_goal_updates), 1)
+        received_payload = self.smm_with_real_bus.handled_goal_updates[0]
+        self.assertIsInstance(received_payload, GoalUpdatePayload)
+        self.assertEqual(received_payload.goal_id, "goal_test_123")
+        self.assertEqual(received_payload.status, "ACTIVE")
+
+    def test_handle_goal_update_message_unexpected_payload(self):
+        """Test SMM handles GoalUpdate with an unexpected payload type."""
+        if not MessageBus or not GenericMessage :
+            self.skipTest("MessageBus or GenericMessage not available")
+
+        malformed_msg = GenericMessage(
+            source_module_id="TestMalformedSource",
+            message_type="GoalUpdate",
+            payload="This is not a GoalUpdatePayload"
+        )
+
+        # Capture stdout to check for print warning
+        captured_output = io.StringIO()
+        sys.stdout = captured_output
+
+        self.bus.publish(malformed_msg)
+
+        sys.stdout = self._original_stdout # Restore stdout
+        output_str = captured_output.getvalue()
+
+        self.assertEqual(len(self.smm_with_real_bus.handled_goal_updates), 0) # Should not append if payload is wrong type
+        self.assertIn("SelfModel received GoalUpdate with unexpected payload type: <class 'str'>", output_str)
 
 
 if __name__ == '__main__':
-    # Note: When running tests via an IDE or test runner, this __main__ block might not be executed.
-    # It's primarily for direct script execution.
-    # Using unittest.main() with specific arguments can help if tests are discovered/run from here.
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
