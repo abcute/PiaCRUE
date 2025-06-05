@@ -1,22 +1,84 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List # Added List
 
 try:
     from .base_behavior_generation_module import BaseBehaviorGenerationModule
+    from .message_bus import MessageBus
+    from .core_messages import GenericMessage, ActionCommandPayload
 except ImportError:
     # Fallback for scenarios where the relative import might fail
     from base_behavior_generation_module import BaseBehaviorGenerationModule
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, ActionCommandPayload
+    except ImportError:
+        MessageBus = None # type: ignore
+        GenericMessage = None # type: ignore
+        ActionCommandPayload = None # type: ignore
+
 
 class ConcreteBehaviorGenerationModule(BaseBehaviorGenerationModule):
     """
-    A basic, concrete implementation of the BaseBehaviorGenerationModule.
-    This version translates action plans into simple, structured dictionaries
-    representing the behavior to be executed, often by passing through or slightly
-    reformatting the input.
+    A concrete implementation of the BaseBehaviorGenerationModule.
+    This version can subscribe to ActionCommand messages from a MessageBus
+    and conceptually execute them by logging their details.
+    The original `generate_behavior` method can be used as a helper or for direct invocation.
     """
 
-    def __init__(self):
-        self._supported_behavior_types = ["linguistic_output", "api_call", "log_message"]
-        print("ConcreteBehaviorGenerationModule initialized.")
+    def __init__(self, message_bus: Optional[MessageBus] = None):
+        """
+        Initializes the ConcreteBehaviorGenerationModule.
+
+        Args:
+            message_bus: An optional instance of MessageBus for subscribing to ActionCommands.
+        """
+        self._supported_behavior_types = ["linguistic_output", "api_call", "log_message", "conceptual_step"] # Added conceptual_step
+        self.message_bus = message_bus
+        self.executed_commands_log: List[ActionCommandPayload] = []
+
+        bus_status_msg = "not configured"
+        if self.message_bus:
+            if GenericMessage and ActionCommandPayload: # Check if imports were successful
+                try:
+                    self.message_bus.subscribe(
+                        module_id="ConcreteBehaviorGenerationModule_01", # Example ID
+                        message_type="ActionCommand",
+                        callback=self.handle_action_command_message
+                    )
+                    bus_status_msg = "configured and subscribed to ActionCommand"
+                except Exception as e:
+                    bus_status_msg = f"configured but FAILED to subscribe to ActionCommand: {e}"
+            else:
+                bus_status_msg = "configured but core message types for subscription not available"
+
+        print(f"ConcreteBehaviorGenerationModule initialized. Message bus {bus_status_msg}.")
+
+    def handle_action_command_message(self, message: GenericMessage):
+        """
+        Handles ActionCommand messages received from the message bus.
+        Conceptually "executes" the command by logging its details.
+        """
+        if ActionCommandPayload and isinstance(message.payload, ActionCommandPayload):
+            payload: ActionCommandPayload = message.payload
+            # print(f"BehaviorModule received ActionCommand: ID={payload.command_id}, Type='{payload.action_type}', Params='{payload.parameters}'") # Optional logging
+
+            # Conceptual execution:
+            execution_details = f"Executed Action ID: {payload.command_id}, Type: {payload.action_type}"
+            if payload.target_object_or_agent:
+                execution_details += f", Target: {payload.target_object_or_agent}"
+            execution_details += f", Parameters: {payload.parameters}, Priority: {payload.priority}"
+            if payload.expected_outcome_summary:
+                execution_details += f", Expected Outcome: {payload.expected_outcome_summary}"
+
+            # For now, just log the "execution" and store the payload for testing
+            # print(f"  DETAIL: {execution_details}") # Optional
+            self.executed_commands_log.append(payload)
+
+            # Future: This method would translate the ActionCommandPayload
+            # into actual interactions with an environment or other systems.
+            # It might also publish an "ActionOutcome" or "BehaviorEvent" message.
+        else:
+            print(f"BehaviorModule received ActionCommand with unexpected payload type: {type(message.payload)}")
+
 
     def generate_behavior(self, action_plan: Dict[str, Any], context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
