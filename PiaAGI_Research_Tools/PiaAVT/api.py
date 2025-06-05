@@ -68,15 +68,15 @@ class PiaAVTAPI:
         self.state_visualizer = StateVisualizer()
         self._active_log_file: Optional[str] = None
 
-    def load_logs_from_json(self, file_path: str, validate: bool = True) -> bool:
+    def load_logs_from_jsonl(self, file_path: str, validate: bool = True) -> bool:
         """
-        Loads log data from a specified JSON file into the LoggingSystem.
+        Loads log data from a specified JSONL (JSON Lines) file into the LoggingSystem.
         If successful, it initializes the BasicAnalyzer and EventSequencer with the loaded logs.
         Clears any previously loaded logs before loading new ones.
 
         Args:
-            file_path (str): The path to the JSON log file. The file should contain a
-                             list of log entry dictionaries.
+            file_path (str): The path to the JSONL log file. Each line should be a
+                             valid JSON object representing a log entry.
             validate (bool): Whether to validate log entries during ingestion according
                              to the LoggingSystem's rules. Defaults to True.
 
@@ -85,24 +85,31 @@ class PiaAVTAPI:
         """
         try:
             self.logging_system.clear_logs() # Clear previous logs
-            self.logging_system.load_logs_from_json_file(file_path, validate=validate)
+            self.logging_system.load_logs_from_jsonl_file(file_path, validate=validate) # Updated call
             loaded_logs = self.logging_system.get_log_data()
+            if not loaded_logs: # Check if any logs were actually loaded (JSONL parsing might skip all lines)
+                print(f"API Warning: No valid log entries were loaded from {file_path}. Analyzers will not be initialized.")
+                self.analyzer = None
+                self.event_sequencer = None
+                self._active_log_file = None
+                return False
+
             self.analyzer = BasicAnalyzer(loaded_logs)
             self.event_sequencer = EventSequencer(loaded_logs)
             self._active_log_file = file_path
-            print(f"API: Successfully loaded and initialized analyzers with logs from {file_path}")
+            print(f"API: Successfully loaded and initialized analyzers with logs from JSONL file: {file_path}")
             return True
-        except (FileNotFoundError, json.JSONDecodeError, LogValidationError) as e:
+        except (FileNotFoundError, LogValidationError) as e: # JSONDecodeError is handled within load_logs_from_jsonl_file
             self.analyzer = None # Ensure analyzers are not stale
             self.event_sequencer = None
             self._active_log_file = None
-            print(f"API Error: Failed to load logs from {file_path}. {e}")
+            print(f"API Error: Failed to load logs from JSONL file {file_path}. {e}")
             return False
         except Exception as e: # Catch any other unexpected errors during loading/init
             self.analyzer = None
             self.event_sequencer = None
             self._active_log_file = None
-            print(f"API Error: An unexpected error occurred loading logs from {file_path}. {e}")
+            print(f"API Error: An unexpected error occurred loading logs from JSONL file {file_path}. {e}")
             return False
 
     def get_log_count(self) -> int:
@@ -144,7 +151,7 @@ class PiaAVTAPI:
                                      otherwise None.
         """
         if not self.analyzer:
-            print("API Warning: No log data loaded. Please load logs using 'load_logs_from_json' first.")
+            print("API Warning: No log data loaded. Please load logs using 'load_logs_from_jsonl' first.")
         return self.analyzer
 
     # --- Direct Analysis & Visualization Methods (Facades) ---
@@ -508,25 +515,36 @@ if __name__ == "__main__":
         {"timestamp": "2024-01-15T10:00:25.000Z", "source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "interact", "reward": 1.0, "id": "act002"}},
         {"timestamp": "2024-01-15T10:00:30.000Z", "source": "PiaCML.Emotion", "event_type": "Update", "data": {"valence": 0.7, "arousal": 0.4, "id": "emo001"}},
         {"timestamp": "2024-01-15T10:00:35.000Z", "source": "PiaSE.Agent0", "event_type": "Action", "data": {"action_name": "move", "reward": -0.1, "id": "act003"}},
-        {"timestamp": "2024-01-15T10:00:40.000Z", "source": "PiaCML.Motivation", "event_type": "GoalUpdate", "data": {
+        {"timestamp": "2024-01-15T10:00:40.000Z", "simulation_run_id": "sim01", "experiment_id": "exp01", "agent_id": "agentX", "source_component_id": "PiaCML.Motivation", "log_level": "INFO", "event_type": "GoalUpdate", "event_data": {
             "active_goals": [{"id": "g1", "description": "Explore", "priority": 0.8}], "id": "mot001"}
         },
-        {"timestamp": "2024-01-15T10:00:45.000Z", "source": "PiaCML.WorkingMemory", "event_type": "State", "data": {
+        {"timestamp": "2024-01-15T10:00:45.000Z", "simulation_run_id": "sim01", "experiment_id": "exp01", "agent_id": "agentX", "source_component_id": "PiaCML.WorkingMemory", "log_level": "DEBUG", "event_type": "State", "event_data": {
             "active_elements": [{"id": "e1", "content": "percept_A"}], "focus": "e1", "id": "wm001"}
         }
     ]
-    dummy_log_file = "sample_logs.json"
-    import json # json import was missing from the original prompt's __main__ block for this file
+    # Update sample logs to include new required fields
+    for entry in sample_log_content:
+        if "simulation_run_id" not in entry: entry["simulation_run_id"] = "sim_default"
+        if "experiment_id" not in entry: entry["experiment_id"] = "exp_default"
+        if "agent_id" not in entry: entry["agent_id"] = "agent_default"
+        if "source_component_id" not in entry: entry["source_component_id"] = entry.pop("source", "unknown_source")
+        if "log_level" not in entry: entry["log_level"] = "INFO"
+        if "event_data" not in entry: entry["event_data"] = entry.pop("data", {})
+
+
+    dummy_log_file = "sample_logs.jsonl" # Changed to .jsonl
+    import json
     with open(dummy_log_file, 'w') as f:
-        json.dump(sample_log_content, f, indent=2)
+        for log_entry in sample_log_content:
+            f.write(json.dumps(log_entry) + '\n') # Write as JSONL
 
     # --- API DEMO ---
     api = PiaAVTAPI()
 
     # 1. Load logs
-    print(f"Attempting to load logs from: {dummy_log_file}")
-    if api.load_logs_from_json(dummy_log_file):
-        print(f"Logs loaded successfully. Total entries: {api.get_log_count()}")
+    print(f"Attempting to load logs from JSONL file: {dummy_log_file}")
+    if api.load_logs_from_jsonl(dummy_log_file): # Updated method call
+        print(f"Logs loaded successfully from JSONL. Total entries: {api.get_log_count()}")
         print(f"Active log file path: {api.get_active_log_file()}")
 
         # 2. Access analyzer directly (optional, for advanced use)

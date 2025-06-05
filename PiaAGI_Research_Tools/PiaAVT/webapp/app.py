@@ -60,22 +60,25 @@ st.title("PiaAVT - Agent Analysis Dashboard")
 with st.sidebar:
     st.header("Configuration")
 
-    uploaded_file = st.file_uploader("Upload Agent Log File (JSON)", type=["json"])
+    uploaded_file = st.file_uploader("Upload Agent Log File (JSONL - one JSON object per line)", type=["jsonl", "json"])
 
     if uploaded_file is not None:
         if uploaded_file.name != st.session_state.uploaded_file_name_cache:
             st.session_state.error_message = None
             st.session_state.pia_api = PiaAVTAPI()
 
-            temp_log_path = os.path.join(".", uploaded_file.name)
+            temp_log_path = os.path.join(".", uploaded_file.name) # Consider a more robust temp file handling
             try:
                 with open(temp_log_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
 
-                if st.session_state.pia_api.load_logs_from_json(temp_log_path):
+                if st.session_state.pia_api.load_logs_from_jsonl(temp_log_path): # MODIFIED
                     st.session_state.log_file_name = uploaded_file.name
                     st.session_state.uploaded_file_name_cache = uploaded_file.name
-                    st.success(f"Loaded {st.session_state.pia_api.get_log_count()} logs from '{uploaded_file.name}'.")
+                    if st.session_state.pia_api.get_log_count() > 0:
+                        st.success(f"Loaded {st.session_state.pia_api.get_log_count()} logs from JSONL file '{uploaded_file.name}'.")
+                    else:
+                        st.warning(f"JSONL file '{uploaded_file.name}' processed, but no valid log entries were loaded. File might be empty or all lines had errors.")
                     # Reset filters on new file upload
                     st.session_state.filter_source = []
                     st.session_state.filter_event_type = []
@@ -85,11 +88,11 @@ with st.sidebar:
                 else:
                     st.session_state.log_file_name = None
                     st.session_state.uploaded_file_name_cache = None
-                    st.error(f"Failed to load logs from '{uploaded_file.name}'. Check console for API errors.")
+                    st.error(f"Failed to load JSONL logs from '{uploaded_file.name}'. Ensure it's valid JSONL. Check console for API errors.") # MODIFIED
             except Exception as e:
                 st.session_state.log_file_name = None
                 st.session_state.uploaded_file_name_cache = None
-                st.error(f"Error saving or loading uploaded file: {e}")
+                st.error(f"Error saving or loading uploaded JSONL file: {e}") # MODIFIED
             finally:
                 if os.path.exists(temp_log_path):
                     os.remove(temp_log_path)

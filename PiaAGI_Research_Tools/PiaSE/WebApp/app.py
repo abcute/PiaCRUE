@@ -11,17 +11,17 @@ static_dir = os.path.join(current_dir, 'static') # Path to static folder in WebA
 if not os.path.exists(static_dir):
     os.makedirs(static_dir) # Ensure static directory exists
 
-pia_agi_hub_dir = os.path.dirname(piase_dir) # PiaAGI_Hub directory
-project_root_for_import = os.path.dirname(pia_agi_hub_dir)
+pia_agi_research_tools_dir = os.path.dirname(piase_dir) # PiaAGI_Research_Tools directory
+project_root_for_import = os.path.dirname(pia_agi_research_tools_dir) # Parent of PiaAGI_Research_Tools
 if project_root_for_import not in sys.path:
     sys.path.insert(0, project_root_for_import)
 # --- End of sys.path manipulation ---
 
 # Now import PiaSE components
-from PiaAGI_Hub.PiaSE.core_engine.basic_engine import BasicSimulationEngine
-from PiaAGI_Hub.PiaSE.environments.grid_world import GridWorld
-from PiaAGI_Hub.PiaSE.agents.q_learning_agent import QLearningAgent
-from PiaAGI_Hub.PiaSE.utils.visualizer import GridWorldVisualizer
+from PiaAGI_Research_Tools.PiaSE.core_engine.basic_engine import BasicSimulationEngine
+from PiaAGI_Research_Tools.PiaSE.environments.grid_world import GridWorld
+from PiaAGI_Research_Tools.PiaSE.agents.q_learning_agent import QLearningAgent
+from PiaAGI_Research_Tools.PiaSE.utils.visualizer import GridWorldVisualizer
 import matplotlib
 matplotlib.use('Agg') # Use 'Agg' backend for Matplotlib to prevent GUI issues in server environment
 import matplotlib.pyplot as plt

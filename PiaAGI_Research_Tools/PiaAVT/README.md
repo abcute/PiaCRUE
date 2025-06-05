@@ -8,11 +8,11 @@ Refer to the main conceptual design document at [`PiaAGI_Agent_Analysis_Visualiz
 ## Logging Specification
 
 PiaAVT processes logs adhering to a defined standard, crucial for interoperability with PiaCML modules and PiaSE.
-Details: **[PiaAGI Logging Specification for PiaAVT](Logging_Specification.md)**.
+Details: **[PiaAGI Logging Specification for PiaAVT](Logging_Specification.md)**. The `prototype_logger.py` file provides a reference implementation for generating logs in the standard JSONL format. The `Logging_Specification.md` has also been updated to include definitions for various meta-cognitive event types, supporting advanced analysis of agent self-awareness and internal tool use.
 
 ## Current Features (Initial Build)
 
-*   **Logging System (`core/logging_system.py`):** Ingestion, validation, storage of JSON logs. (Note: `prototype_logger.py` serves as the current reference implementation for generating logs for PiaAVT).
+*   **Logging System (`core/logging_system.py`):** `prototype_logger.py` serves as the current reference implementation for generating JSONL logs. The `core/logging_system.py` provides mechanisms for log ingestion and validation (currently designed to process lists of JSON objects, see 'Future Development' for JSONL alignment).
 *   **Analyzers (`Analysis_Implementations/`):**
     *   `basic_analyzer.py`: Filtering, descriptive statistics, time-series extraction. (Core logic for basic stats, integrated into the API).
     *   `event_sequencer.py`: Extracts defined event sequences. (Core logic for sequence finding, integrated into the API).
@@ -26,7 +26,7 @@ Details: **[PiaAGI Logging Specification for PiaAVT](Logging_Specification.md)**
     *   `state_visualizer.py`: Textual representations of agent states.
 *   **API (`api.py`):** `PiaAVTAPI` facade for programmatic access.
 *   **Command-Line Interface (`cli.py`):** CLI access to core functionalities.
-*   **WebApp (`webapp/app.py`):** Streamlit Proof-of-Concept for interactive analysis (log upload, stats, plotting, sequences, raw log view).
+*   **WebApp (`webapp/app.py`):** Streamlit Proof-of-Concept for interactive analysis (log upload, stats, plotting, sequences, raw log view). It currently loads data via the API, which impacts the expected log format (see note under WebApp Setup).
 *   **Examples (`examples/`):** Scripts demonstrating API and CLI usage. The main analysis scripts in `Analysis_Implementations/` also serve as usage examples via their `if __name__ == "__main__":` blocks. See also `conceptual_piase_log_generation.md` for how sample logs for these analyses could be produced from PiaSE.
 *   **Unit Tests (`tests/`):** For core components.
 *   **Requirements (`requirements.txt`):** Python dependencies.
@@ -59,7 +59,7 @@ PiaAVT is planned to evolve into a powerful toolkit for deep AGI analysis. Key f
 1.  **Advanced Analytical Modules:**
     *   **Refine Integrated Analyses:** The initial versions of Goal Dynamics, Emotional Trajectory, Task Performance, and Intrinsic Motivation analyses are now integrated into the API and WebApp. Future work involves:
         *   Further developing and fully implementing the 'Intrinsic Motivation Trigger & Impact Analysis' beyond its current conceptual integration.
-        *   Refining and extending all integrated analyses with more advanced features, deeper metrics, and enhanced visualizations.
+        *   Refining and extending all integrated analyses with more advanced features, deeper metrics, and enhanced visualizations. A key part of this refinement will be updating the core data loading mechanisms within the `PiaAVTAPI` to directly support the project-standard JSONL log format for all analyses.
     *   **Causal Analysis:** Develop tools to help researchers infer potential causal relationships between agent actions, internal cognitive state changes (from PiaCML module logs), environmental events (from PiaSE logs), and observed outcomes.
     *   **Behavioral Pattern Mining:** Implement algorithms to automatically identify recurring sequences of behavior, decision patterns, or cognitive state transitions from extensive log data.
     *   **Ethical Reasoning Traceability:** Design analyses to visualize how an agent's ethical framework influences decision-making.
@@ -88,6 +88,7 @@ PiaAVT is planned to evolve into a powerful toolkit for deep AGI analysis. Key f
     *   **Tighter PiaSE Integration:** Ensure PiaAVT can seamlessly ingest and correlate logs from complex, multi-faceted PiaSE scenarios.
     *   **PiaPES Feedback Loop:** Provide clear metrics and visualizations that PiaPES can use to evaluate the effectiveness of prompts and developmental curricula.
     *   **Scalability:** Investigate solutions for handling and analyzing very large log datasets from long-running simulations or numerous experimental runs.
+    *   - **Standardize Log Ingestion to JSONL:** Update the primary log ingestion pathway in `PiaAVTAPI` (and its use of `core/logging_system.py`) to directly parse JSONL files (one JSON object per line). This will align it with `prototype_logger.py`, the `Logging_Specification.md`, and simplify the data pipeline for analysis scripts that already handle JSONL.
 
 6.  **Conceptual Designs for Advanced Features:**
     *   The following documents outline conceptual designs for future advanced analysis and visualization capabilities in PiaAVT. These provide a roadmap for further development:

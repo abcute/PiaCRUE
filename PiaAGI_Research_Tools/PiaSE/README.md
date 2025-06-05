@@ -19,15 +19,17 @@ Refer to the main PiaAGI documentation and [`../PiaAGI_Simulation_Environment.md
 
 PiaSE has evolved to include a more robust and standardized set of components:
 
--   **Core Interfaces:** Refined `Environment` and `AgentInterface` abstract base classes. Data exchange relies on Pydantic models: `PerceptionData`, `ActionCommand`, and `ActionResult`. `PiaSEEvent` is also a Pydantic model.
--   **Simulation Engine:** A refactored `BasicSimulationEngine` that manages the simulation lifecycle with an enhanced main loop, clearer agent registration (via initialization), and integrated logging capabilities.
+-   **Core Interfaces:** Refined `Environment` and `AgentInterface` abstract base classes. Data exchange relies on Pydantic models: `PerceptionData`, `ActionCommand`, `ActionResult`, and `PiaSEEvent` (defined in `core_engine/interfaces.py`).
+-   **Simulation Engine:** A refactored `BasicSimulationEngine` that manages the simulation lifecycle with an enhanced main loop, clearer agent registration, integrated logging capabilities, and initial integration of Dynamic Scenario Engine (DSE) components (`CurriculumManager`, `AdaptationDecisionModule` which uses a mocked `PiaAVTInterface`).
 -   **Environments:**
     *   `GridWorld`: A configurable grid-based environment, now compliant with new interfaces and supporting static/dynamic objects.
     *   `TextBasedRoom`: A new interactive fiction-style environment for parsing text commands and interacting with objects in a narrative setting.
 -   **Agents:**
-    *   `QLearningAgent`: An agent capable of learning in `GridWorld`, updated to use the new Pydantic-based interfaces and refined learning logic.
+    *   `QLearningAgent`: An agent capable of learning in `GridWorld`, updated to use the new Pydantic-based interfaces.
     *   `InteractiveTextAgent`: A simple agent that allows users to input text commands to interact with the `TextBasedRoom` environment.
     *   `CuriosityGridAgent`: A basic agent for `GridWorld` that demonstrates simple exploration and artifact discovery.
+    *   `RuleBasedGridAgent`: A simple deterministic agent for GridWorld, often used with DSE.
+    *   `pia_agi_agent.py`: An initial MVP demonstrating orchestration of CML modules within a PiaSE agent.
 -   **Visualization & WebApp:**
     *   `GridWorldVisualizer`: (Existing) Uses Matplotlib to display `GridWorld` states.
     *   A simple WebApp interface (existing) to run scenarios and view results, primarily for `GridWorld`.
@@ -36,12 +38,13 @@ PiaSE has evolved to include a more robust and standardized set of components:
 
 PiaSE now includes several example scenarios to demonstrate its capabilities:
 
-*   **`grid_world_scenario.py`**: The original Q-Learning agent in a basic GridWorld. (Path: `PiaAGI_Research_Tools/PiaSE/scenarios/grid_world_scenario.py`)
-*   **`text_based_the_lost_key.py`**: An interactive text adventure in the `TextBasedRoom` environment where the user plays as the agent to find a lost key and a document. (Path: `PiaAGI_Research_Tools/PiaSE/scenarios/text_based_the_lost_key.py`)
-*   **`grid_world_curiosity_scenario.py`**: A scenario demonstrating a simple `CuriosityGridAgent` that explores a `GridWorld` and identifies predefined "artifact" locations. (Path: `PiaAGI_Research_Tools/PiaSE/scenarios/grid_world_curiosity_scenario.py`)
-*   **`grid_world_competence_scenario.py`**: A scenario featuring a `QLearningAgent` in a `GridWorld` that adapts to changing goals and obstacles, demonstrating competence acquisition and adaptation over multiple tasks. (Path: `PiaAGI_Research_Tools/PiaSE/scenarios/grid_world_competence_scenario.py`)
+*   **`scenarios/grid_world_scenario.py`**: The original Q-Learning agent in a basic GridWorld.
+*   **`scenarios/text_based_the_lost_key.py`**: An interactive text adventure in the `TextBasedRoom` environment where the user plays as the agent to find a lost key and a document.
+*   **`scenarios/grid_world_curiosity_scenario.py`**: A scenario demonstrating a simple `CuriosityGridAgent` that explores a `GridWorld` and identifies predefined "artifact" locations.
+*   **`scenarios/grid_world_competence_scenario.py`**: A scenario featuring a `QLearningAgent` in a `GridWorld` that adapts to changing goals and obstacles, demonstrating competence acquisition and adaptation over multiple tasks.
+*   **`scenarios/dynamic_scaffolding_scenario.py`**: Demonstrates the Dynamic Scenario Engine (DSE) with a `RuleBasedGridAgent`.
 
-To run these scenarios, navigate to the `PiaAGI_Research_Tools/PiaSE/` directory (if you are at the project root) and execute the desired scenario script using Python:
+To run these scenarios, navigate to the `PiaAGI_Research_Tools/PiaSE` directory (if you are at the project root) and execute the desired scenario script using Python:
 ```bash
 # Example from the project root directory:
 cd PiaAGI_Research_Tools/PiaSE
@@ -71,6 +74,7 @@ To run the PiaSE WebApp, follow these steps:
     ```bash
     cd PiaAGI_Research_Tools/PiaSE
     ```
+    Note: The import paths in `WebApp/app.py` may need to be updated from `PiaAGI_Hub` to `PiaAGI_Research_Tools` if you encounter import errors.
 
 2.  **Install Dependencies:**
     Ensure all necessary Python packages are installed by running:
@@ -126,13 +130,14 @@ It is highly recommended to use a Python virtual environment. Key dependencies i
 - Pydantic (for data structures)
 - Matplotlib (for visualization)
 - Flask (for the WebApp)
+PiaSE's Dynamic Scenario Engine also conceptually depends on `DevelopmentalCurriculum` and `CurriculumStep` class structures from PiaPES (`prompt_engine_mvp.py`) for defining curricula, and relies on metrics that would be provided by PiaAVT for adaptive scaffolding (currently mocked in DSE).
 
 ## Future Development & Enhancements
 
 PiaSE is envisioned to grow into a powerful platform for AGI research. Key future directions include:
 
 1.  **Full PiaAGI Agent Integration:**
-    *   Developing clear examples, helper classes, or integration layers within PiaSE to demonstrate how to instantiate, configure (potentially using PiaPES outputs), and run a complete PiaAGI agent composed of multiple interacting PiaCML modules.
+    *   Developing clear examples, helper classes, or integration layers within PiaSE to demonstrate how to instantiate, configure (potentially using PiaPES outputs), and run a complete PiaAGI agent composed of multiple interacting PiaCML modules. An initial MVP for this is available in `agents/pia_agi_agent.py`, demonstrating how CML modules can be orchestrated within a PiaSE agent.
 
 2.  **Diverse and Dynamic Environments:**
     *   Moving beyond `GridWorld` to implement or integrate more complex environments.
@@ -142,11 +147,13 @@ PiaSE is envisioned to grow into a powerful platform for AGI research. Key futur
     *   Developing a more robust **Environment API** to support these richer interactions.
 
 3.  **Advanced Developmental Scaffolding Engine:**
-    *   Enhancing the scenario manager in PiaSE to become a **Dynamic Scenario Engine**. This engine would:
-        *   Interface with PiaPES to load and interpret `DevelopmentalCurricula`.
-        *   Adapt environmental parameters, task complexity, available information, or even simulated tutor behavior based on the agent's performance (metrics from PiaAVT) and its current position in a curriculum.
-        *   Manage the state of an agent's progression through long-term developmental pathways.
-    *   *(See current progress below under "Dynamic Scenario Engine (DSE) for Developmental Scaffolding")*
+    *   The Dynamic Scenario Engine (DSE) MVP is implemented, featuring a `CurriculumManager` and `AdaptationDecisionModule`. An example (`scenarios/dynamic_scaffolding_scenario.py`) demonstrates its use with JSON-based curricula. Future enhancements will focus on:
+        *   Deeper integration with PiaPES to dynamically load and interpret `DevelopmentalCurricula`.
+        *   More sophisticated adaptation logic within the `AdaptationDecisionModule`, potentially using machine learning or more complex rule sets.
+        *   Robust integration with PiaAVT for real-time performance metrics to drive adaptation, replacing the current mocked interface.
+        *   Richer mechanisms for configuring agent and environment parameters dynamically based on curriculum steps.
+    *   For the detailed DSE design, see [`docs/specifications/Dynamic_Scenario_Engine.md`](./docs/specifications/Dynamic_Scenario_Engine.md). *(The main description of the DSE MVP is in the section below).*
+
 
 4.  **Human-in-the-Loop (HITL) Interaction:**
     *   Designing and implementing interfaces that allow human users to:
@@ -167,11 +174,11 @@ PiaSE now includes an MVP (Minimum Viable Product) of a Dynamic Scenario Engine 
 **Purpose:** The DSE is designed to run agents through predefined curricula, which are sequences of tasks or learning experiences. It allows for the dynamic adaptation of scenarios based on (currently simulated/mocked) agent performance metrics and attempt counts, facilitating developmental scaffolding.
 
 **Key Components:**
-*   **`CurriculumManager`**: Located in `PiaAGI_Research_Tools/PiaSE/core_engine/dynamic_scenario_engine.py`, this component is responsible for loading curriculum JSON files (defining steps, completion criteria, adaptation rules, and configurations) and tracking an agent's progress through them.
-*   **`AdaptationDecisionModule`**: Also in `dynamic_scenario_engine.py`, this module evaluates an agent's performance against a curriculum step's `completion_criteria` and `adaptation_rules` to decide if the agent should proceed, repeat the step, branch to another step, or if a hint should be applied. It uses a `PiaAVTInterface` (currently mocked as `MockPiaAVTInterface`) to get performance data.
+*   **`CurriculumManager`**: Located in `core_engine/dynamic_scenario_engine.py`, this component is responsible for loading curriculum JSON files (defining steps, completion criteria, adaptation rules, and configurations) and tracking an agent's progress through them.
+*   **`AdaptationDecisionModule`**: Also in `core_engine/dynamic_scenario_engine.py`, this module evaluates an agent's performance against a curriculum step's `completion_criteria` and `adaptation_rules` to decide if the agent should proceed, repeat the step, branch to another step, or if a hint should be applied. It uses a `PiaAVTInterface` (currently mocked as `MockPiaAVTInterface`) to get performance data.
 
 **Engine Integration:**
-The `BasicSimulationEngine` (in `PiaAGI_Research_Tools/PiaSE/core_engine/basic_engine.py`) has been integrated with these DSE components. When initializing the engine, a mapping of agent IDs to curriculum filepaths can be provided. The engine's `run_simulation` loop then manages the DSE lifecycle for these agents, including:
+The `BasicSimulationEngine` (in `core_engine/basic_engine.py`) has been integrated with these DSE components. When initializing the engine, a mapping of agent IDs to curriculum filepaths can be provided. The engine's `run_simulation` loop then manages the DSE lifecycle for these agents, including:
 *   Loading and starting curricula.
 *   Executing curriculum steps (which may involve multiple agent-environment interactions, controlled by `max_interactions` in the curriculum step).
 *   Invoking the `AdaptationDecisionModule` to evaluate progress and make decisions.
@@ -179,9 +186,9 @@ The `BasicSimulationEngine` (in `PiaAGI_Research_Tools/PiaSE/core_engine/basic_e
 *   (Conceptually) Reconfiguring the agent and environment based on the current curriculum step's `agent_config_overrides` and `environment_config_overrides`.
 
 **Example:**
-A practical example demonstrating the DSE can be found in `PiaAGI_Research_Tools/PiaSE/scenarios/dynamic_scaffolding_scenario.py`. This scenario uses a `RuleBasedGridAgent` in `GridWorld` and a sample curriculum defined in `PiaAGI_Research_Tools/PiaSE/scenarios/curricula/simple_grid_curriculum.json`. The scenario script also shows how to manually update the `MockPiaAVTInterface` to simulate performance data that drives DSE decisions.
+A practical example demonstrating the DSE can be found in `scenarios/dynamic_scaffolding_scenario.py`. This scenario uses a `RuleBasedGridAgent` in `GridWorld` and a sample curriculum defined in `scenarios/curricula/simple_grid_curriculum.json`. The scenario script also shows how to manually update the `MockPiaAVTInterface` to simulate performance data that drives DSE decisions.
 
-For more detailed information on the DSE's design, refer to the [Full DSE Design document](./docs/specifications/Dynamic_Scenario_Engine.md).
+For more detailed information on the DSE's design, refer to the [Full DSE Design document (`docs/specifications/Dynamic_Scenario_Engine.md`)](./docs/specifications/Dynamic_Scenario_Engine.md).
 
 PiaSE aims to be a critical testbed for empirically validating the PiaAGI framework and fostering the development of increasingly sophisticated and autonomous agents.
 ---

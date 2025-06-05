@@ -9,7 +9,7 @@ This directory contains a collection of theoretical research papers, summaries o
     *   Provides a memorandum outlining various academic disciplines relevant to AGI development, serving as a reference for interdisciplinary insights for the PiaAGI framework.
 
 *   **[Agent_Autonomous_Tool_Mastery.md](Agent_Autonomous_Tool_Mastery.md):** (PiaAGI Core Concept)
-    *   Outlines the core PiaAGI viewpoint that an AGI agent, akin to a "digital human," must possess the capability for autonomous tool design, creation, and use, leveraging its programming abilities as a foundational mechanism for this.
+    *   Outlines the core PiaAGI viewpoint that an AGI agent, akin to a "digital human," must possess the capability for autonomous tool design, creation, and use. It views programming as a foundational tool-making mechanism for such agents. These concepts are integrated into the main [`PiaAGI.md`](../PiaAGI.md) (Sections 3.6, 4.1, 4.5).
 
 *   **[AI_Cultural_Evolution.md](AI_Cultural_Evolution.md):** (Hypothetical)
     *   Explores the integration of cultural evolution theories (variation, selection, transmission of cultural traits) into AI agent development, particularly for multi-agent systems and LLMs, aiming for AI that can participate in and adapt to simulated cultural dynamics.
@@ -21,16 +21,16 @@ This directory contains a collection of theoretical research papers, summaries o
     *   Proposes a framework on the role of narrative and storytelling in enhancing human-AI understanding, examining how AI (especially LLMs) might develop deeper contextual awareness and worldviews through narrative processing.
 
 *   **[Alita_Agent.md](Alita_Agent.md):**
-    *   Summarizes the Alita agent framework (arXiv:2505.20286), which emphasizes "Minimal Predefinition" and "Maximal Self-Evolution" through dynamic generation and reuse of Model Context Protocols (MCPs) for scalable agentic reasoning.
+    *   Summarizes the Alita agent framework (arXiv:2505.20286), emphasizing its concepts of "Minimal Predefinition," "Maximal Self-Evolution," and dynamic Model Context Protocol (MCP) generation. These ideas influence PiaAGI's approach to advanced tool use, self-improvement, and meta-cognitive pattern management, as reflected in [`PiaAGI.md`](../PiaAGI.md) (Sections 3.6, 4.1, 4.5) and related CML/PiaAVT specifications (e.g., `Self_Model_Module_Specification.md`, `Logging_Specification.md` for meta-cognitive events).
 
 *   **[Architectural_Maturation_Framework.md](Architectural_Maturation_Framework.md):** (PiaAGI Foundational Concept)
-    *   Outlines a conceptual framework for how a PiaAGI agent's underlying cognitive architecture might evolve its capacities and efficiencies over time.
+    *   Outlines a conceptual framework for how a PiaAGI agent's underlying cognitive architecture might evolve its capacities and efficiencies over time. This foundational concept is detailed in [`PiaAGI.md`](../PiaAGI.md) (Section 3.2.1), and the [`PiaAGI_Research_Tools/PiaCML/PiaCML_Advanced_Roadmap.md`](../PiaAGI_Research_Tools/PiaCML/PiaCML_Advanced_Roadmap.md) includes conceptual 'Architectural Maturation Hooks' for its implementation.
 
 *   **[Chain_of_Thought_Alignment.md](Chain_of_Thought_Alignment.md):** (PiaAGI Conceptual Linking)
     *   Explores Chain-of-Thought (CoT) prompting as embodying the PiaAGI principle of interacting with agents as human-like thinkers capable of step-by-step cognitive processes.
 
 *   **[Computational_Models_Motivation.md](Computational_Models_Motivation.md):** (PiaAGI Foundational Concept)
-    *   Provides high-level computational model outlines for intrinsic motivations like Curiosity and Competence, expanding on the `Motivational_System_Specification.md`.
+    *   Provides high-level computational model outlines for intrinsic motivations like Curiosity and Competence, complementing the detailed specifications in [`PiaAGI_Research_Tools/PiaCML/Motivational_System_Specification.md`](../PiaAGI_Research_Tools/PiaCML/Motivational_System_Specification.md).
 
 *   **[CSIM.md](CSIM.md):**
     *   Summarizes the CSIM (Communication Skills + Inner Monologue) framework, an approach designed to enhance the human-like qualities and proactivity of LLMs by introducing an "inner monologue" process to apply specific communication skills.
