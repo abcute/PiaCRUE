@@ -1,7 +1,7 @@
 import random
 from typing import List, Tuple, Dict, Optional, Any
 
-from PiaAGI_Hub.PiaSE.core_engine.interfaces import AgentInterface, PiaSEEvent
+from ..core_engine.interfaces import AgentInterface, PiaSEEvent
 
 class BasicGridAgent(AgentInterface):
     """

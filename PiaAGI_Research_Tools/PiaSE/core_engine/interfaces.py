@@ -118,8 +118,20 @@ class Environment(ABC):
         pass
 
     @abstractmethod
-    def get_action_space(self) -> list:
-        """Gets the list of possible actions in the environment."""
+    def get_action_space(self, agent_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Gets the description of possible actions in the environment, potentially specific to an agent.
+        Returns a dictionary where keys are action names and values describe parameters.
+        """
+        pass
+
+    @abstractmethod
+    def get_environment_info(self) -> Dict[str, Any]:
+        """
+        Provides general information about the environment setup.
+        This can include environment name, description, action schema, perception schema, etc.
+        (Ref: PiaAGI_Simulation_Environment.md for conceptual details)
+        """
         pass
 
 class AgentInterface(ABC):
