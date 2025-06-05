@@ -383,4 +383,56 @@ class TextBasedRoom(Environment):
             }
         }
 
+    def reconfigure(self, config: Dict[str, Any]) -> bool:
+        """
+        Reconfigures the TextBasedRoom environment based on the provided configuration.
+        This primarily allows for changing the initial room layout, object details,
+        and agent starting room.
+        """
+        print(f"TextBasedRoom: Attempting reconfiguration with: {list(config.keys())}")
+        reconfigured_something = False
+
+        if "room_layout" in config:
+            if isinstance(config["room_layout"], dict):
+                self.base_room_layout = copy.deepcopy(config["room_layout"])
+                print("  Reconfigured base_room_layout.")
+                reconfigured_something = True
+            else:
+                print("  TextBasedRoom Warning: 'room_layout' in reconfigure must be a dictionary. Not applied.")
+
+        if "object_details" in config:
+            if isinstance(config["object_details"], dict):
+                self.base_object_details = copy.deepcopy(config["object_details"])
+                print("  Reconfigured base_object_details.")
+                reconfigured_something = True
+            else:
+                print("  TextBasedRoom Warning: 'object_details' in reconfigure must be a dictionary. Not applied.")
+
+        if "agent_start_room" in config:
+            if isinstance(config["agent_start_room"], str):
+                # Further validation if this room exists in the new layout could be added,
+                # but reset() will handle initial placement observation.
+                self.agent_start_room = config["agent_start_room"]
+                print(f"  Reconfigured agent_start_room to: {self.agent_start_room}")
+                reconfigured_something = True
+            else:
+                print("  TextBasedRoom Warning: 'agent_start_room' in reconfigure must be a string. Not applied.")
+
+        # Action schema could also be made reconfigurable if needed, but for now, it's fixed.
+        # if "action_schema" in config:
+        #     if isinstance(config["action_schema"], dict):
+        #         self.action_schema = copy.deepcopy(config["action_schema"])
+        #         print("  Reconfigured action_schema.")
+        #         reconfigured_something = True
+        #     else:
+        #         print("  TextBasedRoom Warning: 'action_schema' in reconfigure must be a dictionary. Not applied.")
+
+        if reconfigured_something:
+            print("TextBasedRoom: Calling reset() after reconfiguration.")
+            self.reset() # Apply changes by resetting the environment state
+        else:
+            print("TextBasedRoom: No applicable configuration changes found or applied.")
+
+        return True # Indicate reconfiguration attempt was processed
+
 ```

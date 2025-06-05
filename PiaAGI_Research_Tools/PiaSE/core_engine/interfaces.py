@@ -134,6 +134,24 @@ class Environment(ABC):
         """
         pass
 
+    @abstractmethod
+    def reconfigure(self, config: Dict[str, Any]) -> bool:
+        """
+        Reconfigures the environment based on the provided configuration dictionary.
+        This allows for dynamic changes to the environment's parameters, layout,
+        or other characteristics during a simulation run, often guided by a
+        Dynamic Scenario Engine (DSE) or a curriculum.
+
+        Args:
+            config (Dict[str, Any]): A dictionary containing the configuration parameters
+                                     to apply. The specific keys and values expected
+                                     will depend on the concrete environment implementation.
+
+        Returns:
+            bool: True if the reconfiguration was successful and applied, False otherwise.
+        """
+        pass
+
 class AgentInterface(ABC):
     """
     Abstract base class for an agent.

@@ -51,15 +51,19 @@ class RuleBasedGridAgent(AgentInterface):
     def set_id(self, agent_id: str): self.agent_id = agent_id
     def get_id(self) -> str: return self.agent_id
 
-    def configure(self, motivation_config: Optional[Dict] = None, env_info: Optional[Dict]=None, action_space: Optional[List]=None):
-        if motivation_config and motivation_config.get("current_goal_details"):
-            coords = motivation_config["current_goal_details"]["target_coords"]
-            if isinstance(coords, list) and len(coords) == 2:
-                self.current_goal_coords = tuple(coords) # type: ignore
-            print(f"Agent {self.agent_id} configured with goal: {self.current_goal_coords}")
-        if action_space: # If engine provides full action space description
-            # self.action_list = action_space # This would be list of dicts, convert if needed
-            pass # Already expecting list of ActionCommands
+    def configure(self, config: Optional[Dict[str, Any]] = None, env_info: Optional[Dict]=None, action_space: Optional[List]=None):
+        if config:
+            motivation_config = config.get("motivation")
+            if motivation_config and motivation_config.get("current_goal_details"):
+                coords = motivation_config["current_goal_details"].get("target_coords")
+                if isinstance(coords, list) and len(coords) == 2:
+                    self.current_goal_coords = tuple(coords)
+                print(f"Agent {self.agent_id} configured with goal: {self.current_goal_coords} via DSE step config.")
+
+        # Keep existing action_space handling if present, or remove if not used by this agent's configure
+        if action_space:
+             pass # current agent doesn't use it in configure, but keep for signature consistency
+
 
     def perceive(self, observation: PerceptionData, event: Optional[PiaSEEvent] = None):
         if observation.custom_sensor_data:
@@ -173,30 +177,41 @@ def run_dynamic_scenario():
     def interaction_step_with_avt_update(agent_id_hook: str, agent_hook: AgentInterface):
         original_run_agent_interaction(agent_id_hook, agent_hook) # Run the actual interaction
 
-        # After interaction, update mock AVT based on env state relative to curriculum goal
         if engine.dse_active_for_agents.get(agent_id_hook) and engine.curriculum_manager and engine.avt_interface:
             current_step_obj = engine.curriculum_manager.get_current_step_object(agent_id_hook)
-            if current_step_obj and hasattr(engine.environment, 'get_agent_position'): # Check if GridWorld
-                agent_pos = engine.environment.get_agent_position(agent_id_hook) # Assuming GridWorld has this
+            if current_step_obj and hasattr(engine.environment, 'agent_positions'): # Ensure it's GridWorld like
+                agent_pos = engine.environment.agent_positions.get(agent_id_hook)
 
-                # Goal 1: [0,2]
-                if current_step_obj.order == 1 and current_step_obj.name == "Navigate to Easy Goal":
-                    goal_1_coords = tuple(current_step_obj.agent_config_overrides["motivation"]["current_goal_details"]["target_coords"])
-                    if tuple(agent_pos) == goal_1_coords:
-                        engine.avt_interface.set_metric(agent_id_hook, "reached_goal_1", True)
-                    else:
-                        engine.avt_interface.set_metric(agent_id_hook, "reached_goal_1", False)
+                # Get goal from curriculum step's agent_config_overrides
+                step_goal_coords = None
+                if current_step_obj.agent_config_overrides and \
+                   current_step_obj.agent_config_overrides.get("motivation") and \
+                   current_step_obj.agent_config_overrides["motivation"].get("current_goal_details"):
+                    coords_list = current_step_obj.agent_config_overrides["motivation"]["current_goal_details"].get("target_coords")
+                    if isinstance(coords_list, list) and len(coords_list) == 2:
+                        step_goal_coords = tuple(coords_list)
 
-                # Goal 2: [4,4]
-                elif current_step_obj.order == 2 and current_step_obj.name == "Navigate to Harder Goal":
-                    goal_2_coords = tuple(current_step_obj.agent_config_overrides["motivation"]["current_goal_details"]["target_coords"])
-                    if tuple(agent_pos) == goal_2_coords:
-                        engine.avt_interface.set_metric(agent_id_hook, "reached_goal_2", True)
-                    else:
-                        engine.avt_interface.set_metric(agent_id_hook, "reached_goal_2", False)
+                if agent_pos and step_goal_coords:
+                    reached = (tuple(agent_pos) == step_goal_coords)
+                    metric_name = f"reached_goal_{current_step_obj.order}" # e.g., reached_goal_1, reached_goal_2
+                    engine.avt_interface.set_metric(agent_id_hook, metric_name, reached)
+                    # Optional: print for immediate feedback during scenario run
+                    # print(f"AVT_DEBUG: Agent {agent_id_hook} at {agent_pos}, Step {current_step_obj.order} Goal: {step_goal_coords}, Reached: {reached} (metric: {metric_name})")
+                # else:
+                    # print(f"AVT_DEBUG: Could not determine step goal or agent position for AVT metric update.")
+            # else:
+                # print(f"AVT_DEBUG: Not a DSE step or not GridWorld-like for AVT metric update.")
 
     # Replace the engine's interaction method with our hooked version for this test run
     engine._run_agent_env_interaction_step = interaction_step_with_avt_update
+
+    print("\n--- Initial Environment State (before DSE steps) ---")
+    if hasattr(engine.environment, 'goal_position'):
+        print(f"Initial Env Goal: {engine.environment.goal_position}")
+    if hasattr(engine.environment, 'walls'):
+        print(f"Initial Env Walls: {engine.environment.walls}")
+    if hasattr(agent, 'current_goal_coords'):
+        print(f"Initial Agent Goal: {agent.current_goal_coords}")
 
     print(f"\n--- Running Dynamic Scenario (GridWorld with DSE) ---")
     engine.run_simulation(num_steps=engine.scenario_config.get("max_total_steps_override", 150))

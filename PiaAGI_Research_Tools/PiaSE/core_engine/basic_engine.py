@@ -242,6 +242,42 @@ class BasicSimulationEngine(SimulationEngine):
                     # self.scenario_setup_module.configure_for_step(agent, self.environment, current_step_obj)
                     # For MVP, this is simplified; agent/env are mostly configured at scenario start.
 
+                    # --- Environment Reconfiguration for DSE Step ---
+                    environment_config = getattr(current_step_obj, 'environment_config', None)
+                    if environment_config and isinstance(environment_config, dict) and environment_config:
+                        self.log_event("DSE_ENV_RECONFIG_START", agent_id, {"step_name": current_step_obj.name, "config_keys": list(environment_config.keys())})
+                        print(f"DSE: Agent {agent_id} attempting environment reconfiguration for step '{current_step_obj.name}'.")
+                        try:
+                            reconfigure_success = self.environment.reconfigure(environment_config)
+                            self.log_event("DSE_ENV_RECONFIG_RESULT", agent_id, {"step_name": current_step_obj.name, "success": reconfigure_success})
+                            if not reconfigure_success:
+                                print(f"DSE Warning: Environment reconfiguration failed for agent {agent_id} at step '{current_step_obj.name}'. Proceeding with previous environment state.")
+                                self.log_event("DSE_ENV_RECONFIG_FAILED", agent_id, {"step_name": current_step_obj.name, "message": "Environment.reconfigure() returned False."})
+                            else:
+                                print(f"DSE: Environment successfully reconfigured for agent {agent_id}, step '{current_step_obj.name}'.")
+                        except Exception as e_reconfig:
+                            print(f"DSE Error: Exception during environment reconfiguration for agent {agent_id}, step '{current_step_obj.name}': {e_reconfig}")
+                            self.log_event("DSE_ENV_RECONFIG_ERROR", agent_id, {"step_name": current_step_obj.name, "error": str(e_reconfig)})
+                            # Decide if this is a critical failure or if the simulation can proceed with old env state.
+                            # For now, proceed with old state and log error.
+
+                    # --- Agent Reconfiguration for DSE Step ---
+                    agent_config = getattr(current_step_obj, 'agent_config_overrides', None)
+                    if agent_config and isinstance(agent_config, dict) and agent_config:
+                        self.log_event("DSE_AGENT_RECONFIG_START", agent_id, {"step_name": current_step_obj.name, "config_keys": list(agent_config.keys())})
+                        print(f"DSE: Agent {agent_id} attempting agent reconfiguration for step '{current_step_obj.name}'.")
+                        if hasattr(agent, 'configure') and callable(getattr(agent, 'configure')):
+                            try:
+                                agent.configure(config=agent_config) # Pass the config dictionary
+                                self.log_event("DSE_AGENT_RECONFIG_APPLIED", agent_id, {"step_name": current_step_obj.name})
+                                print(f"DSE: Agent {agent_id} configuration applied for step '{current_step_obj.name}'.")
+                            except Exception as e_agent_reconfig:
+                                print(f"DSE Error: Exception during agent reconfiguration for agent {agent_id}, step '{current_step_obj.name}': {e_agent_reconfig}")
+                                self.log_event("DSE_AGENT_RECONFIG_ERROR", agent_id, {"step_name": current_step_obj.name, "error": str(e_agent_reconfig)})
+                        else:
+                            self.log_event("DSE_AGENT_RECONFIG_SKIP", agent_id, {"step_name": current_step_obj.name, "reason": "Agent has no callable 'configure' method."})
+                            print(f"DSE Warning: Agent {agent_id} has no 'configure' method. Skipping agent reconfiguration for step '{current_step_obj.name}'.")
+
                     # Inner loop for environment interactions for this curriculum step attempt
                     # Max interactions for this attempt, e.g. from current_step_obj.max_duration or a default
                     max_interactions_for_attempt = getattr(current_step_obj, 'max_interactions', 1) # Default to 1 interaction if not specified
