@@ -2,23 +2,89 @@ from typing import Any, Dict, List, Optional
 
 try:
     from .base_learning_module import BaseLearningModule
+    from .message_bus import MessageBus
+    from .core_messages import GenericMessage, GoalUpdatePayload
 except ImportError:
     # Fallback for scenarios where the relative import might fail
     from base_learning_module import BaseLearningModule
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, GoalUpdatePayload
+    except ImportError:
+        MessageBus = None # type: ignore
+        GenericMessage = None # type: ignore
+        GoalUpdatePayload = None # type: ignore
+
 
 class ConcreteLearningModule(BaseLearningModule):
     """
     A basic, concrete implementation of the BaseLearningModule interface.
-    This version provides simple logging for most learning operations and
-    a very basic direct storage mechanism for a conceptual 'direct_store' paradigm.
-    Ethical guardrails are placeholder.
+    This version provides simple logging for most learning operations.
+    It can subscribe to GoalUpdate messages to conceptually adapt learning strategies.
     """
 
-    def __init__(self):
+    def __init__(self, message_bus: Optional[MessageBus] = None):
+        """
+        Initializes the ConcreteLearningModule.
+
+        Args:
+            message_bus: An optional instance of MessageBus for subscribing to messages.
+        """
         self._learned_items_log: List[Dict[str, Any]] = []
         self._feedback_log: List[Dict[str, Any]] = []
         self._learning_tasks_status: Dict[str, str] = {}
-        print("ConcreteLearningModule initialized.")
+
+        self.message_bus = message_bus
+        self.processed_goal_updates_for_learning: List[GoalUpdatePayload] = []
+
+        bus_status_msg = "not configured"
+        if self.message_bus:
+            if GenericMessage and GoalUpdatePayload: # Check if imports were successful
+                try:
+                    self.message_bus.subscribe(
+                        module_id="ConcreteLearningModule_01", # Example ID
+                        message_type="GoalUpdate",
+                        callback=self.handle_goal_update_for_learning
+                    )
+                    bus_status_msg = "configured and subscribed to GoalUpdate"
+                except Exception as e:
+                    bus_status_msg = f"configured but FAILED to subscribe to GoalUpdate: {e}"
+            else:
+                bus_status_msg = "configured but core message types for subscription not available"
+
+        print(f"ConcreteLearningModule initialized. Message bus {bus_status_msg}.")
+
+
+    def handle_goal_update_for_learning(self, message: GenericMessage):
+        """
+        Handles GoalUpdate messages received from the message bus for learning purposes.
+        This method might adapt learning strategies or parameters based on goal outcomes.
+        """
+        if GoalUpdatePayload and isinstance(message.payload, GoalUpdatePayload):
+            payload: GoalUpdatePayload = message.payload
+            # print(f"LearningModule received GoalUpdate: ID={payload.goal_id}, Status='{payload.status}'") # Optional
+
+            self.processed_goal_updates_for_learning.append(payload)
+
+            # Conceptual learning adaptation based on goal status:
+            if payload.status == "achieved":
+                print(f"  LearningModule: Goal '{payload.goal_id}' ({payload.goal_description[:30]}...) achieved. Conceptually reinforcing associated strategies/knowledge.")
+                # Future: Trigger reinforcement of strategies/knowledge that led to success.
+                # Could involve analyzing recent actions/states from an episodic memory or working memory trace
+                # related to this goal or its originator/context.
+                # Example: self.adjust_strategy_confidence(strategy_used_for_goal, 0.1)
+            elif payload.status == "failed":
+                print(f"  LearningModule: Goal '{payload.goal_id}' ({payload.goal_description[:30]}...) failed. Conceptually penalizing/modifying associated strategies.")
+                # Future: Trigger modification or penalization of strategies.
+                # Could involve analyzing failure cause if available in payload or other context.
+                # Example: self.request_error_analysis(payload.goal_id, payload.get('failure_context', {}))
+
+            # This method could also be a place to generate intrinsic rewards
+            # if the learning module itself is responsible for some forms of it,
+            # e.g., based on prediction error reduction during a learning task related to a goal.
+        else:
+            print(f"LearningModule received GoalUpdate with unexpected payload type: {type(message.payload)}")
+
 
     def learn(self, data: Any, learning_paradigm: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """

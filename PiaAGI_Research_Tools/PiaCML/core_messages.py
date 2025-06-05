@@ -81,28 +81,32 @@ class SelfKnowledgeConfidenceUpdatePayload:
     previous_confidence: Optional[float] = None # Optional: good for logging change
     source_of_update: Optional[str] = None # E.g., "task_success", "user_feedback", "learning_event"
 
+@dataclass
+class LTMQueryPayload:
+    """
+    Payload for sending a query to a Long-Term Memory module.
+    Matches specification in PiaCML_InterModule_Communication.md.
+    """
+    query_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    requester_module_id: str
+    query_type: str  # e.g., "semantic_node_retrieval", "episodic_keyword_search"
+    query_content: Any # Content of the query (e.g., node_id, keywords, cues)
+    target_memory_type: Optional[str] = None # e.g., "semantic", "episodic", "procedural"
+    parameters: Optional[Dict[str, Any]] = field(default_factory=dict) # e.g., max_results, similarity_threshold
 
-# Example LTMQueryPayload (not explicitly requested to be created in this file by the prompt,
-# but useful for context with LTMQueryResultPayload).
-# If needed, it would be defined here as well.
-# @dataclass
-# class LTMQueryPayload:
-#     query_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-#     requester_module_id: str
-#     query_type: str # E.g., "semantic_search", "episodic_retrieval_by_cue"
-#     query_content: Any
-#     target_memory_type: Optional[str] = None # E.g., "semantic", "episodic"
-#     parameters: Dict[str, Any] = field(default_factory=dict)
+@dataclass
+class ActionCommandPayload:
+    """
+    Payload for sending an action command, typically from Planning to Behavior Generation.
+    Matches specification in PiaCML_InterModule_Communication.md.
+    """
+    command_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    action_type: str # e.g., "linguistic_output", "tool_use_request", "navigation_target"
+    parameters: Dict[str, Any] # Specific parameters for the action
+    priority: float = 0.5 # Default priority, higher values mean higher priority
+    target_object_or_agent: Optional[str] = None
+    expected_outcome_summary: Optional[str] = None
 
-# Example ActionCommandPayload (not explicitly requested by the prompt for this file)
-# @dataclass
-# class ActionCommandPayload:
-#     command_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-#     action_type: str
-#     target_object_or_agent: Optional[str] = None
-#     parameters: Dict[str, Any] = field(default_factory=dict)
-#     expected_outcome_summary: Optional[str] = None
-#     priority: float = 0.5
 
 # Example EmotionalStateChangePayload (not explicitly requested by the prompt for this file)
 # @dataclass
@@ -180,5 +184,27 @@ if __name__ == '__main__':
     )
     print(skcup1)
     assert skcup1.new_confidence == 0.95
+
+    # Test LTMQueryPayload
+    ltm_q1 = LTMQueryPayload(
+        requester_module_id="TestModule",
+        query_type="semantic_node_retrieval",
+        query_content="node_id_123",
+        target_memory_type="semantic"
+    )
+    print(ltm_q1)
+    assert ltm_q1.query_type == "semantic_node_retrieval"
+    assert ltm_q1.parameters == {} # Default
+
+    # Test ActionCommandPayload
+    acp1 = ActionCommandPayload(
+        action_type="MOVE_TO_LOCATION",
+        parameters={"x": 10, "y": 20, "speed": "fast"},
+        target_object_or_agent="RobotArm1",
+        expected_outcome_summary="RobotArm1 moves to (10,20)"
+    )
+    print(acp1)
+    assert acp1.action_type == "MOVE_TO_LOCATION"
+    assert acp1.priority == 0.5 # Default
 
     print("\nCore messages example usage complete.")
