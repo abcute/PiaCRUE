@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 import datetime # Added for source_timestamp
+import uuid # For module_id generation
 
 try:
     from .base_perception_module import BasePerceptionModule
@@ -27,17 +28,21 @@ class ConcretePerceptionModule(BasePerceptionModule):
     It can also publish processed percepts to a MessageBus.
     """
 
-    def __init__(self, message_bus: Optional[MessageBus] = None):
+    def __init__(self,
+                 message_bus: Optional[MessageBus] = None,
+                 module_id: str = f"ConcretePerceptionModule_{str(uuid.uuid4())[:8]}"):
         """
         Initializes the ConcretePerceptionModule.
 
         Args:
             message_bus: An optional instance of MessageBus for publishing percepts.
+            module_id: A unique identifier for this module instance.
         """
         self._supported_modalities = ["text", "dict_mock"] # dict_mock for pre-structured data
         self._processing_log: List[str] = []
-        self.message_bus = message_bus
-        print(f"ConcretePerceptionModule initialized. Message bus {'configured' if self.message_bus else 'not configured'}.")
+        self._message_bus = message_bus
+        self._module_id = module_id
+        print(f"ConcretePerceptionModule '{self._module_id}' initialized. Message bus {'configured' if self._message_bus else 'not configured'}.")
 
     def process_sensory_input(self, raw_input: Any, modality: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -103,93 +108,206 @@ class ConcretePerceptionModule(BasePerceptionModule):
         Returns:
             The message_id of the published GenericMessage if successful, otherwise None.
         """
-        if not self.message_bus:
-            print("Warning: ConcretePerceptionModule has no message bus configured. Cannot publish.")
+        if not self._message_bus:
+            print(f"Warning ({self._module_id}): No message bus configured. Cannot publish.")
             return None
 
         if not PerceptDataPayload or not GenericMessage: # Check if imports failed during fallback
-            print("Error: Core message types (PerceptDataPayload or GenericMessage) not available. Cannot publish.")
+            print(f"Error ({self._module_id}): Core message types not available. Cannot publish.")
             return None
 
-        # Conceptual processing: For PoC, just package it.
-        # A real module would call self.process_sensory_input or similar internal logic.
-        # Here, we'll create a simplified content string for the payload.
-        processed_content = f"processed_{str(raw_stimulus)[:50]}" # Truncate for brevity
+        # Call process_sensory_input to get the structured_percept
+        structured_percept = self.process_sensory_input(
+            raw_stimulus,
+            modality,
+            {"source_timestamp_original": source_timestamp, "publisher_module_id": self._module_id}
+        )
 
-        # For a more integrated approach, you might call self.process_sensory_input:
-        # structured_percept = self.process_sensory_input(raw_stimulus, modality, {"source_timestamp_original": source_timestamp})
-        # processed_content = structured_percept.get("processed_representation", {"error": "processing_failed"})
+        processed_representation = structured_percept.get("processed_representation")
+        content_payload: Dict[str, Any]
 
+        # Check if processing failed or returned an error structure
+        if not processed_representation or \
+           (isinstance(processed_representation, dict) and "error" in processed_representation) or \
+           (isinstance(processed_representation, dict) and "unsupported_modality" in processed_representation.get("type", "")):
+            error_details = "Unknown processing error"
+            if isinstance(processed_representation, dict):
+                error_details = processed_representation.get("error", error_details)
+            content_payload = {
+                "error": "processing_failed",
+                "details": error_details,
+                "original_stimulus_type": str(type(raw_stimulus)),
+                "original_modality": modality
+            }
+            print(f"Warning ({self._module_id}): Processing failed or resulted in error for modality '{modality}'. Payload will indicate error.")
+        else:
+            content_payload = processed_representation
 
         payload = PerceptDataPayload(
             modality=modality,
-            content=processed_content,
-            source_timestamp=source_timestamp
-            # processing_timestamp is set by default in PerceptDataPayload
+            content=content_payload, # This is the processed_representation or error dict
+            source_timestamp=source_timestamp,
+            metadata=structured_percept.get("metadata", {}) # Carry over any metadata from processing
         )
 
         msg = GenericMessage(
-            source_module_id="ConcretePerceptionModule_01", # Example ID
+            source_module_id=self._module_id,
             message_type="PerceptData",
             payload=payload
         )
 
         try:
-            self.message_bus.publish(msg)
-            print(f"ConcretePerceptionModule: Published PerceptData message '{msg.message_id}' for modality '{modality}'.")
+            self._message_bus.publish(msg)
+            print(f"ConcretePerceptionModule ({self._module_id}): Published PerceptData message '{msg.message_id}' for modality '{modality}'.")
             return msg.message_id
         except Exception as e:
-            print(f"Error: ConcretePerceptionModule failed to publish message: {e}")
+            print(f"Error ({self._module_id}): Failed to publish message: {e}")
             return None
 
     def get_module_status(self) -> Dict[str, Any]:
         """Returns the current status of the Perception Module."""
         return {
+            "module_id": self._module_id,
             "module_type": "ConcretePerceptionModule",
             "supported_modalities": list(self._supported_modalities),
+            "message_bus_configured": self._message_bus is not None,
             "processing_log_count": len(self._processing_log),
             "last_processed_summary": self._processing_log[-1] if self._processing_log else "None"
         }
 
 if __name__ == '__main__':
-    perception_module = ConcretePerceptionModule()
+    import asyncio
+    import time
 
-    # Initial Status
-    print("\n--- Initial Status ---")
-    print(perception_module.get_module_status())
+    # Ensure MessageBus and core_messages are available for __main__
+    # These should be the actual classes, not stubs, if the script is run directly.
+    # The try-except at the top handles cases where they might be imported differently.
+    if MessageBus is None or GenericMessage is None or PerceptDataPayload is None:
+        print("CRITICAL: MessageBus or core_messages not loaded correctly for __main__ test. Exiting.")
+        exit(1)
+
+    print("\n--- ConcretePerceptionModule __main__ Test ---")
+
+    received_percepts: List[GenericMessage] = []
+    def percept_listener(message: GenericMessage):
+        print(f"\n percept_listener: Received PerceptData! ID: {message.message_id[:8]}")
+        if isinstance(message.payload, PerceptDataPayload):
+            payload: PerceptDataPayload = message.payload
+            print(f"  Source: {message.source_module_id}")
+            print(f"  Modality: {payload.modality}")
+            print(f"  Content type: {type(payload.content)}")
+            print(f"  Content: {str(payload.content)[:150]}...") # Print truncated content
+            print(f"  Source Timestamp: {payload.source_timestamp}")
+            received_percepts.append(message)
+        else:
+            print(f"  ERROR: Listener received non-PerceptDataPayload: {type(message.payload)}")
+
+    async def main_test_flow():
+        bus = MessageBus()
+        # Use a specific module ID for testing
+        test_module_id = "PerceptionTest01"
+        perception_module = ConcretePerceptionModule(message_bus=bus, module_id=test_module_id)
+
+        print("\n--- Initial Status ---")
+        print(perception_module.get_module_status())
+
+        bus.subscribe(
+            module_id="TestListener",
+            message_type="PerceptData",
+            callback=percept_listener
+        )
+        print("\nTestListener subscribed to PerceptData messages.")
+
+        # 1. Test successful text processing
+        print("\n--- Processing and Publishing: Text Input (Success) ---")
+        text_input_ok = "Hello Pia, please see the red ball."
+        ts1 = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=2)
+        msg_id1 = perception_module.process_and_publish_stimulus(text_input_ok, "text", ts1)
+        assert msg_id1 is not None
+
+        await asyncio.sleep(0.05) # Allow time for message dispatch if bus is async
+
+        assert len(received_percepts) == 1, "Listener did not receive the first text percept."
+        if received_percepts:
+            p1: PerceptDataPayload = received_percepts[0].payload
+            assert received_percepts[0].source_module_id == test_module_id
+            assert p1.modality == "text"
+            assert isinstance(p1.content, dict)
+            assert p1.content.get("type") == "linguistic_analysis"
+            assert "ball" in [e["name"] for e in p1.content.get("entities", [])]
+            assert p1.source_timestamp == ts1
+            print("  Listener correctly received and verified first text percept.")
+        received_percepts.clear()
+
+        # 2. Test successful dict_mock processing
+        print("\n--- Processing and Publishing: Dict Mock Input (Success) ---")
+        dict_input_ok = {"sensor": "cameraX", "data": [1, 2, 3]}
+        ts2 = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=1)
+        msg_id2 = perception_module.process_and_publish_stimulus(dict_input_ok, "dict_mock", ts2)
+        assert msg_id2 is not None
+
+        await asyncio.sleep(0.05)
+
+        assert len(received_percepts) == 1, "Listener did not receive the dict_mock percept."
+        if received_percepts:
+            p2: PerceptDataPayload = received_percepts[0].payload
+            assert p2.modality == "dict_mock"
+            assert isinstance(p2.content, dict)
+            assert p2.content.get("type") == "structured_data"
+            assert p2.content.get("data") == dict_input_ok
+            assert p2.source_timestamp == ts2
+            print("  Listener correctly received and verified dict_mock percept.")
+        received_percepts.clear()
+
+        # 3. Test unsupported modality (should publish an error in content)
+        print("\n--- Processing and Publishing: Unsupported Modality (audio) ---")
+        audio_input_fail = b"some_audio_data_bytes"
+        ts3 = datetime.datetime.now(datetime.timezone.utc)
+        msg_id3 = perception_module.process_and_publish_stimulus(audio_input_fail, "audio", ts3)
+        assert msg_id3 is not None
+
+        await asyncio.sleep(0.05)
+
+        assert len(received_percepts) == 1, "Listener did not receive the unsupported modality percept."
+        if received_percepts:
+            p3: PerceptDataPayload = received_percepts[0].payload
+            assert p3.modality == "audio" # Modality is still original
+            assert isinstance(p3.content, dict)
+            assert p3.content.get("error") == "processing_failed"
+            assert "unsupported_modality" in p3.content.get("details", "")
+            assert p3.source_timestamp == ts3
+            print("  Listener correctly received and verified unsupported modality percept (with error payload).")
+        received_percepts.clear()
+
+        # 4. Test with module that has no message bus
+        print("\n--- Testing Module without Message Bus ---")
+        perception_module_no_bus = ConcretePerceptionModule(message_bus=None, module_id="NoBusPerception")
+        print(perception_module_no_bus.get_module_status())
+        no_bus_msg_id = perception_module_no_bus.process_and_publish_stimulus("Test no bus", "text", datetime.datetime.now(datetime.timezone.utc))
+        assert no_bus_msg_id is None
+        print("  Attempt to publish with no bus correctly returned None.")
+
+        print("\n--- Final Status of Test Module ---")
+        print(perception_module.get_module_status())
+        assert perception_module.get_module_status()['processing_log_count'] == 3 # three calls to process_and_publish
+
+        print("\n--- ConcretePerceptionModule __main__ Test Complete ---")
+
+    try:
+        asyncio.run(main_test_flow())
+    except RuntimeError as e:
+        if " asyncio.run() cannot be called from a running event loop" in str(e):
+            print("Skipping asyncio.run() as an event loop is already running (e.g. in Jupyter/IPython).")
+        else:
+            raise
+
+    # Old __main__ content (for reference or non-bus testing)
+    # perception_module = ConcretePerceptionModule()
+    # print("\n--- Initial Status ---")
+    # print(perception_module.get_module_status())
 
     # Process text input
-    print("\n--- Process Text Input ---")
-    text_input1 = "Hello Pia, see the red ball."
-    percept1 = perception_module.process_sensory_input(text_input1, "text", {"source_id": "user_A"})
-    print("Percept 1:", percept1)
-    assert len(percept1['processed_representation']['entities']) == 2 # Pia, ball
-    assert len(percept1['processed_representation']['actions']) == 2 # greet, see
-
-    text_input2 = "User give apple to Pia."
-    percept2 = perception_module.process_sensory_input(text_input2, "text")
-    print("Percept 2:", percept2)
-    assert len(percept2['processed_representation']['entities']) == 3 # User, apple, Pia
-    assert len(percept2['processed_representation']['actions']) == 1 # give
-
-    # Process dict_mock input
-    print("\n--- Process Dict Mock Input ---")
-    dict_input = {"sensor_type": "camera", "objects_detected": [{"id": "obj1", "class": "cup", "confidence": 0.9}]}
-    percept3 = perception_module.process_sensory_input(dict_input, "dict_mock")
-    print("Percept 3:", percept3)
-    assert percept3['processed_representation']['type'] == "structured_data"
-    assert percept3['processed_representation']['data'] == dict_input
-
-    # Process unsupported modality
-    print("\n--- Process Unsupported Modality ---")
-    audio_input = b"some_audio_bytes" # Representing raw audio
-    percept4 = perception_module.process_sensory_input(audio_input, "audio")
-    print("Percept 4:", percept4)
-    assert percept4['processed_representation']['type'] == "unsupported_modality"
-
-    # Final Status
-    print("\n--- Final Status ---")
-    print(perception_module.get_module_status())
-    assert perception_module.get_module_status()['processing_log_count'] == 4
-
-    print("\nExample Usage Complete.")
+    # print("\n--- Process Text Input ---")
+    # text_input1 = "Hello Pia, see the red ball."
+    # ... (rest of old main commented out)
+    # print("\nExample Usage Complete.")

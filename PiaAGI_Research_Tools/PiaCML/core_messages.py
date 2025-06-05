@@ -132,14 +132,27 @@ class ToMInferenceUpdatePayload:
     timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
 
 
-# Example EmotionalStateChangePayload (not explicitly requested by the prompt for this file)
-# @dataclass
-# class EmotionalStateChangePayload:
-#     current_emotion_profile: Dict[str, float] # e.g., {"valence": 0.7, "arousal": 0.5}
-#     primary_emotion: Optional[str] = None
-#     intensity: Optional[float] = None
-#     triggering_event_id: Optional[str] = None
-#     behavioral_impact_suggestions: List[str] = field(default_factory=list)
+@dataclass
+class EmotionalStateChangePayload:
+    current_emotion_profile: Dict[str, float] # e.g., {"valence": 0.7, "arousal": 0.5}
+    primary_emotion: Optional[str] = None
+    intensity: Optional[float] = None # Overall intensity, could be arousal
+    triggering_event_id: Optional[str] = None # ID of event/message that triggered this
+    behavioral_impact_suggestions: List[str] = field(default_factory=list)
+    timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+@dataclass
+class ActionEventPayload:
+    """
+    Payload for communicating the outcome or status of an action.
+    """
+    action_command_id: str # Links back to the ActionCommand that initiated this event
+    action_type: str # The type of action that was executed
+    status: str # E.g., "SUCCESS", "FAILURE", "IN_PROGRESS", "CANCELLED"
+    outcome: Optional[Dict[str, Any]] = field(default_factory=dict) # Results or details
+    timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
+    metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
+
 
 if __name__ == '__main__':
     # Test MemoryItem
@@ -253,5 +266,29 @@ if __name__ == '__main__':
     print(tom_inf1)
     assert tom_inf1.confidence == 0.7
     assert len(tom_inf1.source_evidence_ids) == 2
+
+    # Test EmotionalStateChangePayload
+    esc_payload = EmotionalStateChangePayload(
+        current_emotion_profile={"valence": 0.6, "arousal": 0.7, "dominance": 0.4},
+        primary_emotion="joyful_anticipation",
+        intensity=0.7,
+        triggering_event_id="event_xyz"
+    )
+    print(esc_payload)
+    assert esc_payload.intensity == 0.7
+    assert isinstance(esc_payload.timestamp, datetime.datetime)
+
+    # Test ActionEventPayload
+    action_event_payload = ActionEventPayload(
+        action_command_id="cmd_12345",
+        action_type="NAVIGATE_TO_POINT",
+        status="SUCCESS",
+        outcome={"final_coordinates": {"x": 100, "y": 250}, "path_taken_id": "path_seg_abc"},
+        metadata={"source_behavior_module": "NavigationUnit_02"}
+    )
+    print(action_event_payload)
+    assert action_event_payload.status == "SUCCESS"
+    assert action_event_payload.outcome["final_coordinates"]["x"] == 100
+    assert isinstance(action_event_payload.timestamp, datetime.datetime)
 
     print("\nCore messages example usage complete.")
