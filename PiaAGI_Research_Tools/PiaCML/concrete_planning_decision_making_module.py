@@ -1,37 +1,159 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 import uuid
 
 try:
     from .base_planning_and_decision_making_module import BasePlanningAndDecisionMakingModule
+    from .message_bus import MessageBus
+    from .core_messages import GenericMessage, GoalUpdatePayload, ActionCommandPayload
+    # Assuming Goal dataclass might be defined in motivational system or a shared types file
+    # For this PoC, we'll work with GoalUpdatePayload which carries goal details.
+    # If Goal object itself is needed, import path would need to be correct e.g.
+    # from .concrete_motivational_system_module import Goal
 except ImportError:
     from base_planning_and_decision_making_module import BasePlanningAndDecisionMakingModule
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, GoalUpdatePayload, ActionCommandPayload
+    except ImportError:
+        MessageBus = None # type: ignore
+        GenericMessage = None # type: ignore
+        GoalUpdatePayload = None # type: ignore
+        ActionCommandPayload = None # type: ignore
 
 class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModule):
     """
-    A basic, concrete implementation of the BasePlanningAndDecisionMakingModule.
-    This version uses a predefined set of simple plan templates and basic
-    evaluation/selection logic.
+    A concrete implementation of the BasePlanningAndDecisionMakingModule.
+    This version can subscribe to GoalUpdate messages and publish ActionCommand messages.
+    Planning logic is conceptual for this Proof-of-Concept.
     """
 
-    def __init__(self):
-        self._plan_templates: Dict[str, List[Dict[str, Any]]] = {
-            "achieve_goal_A": [
-                {"action_type": "step1_for_A", "details": "Perform sub-task A.1"},
-                {"action_type": "step2_for_A", "details": "Perform sub-task A.2"}
-            ],
-            "achieve_goal_B": [
-                {"action_type": "step1_for_B", "details": "Do B's first step"},
-                {"action_type": "step2_for_B", "details": "Do B's second step"},
-                {"action_type": "step3_for_B", "details": "Do B's final step"}
-            ],
-            "simple_greet": [
-                {"action_type": "communicate", "final_message_content": "Hello!"}
-            ]
-        }
-        self._known_plans_evaluations: Dict[str, Dict[str, Any]] = {} # plan_id -> evaluation_data
-        self._last_selected_plan_id: Optional[str] = None
-        print("ConcretePlanningAndDecisionMakingModule initialized.")
+    def __init__(self, message_bus: Optional[MessageBus] = None):
+        """
+        Initializes the ConcretePlanningAndDecisionMakingModule.
 
+        Args:
+            message_bus: An optional instance of MessageBus for communication.
+        """
+        self._plan_templates: Dict[str, List[Dict[str, Any]]] = { # Kept for conceptual planning
+            "achieve_goal_A": [{"action_type": "step1_for_A"}, {"action_type": "step2_for_A"}],
+            "simple_greet": [{"action_type": "communicate", "parameters": {"message": "Hello!"}}]
+        }
+        self.message_bus = message_bus
+        self.pending_goals: List[GoalUpdatePayload] = [] # Stores received GoalUpdatePayloads
+
+        bus_status_msg = "not configured"
+        if self.message_bus:
+            if GenericMessage and GoalUpdatePayload: # Check if imports were successful
+                try:
+                    self.message_bus.subscribe(
+                        module_id="ConcretePlanningAndDecisionMakingModule_01", # Example ID
+                        message_type="GoalUpdate",
+                        callback=self.handle_goal_update_message
+                    )
+                    bus_status_msg = "configured and subscribed to GoalUpdate"
+                except Exception as e:
+                    bus_status_msg = f"configured but FAILED to subscribe to GoalUpdate: {e}"
+            else:
+                bus_status_msg = "configured but core message types for subscription not available"
+
+        print(f"ConcretePlanningAndDecisionMakingModule initialized. Message bus {bus_status_msg}.")
+
+    def handle_goal_update_message(self, message: GenericMessage):
+        """Handles GoalUpdate messages received from the message bus."""
+        if GoalUpdatePayload and isinstance(message.payload, GoalUpdatePayload):
+            payload: GoalUpdatePayload = message.payload
+            # print(f"Planner received GoalUpdate: {payload.goal_id}, status: {payload.status}") # Optional
+
+            if payload.status in ["new", "active", "updated", "PENDING", "ACTIVE"]: # Accept common active/new statuses
+                # Remove existing goal with same ID to replace with updated info or avoid duplicate processing
+                self.pending_goals = [g for g in self.pending_goals if g.goal_id != payload.goal_id]
+
+                self.pending_goals.append(payload)
+                # Keep sorted by priority (highest first)
+                self.pending_goals.sort(key=lambda g: g.priority, reverse=True)
+                # print(f"Planner: Goal '{payload.goal_id}' added/updated in pending_goals. Count: {len(self.pending_goals)}")
+            elif payload.status in ["achieved", "failed", "BLOCKED", "paused"]:
+                # If a goal is no longer active, remove it from pending goals
+                removed_count = len(self.pending_goals)
+                self.pending_goals = [g for g in self.pending_goals if g.goal_id != payload.goal_id]
+                removed_count -= len(self.pending_goals)
+                # if removed_count > 0:
+                #     print(f"Planner: Goal '{payload.goal_id}' removed from pending_goals due to status '{payload.status}'.")
+        else:
+            print(f"Planner received GoalUpdate with unexpected payload type: {type(message.payload)}")
+
+    def develop_and_dispatch_plan(self, goal_payload: GoalUpdatePayload) -> bool:
+        """
+        Conceptual: Develops a simple plan for the given goal and publishes ActionCommands.
+        For PoC, it creates 1-2 conceptual ActionCommandPayloads based on goal description.
+        """
+        if not self.message_bus or not GenericMessage or not ActionCommandPayload:
+            print("Warning: Planner has no message bus or core message types. Cannot dispatch plan.")
+            return False
+
+        print(f"Planner: Developing plan for goal '{goal_payload.goal_id}': {goal_payload.goal_description}")
+
+        # Conceptual Plan Generation (example)
+        action_payloads: List[ActionCommandPayload] = []
+        if "greet" in goal_payload.goal_description.lower():
+            action_payloads.append(ActionCommandPayload(
+                action_type="linguistic_output",
+                parameters={"message": f"Hello! This is a plan for '{goal_payload.goal_description}'."},
+                priority=goal_payload.priority
+            ))
+        else:
+            action_payloads.append(ActionCommandPayload(
+                action_type="conceptual_step",
+                parameters={"task": f"Step 1 for {goal_payload.goal_description}", "goal_id": goal_payload.goal_id},
+                priority=goal_payload.priority,
+                expected_outcome_summary="Complete step 1 of the plan."
+            ))
+            if goal_payload.priority > 0.7: # Add a second step for high priority goals
+                 action_payloads.append(ActionCommandPayload(
+                    action_type="conceptual_step",
+                    parameters={"task": f"Step 2 for {goal_payload.goal_description}", "goal_id": goal_payload.goal_id},
+                    priority=goal_payload.priority - 0.1, # Slightly lower priority for subsequent step
+                    expected_outcome_summary="Complete step 2 of the plan."
+                ))
+
+        if not action_payloads:
+            print(f"Planner: No actions generated for goal '{goal_payload.goal_id}'.")
+            return False
+
+        for ac_payload in action_payloads:
+            action_message = GenericMessage(
+                source_module_id="ConcretePlanningAndDecisionMakingModule_01", # Example ID
+                message_type="ActionCommand",
+                payload=ac_payload
+            )
+            self.message_bus.publish(action_message)
+            print(f"Planner: Published ActionCommand '{ac_payload.action_type}' for goal '{goal_payload.goal_id}'. CMD_ID: {ac_payload.command_id}")
+
+        # For PoC, mark goal as "planned" or remove from pending.
+        # Here, we'll assume it's removed by process_one_pending_goal.
+        # If called directly, the caller should handle its status or removal from a list.
+        return True
+
+    def process_one_pending_goal(self) -> bool:
+        """
+        Processes the highest priority pending goal by developing and dispatching a plan.
+        Returns True if a goal was processed, False otherwise.
+        """
+        if not self.pending_goals:
+            # print("Planner: No pending goals to process.") # Optional
+            return False
+
+        highest_priority_goal_payload = self.pending_goals.pop(0) # Get and remove from list
+        print(f"Planner: Processing highest priority pending goal '{highest_priority_goal_payload.goal_id}'.")
+
+        # Mark as "ACTIVE" or similar before planning, and publish this status update
+        # For this PoC, we directly proceed to develop_and_dispatch_plan
+        # A more robust implementation would update the goal's status in the MotivationalSystem
+        # via a GoalStatusUpdateRequest message or similar, or the SMM might do this.
+
+        return self.develop_and_dispatch_plan(highest_priority_goal_payload)
+
+    # --- Existing conceptual methods (can be kept or adapted/removed later) ---
     def create_plan(self, goal: Dict[str, Any], world_model_context: Dict[str, Any], self_model_context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Creates a plan based on the goal description.

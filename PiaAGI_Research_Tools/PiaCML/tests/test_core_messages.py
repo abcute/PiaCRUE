@@ -16,7 +16,9 @@ try:
         GenericMessage,
         PerceptDataPayload,
         GoalUpdatePayload,
-        LTMQueryResultPayload
+        LTMQueryResultPayload,
+        LTMQueryPayload,      # Added
+        ActionCommandPayload  # Added
     )
 except ModuleNotFoundError as e:
     print(f"Import error in test_core_messages.py: {e}")
@@ -29,7 +31,9 @@ except ModuleNotFoundError as e:
         GenericMessage,
         PerceptDataPayload,
         GoalUpdatePayload,
-        LTMQueryResultPayload
+        LTMQueryResultPayload,
+        LTMQueryPayload,      # Added
+        ActionCommandPayload  # Added
     )
 
 
@@ -176,6 +180,72 @@ class TestCoreMessages(unittest.TestCase):
         self.assertFalse(ltm_res_fail.success_status)
         self.assertEqual(ltm_res_fail.error_message, "Database connection timed out.")
         self.assertEqual(len(ltm_res_fail.results), 0)
+
+    def test_ltm_query_payload_creation(self):
+        """Test LTMQueryPayload creation."""
+        # Test with required fields
+        query1 = LTMQueryPayload(
+            requester_module_id="TestMod1",
+            query_type="semantic_node_retrieval",
+            query_content="node_id_test"
+        )
+        self.assertTrue(is_dataclass(query1))
+        self.assertIsInstance(query1.query_id, str) # Default factory
+        self.assertIsNotNone(uuid.UUID(query1.query_id))
+        self.assertEqual(query1.requester_module_id, "TestMod1")
+        self.assertEqual(query1.query_type, "semantic_node_retrieval")
+        self.assertEqual(query1.query_content, "node_id_test")
+        self.assertIsNone(query1.target_memory_type) # Default
+        self.assertEqual(query1.parameters, {}) # Default factory
+
+        # Test with all fields
+        custom_query_id = str(uuid.uuid4())
+        params = {"max_results": 10, "min_confidence": 0.7}
+        query2 = LTMQueryPayload(
+            query_id=custom_query_id,
+            requester_module_id="TestMod2",
+            query_type="episodic_keyword_search",
+            query_content=["keyword1", "keyword2"],
+            target_memory_type="episodic",
+            parameters=params
+        )
+        self.assertEqual(query2.query_id, custom_query_id)
+        self.assertEqual(query2.target_memory_type, "episodic")
+        self.assertEqual(query2.parameters, params)
+
+    def test_action_command_payload_creation(self):
+        """Test ActionCommandPayload creation."""
+        # Test with required fields
+        cmd1_params = {"target_location": "kitchen"}
+        cmd1 = ActionCommandPayload(
+            action_type="NAVIGATE",
+            parameters=cmd1_params
+        )
+        self.assertTrue(is_dataclass(cmd1))
+        self.assertIsInstance(cmd1.command_id, str) # Default factory
+        self.assertIsNotNone(uuid.UUID(cmd1.command_id))
+        self.assertEqual(cmd1.action_type, "NAVIGATE")
+        self.assertEqual(cmd1.parameters, cmd1_params)
+        self.assertEqual(cmd1.priority, 0.5) # Default
+        self.assertIsNone(cmd1.target_object_or_agent) # Default
+        self.assertIsNone(cmd1.expected_outcome_summary) # Default
+
+        # Test with all fields
+        custom_cmd_id = str(uuid.uuid4())
+        cmd2_params = {"tool_name": "calculator", "input_values": [5, 7]}
+        cmd2 = ActionCommandPayload(
+            command_id=custom_cmd_id,
+            action_type="TOOL_USE",
+            parameters=cmd2_params,
+            priority=0.9,
+            target_object_or_agent="ToolManager",
+            expected_outcome_summary="Result of 5+7"
+        )
+        self.assertEqual(cmd2.command_id, custom_cmd_id)
+        self.assertEqual(cmd2.priority, 0.9)
+        self.assertEqual(cmd2.target_object_or_agent, "ToolManager")
+        self.assertEqual(cmd2.expected_outcome_summary, "Result of 5+7")
+
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
