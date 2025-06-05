@@ -66,17 +66,23 @@ class LoggingSystem:
 
     def __init__(self):
         """
-        Initializes the LoggingSystem with an empty log store and default required fields.
-        The required fields are currently: "timestamp", "source", "event_type", and "data".
+        Initializes the LoggingSystem with an empty log store and updated required fields.
         """
         self.log_data: List[LogEntry] = []
-        self.required_fields: List[str] = ["timestamp", "source", "event_type", "data"]
+        self.required_fields: List[str] = [
+            "timestamp", "simulation_run_id", "experiment_id", "agent_id",
+            "source_component_id", "log_level", "event_type", "event_data"
+        ]
         # Optional: Define expected data types for fields for more robust validation
         # self.field_types = {
         #     "timestamp": str,
-        #     "source": str,
+        #     "simulation_run_id": str,
+        #     "experiment_id": str,
+        #     "agent_id": str,
+        #     "source_component_id": str,
+        #     "log_level": str,
         #     "event_type": str,
-        #     "data": dict
+        #     "event_data": dict
         # }
 
     def _validate_log_entry(self, entry: Dict[str, Any]) -> LogEntry:
@@ -85,10 +91,10 @@ class LoggingSystem:
 
         This internal method checks for:
         - Presence of all fields listed in `self.required_fields`.
-        - Correct type and format for the 'timestamp' field (must be a string
-          parsable by `DEFAULT_TIMESTAMP_FORMAT`).
-        - Non-empty string for 'source' and 'event_type' fields.
-        - 'data' field must be a dictionary.
+        - Correct type and format for the 'timestamp' field.
+        - Non-empty strings for 'simulation_run_id', 'experiment_id', 'agent_id',
+          'source_component_id', 'log_level', and 'event_type' fields.
+        - 'event_data' field must be a dictionary.
 
         Args:
             entry (Dict[str, Any]): The log entry dictionary to validate.
@@ -104,7 +110,7 @@ class LoggingSystem:
             if field not in entry:
                 raise LogValidationError(f"Missing required field: '{field}' in log entry: {entry}")
 
-        # Validate timestamp format (basic check)
+        # Validate timestamp format
         timestamp_str = entry.get("timestamp")
         if not isinstance(timestamp_str, str):
             raise LogValidationError(f"Timestamp must be a string. Found: {type(timestamp_str)} in entry: {entry}")
@@ -116,20 +122,22 @@ class LoggingSystem:
                 f"Expected format: {DEFAULT_TIMESTAMP_FORMAT} (e.g., 2023-10-27T10:30:00.123Z)"
             )
 
-        # Validate source type
-        source_str = entry.get("source")
-        if not isinstance(source_str, str) or not source_str.strip():
-            raise LogValidationError(f"Log source must be a non-empty string. Found: '{source_str}' in entry: {entry}")
+        # Validate new string fields
+        string_fields_to_check = [
+            "simulation_run_id", "experiment_id", "agent_id",
+            "source_component_id", "log_level", "event_type"
+        ]
+        for field_name in string_fields_to_check:
+            field_value = entry.get(field_name)
+            if not isinstance(field_value, str) or not field_value.strip():
+                raise LogValidationError(
+                    f"Log field '{field_name}' must be a non-empty string. Found: '{field_value}' in entry: {entry}"
+                )
 
-        # Validate event_type
-        event_type_str = entry.get("event_type")
-        if not isinstance(event_type_str, str) or not event_type_str.strip():
-            raise LogValidationError(f"Log event_type must be a non-empty string. Found: '{event_type_str}' in entry: {entry}")
-
-        # Validate data field (should be a dictionary)
-        data_dict = entry.get("data")
-        if not isinstance(data_dict, dict):
-            raise LogValidationError(f"Log 'data' field must be a dictionary. Found: {type(data_dict)} in entry: {entry}")
+        # Validate event_data field (should be a dictionary)
+        event_data_dict = entry.get("event_data")
+        if not isinstance(event_data_dict, dict):
+            raise LogValidationError(f"Log 'event_data' field must be a dictionary. Found: {type(event_data_dict)} in entry: {entry}")
 
         # Add more specific field type checks here if self.field_types is defined
         # for field, expected_type in self.field_types.items():
@@ -188,47 +196,57 @@ class LoggingSystem:
         else:
             self.log_data.extend(entries) # Use with caution
 
-    def load_logs_from_json_file(self, file_path: str, validate: bool = True) -> None:
+    def load_logs_from_jsonl_file(self, file_path: str, validate: bool = True) -> None:
         """
-        Loads log entries from a JSON file.
+        Loads log entries from a JSONL (JSON Lines) file.
 
-        The JSON file is expected to contain a single list, where each item in the
-        list is a dictionary representing a log entry. These entries are then added
+        Each line in the JSONL file is expected to be a valid JSON object
+        representing a single log entry. These entries are then added
         via `add_log_entries`, respecting the `validate` flag.
+        If a line cannot be parsed as JSON, an error is printed, and that line is skipped.
 
         Args:
-            file_path (str): The path to the JSON file containing log entries.
+            file_path (str): The path to the JSONL file containing log entries.
             validate (bool): If True (default), entries loaded from the file are validated.
                              If False, validation is skipped.
 
         Raises:
             FileNotFoundError: If the specified `file_path` does not exist.
-            json.JSONDecodeError: If the file content is not valid JSON.
-            LogValidationError: If the JSON content is not a list, or if `validate`
-                                is True and any log entry from the file fails validation.
+            LogValidationError: If `validate` is True and any successfully parsed
+                                log entry from the file fails validation.
             Exception: Catches other potential errors during file operations or processing.
         """
+        loaded_entries: List[LogEntry] = []
         try:
             with open(file_path, 'r') as f:
-                raw_entries = json.load(f)
+                for i, line in enumerate(f):
+                    line = line.strip()
+                    if not line:
+                        continue  # Skip empty lines
+                    try:
+                        entry = json.loads(line)
+                        loaded_entries.append(entry)
+                    except json.JSONDecodeError as e_json:
+                        print(f"Error decoding JSON from line {i+1} in {file_path}: {e_json}\nProblematic line: '{line}'")
+                        # Optionally, decide if you want to stop processing or continue
+                        continue
 
-            if not isinstance(raw_entries, list):
-                raise LogValidationError(f"JSON file {file_path} must contain a list of log entries.")
+            if not loaded_entries:
+                print(f"No valid log entries found or loaded from {file_path}.")
+                return
 
-            self.add_log_entries(raw_entries, validate=validate)
-            print(f"Successfully loaded {len(raw_entries)} log entries from {file_path}")
+            self.add_log_entries(loaded_entries, validate=validate)
+            print(f"Successfully processed {len(loaded_entries)} potential log entries from JSONL file {file_path}.")
+            # Note: add_log_entries will print its own success/error or raise LogValidationError
 
         except FileNotFoundError:
             print(f"Error: File not found at {file_path}")
             raise
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON from {file_path}: {e}")
-            raise
-        except LogValidationError as e: # Catch validation errors from add_log_entries
-            print(f"Error processing log entries from {file_path}: {e}")
-            raise
-        except Exception as e:
-            print(f"An unexpected error occurred while loading logs from {file_path}: {e}")
+        except LogValidationError as e_val: # Catch validation errors from add_log_entries
+            print(f"Error processing log entries from JSONL file {file_path}: {e_val}")
+            raise # Re-raise to signal failure at a higher level if needed
+        except Exception as e: # Catch other unexpected errors
+            print(f"An unexpected error occurred while loading logs from JSONL file {file_path}: {e}")
             raise
 
     def get_log_data(self) -> List[LogEntry]:
@@ -265,31 +283,46 @@ if __name__ == "__main__":
     # Example valid log entries
     log1 = {
         "timestamp": "2024-01-15T10:00:00.000Z",
-        "source": "PiaCML.Memory.LTM",
+        "simulation_run_id": "sim_run_001",
+        "experiment_id": "exp_LTM_retrieval_A",
+        "agent_id": "agent_alpha",
+        "source_component_id": "PiaCML.Memory.LTM",
+        "log_level": "INFO",
         "event_type": "MemoryRetrieval",
-        "data": {"query": "concept:AGI", "status": "success", "retrieved_items": 3}
+        "event_data": {"query": "concept:AGI", "status": "success", "retrieved_items": 3}
     }
     log2 = {
         "timestamp": "2024-01-15T10:00:05.123Z",
-        "source": "PiaSE.Environment",
+        "simulation_run_id": "sim_run_001",
+        "experiment_id": "exp_LTM_retrieval_A",
+        "agent_id": "agent_alpha",
+        "source_component_id": "PiaSE.Environment",
+        "log_level": "DEBUG",
         "event_type": "AgentAction",
-        "data": {"agent_id": "agent_001", "action": "move_forward", "outcome": "success"}
+        "event_data": {"agent_id_ref": "agent_alpha", "action": "move_forward", "outcome": "success"}
     }
 
-    # Example invalid log entry (missing 'data' field)
+    # Example invalid log entry (missing 'simulation_run_id' field)
     invalid_log_missing_field = {
         "timestamp": "2024-01-15T10:00:10.000Z",
-        "source": "PiaCML.Motivation",
-        "event_type": "GoalUpdated"
-        # Missing "data"
+        "experiment_id": "exp_motivation_B",
+        "agent_id": "agent_beta",
+        "source_component_id": "PiaCML.Motivation",
+        "log_level": "WARN",
+        "event_type": "GoalUpdated",
+        "event_data": {"goal_id": "g001", "status": "achieved"}
     }
 
     # Example invalid log entry (incorrect timestamp format)
     invalid_log_timestamp_format = {
         "timestamp": "15-01-2024 10:00:00", # Incorrect format
-        "source": "PiaCML.Emotion",
+        "simulation_run_id": "sim_run_002",
+        "experiment_id": "exp_emotion_C",
+        "agent_id": "agent_gamma",
+        "source_component_id": "PiaCML.Emotion",
+        "log_level": "ERROR",
         "event_type": "StateChange",
-        "data": {"emotion": "joy", "intensity": 0.7}
+        "event_data": {"emotion": "joy", "intensity": 0.7}
     }
 
     try:
@@ -300,7 +333,7 @@ if __name__ == "__main__":
         print(f"Error adding log: {e}")
 
     try:
-        print("\nAttempting to add invalid log (missing field)...")
+        print("\nAttempting to add invalid log (missing field 'simulation_run_id')...")
         logging_system.add_log_entry(invalid_log_missing_field)
     except LogValidationError as e:
         print(f"Caught expected error: {e}")
@@ -311,18 +344,24 @@ if __name__ == "__main__":
     except LogValidationError as e:
         print(f"Caught expected error: {e}")
 
-    # Example of loading from a file (requires a test_logs.json file)
-    # Create a dummy JSON file for testing
-    dummy_logs = [log1, log2]
-    dummy_file_path = "test_logs.json"
+    # Example of loading from a file (requires a test_logs.jsonl file)
+    # Create a dummy JSONL file for testing
+    dummy_logs_for_file = [log1, log2, invalid_log_missing_field] # Include one invalid to test line skipping
+    dummy_file_path = "test_logs.jsonl"
     with open(dummy_file_path, 'w') as f_dummy:
-        json.dump(dummy_logs, f_dummy, indent=2)
+        for log_entry in dummy_logs_for_file:
+            f_dummy.write(json.dumps(log_entry) + '\n')
 
     print(f"\nAttempting to load logs from {dummy_file_path}...")
+    # Clear existing logs to test file loading in isolation
+    logging_system.clear_logs()
+    print(f"Logs cleared. Current count: {logging_system.get_log_count()}")
     try:
-        logging_system.load_logs_from_json_file(dummy_file_path)
+        logging_system.load_logs_from_jsonl_file(dummy_file_path)
+        # The load method itself prints success/failure per line for JSON errors,
+        # and add_log_entries (called by load_logs_from_jsonl_file) prints validation errors.
         print(f"Total logs after loading from file: {logging_system.get_log_count()}")
-    except Exception as e:
+    except Exception as e: # Catch other exceptions like FileNotFoundError or validation errors re-raised
         print(f"Error loading from file: {e}")
 
     # Clean up dummy file

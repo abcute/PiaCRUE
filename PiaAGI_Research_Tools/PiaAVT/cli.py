@@ -47,12 +47,16 @@ def handle_load(args):
     if pia_api_instance is None:
         pia_api_instance = PiaAVTAPI()
 
-    print(f"CLI: Loading logs from: {args.filepath}...")
-    success = pia_api_instance.load_logs_from_json(args.filepath)
-    if success:
-        print(f"CLI: Successfully loaded {pia_api_instance.get_log_count()} log entries.")
+    print(f"CLI: Loading logs from JSONL file: {args.filepath}...")
+    success = pia_api_instance.load_logs_from_jsonl(args.filepath) # MODIFIED
+    if success and pia_api_instance.get_log_count() > 0:
+        print(f"CLI: Successfully loaded {pia_api_instance.get_log_count()} log entries from JSONL file.")
+    elif success and pia_api_instance.get_log_count() == 0:
+        print(f"CLI: Processed JSONL file {args.filepath}, but no valid log entries were loaded.")
     else:
-        print(f"CLI: Failed to load logs from {args.filepath}.", file=sys.stderr)
+        # API's load_logs_from_jsonl method already prints detailed errors
+        print(f"CLI: Failed to load logs from JSONL file {args.filepath}. See API messages above for details.", file=sys.stderr)
+
 
 def handle_stats(args):
     """Handles the 'stats' command."""
@@ -224,8 +228,8 @@ def main():
                                        help="Available PiaAVT commands. Type a command followed by -h for more help (e.g., load -h).")
 
     # --- Load command ---
-    load_parser = subparsers.add_parser("load", help="Load log data from a JSON file.")
-    load_parser.add_argument("filepath", type=str, help="Path to the JSON log file.")
+    load_parser = subparsers.add_parser("load", help="Load log data from a JSONL (JSON Lines) file.") # MODIFIED
+    load_parser.add_argument("filepath", type=str, help="Path to the JSONL (JSON Lines) log file.") # MODIFIED
     load_parser.set_defaults(func=handle_load)
 
     # --- Stats command ---

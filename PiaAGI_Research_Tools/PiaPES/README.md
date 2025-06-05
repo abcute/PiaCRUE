@@ -12,20 +12,21 @@ This suite is crucial for configuring PiaAGI agents, guiding their learning and 
 The current focus is an MVP Python-based **Prompt Engine** (`prompt_engine_mvp.py`) and a basic **Web Interface**.
 
 **`prompt_engine_mvp.py` Features:**
-*   **Structured Prompt & Curriculum Creation:** Python classes (e.g., `PiaAGIPrompt`, `Role`, `CognitiveModuleConfiguration`, `DevelopmentalCurriculum`) mirroring PiaAGI prompt structures.
+*   **Structured Prompt & Curriculum Creation:** Python classes (e.g., `PiaAGIPrompt`, `Role`, `CognitiveModuleConfiguration`) mirroring PiaAGI prompt structures.
+*   - Structured classes for `DevelopmentalCurriculum` and `CurriculumStep` supporting curriculum design.
 *   **Placeholder Substitution:** Fill `{placeholders}` in prompt attributes.
 *   **Rendering to Markdown:** `render()` method for human-readable output.
-*   **Saving & Loading (JSON):** `save_template()` and `load_template()` for reliable serialization.
+*   **Saving & Loading (JSON):** `save_template()` and `load_template()` for reliable serialization of both prompts and curricula.
 *   **Exporting to Markdown:** One-way export for documentation.
 *   **Unit Tests:** Available in `tests/`.
 
 **Web Interface (`web_app/`) Features:**
-*   Basic CRUD (Create, Read, Update, Delete) operations for prompt and curriculum files (`*.json`, `*.curriculum.json`) stored in `web_app/prompt_files/`.
+*   - Basic CRUD (Create, Read, Update, Delete) operations for prompt template files (`*.json`) and developmental curriculum files (`*.curriculum.json`) stored in `web_app/prompt_files/`.
 *   Form-based input for `PiaAGIPrompt` attributes, including detailed cognitive configurations (Personality, Motivation, Emotion, Learning) and dynamic workflow step management.
-*   Form-based input for `DevelopmentalCurriculum` metadata and step definition (linking to existing prompt files).
+*   - Form-based input for `DevelopmentalCurriculum` metadata and dynamic management of `CurriculumStep` definitions (including linking steps to existing prompt files).
 *   Rendering of prompts and curricula to Markdown.
 *   Basic template loading and "save as new template" functionality.
-*   LLM configuration via `llm_config.ini.template` for potential future integrations.
+*   - Includes `llm_config.ini.template` for potential future direct LLM integrations within PiaPES, or for reference by consuming applications (like the Unified WebApp).
 
 For detailed usage of the MVP, refer to [USAGE.md](./USAGE.md) and the [PiaPES Web Interface Design Document](./web_interface_design.md). The web app can be run from `PiaAGI_Research_Tools/PiaPES/web_app/` using `python app.py`.
 
@@ -34,7 +35,7 @@ For detailed usage of the MVP, refer to [USAGE.md](./USAGE.md) and the [PiaPES W
 PiaPES is envisioned to evolve into a comprehensive suite. Key conceptual features and future directions include:
 
 1.  **Advanced Developmental Curriculum Designer:**
-    *   Enhance the `DevelopmentalCurriculum` data model and associated tools in PiaPES to support:
+    *   - Enhance the existing `DevelopmentalCurriculum` data model (currently in `prompt_engine_mvp.py`) and associated tools in PiaPES to support:
         *   Complex dependencies between curriculum stages and steps.
         *   Branching logic based on agent performance or achieved milestones.
         *   Criteria for adaptation (e.g., if agent masters skill X, skip to step Z; if agent struggles with Y, provide remedial sub-curriculum A).

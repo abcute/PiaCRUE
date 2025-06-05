@@ -20,6 +20,7 @@ The examples here aim to provide:
 *   **Experimentation:** Adapt and test these examples in environments that can interpret PiaAGI's structured prompts. Observe how changes in prompt structure and content conceptually influence an agent's behavior and internal states.
 *   **Building Blocks:** Use these examples as inspiration or foundational templates for developing your own sophisticated Guiding Prompts and Developmental Scaffolding curricula for PiaAGI agents.
 *   **GitHub Rendering Note:** Some examples utilize YAML-like frontmatter for metadata. If you encounter rendering issues on GitHub, please ensure your local viewer or environment correctly parses Markdown with frontmatter. The core content of the examples remains valid Markdown.
+*   - **PiaPES Engine for Structure:** Many examples, especially those involving detailed Guiding Prompts (like Cognitive Configurations or Developmental Scaffolding), are structured based on the Python classes from the PiaPES prompt engine (`../PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py`). Refer to `../PiaAGI_Research_Tools/PiaPES/USAGE.md` for details on these classes (e.g., `PiaAGIPrompt`, `Role`, `CognitiveModuleConfiguration`) to better understand their JSON representation or to programmatically construct similar prompts.
 
 ## Example Categories and Files
 
@@ -71,7 +72,7 @@ Prompts designed to introduce tools (conceptual or otherwise) to an agent, guide
 Examples related to the PiaAGI Prompt Engineering Suite (PiaPES).
 
 *   **[`PiaPES_Usage/Building_A_Role_Prompt_With_PiaPES.md`](./PiaPES_Usage/Building_A_Role_Prompt_With_PiaPES.md)**: Conceptually illustrates how the PiaPES Python engine could be used to programmatically construct a complex role definition prompt.
-*   **[`PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md`](./PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md)**: Provides a concrete Python script using `prompt_engine_mvp.py` to generate and serialize a Guiding Prompt with detailed cognitive configurations.
+*   **[`PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md`](./PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md)**: Provides a concrete Python script using `prompt_engine_mvp.py` to generate a Guiding Prompt with detailed cognitive configurations, and demonstrates saving it as a JSON template.
 *   **[`PiaPES_Usage/Defining_Developmental_Curriculum_PiaPES.md`](./PiaPES_Usage/Defining_Developmental_Curriculum_PiaPES.md)**: Conceptually illustrates how a `DevelopmentalCurriculum` object within PiaPES could be defined to sequence Guiding Prompts.
 
 ### 6. Cross-Stage Development

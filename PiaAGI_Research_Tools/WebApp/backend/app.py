@@ -10,27 +10,33 @@ import json # For PiaPES integration
 import re # For PiaPES sanitize_filename
 
 # --- Path Setup ---
-# Add PiaAGI_Hub to sys.path to allow CML imports
-# This assumes app.py is in PiaAGI_Hub/WebApp/backend/
-# Adjust if the directory structure is different or if CML becomes a proper package
+# Add PiaAGI_Research_Tools to sys.path to allow direct imports of its submodules (PiaCML, PiaPES, etc.)
+# This assumes app.py is in PiaAGI_Research_Tools/WebApp/backend/
+# So, '..' (parent of backend) is WebApp, and '..' (parent of WebApp) is PiaAGI_Research_Tools.
 try:
-# Path to PiaAGI_Hub directory from the current file's location (WebApp/backend)
-path_to_piaagi_hub = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-if path_to_piaagi_hub not in sys.path:
-    sys.path.insert(0, path_to_piaagi_hub)
+    # Path to the PiaAGI_Research_Tools directory from the current file's location
+    path_to_research_tools_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    if path_to_research_tools_root not in sys.path:
+        sys.path.insert(0, path_to_research_tools_root) # Add PiaAGI_Research_Tools to path
 
-# Add PiaPES directory to sys.path for prompt_engine_mvp
-PES_DIR = os.path.join(path_to_piaagi_hub, 'PiaPES')
-if PES_DIR not in sys.path:
-    sys.path.insert(0, PES_DIR)
+    # The following specific additions for PiaPES, PiaSE, PiaAVT might be redundant
+    # if these are proper packages within PiaAGI_Research_Tools and PiaAGI_Research_Tools itself is in sys.path.
+    # However, keeping them for now if they contain scripts or modules accessed in a specific way
+    # that relies on their individual directory being in path (e.g. for some examples or older utils).
 
-# Add PiaSE directory to sys.path
-PIASE_DIR = os.path.join(path_to_piaagi_hub, 'PiaSE')
-if PIASE_DIR not in sys.path:
-    # This typically would be PIASE_DIR itself, but if utils, core_engine are directly under it:
-    sys.path.insert(0, PIASE_DIR)
-    # If PiaSE components are within a src dir inside PiaSE, adjust accordingly e.g.
-    # sys.path.insert(0, os.path.join(PIASE_DIR, 'src'))
+    # Add PiaPES directory to sys.path for prompt_engine_mvp (if it's not treated as part of PiaAGI_Research_Tools package)
+    PES_DIR = os.path.join(path_to_research_tools_root, 'PiaPES')
+    if PES_DIR not in sys.path:
+        sys.path.insert(0, PES_DIR) # This allows `from prompt_engine_mvp import ...`
+
+    # Add PiaSE directory to sys.path (if it's not treated as part of PiaAGI_Research_Tools package)
+    PIASE_DIR = os.path.join(path_to_research_tools_root, 'PiaSE')
+    if PIASE_DIR not in sys.path:
+        # This typically would be PIASE_DIR itself for imports like `from core_engine...`
+        sys.path.insert(0, PIASE_DIR)
+
+    # Note: CML imports like `from PiaCML.concrete_perception_module import ...` will work
+    # because `path_to_research_tools_root` (which contains PiaCML as a sub-directory/package) is in sys.path.
 
 
 # --- Matplotlib Configuration (early) ---
@@ -47,7 +53,7 @@ try:
     from PiaCML.concrete_working_memory_module import ConcreteWorkingMemoryModule
     logger.info("CML modules imported successfully.")
 except ImportError as e:
-    logger.error(f"Error importing CML modules: {e}. Using dummy classes. Ensure PiaAGI_Hub is in PYTHONPATH or sys.path is correct.")
+    logger.error(f"Error importing CML modules: {e}. Using dummy classes. Ensure PiaAGI_Research_Tools is in PYTHONPATH or sys.path is correct, and PiaCML is a package.")
     class ConcretePerceptionModule: pass
     class ConcreteEmotionModule: pass
     class ConcreteMotivationalSystemModule: pass
@@ -176,9 +182,9 @@ if not os.path.exists(PIASE_RUNS_OUTPUT_DIR_ABSOLUTE):
 
 # --- PiaAVT Imports & Configuration ---
 # Path to PiaAVT directory
-PIAVT_DIR = os.path.join(path_to_piaagi_hub, 'PiaAVT')
+PIAVT_DIR = os.path.join(path_to_research_tools_root, 'PiaAVT')
 if PIAVT_DIR not in sys.path:
-    sys.path.insert(0, PIAVT_DIR)
+    sys.path.insert(0, PIAVT_DIR) # This allows `from api import PiaAVTAPI` if api.py is in PiaAVT
 
 # Attempt to import PiaAVT components
 # Note: PiaAVT's own internal imports might need its CWD to be PiaAVT or for it to be a proper package.
@@ -1025,21 +1031,27 @@ else:
                 logger.info(f"Uploaded log file saved temporarily to {temp_file.name}")
 
                 avt_api = PiaAVTAPI()
-                if not avt_api.load_logs_from_json(temp_file.name):
-                    logger.error(f"PiaAVT failed to load logs from {temp_file.name}")
-                    return jsonify({"error": "PiaAVT failed to load the log file."}), 500
+                # MODIFIED: Call load_logs_from_jsonl and update messages
+                if not avt_api.load_logs_from_jsonl(temp_file.name):
+                    logger.error(f"PiaAVT failed to load logs from JSONL file: {temp_file.name}")
+                    return jsonify({"error": "PiaAVT failed to load the JSONL log file. It might be empty or contain errors."}), 500
+
+                if avt_api.get_log_count() == 0:
+                    logger.warning(f"JSONL file {original_filename} loaded, but no valid log entries found by PiaAVT.")
+                    return jsonify({"error": f"Successfully processed JSONL file '{original_filename}', but it contained no valid log entries."}), 400
+
 
                 analyzer = avt_api.get_analyzer()
-                if not analyzer:
-                    logger.error("PiaAVT analyzer could not be initialized after loading logs.")
-                    return jsonify({"error": "PiaAVT analyzer initialization failed."}), 500
+                if not analyzer: # Should not happen if get_log_count > 0 and load was successful
+                    logger.error("PiaAVT analyzer could not be initialized after loading JSONL logs.")
+                    return jsonify({"error": "PiaAVT analyzer initialization failed after JSONL load."}), 500
                 
                 # Perform basic analysis: count event types
                 event_counts = analyzer.count_unique_values('event_type') # is_data_field=False is default
-                logger.info(f"Log analysis successful for {original_filename}. Event counts: {event_counts}")
+                logger.info(f"JSONL Log analysis successful for {original_filename}. Event counts: {event_counts}")
 
                 return jsonify({
-                    "message": "Log analyzed successfully.",
+                    "message": "JSONL Log analyzed successfully.", # MODIFIED
                     "original_filename": original_filename,
                     "analysis_results": { # Nest results for consistency with frontend expectation
                         "event_counts": dict(event_counts) # Convert Counter to dict for JSON
@@ -1047,8 +1059,8 @@ else:
                 }), 200
 
             except Exception as e:
-                logger.error(f"Error during log analysis for {original_filename}: {e}", exc_info=True)
-                return jsonify({"error": f"An unexpected error occurred during analysis: {str(e)}"}), 500
+                logger.error(f"Error during JSONL log analysis for {original_filename}: {e}", exc_info=True) # MODIFIED
+                return jsonify({"error": f"An unexpected error occurred during JSONL analysis: {str(e)}"}), 500
             finally:
                 if temp_file and temp_file.name and os.path.exists(temp_file.name):
                     try:
@@ -1058,7 +1070,7 @@ else:
                         logger.error(f"Error deleting temporary file {temp_file.name}: {e_del}")
         else:
             logger.warning(f"Invalid file type uploaded: {file.filename}")
-            return jsonify({"error": "Invalid file type. Please upload .json or .jsonl files."}), 400
+            return jsonify({"error": "Invalid file type. Please upload .jsonl (JSON Lines) files."}), 400 # MODIFIED
 # --- End PiaAVT API Endpoints ---
 
 
