@@ -272,6 +272,125 @@ class GridWorld(Environment):
         else:
             self.dynamic_objects.append(grid_object)
 
+    def reconfigure(self, config: Dict[str, Any]) -> bool:
+        """
+        Reconfigures the GridWorld environment based on the provided configuration.
+        """
+        print(f"GridWorld: Attempting reconfiguration with: {list(config.keys())}")
+        reconfigured_something = False
+
+        if "width" in config and config["width"] != self.width:
+            print(f"GridWorld Warning: 'width' reconfirguration ({config['width']}) post-init is not supported. Current width: {self.width}.")
+        if "height" in config and config["height"] != self.height:
+            print(f"GridWorld Warning: 'height' reconfiguration ({config['height']}) post-init is not supported. Current height: {self.height}.")
+
+        if "goal_position" in config:
+            new_goal = tuple(config["goal_position"])
+            if self._is_valid_position(new_goal[0], new_goal[1]):
+                self.goal_position = new_goal
+                print(f"  Reconfigured goal_position to: {self.goal_position}")
+                reconfigured_something = True
+            else:
+                print(f"  GridWorld Warning: Invalid new goal_position {new_goal} provided in reconfigure. Retaining old: {self.goal_position}")
+
+        if "walls" in config:
+            self.walls = [] # Replace existing walls
+            new_walls = config["walls"]
+            if isinstance(new_walls, list):
+                for x, y in new_walls:
+                    if self._is_valid_position(x, y):
+                        self.walls.append(tuple(map(int,(x,y)))) # ensure tuple of ints
+                    else:
+                        print(f"  GridWorld Warning: Invalid wall coordinate ({x},{y}) in reconfigure. Ignoring.")
+                print(f"  Reconfigured walls. New wall count: {len(self.walls)}")
+                reconfigured_something = True
+            else:
+                print(f"  GridWorld Warning: 'walls' in reconfigure must be a list of tuples. Not applied.")
+
+        if "static_objects" in config:
+            new_static_objects_data = config["static_objects"]
+            if isinstance(new_static_objects_data, list):
+                self.static_objects = [] # Replace existing
+                for obj_data in new_static_objects_data:
+                    if isinstance(obj_data, dict) and "name" in obj_data and "position" in obj_data:
+                         # Assuming GridObject can be created from dict like this
+                        pos = tuple(map(int,obj_data["position"]))
+                        if self._is_valid_position(pos[0], pos[1]):
+                            self.static_objects.append(GridObject(name=obj_data["name"], position=pos, properties=obj_data.get("properties", {})))
+                        else:
+                            print(f"  GridWorld Warning: Invalid position {pos} for static object '{obj_data['name']}'. Not adding.")
+                    elif isinstance(obj_data, GridObject): # If already GridObject instances
+                        if self._is_valid_position(obj_data.position[0], obj_data.position[1]):
+                            self.static_objects.append(copy.deepcopy(obj_data))
+                        else:
+                             print(f"  GridWorld Warning: Invalid position {obj_data.position} for static object '{obj_data.name}'. Not adding.")
+                    else:
+                        print(f"  GridWorld Warning: Invalid data format for static object in reconfigure. Skipping item: {obj_data}")
+                print(f"  Reconfigured static_objects. New count: {len(self.static_objects)}")
+                reconfigured_something = True
+            else:
+                 print(f"  GridWorld Warning: 'static_objects' in reconfigure must be a list. Not applied.")
+
+
+        if "dynamic_objects" in config: # Similar handling as static_objects
+            new_dynamic_objects_data = config["dynamic_objects"]
+            if isinstance(new_dynamic_objects_data, list):
+                self.dynamic_objects = [] # Replace existing
+                for obj_data in new_dynamic_objects_data:
+                    if isinstance(obj_data, dict) and "name" in obj_data and "position" in obj_data:
+                        pos = tuple(map(int,obj_data["position"]))
+                        if self._is_valid_position(pos[0], pos[1]):
+                            self.dynamic_objects.append(GridObject(name=obj_data["name"], position=pos, properties=obj_data.get("properties", {})))
+                        else:
+                            print(f"  GridWorld Warning: Invalid position {pos} for dynamic object '{obj_data['name']}'. Not adding.")
+                    elif isinstance(obj_data, GridObject):
+                        if self._is_valid_position(obj_data.position[0], obj_data.position[1]):
+                            self.dynamic_objects.append(copy.deepcopy(obj_data))
+                        else:
+                            print(f"  GridWorld Warning: Invalid position {obj_data.position} for dynamic object '{obj_data.name}'. Not adding.")
+                    else:
+                        print(f"  GridWorld Warning: Invalid data format for dynamic object in reconfigure. Skipping item: {obj_data}")
+
+                print(f"  Reconfigured dynamic_objects. New count: {len(self.dynamic_objects)}")
+                reconfigured_something = True
+            else:
+                print(f"  GridWorld Warning: 'dynamic_objects' in reconfigure must be a list. Not applied.")
+
+
+        if "initial_agent_start_pos" in config:
+            new_start_pos = tuple(config["initial_agent_start_pos"])
+            # Basic validation, more robust check happens in reset()
+            if isinstance(new_start_pos, tuple) and len(new_start_pos) == 2 and \
+               all(isinstance(coord, int) for coord in new_start_pos) and \
+               self._is_valid_position(new_start_pos[0], new_start_pos[1]):
+                self.initial_agent_start_pos = new_start_pos
+                print(f"  Reconfigured initial_agent_start_pos to: {self.initial_agent_start_pos}")
+                reconfigured_something = True
+            else:
+                print(f"  GridWorld Warning: Invalid initial_agent_start_pos {new_start_pos} in reconfigure. Retaining old: {self.initial_agent_start_pos}")
+
+
+        rewards_to_update = {
+            "reward_goal": float, "reward_move": float,
+            "reward_hit_wall": float, "reward_stay": float
+        }
+        for reward_key, reward_type in rewards_to_update.items():
+            if reward_key in config:
+                try:
+                    setattr(self, reward_key, reward_type(config[reward_key]))
+                    print(f"  Reconfigured {reward_key} to: {getattr(self, reward_key)}")
+                    reconfigured_something = True
+                except ValueError:
+                    print(f"  GridWorld Warning: Invalid type for {reward_key} in reconfigure. Expected float. Value: {config[reward_key]}")
+
+        if reconfigured_something:
+            print("GridWorld: Calling reset() after reconfiguration.")
+            self.reset()
+        else:
+            print("GridWorld: No applicable configuration changes found or applied.")
+
+        return True # Indicate reconfiguration attempt was processed
+
 # Need to import copy for deepcopy
 import copy
 ```
