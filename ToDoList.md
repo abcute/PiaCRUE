@@ -1,24 +1,23 @@
 # PiaAGI Project Upgrade ToDo List
 
-  ```markdown
-  # PiaAGI
+```markdown
+# PiaAGI
 
-  PiaAGI is a project that aims to upgrade the existing PiaA project to use the latest technologies and best practices.
+PiaAGI is a project that aims to upgrade the existing PiaA project to use the latest technologies and best practices.
 
-  ## Goals
+## Goals
 
-  - Improve performance and scalability
-  - Enhance user experience
-  - Modernize the codebase
-  - Ensure long-term maintainability
+- Improve performance and scalability
+- Enhance user experience
+- Modernize the codebase
+- Ensure long-term maintainability
 
-  ## Roadmap
+## Roadmap
 
-  - [ ] Phase 1: Research and Planning
-  - [ ] Phase 2: Development and Testing
-  - [ ] Phase 3: Deployment and Launch
-  ```
-
+- [ ] Phase 1: Research and Planning
+- [ ] Phase 2: Development and Testing
+- [ ] Phase 3: Deployment and Launch
+```
 - [x] Reorganize root `img/` directory: Moved all images to `docs/assets/img/` and updated all markdown references. Removed root `img/` directory. (Task completed on 2024-07-29)
 - [x] Re-evaluate `conceptual_simulations` directory: Moved contents (`diagram_descriptions.md` to `docs/assets/`, `PiaAGI_Behavior_Example.py` to `Examples/`) and removed the directory as it's not a standalone tool following PiaXYZ naming. (Task completed on 2024-07-29)
 - [x] Completed Project Review, Documentation Update, and Next Steps Definition (Nov 2024). This led to the current detailed conceptual tasks for tools and examples.
@@ -76,9 +75,7 @@
 ## PiaAGI理论框架构建
 - [ ] 参考 `Papers/AGI_Interdisciplinary_Memorandum.md` 中的多学科交叉备忘录，以获取PiaAGI理论框架升级的灵感。
 
-## Research Tools - Conceptual Next Steps
-
-### PiaCML (Cognitive Module Library)
+## PiaCML (Cognitive Module Library)
 - [x] CML: Implement foundational interfaces/ABCs for PerceptionModule. (Base class/interface defined)
 - [x] CML: Implement foundational interfaces/ABCs for MotivationalSystemModule. (Base class/interface defined)
 - [x] CML: Implement foundational interfaces/ABCs for EmotionModule. (Base class/interface defined)
@@ -100,7 +97,7 @@
 - [x] Task: Begin conceptual design for the interface between the Motivational System Module and other key CML modules (e.g., Planning, Learning, Self-Model) based on the new specification. (Completed 2024-07-31 by Jules)
 - [x] Task: Develop more detailed conceptual algorithms for how the Motivational System Module would generate the specific goal types and intrinsic rewards discussed in the PiaSE scenarios (Curiosity_Scenario.md, Competence_Scenario.md) and the `Motivational_System_Specification.md`. (Completed 2024-07-31 by Jules)
 
-### PiaSE (PiaAGI Simulation Environment)
+## PiaSE (PiaAGI Simulation Environment)
 - [x] Detailed the core simulation loop (Initialization, Main Loop phases A-G, Finalization) in PiaAGI_Simulation_Environment.md.
 - [x] Defined conceptual Agent-Environment API (EnvironmentInterface, Perception Data, Action Command Data) in PiaAGI_Simulation_Environment.md.
 - [x] Conceptually designed "TextBasedRoom" environment (state representation, perceptions, actions, dynamics) in PiaAGI_Simulation_Environment.md.
@@ -114,7 +111,7 @@
 - [x] Task: Implement the 'Curiosity in the Unknown Artifact Grid World' scenario (Curiosity_Scenario.md) in the PiaSE prototype.
 - [x] Task: Implement the 'Competence in the Adaptive Pathfinding Challenge' scenario (Competence_Scenario.md) in the PiaSE prototype.
 
-### PiaAVT (PiaAGI Analysis & Visualization Toolkit)
+## PiaAVT (PiaAGI Analysis & Visualization Toolkit)
 - [x] Defined standardized logging format/schema (JSONL) and created `PiaAGI_Research_Tools/PiaAVT/Logging_Specification.md`.
 - [x] Task: Reviewed PiaAGI.md sections on Motivational Systems (3.3, 4.1.6) to inform relevant analyses.
 - [x] Task: Brainstormed and selected 2-3 basic analyses for PiaAVT related to the Motivational System (documented in `PiaAGI_Research_Tools/PiaAVT/Basic_Analyses.md`).
@@ -128,7 +125,7 @@
 - [x] Task: Refine `Goal_Dynamics_Analysis.py` to parse actual log files generated from PiaSE/logger integration.
 - [x] Task: Design and (conceptually) implement the 'Intrinsic Motivation Trigger & Impact Analysis' from Basic_Analyses.md.
 
-### PiaPES (PiaAGI Prompt Engineering Suite)
+## PiaPES (PiaAGI Prompt Engineering Suite)
 - [x] Ensured prompt_engine_mvp.py classes (with fixes and added unit tests) can represent/serialize detailed Cognitive_Module_Configuration from PiaAGI.md Appendix.
 - [x] Manually update PiaAGI_Research_Tools/PiaPES/USAGE.md with examples of defining detailed cognitive configurations (conceptual outline provided).
 - [x] Further conceptually detail the DevelopmentalCurriculumDesigner (PiaPES Section 2): structure, metadata, progression logic.
@@ -147,36 +144,34 @@
 ## Unified WebApp Development
 - [x] **PiaAGI_Research_Tools/WebApp Integration:** Developed the unified WebApp in `PiaAGI_Research_Tools/WebApp/` providing frontend interfaces (React) and backend APIs (Flask) for PiaCML, PiaSE (simulation run and result viewing), PiaPES (prompt/curriculum management), and basic PiaAVT (log upload and simple analysis). Includes LLM configuration guidance and a detailed README for setup and deployment. (Completed 2024-07-31)
 
-## [x] Examples Directory Enhancement - Prioritized Development Plan
-### Priority 1:
+## Priority 1:
 - [x] Example: Examples/Cognitive_Configuration/Configuring_Emotion_Module.md (baseline states, reactivity, empathy).
 - [x] Example: Examples/Cognitive_Configuration/Configuring_Learning_Module.md (modes, rate adaptation, ethical heuristic updates).
 - [x] Example: Examples/Cognitive_Configuration/Configuring_Attention_Module.md (top-down/bottom-up biases).
 - [x] Example: Examples/Developmental_Scaffolding/Scaffolding_Ethical_Reasoning_Intro.md (PiaSapling, simple dilemmas).
-### Priority 2:
+
+## Priority 2:
 - [x] Example: Examples/Tool_Use/Adapting_Conceptual_Tools.md (agent modifies known conceptual tool).
 - [x] Example: Examples/Developmental_Scaffolding/Scaffolding_Intermediate_ToM.md (PiaSapling, false beliefs/intentions).
 - [x] Example: Examples/Developmental_Scaffolding/Cultivating_Intrinsic_Motivation.md (scenarios for curiosity/competence).
-### Priority 3:
+
+## Priority 3:
 - [x] Example: Examples/PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md (ensure it uses a cognitive config example).
 - [x] Example: Examples/PiaPES_Usage/Defining_Developmental_Curriculum_PiaPES.md (conceptualizing curriculum object).
 - [x] Example: Examples/Cross_Stage_Development/Task_Summarization_Evolution.md (task for PiaSeedling, PiaSapling, PiaArbor).
-### Priority 4:
+
+## Priority 4:
 - [x] Example: Examples/Tool_Use/Agent_Requesting_New_Tool.md (agent identifies capability gap).
 - [x] Example: Examples/Tool_Use/Agent_Designing_Simple_Tool.md (PiaArbor designs tool - conceptual).
 - [x] Example: Examples/Internal_Metacognition/Self_Monitoring_PiaAVT_Principles.md (conceptual).
 - [x] Example: Examples/Internal_Metacognition/Internal_Experimentation_PiaSE_Principles.md (conceptual).
 
-## Research Tools - Next Level Enhancements
-
-This section outlines proposed future development directions for the PiaAGI Research Tools Suite, based on the analysis conducted to deepen their support for AGI development.
-
-### PiaCML (Cognitive Module Library) - Enhancements
+## PiaCML (Cognitive Module Library) - Enhancements
 - [x] **Roadmap for Advanced Modules:** Define a phased approach to implement more sophisticated versions of key PiaCML modules. (Completed on 2024-03-08 by Jules)
-  - [x] *Self-Model:* Implement features for metacognitive monitoring (e.g., tracking confidence, bias detection from PiaAVT logs) and a dynamic, learnable ethical framework. (Covered by Roadmap)
-  - [x] *LTM:* Explore and prototype richer LTM implementations (e.g., graph DB for semantic LTM, structured episodic memory with emotional valence and causal links). (Covered by Roadmap)
-  - [x] *Motivational System:* Implement computational models of intrinsic motivations (e.g., curiosity, competence) that dynamically generate goals. (Covered by Roadmap)
-  - [x] *Emotion Module:* Develop appraisal mechanisms more deeply integrated with World Model, Self-Model, and LTM. (Covered by Roadmap)
+- [x] *Self-Model:* Implement features for metacognitive monitoring (e.g., tracking confidence, bias detection from PiaAVT logs) and a dynamic, learnable ethical framework. (Covered by Roadmap)
+- [x] *LTM:* Explore and prototype richer LTM implementations (e.g., graph DB for semantic LTM, structured episodic memory with emotional valence and causal links). (Covered by Roadmap)
+- [x] *Motivational System:* Implement computational models of intrinsic motivations (e.g., curiosity, competence) that dynamically generate goals. (Covered by Roadmap)
+- [x] *Emotion Module:* Develop appraisal mechanisms more deeply integrated with World Model, Self-Model, and LTM. (Covered by Roadmap)
 - [x] **Standardized Inter-Module Communication:** Design and specify a clear API or message-passing system for modules to exchange information (e.g., defining data structures for "GoalUpdate", "EmotionalStateChange"). (Completed on 2024-03-08 by Jules)
 - [x] **Architectural Maturation Hooks:** Conceptualize how PiaCML module interfaces could support dynamic parameter changes (e.g., WM capacity) or representation of new/strengthened inter-module connections. (Completed on 2024-03-08 by Jules)
 - [x] **Prototype Advanced Self-Model (Phase 1):** Implement core features for metacognitive monitoring (e.g., confidence tracking) based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
@@ -185,92 +180,78 @@ This section outlines proposed future development directions for the PiaAGI Rese
 - [x] **Prototype Advanced Emotion Module (Phase 1):** Implement enhanced appraisal mechanisms based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
 - [x] **Implement Core Inter-Module Communication System (Phase 1 - Basic Bus & Data Structures):** Defined core message data structures and implemented a basic synchronous in-memory Message Bus with subscribe/publish capabilities. (Completed on 2024-03-08 by Jules)
 - [ ] **Implement Core Inter-Module Communication System (Phase 2 - Advanced Bus Features & Full Module Integration):** Enhance Message Bus (e.g., with asynchronous capabilities, improved error handling, filtering options) and integrate it thoroughly with all relevant CML modules, replacing direct calls where appropriate.
-    - [x] Added conceptual hook for asynchronous message dispatch to MessageBus. (Completed on 2024-03-08 by Jules)
-    - [x] Implemented enhanced error logging (including tracebacks) for callback exceptions in MessageBus. (Completed on 2024-03-08 by Jules)
-    - [x] Added basic message filtering capability to `subscribe` method in MessageBus. (Completed on 2024-03-08 by Jules)
-    - [x] Integrated Message Bus with `ConcretePerceptionModule` to publish "PerceptData" messages. (Completed on 2024-03-08 by Jules)
-    - [x] Integrated Message Bus with `ConcreteWorkingMemoryModule` to subscribe to "PerceptData" messages. (Completed on 2024-03-08 by Jules)
-    - [x] Integrated Message Bus with `ConcreteLongTermMemoryModule` for handling "LTMQuery" messages and publishing "LTMQueryResult" messages. (Completed on 2024-03-08 by Jules)
-    - [x] Integrated Message Bus with `ConcreteMotivationalSystemModule` for publishing "GoalUpdate" messages. (Completed on 2024-03-08 by Jules)
-    - [x] Integrated Message Bus with `ConcreteSelfModelModule` to publish "SelfKnowledgeConfidenceUpdate" and subscribe to "GoalUpdate" messages. (Completed on 2024-03-08 by Jules)
-    - [x] Integrated Message Bus with `ConcretePlanningAndDecisionMakingModule` to subscribe to "GoalUpdate" messages and publish "ActionCommand" messages. (Completed on 2024-03-08 by Jules)
-    - [x] Integrated Message Bus with `ConcreteBehaviorGenerationModule` to subscribe to "ActionCommand" messages. (Completed on 2024-03-08 by Jules)
-    - [x] Integrated Message Bus with `ConcreteLearningModule` to subscribe to "GoalUpdate" messages for learning purposes. (Completed on 2024-03-08 by Jules)
-    - [x] Conceptually integrated Message Bus with `ConcreteAttentionModule` (publishes "AttentionFocusUpdate", subscribes to "GoalUpdate" & "EmotionalStateChange"). (Completed on 2024-03-08 by Jules)
-    - [x] Conceptually integrated Message Bus with `ConcreteTheoryOfMindModule` (publishes "ToMInferenceUpdate", subscribes to "PerceptData" & "EmotionalStateChange"). (Completed on 2024-03-08 by Jules)
+- [x] Added conceptual hook for asynchronous message dispatch to MessageBus. (Completed on 2024-03-08 by Jules)
+- [x] Implemented enhanced error logging (including tracebacks) for callback exceptions in MessageBus. (Completed on 2024-03-08 by Jules)
+- [x] Added basic message filtering capability to `subscribe` method in MessageBus. (Completed on 2024-03-08 by Jules)
+- [x] Integrated Message Bus with `ConcretePerceptionModule` to publish "PerceptData" messages. (Completed on 2024-03-08 by Jules)
+- [x] Integrated Message Bus with `ConcreteWorkingMemoryModule` to subscribe to "PerceptData" messages. (Completed on 2024-03-08 by Jules)
+- [x] Integrated Message Bus with `ConcreteLongTermMemoryModule` for handling "LTMQuery" messages and publishing "LTMQueryResult" messages. (Completed on 2024-03-08 by Jules)
+- [x] Integrated Message Bus with `ConcreteMotivationalSystemModule` for publishing "GoalUpdate" messages. (Completed on 2024-03-08 by Jules)
+- [x] Integrated Message Bus with `ConcreteSelfModelModule` to publish "SelfKnowledgeConfidenceUpdate" and subscribe to "GoalUpdate" messages. (Completed on 2024-03-08 by Jules)
+- [x] Integrated Message Bus with `ConcretePlanningAndDecisionMakingModule` to subscribe to "GoalUpdate" messages and publish "ActionCommand" messages. (Completed on 2024-03-08 by Jules)
+- [x] Integrated Message Bus with `ConcreteBehaviorGenerationModule` to subscribe to "ActionCommand" messages. (Completed on 2024-03-08 by Jules)
+- [x] Integrated Message Bus with `ConcreteLearningModule` to subscribe to "GoalUpdate" messages for learning purposes. (Completed on 2024-03-08 by Jules)
+- [x] Conceptually integrated Message Bus with `ConcreteAttentionModule` (publishes "AttentionFocusUpdate", subscribes to "GoalUpdate" & "EmotionalStateChange"). (Completed on 2024-03-08 by Jules)
+- [x] Conceptually integrated Message Bus with `ConcreteTheoryOfMindModule` (publishes "ToMInferenceUpdate", subscribes to "PerceptData" & "EmotionalStateChange"). (Completed on 2024-03-08 by Jules)
 - [x] **Proof-of-Concept for an Architectural Maturation Hook:** Implement a basic mechanism for one of the conceptualized hooks (e.g., dynamic WM capacity adjustment) in a relevant module prototype. (Completed on 2024-03-08 by Jules)
 
-### PiaSE (PiaAGI Simulation Environment) - Enhancements
+## PiaSE (PiaAGI Simulation Environment) - Enhancements
 - [x] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules). (MVP implementation of PiaAGIAgent class, basic scenarios, unit tests, and refined guide completed by Jules on 2024-08-05).
-- [/] **Environment API & Library Expansion:** (Conceptual design for API extension and new environments; prototype of CraftingWorld and SocialDialogueSandbox, and initial API updates completed by Jules on 2024-08-05).
-  - [ ] Define a more robust Environment API for richer perceptions and actions.
-  - [ ] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World").
-  - [ ] Implement one of the newly conceptualized environment types as a prototype.
+- [ ] Define a more robust Environment API for richer perceptions and actions.
+- [ ] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World").
+- [ ] Implement one of the newly conceptualized environment types as a prototype.
 - [x] **Dynamic Scenario Engine for Scaffolding:** Enhance PiaSE's scenario manager ... (MVP implementation of core DSE components, integration with BasicSimulationEngine, demo scenario, unit tests, and documentation updates completed by Jules on 2024-08-05).
 - [x] **Human-in-the-Loop (HITL) Interface:** Conceptualize how a human user could interact with a PiaSE simulation in real-time (e.g., as a tutor, evaluator, or another agent). (Conceptual design completed by Jules on 2024-08-05).
 
-### PiaPES (PiaAGI Prompt Engineering Suite) - Enhancements
+## PiaPES (PiaAGI Prompt Engineering Suite) - Enhancements
 - [x] **Developmental Curriculum Designer - Advanced:**
-  - [x] Define a detailed data structure for `DevelopmentalCurriculum` supporting stages, steps, pre-conditions, learning objectives, and links to PiaSE scenarios/PiaAVT metrics.
-  - [x] Conceptualize how PiaPES would track agent progress through such curricula.
+- [x] Define a detailed data structure for `DevelopmentalCurriculum` supporting stages, steps, pre-conditions, learning objectives, and links to PiaSE scenarios/PiaAVT metrics.
+- [x] Conceptualize how PiaPES would track agent progress through such curricula.
 - [x] **PiaPES-PiaSE Integration Workflow:** Define the operational workflow for how a curriculum from PiaPES is executed in PiaSE, how progress is reported, and how PiaPES might adapt based on feedback.
 - [x] **PiaPES-PiaAVT Integration for Evaluation:** Specify data exchange for evaluating prompt/curriculum effectiveness (e.g., "Did agent meet learning objective X as per PiaAVT metric Y?").
 - [x] **Cognitive Configuration GUI - Deep Dive:** Detail the design for the GUI for configuring PiaCML modules (personality, motivation, etc.), potentially with UI mockups. (Note: web_interface_design.md covers MVP GUI; PiaAGI_Prompt_Engineering_Suite.md Section 7 covers advanced GUI concepts. Current conceptual detail is sufficient.)
 - [x] **Prompt Editor/IDE Features:** Further conceptualize advanced editor features (PiaAGI-specific syntax highlighting, auto-completion for PiaCML, real-time validation, documentation linking). (Note: PiaAGI_Prompt_Engineering_Suite.md Section 6 reviewed and refined; current conceptual detail is sufficient.)
 
-### PiaAVT (Agent Analysis & Visualization Toolkit) - Enhancements
+## PiaAVT (Agent Analysis & Visualization Toolkit) - Enhancements
 - [x] **Implement Conceptual Analyses:** Implement the already designed conceptual analyses: Goal Lifecycle Tracking, Emotional State Trajectory, and Task Performance Metrics. (Initial integration of Goal Dynamics, Emotional Trajectory, Task Performance, and Intrinsic Motivation analysis scripts into API and WebApp complete. Further advanced feature implementation is future work.)
 - [x] **Advanced Analytical Modules:** (Conceptualization Phase)
-  - [x] *Causal Analysis:* Conceptualize tools to infer causal links between agent actions, internal states, and outcomes. (Conceptual design document created)
-  - [x] *Behavioral Pattern Mining:* Design algorithms to identify recurring behavioral or cognitive state patterns. (Conceptual design document created)
-  - [x] *Ethical Reasoning Traceability:* Conceptualize tools to visualize how the Self-Model's ethical framework influences decisions. (Conceptual design document created)
+- [x] *Causal Analysis:* Conceptualize tools to infer causal links between agent actions, internal states, and outcomes. (Conceptual design document created)
+- [x] *Behavioral Pattern Mining:* Design algorithms to identify recurring behavioral or cognitive state patterns. (Conceptual design document created)
+- [x] *Ethical Reasoning Traceability:* Conceptualize tools to visualize how the Self-Model's ethical framework influences decisions. (Conceptual design document created)
 - [x] **Rich Cognitive Visualizations - Conceptual Designs:** (Conceptualization Phase)
-  - [x] *LTM Explorer:* Conceptualize interactive graph/timeline visualizations for LTM. (Conceptual design document created)
-  - [x] *Self-Model Dashboard:* Design a view summarizing key Self-Model aspects (confidence, values, capabilities). (Conceptual design document created)
-  - [x] *World Model Viewer:* Conceptualize tools to inspect and compare agent's World Model with PiaSE ground truth. (Conceptual design document created)
+- [x] *LTM Explorer:* Conceptualize interactive graph/timeline visualizations for LTM. (Conceptual design document created)
+- [x] *Self-Model Dashboard:* Design a view summarizing key Self-Model aspects (confidence, values, capabilities). (Conceptual design document created)
+- [x] *World Model Viewer:* Conceptualize tools to inspect and compare agent's World Model with PiaSE ground truth. (Conceptual design document created)
 - [x] **Meta-Cognitive Development Analysis:**
-  - [x] *Extend Logging Spec:* Propose new conceptual log event types in `Logging_Specification.md` for meta-cognitive activities (e.g., `AGENT_SELF_ANALYSIS_TRIGGERED`, `AGENT_MCP_GENERATED`). (`Logging_Specification.md` updated with meta-cognitive event types)
-  - [x] *Dedicated Analyses:* Conceptualize PiaAVT analyses to detect patterns indicative of these meta-cognitive processes. (Conceptual design document `Advanced_Analyses_Meta_Cognition.md` created)
+- [x] *Extend Logging Spec:* Propose new conceptual log event types in `Logging_Specification.md` for meta-cognitive activities (e.g., `AGENT_SELF_ANALYSIS_TRIGGERED`, `AGENT_MCP_GENERATED`). (`Logging_Specification.md` updated with meta-cognitive event types)
+- [x] *Dedicated Analyses:* Conceptualize PiaAVT analyses to detect patterns indicative of these meta-cognitive processes. (Conceptual design document `Advanced_Analyses_Meta_Cognition.md` created)
 - [x] **Conceptual Design Phase for Advanced Features Completed:**
-  - The following conceptual design documents for advanced PiaAVT capabilities have been created and are located in `PiaAGI_Research_Tools/PiaAVT/`:
-    - `Advanced_Analyses_Causal.md`
-    - `Advanced_Analyses_Behavioral_Patterns.md`
-    - `Advanced_Analyses_Ethical_Traceability.md`
-    - `Visualizations_LTM_Explorer.md`
-    - `Visualizations_Self_Model_Dashboard.md`
-    - `Visualizations_World_Model_Viewer.md`
-    - `Advanced_Analyses_Meta_Cognition.md`
 
-### Cross-Cutting: Tooling for AGI's Internalization of Developer Tools & MCPs
+## Cross-Cutting: Tooling for AGI's Internalization of Developer Tools & MCPs
 - [x] **PiaAVT Logging for Meta-Cognition:** Formally propose and document new event types in `Logging_Specification.md` related to AGI self-analysis, internal simulation, MCP generation, and cognitive reconfiguration. (`Logging_Specification.md` updated with detailed meta-cognitive event types)
 - [x] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles (e.g., correlating `AGENT_MCP_GENERATED` with improved task performance). (Conceptual design document `Advanced_Analyses_Meta_Cognition.md` created)
-- [x] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
-    *   (Conceptual design for curriculum segment completed 2024-08-06 with the creation of `mcp_generalization_curriculum.json` and related prompts.)
-- [x] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
-    *   (Conceptual design for MCP management in Self-Model completed 2024-08-06 with updates to `Self_Model_Module_Specification.md`.)
 - [ ] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02)
 
-# PiaAGI Project - Consolidated ToDo List (November 2024)
-
-This document tracks the overall progress, completed tasks from recent reviews, and planned future development for the PiaAGI project and its research tools suite.
-Items marked with `[x]` are completed. Items marked with `[ ]` are pending.
+## Cross-Cutting Future Enhancements (From User's New List)
+- [x] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
+- [x] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
+- [ ] **Tooling for AGI's Internalization of Developer Tools & Meta-Cognitive Patterns (MCPs):**
+- [ ] **PiaAVT Logging for Meta-Cognition:** Formally propose and document new event types in `Logging_Specification.md` related to AGI self-analysis, internal simulation, MCP generation, and cognitive reconfiguration. (Covers "Extend Logging Spec" from AVT new list)
+- [ ] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles.
 
 ## I. PiaAGI Framework & Core Document (`PiaAGI.md`)
 - [ ] **[USER_TASK] Diagram Integration in `PiaAGI.md`:** Manually integrate textual descriptions for Diagrams 8 (Planning/Decision-Making), 9 (Self-Model Components), and 10 (Motivational System Components) into the `PiaAGI.md` document where the `DIAGRAM DESCRIPTION START/END` placeholders exist. (From IMPROVEMENT_TODOLIST #13)
-    *   **File(s):** `PiaAGI.md`.
-    *   **Action:** User to copy-paste the relevant diagram descriptions from `docs/assets/diagram_descriptions.md` into `PiaAGI.md`.
 - [ ] Define a conceptual framework for Architectural Maturation (beyond CML hooks, possibly as a paper or core `PiaAGI.md` section). (Derived from old ToDoList - potentially superseded by CML Advanced Roadmap's hooks, but keeping if a broader framework doc is intended).
 - [ ] Further explore Chain-of-Thought prompting principles and their deeper integration into PiaAGI's cognitive cycle or specific module operations. (Derived from old ToDoList)
 
-## II. PiaCML (Cognitive Module Library) & Message Bus
-### Message Bus & Integration (From User's New List)
+## Message Bus & Integration (From User's New List)
 - [ ] **Implement Core Inter-Module Communication System (Phase 2 Cont.):**
-    - [ ] Integrate `ConcreteEmotionModule` with the Message Bus (publish "EmotionalStateChange", subscribe to relevant triggers).
-    - [ ] Systematically review and refactor existing CML modules to replace direct inter-module calls with Message Bus communication where appropriate for improved decoupling.
-    - [ ] Implement true asynchronous message dispatching capabilities in `MessageBus`.
-    - [ ] Explore and implement further advanced features for `MessageBus` (e.g., enhanced routing options, more Quality of Service levels, advanced filtering).
+- [ ] Integrate `ConcreteEmotionModule` with the Message Bus (publish "EmotionalStateChange", subscribe to relevant triggers).
+- [ ] Systematically review and refactor existing CML modules to replace direct inter-module calls with Message Bus communication where appropriate for improved decoupling.
+- [ ] Implement true asynchronous message dispatching capabilities in `MessageBus`.
+- [ ] Explore and implement further advanced features for `MessageBus` (e.g., enhanced routing options, more Quality of Service levels, advanced filtering).
 
-### Advanced Module Features (Post-Phase 1 Prototypes) (From User's New List)
+## Advanced Module Features (Post-Phase 1 Prototypes) (From User's New List)
 - [ ] **Self-Model Module (SMM) - Phase 2:** Integration with LTM (self-history, trajectory) and Motivational System (goal-driven self-assessment, predictive self-modeling).
 - [ ] **Self-Model Module (SMM) - Phase 3:** Advanced Self-Adaptation and Meta-Learning (automated model refinement, meta-cognitive strategy generation, self-driven exploration).
 - [ ] **Long-Term Memory (LTM) Module - Phase 2:** Implement active forgetting mechanisms and memory consolidation/abstraction processes.
@@ -280,64 +261,40 @@ Items marked with `[x]` are completed. Items marked with `[ ]` are pending.
 - [ ] **Emotion Module (EM) - Phase 2:** Strengthen emotion-cognition feedback loops, implement basic emotional regulation mechanisms, and basic social signal interpretation.
 - [ ] **Emotion Module (EM) - Phase 3:** Develop capacity for complex social emotions, sophisticated emotional regulation strategies, and explore emotion-driven creativity/problem-solving.
 
-### Other Pending CML Tasks
+## Other Pending CML Tasks
 - [ ] **[REFACTOR] PiaCML Conceptual Logic Implementation:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms. (From IMPROVEMENT_TODOLIST #11)
-    *   **Impact:** The core cognitive functions described in `PiaAGI.md` and module specifications are not yet fully operational.
-    *   **File(s):** Numerous `PiaAGI_Research_Tools/PiaCML/concrete_*.py` files.
-    *   **Suggested Action:** This is a broad area for ongoing research and development. For the immediate term, ensure that all placeholder methods have clear `NotImplementedError` or detailed comments explaining their conceptual nature if they are not intended to be functional in the MVP. Prioritize implementing basic functional versions of the most critical methods needed for simple agent scenarios.
 - [ ] **[TEST] PiaCML Test Coverage for Advanced Features:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components). (From IMPROVEMENT_TODOLIST #12)
-    *   **Impact:** As these advanced features are implemented, lack of tests will reduce confidence in their correctness.
-    *   **File(s):** `PiaAGI_Research_Tools/PiaCML/tests/`.
-    *   **Suggested Action:** As functional logic replaces placeholders in CML modules, develop corresponding unit tests. For complex interactions, integration tests will also be needed.
 - [ ] Begin drafting/implementing more detailed computational models for the Motivational System, beyond current specifications, focusing on dynamic goal generation and interaction between intrinsic/extrinsic motivators. (Derived from old ToDoList, refined - check overlap with MSM Phase 2/3).
 
 ## III. PiaSE (PiaAGI Simulation Environment)
 - [ ] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules using the Message Bus). (From User's New List)
 - [ ] **Environment API & Library Expansion:** (Derived from User's New List & old ToDoList `[/]`)
-    - [ ] Define a more robust Environment API for richer perceptions and actions.
-    - [ ] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World").
-    - [ ] Implement one of the newly conceptualized environment types as a prototype.
 - [ ] **Dynamic Scenario Engine for Scaffolding:** Enhance PiaSE's scenario manager to allow dynamic adjustments (complexity, hints, new challenges) based on agent performance (from PiaAVT) or curriculum triggers (from PiaPES). (From User's New List - This covers existing DSE work and future enhancements).
 - [ ] **Human-in-the-Loop (HITL) Interface:** Conceptualize how a human user could interact with a PiaSE simulation in real-time (e.g., as a tutor, evaluator, or another agent). (From User's New List)
-
-## IV. PiaPES (PiaAGI Prompt Engineering Suite)
-*(No items from "User's New List" explicitly for PiaPES general features. Items related to PiaPES for Meta-Cognition are in section VIII)*.
 
 ## V. PiaAVT (Agent Analysis & Visualization Toolkit)
 - [ ] **Implement Conceptual Analyses:** Implement the already designed conceptual analyses: Goal Lifecycle Tracking, Emotional State Trajectory, and Task Performance Metrics. (From User's New List - Note: some basic versions were integrated in previous cycle).
 - [ ] **Advanced Analytical Modules:** (From User's New List)
-    - [ ] *Causal Analysis:* Conceptualize tools to infer causal links between agent actions, internal states, and outcomes.
-    - [ ] *Behavioral Pattern Mining:* Design algorithms to identify recurring behavioral or cognitive state patterns.
-    - [ ] *Ethical Reasoning Traceability:* Conceptualize tools to visualize how the Self-Model's ethical framework influences decisions.
+- [ ] *Causal Analysis:* Conceptualize tools to infer causal links between agent actions, internal states, and outcomes.
+- [ ] *Behavioral Pattern Mining:* Design algorithms to identify recurring behavioral or cognitive state patterns.
+- [ ] *Ethical Reasoning Traceability:* Conceptualize tools to visualize how the Self-Model's ethical framework influences decisions.
 - [ ] **Rich Cognitive Visualizations - Conceptual Designs:** (From User's New List)
-    - [ ] *LTM Explorer:* Conceptualize interactive graph/timeline visualizations for LTM.
-    - [ ] *Self-Model Dashboard:* Design a view summarizing key Self-Model aspects (confidence, values, capabilities).
-    - [ ] *World Model Viewer:* Conceptualize tools to inspect and compare agent's World Model with PiaSE ground truth.
+- [ ] *LTM Explorer:* Conceptualize interactive graph/timeline visualizations for LTM.
+- [ ] *Self-Model Dashboard:* Design a view summarizing key Self-Model aspects (confidence, values, capabilities).
+- [ ] *World Model Viewer:* Conceptualize tools to inspect and compare agent's World Model with PiaSE ground truth.
 - [ ] **Meta-Cognitive Development Analysis (Logging part moved to Cross-Cutting):** (From User's New List - Logging part covered in Cross-Cutting)
-    - [ ] *Dedicated Analyses:* Conceptualize PiaAVT analyses to detect patterns indicative of these meta-cognitive processes (based on extended logging spec).
-
-## VI. Unified WebApp
-*(No items from "User's New List" explicitly for Unified WebApp general features)*.
+- [ ] *Dedicated Analyses:* Conceptualize PiaAVT analyses to detect patterns indicative of these meta-cognitive processes (based on extended logging spec).
 
 ## VII. Examples & General Documentation
 - [ ] Perform ongoing/second-pass updates to all READMEs for continued accuracy, clarity, and completeness, reflecting latest changes and future plans. (Derived from old ToDoList, following initial pass)
 - [ ] Create and maintain `README_CN.md` and other translated documentation versions as needed. (Derived from old ToDoList, marked as ongoing/pending true-up)
 
-## VIII. General Project / Research / Meta Tasks
-### Cross-Cutting Future Enhancements (From User's New List)
-- [ ] **Tooling for AGI's Internalization of Developer Tools & Meta-Cognitive Patterns (MCPs):**
-    - [ ] **PiaAVT Logging for Meta-Cognition:** Formally propose and document new event types in `Logging_Specification.md` related to AGI self-analysis, internal simulation, MCP generation, and cognitive reconfiguration. (Covers "Extend Logging Spec" from AVT new list)
-    - [ ] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles.
-    - [ ] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
-    - [ ] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
-
-### Other General & Research Tasks
+## Other General & Research Tasks
 - [ ] Outline a research plan for Theory of Mind (ToM) acquisition and scaffolding in early-stage PiaAGI agents, detailing experimental setups in PiaSE. (Derived from old ToDoList)
 - [ ] Conduct a survey and review of existing Python libraries relevant to implementing advanced aspects of the PiaAGI cognitive architecture (e.g., probabilistic reasoning, knowledge graphs, advanced ML models for CML components). (Derived from old ToDoList)
 - [ ] Integrate insights from `Papers/AGI_Interdisciplinary_Memorandum.md` into various tool designs and the core `PiaAGI.md` framework where applicable. (Derived from old ToDoList)
 - [ ] Expand upon the concepts in `Papers/Human_Inspired_Agent_Blueprint.md` to create more detailed specifications or design documents for agent construction. (Derived from old ToDoList)
 
----
 ## IX. Recently Completed (Nov 2024 Review & Fix Cycle)
 - [x] **[BUG] PiaAVT Log Format Mismatch:** Modified `PiaAVTAPI` and its underlying `LoggingSystem` (in `PiaAGI_Research_Tools/PiaAVT/core/logging_system.py`, `api.py`, `webapp/app.py`, `cli.py` and `PiaAGI_Research_Tools/WebApp/backend/app.py`) to correctly parse JSONL files (line-by-line), aligning with `prototype_logger.py` and `Logging_Specification.md`. This also addresses schema alignment for core fields. (Corresponds to IMPROVEMENT_TODOLIST #1 and #6).
 - [x] **[BUG] Unified WebApp Frontend Proxy Port Incorrect:** Changed the proxy target port in `PiaAGI_Research_Tools/WebApp/frontend/vite.config.js` to `5001`. (From IMPROVEMENT_TODOLIST #2)
@@ -349,112 +306,23 @@ Items marked with `[x]` are completed. Items marked with `[ ]` are pending.
 - [x] **[DOC] General README Updates (Initial Pass):** Performed a systematic pass over specified READMEs (`PiaAGI_Research_Tools/README.md`, `PiaCML/README.md`, `PiaSE/README.md`, `PiaPES/README.md`, `PiaAVT/README.md`, `Examples/README.md`, `Papers/README.md`) for accuracy, consistency, and clarity. (From IMPROVEMENT_TODOLIST #9)
 - [x] **[ENHANCEMENT] PiaSE DSE Environment Reconfiguration:** Enhanced `BasicSimulationEngine`'s DSE loop in `PiaAGI_Research_Tools/PiaSE/core_engine/basic_engine.py` to parse `current_step_obj.environment_config` and `current_step_obj.agent_config_overrides`, calling `environment.reconfigure()` and `agent.configure()` respectively. (From IMPROVEMENT_TODOLIST #10)
 
-      # PiaAGI Project - Improvement To-Do List (Nov 2024 Review)
-
-This document outlines identified areas for improvement, bug fixes, and documentation updates based on a comprehensive project review conducted in November 2024.
-
 ## I. Critical Fixes (Affecting Deployability/Core Functionality)
-
-These issues significantly impact the ability to run or test parts of the project as intended.
-
 - [x] **[BUG] PiaAVT Log Format Mismatch:**
-    *   **Issue:** `PiaAVTAPI` (via `PiaAGI_Research_Tools/PiaAVT/core/logging_system.py`) and the PiaAVT Streamlit WebApp currently expect to load logs as a single JSON list. However, the project's `Logging_Specification.md` defines the standard as JSONL (JSON Lines), and `PiaAGI_Research_Tools/PiaAVT/prototype_logger.py` (the reference log generator) correctly produces JSONL. Analysis scripts like `Goal_Dynamics_Analysis.py` also correctly parse JSONL.
-    *   **Impact:** PiaAVT API and its Streamlit WebApp cannot correctly load or process standard project logs, hindering analysis. The Unified WebApp's AVT basic analysis feature is also affected.
-    *   **Files:**
-        *   `PiaAGI_Research_Tools/PiaAVT/core/logging_system.py` (specifically `load_logs_from_json_file` method)
-        *   `PiaAGI_Research_Tools/PiaAVT/api.py` (affected by `LoggingSystem`)
-        *   `PiaAGI_Research_Tools/PiaAVT/webapp/app.py` (affected by `PiaAVTAPI`)
-        *   `PiaAGI_Research_Tools/WebApp/backend/app.py` (AVT endpoint affected)
-    *   **Suggested Action:** Modify `PiaAVTAPI` and its underlying `LoggingSystem` to correctly parse JSONL files (line-by-line). The `load_and_parse_log_data_jsonl` function in `PiaAGI_Research_Tools/PiaAVT/Analysis_Implementations/Goal_Dynamics_Analysis.py` can serve as a reference.
-
 - [x] **[BUG] Unified WebApp Frontend Proxy Port Incorrect:**
-    *   **Issue:** The frontend Vite configuration (`PiaAGI_Research_Tools/WebApp/frontend/vite.config.js`) proxies `/api` requests to `http://127.0.0.1:5000`. However, the backend Flask application (`PiaAGI_Research_Tools/WebApp/backend/app.py`) is set to run on port `5001`.
-    *   **Impact:** All API calls from the Unified WebApp frontend to its backend will fail, making the application largely unusable.
-    *   **File(s):** `PiaAGI_Research_Tools/WebApp/frontend/vite.config.js`.
-    *   **Suggested Action:** Change the proxy target port in `vite.config.js` to `5001`.
-
 - [x] **[BUG] PiaSE WebApp Outdated Import Paths:**
-    *   **Issue:** The PiaSE-specific WebApp (`PiaAGI_Research_Tools/PiaSE/WebApp/app.py`) uses outdated import paths referencing `PiaAGI_Hub` (e.g., `from PiaAGI_Hub.PiaSE...`) instead of the current `PiaAGI_Research_Tools`.
-    *   **Impact:** The PiaSE WebApp will fail to import necessary modules and will not run.
-    *   **File(s):** `PiaAGI_Research_Tools/PiaSE/WebApp/app.py`.
-    *   **Suggested Action:** Update all import paths within this file to use `PiaAGI_Research_Tools`.
 
 ## II. Documentation & Consistency Updates
-
-These items address clarity, accuracy, and consistency in documentation and examples.
-
 - [x] **[DOC] PiaPES Example Script Inconsistencies:**
-    *   **Issue:** The example script in `Examples/PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md` uses class names like `PiaAGISystemRules` and calls `save_template` as a method of the prompt object. This is inconsistent with `PiaAGI_Research_Tools/PiaPES/prompt_engine_mvp.py` (which defines shorter class names like `SystemRules`) and `PiaAGI_Research_Tools/PiaPES/USAGE.md` (which describes `save_template` as a global function).
-    *   **Impact:** The example script is misleading and may not run correctly if copied directly.
-    *   **File(s):** `Examples/PiaPES_Usage/Generating_Prompt_With_PiaPES_Engine.md`.
-    *   **Suggested Action:** Correct the class names and the `save_template` call style in the example script to align with `prompt_engine_mvp.py` and `USAGE.md`.
-
 - [x] **[DOC] Unified WebApp Backend Path Comments:**
-    *   **Issue:** Comments within `PiaAGI_Research_Tools/WebApp/backend/app.py` related to `sys.path` manipulation still refer to the old project root name `PiaAGI_Hub`. While the actual path variable used in the code (`path_to_piaagi_hub`) correctly points to `PiaAGI_Research_Tools`, the comments are outdated.
-    *   **Impact:** Potential confusion for developers trying to understand the path setup.
-    *   **File(s):** `PiaAGI_Research_Tools/WebApp/backend/app.py`.
-    *   **Suggested Action:** Update comments to consistently refer to `PiaAGI_Research_Tools`.
-
 - [x] **[CONSISTENCY] PiaAVT `core/logging_system.py` Schema Alignment:**
-    *   **Issue:** The `required_fields` list and validation logic in `PiaAGI_Research_Tools/PiaAVT/core/logging_system.py` are simpler (e.g., uses `source`) than the full top-level schema defined in `Logging_Specification.md` (which specifies `simulation_run_id`, `agent_id`, `experiment_id`, `source_component_id`, etc.).
-    *   **Impact:** If `LoggingSystem` is used for strict validation, it won't enforce the full, more detailed schema. This might be less of an issue if `prototype_logger.py` is the sole producer and analysis scripts parse JSONL directly, but it's an internal inconsistency.
-    *   **File(s):** `PiaAGI_Research_Tools/PiaAVT/core/logging_system.py`.
-    *   **Suggested Action:** Align `LoggingSystem.required_fields` and its validation logic with the more comprehensive schema in `Logging_Specification.md` if it's intended to be a primary validation point. Otherwise, clarify its role.
-
 - [x] **[CONSISTENCY] PiaSE `Environment` Interface Discrepancies:**
-    *   **Issue 1:** The `Environment.get_action_space()` ABC method in `PiaAGI_Research_Tools/PiaSE/core_engine/interfaces.py` does not accept an `agent_id` argument. However, `BasicSimulationEngine` calls it as `self.environment.get_action_space(agent_id=agent_id)`. Concrete environments like `GridWorld` implement it *with* an optional `agent_id`.
-    *   **Issue 2:** The method `get_environment_info() -> Dict[str, Any]` is described in the PiaSE conceptual design document (`PiaAGI_Research_Tools/PiaAGI_Simulation_Environment.md`) as part of the `EnvironmentInterface`, but it is missing from the `Environment` ABC in `interfaces.py`. Concrete environments like `GridWorld` and `TextBasedRoom` *do* implement it.
-    *   **Impact:** API inconsistencies between the abstract base class and its implementations/usage.
-    *   **File(s):** `PiaAGI_Research_Tools/PiaSE/core_engine/interfaces.py`, `PiaAGI_Research_Tools/PiaSE/core_engine/basic_engine.py`, `PiaAGI_Research_Tools/PiaSE/environments/grid_world.py`, `PiaAGI_Research_Tools/PiaSE/environments/text_based_room.py`.
-    *   **Suggested Action:**
-        *   Add `agent_id: Optional[str] = None` to the `Environment.get_action_space()` signature in `interfaces.py`.
-        *   Add `@abstractmethod def get_environment_info(self) -> Dict[str, Any]: pass` to the `Environment` ABC in `interfaces.py`.
-        *   Ensure concrete environment implementations match the updated ABC.
-
 - [x] **[BUG] BasicGridAgent Import Path:**
-    *   **Issue:** `PiaAGI_Research_Tools/PiaSE/agents/basic_grid_agent.py` uses an old `PiaAGI_Hub` import path: `from PiaAGI_Hub.PiaSE.core_engine.interfaces import AgentInterface, PiaSEEvent`.
-    *   **Impact:** This agent script will fail to run due to incorrect import.
-    *   **File(s):** `PiaAGI_Research_Tools/PiaSE/agents/basic_grid_agent.py`.
-    *   **Suggested Action:** Update the import path to `from PiaAGI_Research_Tools.PiaSE.core_engine.interfaces import AgentInterface, PiaSEEvent` or use relative imports like `from ..core_engine.interfaces ...`.
-
 - [x] **[DOC] General README Updates:**
-    *   **Issue:** The main `ToDoList.md` identifies a need for a "Comprehensive update of all README.md files including Papers/README.md and Examples/README.md". The review confirmed that while major READMEs are mostly up-to-date with MVPs, some sub-directory READMEs are minimal and overall consistency regarding current status and future plans could be improved.
-    *   **Impact:** Ensures all project entry points and module descriptions are accurate, consistent, and helpful for users and contributors.
-    *   **File(s):** All key README.md files across the project.
-    *   **Suggested Action:** Perform a systematic pass over specified READMEs. For each, check:
-        *   Accuracy of "Current Status" / "Implemented Components" sections.
-        *   Alignment of "Future Development" / "Roadmap" sections with latest design documents (e.g., CML Advanced Roadmap, AVT advanced analysis docs).
-        *   Clarity of setup and usage instructions.
-        *   Correctness of links to other documents.
-        *   Consistent terminology with `PiaAGI.md`.
 
 ## III. Code Refinements & Future MVP Enhancements
-
-These are suggestions for improving existing MVP code or are prerequisites for planned future features.
-
 - [ ] **[ENHANCEMENT] PiaSE DSE Environment Reconfiguration:**
-    *   **Issue:** The `BasicSimulationEngine` in PiaSE, while integrating DSE logic, does not appear to dynamically apply the `environment_config` specified within each step of a DSE curriculum to the active environment instance after the initial setup.
-    *   **Impact:** This limits the DSE's current ability to fully vary environmental conditions (e.g., grid size, obstacles, object availability) on a per-curriculum-step basis, which is a key aspect of sophisticated developmental scaffolding.
-    *   **File(s):** `PiaAGI_Research_Tools/PiaSE/core_engine/basic_engine.py`.
-    *   **Suggested Action:** Enhance `BasicSimulationEngine`'s DSE loop to parse `current_step_obj.environment_config` and call appropriate methods on the `self.environment` object to reconfigure it at the beginning of a new curriculum step attempt. This may require adding reconfiguration methods to the `Environment` ABC and its concrete implementations.
-
 - [ ] **[REFACTOR] PiaCML Conceptual Logic Implementation:**
-    *   **Issue:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms.
-    *   **Impact:** The core cognitive functions described in `PiaAGI.md` and module specifications are not yet fully operational. This is expected for an MVP stage focused on architecture and interfaces, but it's the primary area for future functional development.
-    *   **File(s):** Numerous `PiaAGI_Research_Tools/PiaCML/concrete_*.py` files.
-    *   **Suggested Action:** This is a broad area for ongoing research and development. For the immediate term, ensure that all placeholder methods have clear `NotImplementedError` or detailed comments explaining their conceptual nature if they are not intended to be functional in the MVP. Prioritize implementing basic functional versions of the most critical methods needed for simple agent scenarios.
-
 - [ ] **[TEST] PiaCML Test Coverage for Advanced Features:**
-    *   **Issue:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components).
-    *   **Impact:** As these advanced features are implemented, lack of tests will reduce confidence in their correctness.
-    *   **File(s):** `PiaAGI_Research_Tools/PiaCML/tests/`.
-    *   **Suggested Action:** As functional logic replaces placeholders in CML modules, develop corresponding unit tests. For complex interactions, integration tests will also be needed.
 
 ## IV. User Tasks (Already Identified for Project Owner)
-
 - [ ] **[USER_TASK] Diagram Integration in `PiaAGI.md`:**
-    *   **Issue:** Textual descriptions for Diagrams 8 (Planning/Decision-Making), 9 (Self-Model Components), and 10 (Motivational System Components) need to be manually integrated into the `PiaAGI.md` document where the `DIAGRAM DESCRIPTION START/END` placeholders exist.
-    *   **File(s):** `PiaAGI.md`.
-    *   **Action:** User to copy-paste the relevant diagram descriptions from `docs/assets/diagram_descriptions.md` into `PiaAGI.md`.
-
-
