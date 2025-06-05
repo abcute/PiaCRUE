@@ -50,8 +50,8 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [x] Develop initial conceptual Python script `Examples/PiaAGI_Behavior_Example.py` illustrating simplified module interactions. (Moved from `PiaAGI_Hub/conceptual_simulations/`)
 - [ ] Manually integrate textual descriptions for Diagrams 8, 9, and 10 into PiaAGI.md (User task - content provided). Most other diagrams integrated.
 - [x] Developed detailed specification document for the Self-Model Module (`PiaAGI_Research_Tools/PiaCML/Self_Model_Module_Specification.md`), outlining data structures, conceptual algorithms (metacognition, ethical framework application, self-improvement), interactions, and developmental aspects.
-- [ ] Outline a research plan for developing and testing the **Developmental Scaffolding methodology (Section 5.4, 6.1)** specifically for **Theory of Mind (ToM) acquisition (Section 3.2.2)** from PiaSeedling to PiaSapling stages. This plan should include potential simulation environments, interaction protocols, and evaluation metrics.
-- [ ] Conduct a survey and report on existing Python libraries and frameworks that could be suitable for implementing key aspects of the PiaAGI cognitive architecture (e.g., for probabilistic reasoning, knowledge representation, symbolic AI, agent simulation, multi-agent systems).
+- [x] Outline a research plan for developing and testing the **Developmental Scaffolding methodology (Section 5.4, 6.1)** specifically for **Theory of Mind (ToM) acquisition (Section 3.2.2)** from PiaSeedling to PiaSapling stages. This plan should include potential simulation environments, interaction protocols, and evaluation metrics.
+- [x] Conduct a survey and report on existing Python libraries and frameworks that could be suitable for implementing key aspects of the PiaAGI cognitive architecture (e.g., for probabilistic reasoning, knowledge representation, symbolic AI, agent simulation, multi-agent systems).
 - [ ] Begin drafting specific computational models for the **Motivational System (Section 3.3 and 4.1.6)**, focusing on how intrinsic goals (e.g., curiosity, competence) could be mathematically formulated and algorithmically implemented to drive agent behavior.
 - [ ] Design a conceptual framework for the **Architectural Maturation (Section 3.2.1)** process, detailing how specific learning experiences or developmental milestones might trigger changes in module capacities or inter-module connectivity.
 - [x] Create `PiaAGI_Research_Tools/cognitive_module_library/` directory. (Path updated from PiaAGI_Hub)
@@ -65,14 +65,14 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [x] CML: Define Interface for `PlanningAndDecisionMakingModule` in `PiaAGI_Research_Tools/cognitive_module_library/planning_and_decision_making_module.py` (Ref PiaAGI.md Sections 4.1.8, 4.4). (Path updated)
 - [x] CML: Define Interface for `SelfModelModule` in `PiaAGI_Research_Tools/cognitive_module_library/self_model_module.py` (Ref PiaAGI.md Section 4.1.10). (Path updated)
 - [x] Jules - Update root README.md, PROJECT_GUIDE.md, and PiaAGI_Research_Tools/README.md for consistency with PiaAGI.md and current tool status (Initial pass completed).
-- [ ] Jules - Comprehensive update of all README.md files including Papers/README.md and Examples/README.md (Current Task).
+- [x] Jules - Comprehensive update of all README.md files including Papers/README.md and Examples/README.md (Current Task).
 
 ## File Organization
 - [x] Relocated PiaPES example/test artifact files from the root directory to `PiaAGI_Research_Tools/PiaPES/examples/`. (Task completed on 2024-07-30)
 - [x] Moved `PiaAGI_Research_Tools/Examples/` contents to root `Examples/` directory, merging with existing content. Original `PiaAGI_Research_Tools/Examples/` directory was removed. (Task completed 2024-07-31)
 - [x] Moved `PiaAGI_Research_Tools/Papers/` contents to root `Papers/` directory, merging by adding new files (no overwrites were needed as files were new to destination). Original `PiaAGI_Research_Tools/Papers/` directory was removed. (Task completed 2024-07-31)
 
-## PiaAGI理论框架构建
+## PiaAGI理论框架升级
 - [ ] 参考 `Papers/AGI_Interdisciplinary_Memorandum.md` 中的多学科交叉备忘录，以获取PiaAGI理论框架升级的灵感。
 
 ## PiaCML (Cognitive Module Library)
@@ -138,7 +138,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## Framework Philosophy and Consistency
 - [x] Reviewed core documents; foundational viewpoint of 'agent as developing entity' is consistently articulated. To be maintained in future work.
-- [ ] Further explore the implications of Chain-of-Thought (CoT) prompting, as discussed in `Papers/Chain_of_Thought_Alignment.md`, for PiaAGI's cognitive architecture (e.g., Planning, Self-Model) and developmental scaffolding strategies, reinforcing the "agent as human-like thinker" interaction paradigm.
+- [x] Further explore the implications of Chain-of-Thought (CoT) prompting, as discussed in `Papers/Chain_of_Thought_Alignment.md`, for PiaAGI's cognitive architecture (e.g., Planning, Self-Model) and developmental scaffolding strategies, reinforcing the "agent as human-like thinker" interaction paradigm.
 - [ ] Expand upon the concepts outlined in `Papers/Human_Inspired_Agent_Blueprint.md` by conducting further research into each multidisciplinary area, identifying specific theories, models, and empirical findings that can concretely inform the design and development of PiaAGI's cognitive modules and overall architecture.
 
 ## Unified WebApp Development
