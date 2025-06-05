@@ -107,6 +107,30 @@ class ActionCommandPayload:
     target_object_or_agent: Optional[str] = None
     expected_outcome_summary: Optional[str] = None
 
+@dataclass
+class AttentionFocusUpdatePayload:
+    """
+    Payload for the Attention Module to communicate updates about its current focus.
+    """
+    focused_item_id: Optional[str] # ID of the item, concept, goal, or stimulus in focus
+    focus_type: str          # e.g., "goal_directed", "stimulus_driven", "internal_thought"
+    intensity: float         # How strongly focused (0.0 to 1.0)
+    source_trigger_message_id: Optional[str] = None # Optional ID of message that triggered this focus
+    timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+@dataclass
+class ToMInferenceUpdatePayload:
+    """
+    Payload for the Theory of Mind (ToM) Module to communicate its inferences
+    about other agents' mental states.
+    """
+    target_agent_id: str  # The agent whose mental state is being inferred
+    inferred_state_type: str  # e.g., "belief", "emotion", "intention", "desire"
+    inferred_state_value: Any # The actual inferred state or its description (e.g., {"emotion_type": "joy", "intensity": 0.7})
+    confidence: float         # Confidence in the inference (0.0 to 1.0)
+    source_evidence_ids: Optional[List[str]] = field(default_factory=list) # e.g., IDs of percepts, messages that led to this inference
+    timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
+
 
 # Example EmotionalStateChangePayload (not explicitly requested by the prompt for this file)
 # @dataclass
@@ -206,5 +230,28 @@ if __name__ == '__main__':
     print(acp1)
     assert acp1.action_type == "MOVE_TO_LOCATION"
     assert acp1.priority == 0.5 # Default
+
+    # Test AttentionFocusUpdatePayload
+    afup1 = AttentionFocusUpdatePayload(
+        focused_item_id="goal_007",
+        focus_type="goal_directed",
+        intensity=0.85,
+        source_trigger_message_id="msg_abc"
+    )
+    print(afup1)
+    assert afup1.intensity == 0.85
+    assert isinstance(afup1.timestamp, datetime.datetime)
+
+    # Test ToMInferenceUpdatePayload
+    tom_inf1 = ToMInferenceUpdatePayload(
+        target_agent_id="user_A",
+        inferred_state_type="belief",
+        inferred_state_value="User A believes it is raining.",
+        confidence=0.7,
+        source_evidence_ids=["percept_id_rain_sound", "percept_id_user_statement"]
+    )
+    print(tom_inf1)
+    assert tom_inf1.confidence == 0.7
+    assert len(tom_inf1.source_evidence_ids) == 2
 
     print("\nCore messages example usage complete.")

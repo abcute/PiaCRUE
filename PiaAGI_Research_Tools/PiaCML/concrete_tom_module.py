@@ -1,72 +1,177 @@
 from typing import Any, Dict, Optional, List
+import uuid # Though not directly used in ToMInferenceUpdatePayload default_factory for ID
+import datetime # For ToMInferenceUpdatePayload timestamp
 
 try:
     from .base_theory_of_mind_module import BaseTheoryOfMindModule
+    from .message_bus import MessageBus
+    from .core_messages import GenericMessage, PerceptDataPayload, ToMInferenceUpdatePayload
+    # EmotionalStateChangePayload will be treated as Dict for now
 except ImportError:
-    # Fallback for scenarios where the relative import might fail
     from base_theory_of_mind_module import BaseTheoryOfMindModule
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, PerceptDataPayload, ToMInferenceUpdatePayload
+    except ImportError:
+        MessageBus = None # type: ignore
+        GenericMessage = None # type: ignore
+        PerceptDataPayload = None # type: ignore
+        ToMInferenceUpdatePayload = None # type: ignore
+
 
 class ConcreteTheoryOfMindModule(BaseTheoryOfMindModule):
     """
-    A basic, concrete implementation of the BaseTheoryOfMindModule.
-    This version uses a dictionary to store models of other agents and applies
-    simple rule-based logic for inferring mental states.
+    A concrete implementation of the BaseTheoryOfMindModule.
+    This version uses a dictionary to store models of other agents,
+    can subscribe to PerceptData and EmotionalStateChange messages,
+    and publish ToMInferenceUpdate messages.
     """
 
-    def __init__(self):
+    def __init__(self, message_bus: Optional[MessageBus] = None):
+        """
+        Initializes the ConcreteTheoryOfMindModule.
+
+        Args:
+            message_bus: An optional instance of MessageBus for communication.
+        """
         self._agent_models: Dict[str, Dict[str, Any]] = {}
-        # Example: self._agent_models['user_001'] = {'inferred_beliefs': {'likes_red': True}, 'interaction_count': 5}
-        print("ConcreteTheoryOfMindModule initialized.")
+        self.message_bus = message_bus
+        self.handled_percepts_for_tom: List[PerceptDataPayload] = []
+        self.handled_own_emotions_for_tom: List[Dict] = [] # Assuming dict for EmotionalStateChangePayload
+        self.recent_inferences: List[ToMInferenceUpdatePayload] = []
 
-    def infer_mental_state(self, agent_id: str, observable_data: Dict[str, Any], context: Dict[str, Any] = None) -> Dict[str, Any]:
+        bus_status_msg = "not configured"
+        if self.message_bus:
+            if GenericMessage and PerceptDataPayload and ToMInferenceUpdatePayload: # Check core imports
+                try:
+                    self.message_bus.subscribe(
+                        module_id="ConcreteTheoryOfMindModule_01", # Example ID
+                        message_type="PerceptData",
+                        callback=self.handle_percept_for_tom
+                    )
+                    self.message_bus.subscribe(
+                        module_id="ConcreteTheoryOfMindModule_01",
+                        message_type="EmotionalStateChange", # Assuming this is the message type string
+                        callback=self.handle_own_emotion_change_for_tom
+                    )
+                    bus_status_msg = "configured and subscribed to PerceptData & EmotionalStateChange"
+                except Exception as e:
+                    bus_status_msg = f"configured but FAILED to subscribe: {e}"
+            else:
+                bus_status_msg = "configured but core message types for subscription not available"
+
+        print(f"ConcreteTheoryOfMindModule initialized. Message bus {bus_status_msg}.")
+
+    def infer_mental_state(self,
+                           target_agent_id: str,
+                           evidence_payload: Any, # Could be PerceptDataPayload, string, dict etc.
+                           state_type_to_infer: str,
+                           source_message_id: Optional[str] = None
+                           ) -> Optional[ToMInferenceUpdatePayload]:
         """
-        Infers mental state based on observable data and simple rules.
-        This is a very rudimentary implementation.
+        Conceptually infers a mental state and publishes it.
+        For PoC, uses simple keyword checks on evidence if it's a string.
         """
-        print(f"ConcreteToMModule: Inferring mental state for agent '{agent_id}' with data: {observable_data}")
+        # print(f"ToM: Attempting to infer '{state_type_to_infer}' for agent '{target_agent_id}' based on evidence: {str(evidence_payload)[:100]}")
 
-        inferred_state = {
-            'belief_state': {},
-            'desire_state': {},
-            'intention_state': {},
-            'emotional_state_inferred': {'type': 'neutral', 'intensity': 0.5}, # Default
-            'confidence_of_inference': 0.3 # Low confidence for this basic model
-        }
+        inferred_value: Any = "unknown"
+        confidence: float = 0.3 # Default low confidence
 
-        utterance = observable_data.get('utterance', "").lower()
-        expression = observable_data.get('expression', "").lower()
-        affective_cues = observable_data.get('affective_cues', [])
+        # Simplified inference logic for PoC
+        evidence_str = ""
+        if isinstance(evidence_payload, PerceptDataPayload):
+            evidence_str = str(evidence_payload.content).lower()
+        elif isinstance(evidence_payload, str):
+            evidence_str = evidence_payload.lower()
 
-        # Simple rule: if user says "want X" and points, infer desire and intention for X
-        if "want" in utterance and "pointing" in expression:
-            parts = utterance.split("want", 1)
-            if len(parts) > 1:
-                target_object = parts[1].strip().split(" ")[0] # very naive parsing
-                inferred_state['desire_state'] = {'goal': f"obtain_{target_object}", 'strength': 0.7}
-                inferred_state['intention_state'] = {'action': f"request_{target_object}", 'confidence': 0.6}
-                inferred_state['belief_state'][f"wants_{target_object}"] = True
-                inferred_state['confidence_of_inference'] = 0.5
+        source_evidence_ids = [source_message_id] if source_message_id else []
+        if hasattr(evidence_payload, 'percept_id'): # If evidence is PerceptDataPayload like
+            source_evidence_ids.append(evidence_payload.percept_id)
 
-        if "happy" in affective_cues or "smiling" in expression:
-            inferred_state['emotional_state_inferred'] = {'type': 'positive_generic', 'intensity': 0.6}
-            inferred_state['confidence_of_inference'] = max(0.4, inferred_state['confidence_of_inference'])
-        elif "sad" in affective_cues or "frowning" in expression:
-            inferred_state['emotional_state_inferred'] = {'type': 'negative_generic', 'intensity': 0.6}
-            inferred_state['confidence_of_inference'] = max(0.4, inferred_state['confidence_of_inference'])
 
-        # Update or retrieve existing model for more context (rudimentary)
-        if agent_id in self._agent_models:
-            self._agent_models[agent_id].setdefault('inferred_mental_states_log', []).append(inferred_state)
-            self._agent_models[agent_id]['interaction_count'] = self._agent_models[agent_id].get('interaction_count', 0) + 1
+        if state_type_to_infer == "emotion_sadness_conjecture":
+            if "sad" in evidence_str or "crying" in evidence_str:
+                inferred_value = {"emotion": "sadness", "intensity_qualitative": "moderate"}
+                confidence = 0.6
+        elif state_type_to_infer == "emotion_happiness_conjecture":
+             if "happy" in evidence_str or "joy" in evidence_str or "laughing" in evidence_str:
+                inferred_value = {"emotion": "happiness", "intensity_qualitative": "moderate"}
+                confidence = 0.65
+        elif state_type_to_infer == "belief_about_weather":
+            if "raining" in evidence_str:
+                inferred_value = "Believes it is raining"
+                confidence = 0.7
         else:
-            # Create a basic model if none exists
-            self._agent_models[agent_id] = {
-                'inferred_mental_states_log': [inferred_state],
-                'interaction_count': 1
-            }
+            # print(f"ToM: No specific rule to infer '{state_type_to_infer}' from this evidence.")
+            return None # Or publish with low confidence "unknown" state
 
-        print(f"ConcreteToMModule: Inferred state for '{agent_id}': {inferred_state}")
-        return inferred_state
+        if not (ToMInferenceUpdatePayload and GenericMessage): # Check imports
+            print("Error: ToMInferenceUpdatePayload or GenericMessage not available. Cannot create/publish inference.")
+            return None
+
+        tom_payload = ToMInferenceUpdatePayload(
+            target_agent_id=target_agent_id,
+            inferred_state_type=state_type_to_infer,
+            inferred_state_value=inferred_value,
+            confidence=confidence,
+            source_evidence_ids=source_evidence_ids
+        )
+        self.recent_inferences.append(tom_payload)
+        # print(f"ToM: Inference made: {tom_payload}")
+
+        if self.message_bus:
+            message = GenericMessage(
+                source_module_id="ConcreteTheoryOfMindModule_01", # Example ID
+                message_type="ToMInferenceUpdate",
+                payload=tom_payload
+            )
+            try:
+                self.message_bus.publish(message)
+                # print(f"ToM: Published ToMInferenceUpdate for agent '{target_agent_id}'.")
+            except Exception as e:
+                print(f"ToM: Error publishing ToMInferenceUpdate: {e}")
+
+        return tom_payload
+
+    def handle_percept_for_tom(self, message: GenericMessage):
+        """Handles PerceptData messages for ToM processing."""
+        if PerceptDataPayload and isinstance(message.payload, PerceptDataPayload):
+            payload: PerceptDataPayload = message.payload
+            self.handled_percepts_for_tom.append(payload)
+            # print(f"ToM: Received PerceptData from '{payload.modality}' (msg_id: {message.message_id})")
+
+            # Conceptual: Analyze percept for social cues.
+            # Example: If text percept contains "I am sad", infer sadness.
+            if payload.modality == "text" and isinstance(payload.content, str):
+                if "sad" in payload.content.lower() or "unhappy" in payload.content.lower():
+                    # Assuming the source of percept is the target agent for ToM inference
+                    # This is a simplification; target_agent_id might come from elsewhere.
+                    target_id = message.source_module_id # Or parse from content if it's like "UserX said: I am sad"
+                    if target_id == "ConcretePerceptionModule_01": target_id = "unknown_user_from_direct_percept"
+
+                    self.infer_mental_state(
+                        target_agent_id=target_id,
+                        evidence_payload=payload.content, # Pass the content string as evidence
+                        state_type_to_infer="emotion_sadness_conjecture",
+                        source_message_id=message.message_id
+                    )
+        else:
+            print(f"ToM: Received PerceptData with unexpected payload type: {type(message.payload)}")
+
+    def handle_own_emotion_change_for_tom(self, message: GenericMessage):
+        """Handles agent's own EmotionalStateChange messages for ToM processing (e.g., for empathy modeling)."""
+        # Assuming EmotionalStateChangePayload is a dict for now, as per prompt.
+        if isinstance(message.payload, dict) and "valence" in message.payload and "arousal" in message.payload:
+            payload: dict = message.payload
+            self.handled_own_emotions_for_tom.append(payload)
+            # print(f"ToM: Received own EmotionalStateChange: V={payload.get('valence')}, A={payload.get('arousal')}")
+            # Future: Agent's own emotional state can bias ToM inferences (e.g., projection, empathy level).
+            # This could trigger self.infer_mental_state about *another* agent if contextually relevant.
+            # E.g., if I am sad, I might infer others are more likely to be sad (projection),
+            # or I might be more sensitive to sadness cues in others (empathy).
+        else:
+            print(f"ToM: Received EmotionalStateChange with unexpected payload structure: {type(message.payload)}")
+
 
     def update_agent_model(self, agent_id: str, new_data: Dict[str, Any]) -> bool:
         """
