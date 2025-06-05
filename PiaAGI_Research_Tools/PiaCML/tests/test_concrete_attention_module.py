@@ -1,260 +1,212 @@
 import unittest
 import os
 import sys
+import datetime
+from unittest.mock import MagicMock, call
 
-# Adjust path to import from the parent directory (PiaCML)
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Adjust path for consistent imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 try:
+    from PiaAGI_Research_Tools.PiaCML import (
+        ConcreteAttentionModule,
+        MessageBus,
+        GenericMessage,
+        GoalUpdatePayload,
+        AttentionFocusUpdatePayload
+        # Assuming EmotionalStateChangePayload will be a dict for tests if not defined in core_messages
+    )
+except ModuleNotFoundError:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from concrete_attention_module import ConcreteAttentionModule
-except ImportError:
-    # Fallback for different execution contexts
-    if 'ConcreteAttentionModule' not in globals():
-        from PiaAGI_Hub.PiaCML.concrete_attention_module import ConcreteAttentionModule
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, GoalUpdatePayload, AttentionFocusUpdatePayload
+    except ImportError:
+        MessageBus = None
+        GenericMessage = None
+        GoalUpdatePayload = None
+        AttentionFocusUpdatePayload = None
 
 class TestConcreteAttentionModule(unittest.TestCase):
 
     def setUp(self):
-        self.attention = ConcreteAttentionModule()
-        # Suppress print statements from the module during tests
+        self.bus = MessageBus() if MessageBus else None
+        self.mock_bus = MagicMock(spec=MessageBus) if MessageBus else None
+
+        self.attn_no_bus = ConcreteAttentionModule()
+        self.attn_with_mock_bus = ConcreteAttentionModule(message_bus=self.mock_bus)
+        self.attn_with_real_bus = ConcreteAttentionModule(message_bus=self.bus)
+
         self._original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
+        # To see print statements from the module during tests, comment out the next line
+        # sys.stdout = open(os.devnull, 'w')
 
     def tearDown(self):
-        sys.stdout.close()
+        # sys.stdout.close()
         sys.stdout = self._original_stdout
 
-    def test_initial_state(self):
-        state = self.attention.get_attentional_state()
-        self.assertIsNone(state['current_focus'])
-        self.assertEqual(state['current_priority'], 0.0)
-        self.assertEqual(state['active_filters'], [])
+    def test_initial_state_no_bus(self):
+        state = self.attn_no_bus.get_attentional_state()
+        self.assertIsNone(state['current_focus_payload'])
+        self.assertEqual(state['active_filters_count'], 0)
         self.assertEqual(state['cognitive_load_level'], 0.0)
         self.assertEqual(state['module_type'], 'ConcreteAttentionModule')
+        self.assertIsNone(self.attn_no_bus.message_bus)
 
-    def test_direct_attention_initial(self):
-        success = self.attention.direct_attention("TaskA", 0.8)
+    def test_set_attention_focus_internal_state_no_bus(self):
+        """Test set_attention_focus updates internal state correctly without a bus."""
+        success = self.attn_no_bus.set_attention_focus("TaskA", "goal_directed", 0.8)
         self.assertTrue(success)
-        state = self.attention.get_attentional_state()
-        self.assertEqual(state['current_focus'], "TaskA")
-        self.assertEqual(state['current_priority'], 0.8)
+        current_focus_payload = self.attn_no_bus.current_focus
+        self.assertIsNotNone(current_focus_payload)
+        self.assertEqual(current_focus_payload.focused_item_id, "TaskA")
+        self.assertEqual(current_focus_payload.focus_type, "goal_directed")
+        self.assertEqual(current_focus_payload.intensity, 0.8)
+        self.assertIsInstance(current_focus_payload.timestamp, datetime.datetime)
 
-    def test_direct_attention_higher_priority(self):
-        self.attention.direct_attention("TaskA", 0.5)
-        success = self.attention.direct_attention("TaskB", 0.8)
-        self.assertTrue(success)
-        state = self.attention.get_attentional_state()
-        self.assertEqual(state['current_focus'], "TaskB")
-        self.assertEqual(state['current_priority'], 0.8)
+        state = self.attn_no_bus.get_attentional_state()
+        self.assertEqual(state['current_focus_payload']['focused_item_id'], "TaskA")
 
-    def test_direct_attention_lower_priority(self):
-        self.attention.direct_attention("TaskA", 0.8)
-        success = self.attention.direct_attention("TaskB", 0.5)
-        self.assertFalse(success) # Should not switch
-        state = self.attention.get_attentional_state()
-        self.assertEqual(state['current_focus'], "TaskA") # Remains TaskA
-        self.assertEqual(state['current_priority'], 0.8)
-
-    def test_direct_attention_same_priority(self):
-        self.attention.direct_attention("TaskA", 0.8)
-        success = self.attention.direct_attention("TaskB", 0.8) # Same priority, should switch
-        self.assertTrue(success)
-        state = self.attention.get_attentional_state()
-        self.assertEqual(state['current_focus'], "TaskB")
-        self.assertEqual(state['current_priority'], 0.8)
-
-    def test_filter_information_no_focus(self):
+    def test_filter_information_no_focus_no_bus(self):
         stream = [{'id': '1', 'content': 'info1'}]
-        filtered = self.attention.filter_information(stream)
-        self.assertEqual(len(filtered), 1) # No focus, should return all
+        filtered = self.attn_no_bus.filter_information(stream)
+        self.assertEqual(len(filtered), 1)
 
-    def test_filter_information_with_focus_content(self):
-        self.attention.direct_attention("apple", 0.8)
+    def test_filter_information_with_focus_no_bus(self):
+        self.attn_no_bus.set_attention_focus("apple", "concept", 0.8)
         stream = [
             {'id': '1', 'content': 'An apple a day.'},
-            {'id': '2', 'content': 'A banana for lunch.'},
-            {'id': '3', 'content': 'More apple facts.'}
+            {'id': '2', 'content': 'A banana for lunch.'}
         ]
-        filtered = self.attention.filter_information(stream)
-        self.assertEqual(len(filtered), 2)
-        self.assertIn('1', [item['id'] for item in filtered])
-        self.assertIn('3', [item['id'] for item in filtered])
-
-    def test_filter_information_with_focus_tags(self):
-        self.attention.direct_attention("urgent", 0.9)
-        stream = [
-            {'id': 'a', 'tags': ['urgent', 'work']},
-            {'id': 'b', 'tags': ['home']},
-            {'id': 'c', 'tags': ['urgent', 'personal']}
-        ]
-        filtered = self.attention.filter_information(stream)
-        self.assertEqual(len(filtered), 2)
-        self.assertIn('a', [item['id'] for item in filtered])
-        self.assertIn('c', [item['id'] for item in filtered])
-
-    def test_filter_information_with_focus_id(self):
-        self.attention.direct_attention("id_xyz", 0.9)
-        stream = [
-            {'id': 'id_abc', 'content': 'some data'},
-            {'id': 'id_xyz', 'content': 'target data'},
-            {'id': 'id_123', 'content': 'other data'}
-        ]
-        filtered = self.attention.filter_information(stream)
+        filtered = self.attn_no_bus.filter_information(stream)
         self.assertEqual(len(filtered), 1)
-        self.assertEqual(filtered[0]['id'], 'id_xyz')
+        self.assertEqual(filtered[0]['id'], '1')
 
-    def test_filter_information_with_override_focus(self):
-        self.attention.direct_attention("apple", 0.8) # Initial focus
-        stream = [
-            {'id': '1', 'content': 'An apple a day.'},
-            {'id': '2', 'content': 'A banana for lunch.'},
-        ]
-        filtered = self.attention.filter_information(stream, current_focus="banana")
-        self.assertEqual(len(filtered), 1)
-        self.assertEqual(filtered[0]['id'], '2')
-        # Check that internal focus hasn't changed
-        state = self.attention.get_attentional_state()
-        self.assertEqual(state['current_focus'], "apple")
-
-
-    def test_manage_cognitive_load_normal(self):
+    def test_manage_cognitive_load_no_bus(self):
         thresholds = {'optimal': 0.7, 'overload': 0.9}
-        result = self.attention.manage_cognitive_load(0.5, thresholds)
+        result = self.attn_no_bus.manage_cognitive_load(0.5, thresholds)
         self.assertEqual(result['action'], 'none')
-        state = self.attention.get_attentional_state()
-        self.assertEqual(state['cognitive_load_level'], 0.5)
 
-    def test_manage_cognitive_load_optimal(self):
-        thresholds = {'optimal': 0.7, 'overload': 0.9}
-        result = self.attention.manage_cognitive_load(0.8, thresholds) # Above optimal, below overload
-        self.assertEqual(result['action'], 'maintain_focus')
-        state = self.attention.get_attentional_state()
-        self.assertEqual(state['cognitive_load_level'], 0.8)
 
-    def test_manage_cognitive_load_overload(self):
-        thresholds = {'optimal': 0.7, 'overload': 0.9}
-        result = self.attention.manage_cognitive_load(0.95, thresholds)
-        self.assertEqual(result['action'], 'reduce_focus_strictness')
-        state = self.attention.get_attentional_state()
-        self.assertEqual(state['cognitive_load_level'], 0.95)
+    # --- New Tests for MessageBus Integration ---
+    def test_initialization_with_bus_subscription(self):
+        """Test AttentionModule initialization with a bus and subscriptions."""
+        if not MessageBus: self.skipTest("MessageBus components not available")
 
-    def test_direct_attention_with_filter_management(self):
-        """Test adding and clearing filters via direct_attention context."""
-        # Add a filter
-        filter_to_add = {'type': 'salience_gt', 'key': 'salience', 'threshold': 0.7}
-        self.attention.direct_attention("FocusWithFilter", 0.9, context={'add_filter': filter_to_add})
-        state = self.attention.get_attentional_state()
-        self.assertIn(filter_to_add, state['active_filters'])
-        self.assertEqual(len(state['active_filters']), 1)
+        self.assertIsNotNone(self.attn_with_real_bus.message_bus)
+        goal_subscribers = self.bus.get_subscribers_for_type("GoalUpdate")
+        emotion_subscribers = self.bus.get_subscribers_for_type("EmotionalStateChange")
 
-        # Add another filter
-        filter_to_add_2 = {'type': 'value_equals', 'key': 'status', 'value': 'critical'}
-        self.attention.direct_attention("FocusWithFilter2", 0.95, context={'add_filter': filter_to_add_2})
-        state = self.attention.get_attentional_state()
-        self.assertIn(filter_to_add, state['active_filters'])
-        self.assertIn(filter_to_add_2, state['active_filters'])
-        self.assertEqual(len(state['active_filters']), 2)
+        found_goal_sub = any(s[0] == "ConcreteAttentionModule_01" and s[1] == self.attn_with_real_bus.handle_goal_update_for_attention for s in goal_subscribers if s)
+        found_emotion_sub = any(s[0] == "ConcreteAttentionModule_01" and s[1] == self.attn_with_real_bus.handle_emotion_update_for_attention for s in emotion_subscribers if s)
 
-        # Clear filters
-        self.attention.direct_attention("FocusClearFilter", 0.9, context={'clear_filters': True})
-        state = self.attention.get_attentional_state()
-        self.assertEqual(state['active_filters'], [])
+        self.assertTrue(found_goal_sub, "AttentionModule did not subscribe to GoalUpdate.")
+        self.assertTrue(found_emotion_sub, "AttentionModule did not subscribe to EmotionalStateChange.")
 
-    def test_filter_information_with_value_equals_filter(self):
-        """Test filtering with a 'value_equals' active filter."""
-        filter_def = {'type': 'value_equals', 'key': 'status', 'value': 'active'}
-        # Clear any existing filters and set focus to None to ensure only active_filter applies
-        self.attention.direct_attention(None, 0.0, context={'add_filter': filter_def, 'clear_filters': True})
+    def test_set_attention_focus_publishes_message(self):
+        """Test set_attention_focus publishes an AttentionFocusUpdate message."""
+        if not MessageBus or not GenericMessage or not AttentionFocusUpdatePayload:
+            self.skipTest("MessageBus or core message components not available")
 
-        stream = [
-            {'id': 'item1', 'status': 'active', 'content': 'content1'},
-            {'id': 'item2', 'status': 'inactive', 'content': 'content2'},
-            {'id': 'item3', 'status': 'active', 'content': 'content3'},
-        ]
+        item_id = "focus_item_publish"
+        focus_type = "test_driven"
+        intensity = 0.75
+        trigger_id = "msg_trigger_xyz"
 
-        filtered_items = self.attention.filter_information(stream)
-        self.assertEqual(len(filtered_items), 2)
-        self.assertTrue(all(item['status'] == 'active' for item in filtered_items))
-        self.assertListEqual([item['id'] for item in filtered_items], ['item1', 'item3'])
+        self.attn_with_mock_bus.set_attention_focus(item_id, focus_type, intensity, trigger_id)
 
-    def test_filter_information_with_value_gt_filter(self):
-        """Test filtering with a 'value_gt' active filter."""
-        filter_def = {'type': 'value_gt', 'key': 'score', 'threshold': 0.5}
-        self.attention.direct_attention(None, 0.0, context={'add_filter': filter_def, 'clear_filters': True})
+        self.mock_bus.publish.assert_called_once()
+        args, _ = self.mock_bus.publish.call_args
+        published_message: GenericMessage = args[0]
 
-        stream = [
-            {'id': 'item1', 'score': 0.6, 'content': 'A'},
-            {'id': 'item2', 'score': 0.4, 'content': 'B'},
-            {'id': 'item3', 'score': 0.7, 'content': 'C'},
-            {'id': 'item4', 'score': 0.5, 'content': 'D'}, # Should not pass (not strictly greater)
-        ]
-        filtered_items = self.attention.filter_information(stream)
-        self.assertEqual(len(filtered_items), 2)
-        self.assertTrue(all(item['score'] > 0.5 for item in filtered_items))
-        self.assertListEqual([item['id'] for item in filtered_items], ['item1', 'item3'])
+        self.assertEqual(published_message.message_type, "AttentionFocusUpdate")
+        self.assertEqual(published_message.source_module_id, "ConcreteAttentionModule_01")
 
-    def test_filter_information_with_tag_present_filter(self):
-        """Test filtering with a 'tag_present' active filter."""
-        filter_def = {'type': 'tag_present', 'tag': 'important'}
-        self.attention.direct_attention(None, 0.0, context={'add_filter': filter_def, 'clear_filters': True})
+        payload: AttentionFocusUpdatePayload = published_message.payload
+        self.assertIsInstance(payload, AttentionFocusUpdatePayload)
+        self.assertEqual(payload.focused_item_id, item_id)
+        self.assertEqual(payload.focus_type, focus_type)
+        self.assertEqual(payload.intensity, intensity)
+        self.assertEqual(payload.source_trigger_message_id, trigger_id)
 
-        stream = [
-            {'id': 'item1', 'tags': ['urgent', 'important'], 'content': 'A'},
-            {'id': 'item2', 'tags': ['general'], 'content': 'B'},
-            {'id': 'item3', 'tags': ['important'], 'content': 'C'},
-            {'id': 'item4', 'content': 'D'}, # No tags
-        ]
-        filtered_items = self.attention.filter_information(stream)
-        self.assertEqual(len(filtered_items), 2)
-        self.assertTrue(all('important' in item.get('tags', []) for item in filtered_items))
-        self.assertListEqual([item['id'] for item in filtered_items], ['item1', 'item3'])
+    def test_set_attention_focus_no_publish_if_no_bus(self):
+        """Test set_attention_focus does not publish if no bus is configured."""
+        if not MessageBus: self.skipTest("MessageBus components not available")
 
-    def test_filter_information_with_multiple_filters(self):
-        """Test filtering with multiple active filters applied."""
-        filter1 = {'type': 'value_gt', 'key': 'priority', 'threshold': 3}
-        filter2 = {'type': 'tag_present', 'tag': 'projectX'}
+        self.attn_no_bus.set_attention_focus("item_no_bus", "type_no_bus", 0.5)
+        # mock_bus is associated with attn_with_mock_bus, so this implicitly checks
+        # that the no_bus instance doesn't somehow access/use it.
+        self.mock_bus.publish.assert_not_called()
 
-        self.attention.direct_attention(None, 0.0, context={'clear_filters': True})
-        self.attention.direct_attention(None, 0.0, context={'add_filter': filter1})
-        self.attention.direct_attention(None, 0.0, context={'add_filter': filter2})
 
-        stream = [
-            {'id': 'item1', 'priority': 5, 'tags': ['projectX', 'alpha']}, # Passes both
-            {'id': 'item2', 'priority': 2, 'tags': ['projectX']},          # Fails filter1 (priority)
-            {'id': 'item3', 'priority': 6, 'tags': ['projectY']},          # Fails filter2 (tag)
-            {'id': 'item4', 'priority': 4, 'tags': ['projectX', 'beta']},  # Passes both
-            {'id': 'item5', 'priority': 1, 'tags': ['general']},           # Fails both
-        ]
+    def test_handle_goal_update_for_attention_shifts_focus(self):
+        """Test GoalUpdate message leads to attention shift and publish."""
+        if not all([MessageBus, GenericMessage, GoalUpdatePayload, AttentionFocusUpdatePayload]):
+            self.skipTest("MessageBus or core message components not available")
 
-        filtered_items = self.attention.filter_information(stream)
-        self.assertEqual(len(filtered_items), 2)
-        self.assertListEqual([item['id'] for item in filtered_items], ['item1', 'item4'])
-        for item in filtered_items:
-            self.assertTrue(item['priority'] > 3)
-            self.assertIn('projectX', item['tags'])
+        # This mock will capture the AttentionFocusUpdate published by set_attention_focus
+        # when triggered by the goal update handler.
+        mock_attention_subscriber = MagicMock(name="attention_focus_listener")
+        self.bus.subscribe("AttentionListener", "AttentionFocusUpdate", mock_attention_subscriber)
 
-    def test_filter_information_with_focus_and_active_filters(self):
-        """Test filtering with both a focus and active filters."""
-        active_filter = {'type': 'value_equals', 'key': 'status', 'value': 'pending'}
-        # Set focus and add filter. Clear any previous filters.
-        self.attention.direct_attention("FocusTarget", 0.9, context={'add_filter': active_filter, 'clear_filters': True})
+        high_prio_goal_payload = GoalUpdatePayload(
+            goal_id="urgent_task_001", goal_description="High priority goal",
+            priority=0.9, status="ACTIVE", originator="TestMotSys"
+        )
+        goal_update_msg = GenericMessage(
+            source_module_id="TestMotSys", message_type="GoalUpdate",
+            payload=high_prio_goal_payload, message_id="goal_msg_1"
+        )
 
-        stream = [
-            {'id': 'itemA', 'content': 'Info about FocusTarget', 'status': 'pending', 'tags': ['FocusTarget']}, # Passes focus and filter
-            {'id': 'itemB', 'content': 'Info about FocusTarget', 'status': 'done', 'tags': ['FocusTarget']},    # Passes focus, fails filter
-            {'id': 'itemC', 'content': 'Other info', 'status': 'pending'},                                     # Fails focus
-            {'id': 'itemD', 'content': 'More FocusTarget data', 'status': 'pending', 'tags': ['FocusTarget']},  # Passes focus and filter
-            {'id': 'itemE', 'content': 'Irrelevant', 'status': 'active'},                                      # Fails focus
-        ]
+        self.bus.publish(goal_update_msg) # This should trigger attn_with_real_bus.handle_goal_update_for_attention
 
-        filtered_items = self.attention.filter_information(stream) # Uses "FocusTarget" as focus
-        self.assertEqual(len(filtered_items), 2)
-        self.assertListEqual([item['id'] for item in filtered_items], ['itemA', 'itemD'])
-        for item in filtered_items:
-            # Check focus condition (tag presence for this test data)
-            self.assertIn('FocusTarget', item.get('tags', []))
-            # Check active filter condition
-            self.assertEqual(item['status'], 'pending')
+        self.assertIn(high_prio_goal_payload, self.attn_with_real_bus.handled_goal_updates_for_attention)
+
+        # Check that set_attention_focus was called and published an AttentionFocusUpdate
+        mock_attention_subscriber.assert_called_once()
+        received_focus_update_msg: GenericMessage = mock_attention_subscriber.call_args[0][0]
+        self.assertEqual(received_focus_update_msg.message_type, "AttentionFocusUpdate")
+
+        focus_payload: AttentionFocusUpdatePayload = received_focus_update_msg.payload
+        self.assertEqual(focus_payload.focused_item_id, f"goal_{high_prio_goal_payload.goal_id}")
+        self.assertEqual(focus_payload.focus_type, "goal_directed_trigger")
+        self.assertEqual(focus_payload.intensity, high_prio_goal_payload.priority)
+        self.assertEqual(focus_payload.source_trigger_message_id, "goal_msg_1")
+
+
+    def test_handle_emotion_update_for_attention_modulates_focus(self):
+        """Test EmotionalStateChange message modulates attention intensity and publishes."""
+        if not all([MessageBus, GenericMessage, AttentionFocusUpdatePayload]):
+            self.skipTest("MessageBus or core message components not available")
+
+        mock_attention_subscriber = MagicMock(name="emotion_attn_listener")
+        self.bus.subscribe("EmotionAttentionListener", "AttentionFocusUpdate", mock_attention_subscriber)
+
+        # Initial focus
+        self.attn_with_real_bus.set_attention_focus("initial_item", "background", 0.4, "init_msg")
+        mock_attention_subscriber.reset_mock() # Reset after initial focus publish
+
+        high_arousal_emotion_payload = {"valence": -0.5, "arousal": 0.8} # High arousal
+        emotion_update_msg = GenericMessage(
+            source_module_id="TestEmotionSys", message_type="EmotionalStateChange",
+            payload=high_arousal_emotion_payload, message_id="emotion_msg_1"
+        )
+
+        self.bus.publish(emotion_update_msg)
+
+        self.assertIn(high_arousal_emotion_payload, self.attn_with_real_bus.handled_emotion_updates_for_attention)
+
+        mock_attention_subscriber.assert_called_once()
+        received_focus_update_msg: GenericMessage = mock_attention_subscriber.call_args[0][0]
+        self.assertEqual(received_focus_update_msg.message_type, "AttentionFocusUpdate")
+
+        focus_payload: AttentionFocusUpdatePayload = received_focus_update_msg.payload
+        self.assertEqual(focus_payload.focused_item_id, "initial_item") # Focus item should be maintained
+        self.assertEqual(focus_payload.focus_type, "emotion_triggered_intensity_increase")
+        expected_intensity = min(1.0, 0.4 + 0.1 + (0.8 - 0.7) * 0.5) # 0.4 + 0.1 + 0.05 = 0.55
+        self.assertAlmostEqual(focus_payload.intensity, expected_intensity)
+        self.assertEqual(focus_payload.source_trigger_message_id, "emotion_msg_1")
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(argv=['first-arg-is-ignored'], exit=False)

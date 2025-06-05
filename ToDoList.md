@@ -196,6 +196,8 @@ This section outlines proposed future development directions for the PiaAGI Rese
     - [x] Integrated Message Bus with `ConcretePlanningAndDecisionMakingModule` to subscribe to "GoalUpdate" messages and publish "ActionCommand" messages. (Completed on 2024-03-08 by Jules)
     - [x] Integrated Message Bus with `ConcreteBehaviorGenerationModule` to subscribe to "ActionCommand" messages. (Completed on 2024-03-08 by Jules)
     - [x] Integrated Message Bus with `ConcreteLearningModule` to subscribe to "GoalUpdate" messages for learning purposes. (Completed on 2024-03-08 by Jules)
+    - [x] Conceptually integrated Message Bus with `ConcreteAttentionModule` (publishes "AttentionFocusUpdate", subscribes to "GoalUpdate" & "EmotionalStateChange"). (Completed on 2024-03-08 by Jules)
+    - [x] Conceptually integrated Message Bus with `ConcreteTheoryOfMindModule` (publishes "ToMInferenceUpdate", subscribes to "PerceptData" & "EmotionalStateChange"). (Completed on 2024-03-08 by Jules)
 - [x] **Proof-of-Concept for an Architectural Maturation Hook:** Implement a basic mechanism for one of the conceptualized hooks (e.g., dynamic WM capacity adjustment) in a relevant module prototype. (Completed on 2024-03-08 by Jules)
 
 ### PiaSE (PiaAGI Simulation Environment) - Enhancements

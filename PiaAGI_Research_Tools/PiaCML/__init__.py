@@ -11,7 +11,9 @@ from .core_messages import (
     LTMQueryResultPayload,
     SelfKnowledgeConfidenceUpdatePayload, # Added
     LTMQueryPayload,                    # Added
-    ActionCommandPayload                # Added
+    ActionCommandPayload,               # Added
+    AttentionFocusUpdatePayload,        # Added
+    ToMInferenceUpdatePayload           # Added
     # Add other specific payloads here as they are defined and needed for top-level access
 )
 
@@ -38,7 +40,8 @@ from .concrete_motivational_system_module import ConcreteMotivationalSystemModul
 __all__ = [
     "GenericMessage", "MemoryItem", "PerceptDataPayload", "GoalUpdatePayload",
     "LTMQueryResultPayload", "SelfKnowledgeConfidenceUpdatePayload",
-    "LTMQueryPayload", "ActionCommandPayload", # Added
+    "LTMQueryPayload", "ActionCommandPayload",
+    "AttentionFocusUpdatePayload", "ToMInferenceUpdatePayload", # Added
     "MessageBus",
     "BaseMemoryModule", "BaseLongTermMemoryModule", "BaseWorkingMemoryModule",
     "BaseEmotionModule", "BaseMotivationalSystemModule",
