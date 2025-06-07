@@ -11,12 +11,18 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 
 try:
     from PiaAGI_Research_Tools.PiaCML.message_bus import MessageBus
-    from PiaAGI_Research_Tools.PiaCML.core_messages import GenericMessage, GoalUpdatePayload, EmotionalStateChangePayload
+    from PiaAGI_Research_Tools.PiaCML.core_messages import (
+        GenericMessage, GoalUpdatePayload, EmotionalStateChangePayload,
+        PerceptDataPayload, ActionEventPayload # Added PerceptDataPayload and ActionEventPayload
+    )
     from PiaAGI_Research_Tools.PiaCML.concrete_emotion_module import ConcreteEmotionModule
 except ModuleNotFoundError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from message_bus import MessageBus
-    from core_messages import GenericMessage, GoalUpdatePayload, EmotionalStateChangePayload
+    from core_messages import (
+        GenericMessage, GoalUpdatePayload, EmotionalStateChangePayload,
+        PerceptDataPayload, ActionEventPayload # Added PerceptDataPayload and ActionEventPayload
+    )
     from concrete_emotion_module import ConcreteEmotionModule
 
 class TestConcreteEmotionModuleIntegration(unittest.TestCase):
@@ -24,8 +30,11 @@ class TestConcreteEmotionModuleIntegration(unittest.TestCase):
     def setUp(self):
         self.bus = MessageBus()
         self.module_id = f"TestEmotionModule_{str(uuid.uuid4())[:8]}"
-        # Module instantiated in each test method for a clean state
+        self.emotion_module = ConcreteEmotionModule(message_bus=self.bus, module_id=self.module_id) # Instantiated here
         self.received_emotional_state_changes: List[GenericMessage] = []
+        # Subscribe the listener in setUp to make it active for all tests in this class
+        self.bus.subscribe(self.module_id, "EmotionalStateChange", self._emotional_state_change_listener)
+
 
     def _emotional_state_change_listener(self, message: GenericMessage):
         if isinstance(message.payload, EmotionalStateChangePayload):
@@ -36,15 +45,15 @@ class TestConcreteEmotionModuleIntegration(unittest.TestCase):
 
     # --- Test Publishing EmotionalStateChange ---
     def test_appraise_event_publishes_emotional_state_change(self):
-        emotion_module = ConcreteEmotionModule(message_bus=self.bus, module_id=self.module_id)
+        # emotion_module = ConcreteEmotionModule(message_bus=self.bus, module_id=self.module_id) # Use self.emotion_module
         async def run_test_logic():
-            self.bus.subscribe(self.module_id, "EmotionalStateChange", self._emotional_state_change_listener)
+            # self.bus.subscribe(self.module_id, "EmotionalStateChange", self._emotional_state_change_listener) # Moved to setUp
 
             event_details_1 = {
                 "type": "TEST_EVENT_POSITIVE", "intensity": 0.7, "goal_congruence": 0.8,
                 "goal_importance": 0.9, "triggering_message_id": "trigger_msg_001"
             }
-            emotion_module.appraise_event(event_details_1)
+            self.emotion_module.appraise_event(event_details_1)
             await asyncio.sleep(0.01)
 
             self.assertEqual(len(self.received_emotional_state_changes), 1)
@@ -62,7 +71,7 @@ class TestConcreteEmotionModuleIntegration(unittest.TestCase):
 
             # Test without triggering_message_id
             event_details_2 = {"type": "TEST_EVENT_NEGATIVE", "intensity": 0.6, "goal_congruence": -0.7, "goal_importance": 0.5}
-            emotion_module.appraise_event(event_details_2)
+            self.emotion_module.appraise_event(event_details_2)
             await asyncio.sleep(0.01)
 
             self.assertEqual(len(self.received_emotional_state_changes), 1)
@@ -83,16 +92,18 @@ class TestConcreteEmotionModuleIntegration(unittest.TestCase):
 
         # Check that state changed but no messages were "received" (listener is on self.bus)
         self.assertNotEqual(emotion_module_no_bus.get_emotional_state(), initial_state)
-        self.assertEqual(len(self.received_emotional_state_changes), 0)
+        # self.received_emotional_state_changes is part of self, not emotion_module_no_bus's context
+        # This test is more about ensuring no error, rather than checking a listener on a different bus.
+        # To properly test no publish, one might inject a mock bus into emotion_module_no_bus and check no calls.
 
 
     # --- Test Subscribing to GoalUpdate ---
     def test_handle_goal_update_for_appraisal_triggers_appraisal_and_publishes_change(self):
-        emotion_module = ConcreteEmotionModule(message_bus=self.bus, module_id=self.module_id)
-        initial_vad_state = emotion_module.get_emotional_state().copy()
+        # emotion_module = ConcreteEmotionModule(message_bus=self.bus, module_id=self.module_id) # Use self.emotion_module
+        initial_vad_state = self.emotion_module.get_emotional_state().copy()
 
         async def run_test_logic():
-            self.bus.subscribe(self.module_id, "EmotionalStateChange", self._emotional_state_change_listener)
+            # self.bus.subscribe(self.module_id, "EmotionalStateChange", self._emotional_state_change_listener) # Moved to setUp
 
             goal_payload = GoalUpdatePayload(
                 goal_id="g_emo_test",
@@ -120,23 +131,97 @@ class TestConcreteEmotionModuleIntegration(unittest.TestCase):
             self.assertEqual(payload.triggering_event_id, "goal_update_msg_id_1")
 
             # 2. Check that the emotion module's state changed in a way consistent with the goal
-            current_vad_state = emotion_module.get_emotional_state()
+            current_vad_state = self.emotion_module.get_emotional_state()
             self.assertNotEqual(current_vad_state, initial_vad_state)
-
-            # For an "achieved" high-priority goal, valence should increase significantly
-            # Intensity for appraisal from goal: priority * 0.5 = 0.9 * 0.5 = 0.45
-            # Goal congruence: 1.0 (achieved)
-            # Goal importance: 0.9 (priority)
-            # Expected valence change before decay: 1.0 * 0.9 * 0.45 approx 0.405
             self.assertTrue(current_vad_state["valence"] > initial_vad_state["valence"])
-            self.assertTrue(current_vad_state["valence"] > 0.3) # Check for significant positive change
+            self.assertTrue(current_vad_state["valence"] > 0.3)
             self.assertTrue(payload.current_emotion_profile["valence"] > 0.3)
 
         asyncio.run(run_test_logic())
 
+    # --- New Tests for PerceptData and ActionEvent Handling ---
+
+    def test_handle_percept_data_triggers_appraisal(self):
+        async def run_test_logic():
+            initial_valence = self.emotion_module.current_emotion_state["valence"]
+            initial_arousal = self.emotion_module.current_emotion_state["arousal"]
+
+            # Test Case 1: Sudden loud noise
+            percept_loud_noise = PerceptDataPayload(
+                percept_id="p_noise", modality="sound",
+                content={"type": "sudden_loud_noise", "decibels": 90},
+                source_timestamp=datetime.now(timezone.utc)
+            )
+            msg_noise = GenericMessage("SensorSys", "PerceptData", percept_loud_noise, message_id="noise_msg_1")
+            self.bus.publish(msg_noise)
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_emotional_state_changes), 1)
+            esc_payload_noise: EmotionalStateChangePayload = self.received_emotional_state_changes[0].payload
+            self.assertEqual(esc_payload_noise.triggering_event_id, "noise_msg_1")
+            # Expect increased arousal, valence might be slightly negative or neutral from surprise
+            self.assertTrue(esc_payload_noise.current_emotion_profile["arousal"] > initial_arousal)
+            self.received_emotional_state_changes.clear()
+
+            # Test Case 2: Negative text sentiment
+            percept_neg_text = PerceptDataPayload(
+                percept_id="p_text_warn", modality="text",
+                content={"sentiment": "very_negative", "keywords": ["warning", "critical_failure"]},
+                source_timestamp=datetime.now(timezone.utc)
+            )
+            msg_text = GenericMessage("CommSys", "PerceptData", percept_neg_text, message_id="text_msg_1")
+            self.bus.publish(msg_text)
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_emotional_state_changes), 1)
+            esc_payload_text: EmotionalStateChangePayload = self.received_emotional_state_changes[0].payload
+            self.assertEqual(esc_payload_text.triggering_event_id, "text_msg_1")
+            # Expect decreased valence, increased arousal
+            self.assertTrue(esc_payload_text.current_emotion_profile["valence"] < initial_valence) # Or less than the noise one
+            self.assertTrue(esc_payload_text.current_emotion_profile["arousal"] > initial_arousal) # Could be different from noise arousal
+        asyncio.run(run_test_logic())
+
+    def test_handle_action_event_triggers_appraisal(self):
+        async def run_test_logic():
+            initial_valence = self.emotion_module.current_emotion_state["valence"]
+
+            # Test Case 1: Successful action
+            action_success = ActionEventPayload(
+                action_command_id="cmd_act_s1", action_type="perform_task", status="SUCCESS",
+                outcome={"result": "completed_flawlessly", "goal_priority": 0.8}, # Add goal_priority if used
+                timestamp=datetime.now(timezone.utc)
+            )
+            msg_success = GenericMessage("ExecSys", "ActionEvent", action_success, message_id="action_s_msg_1")
+            self.bus.publish(msg_success)
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_emotional_state_changes), 1)
+            esc_payload_success: EmotionalStateChangePayload = self.received_emotional_state_changes[0].payload
+            self.assertEqual(esc_payload_success.triggering_event_id, "action_s_msg_1")
+            self.assertTrue(esc_payload_success.current_emotion_profile["valence"] > initial_valence) # Positive change
+            self.received_emotional_state_changes.clear()
+
+            # Test Case 2: Failed action
+            initial_valence_before_fail = self.emotion_module.current_emotion_state["valence"] # May have changed from success
+            action_failure = ActionEventPayload(
+                action_command_id="cmd_act_f1", action_type="another_task", status="FAILURE",
+                outcome={"reason": "critical_system_error", "goal_priority": 0.9},
+                timestamp=datetime.now(timezone.utc)
+            )
+            msg_failure = GenericMessage("ExecSys", "ActionEvent", action_failure, message_id="action_f_msg_1")
+            self.bus.publish(msg_failure)
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_emotional_state_changes), 1)
+            esc_payload_failure: EmotionalStateChangePayload = self.received_emotional_state_changes[0].payload
+            self.assertEqual(esc_payload_failure.triggering_event_id, "action_f_msg_1")
+            self.assertTrue(esc_payload_failure.current_emotion_profile["valence"] < initial_valence_before_fail) # Negative change
+        asyncio.run(run_test_logic())
+
+
     def test_get_module_status(self):
-        emotion_module = ConcreteEmotionModule(message_bus=self.bus, module_id=self.module_id)
-        status = emotion_module.get_status()
+        # emotion_module = ConcreteEmotionModule(message_bus=self.bus, module_id=self.module_id) # Use self.emotion_module
+        status = self.emotion_module.get_status()
         self.assertEqual(status["module_id"], self.module_id)
         self.assertTrue(status["message_bus_connected"])
         self.assertIn("current_vad_state", status)

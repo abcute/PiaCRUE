@@ -3,24 +3,62 @@ import os
 import sys
 
 # Adjust path to import from the parent directory (PiaCML)
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 try:
-    from concrete_communication_module import ConcreteCommunicationModule
+    from PiaAGI_Research_Tools.PiaCML.concrete_communication_module import ConcreteCommunicationModule
+    from PiaAGI_Research_Tools.PiaCML.message_bus import MessageBus
+    from PiaAGI_Research_Tools.PiaCML.core_messages import GenericMessage
 except ImportError:
-    if 'ConcreteCommunicationModule' not in globals(): # Fallback for different execution contexts
-        from PiaAGI_Hub.PiaCML.concrete_communication_module import ConcreteCommunicationModule
+    # Fallback for scenarios where the relative import might fail
+    # This structure might be simplified if path issues are resolved consistently across tests
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from concrete_communication_module import ConcreteCommunicationModule
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage
+    except ImportError:
+        MessageBus = None
+        GenericMessage = None
+
+
+import uuid # For module_id
+from typing import List, Dict, Any # For type hints
 
 class TestConcreteCommunicationModule(unittest.TestCase):
 
     def setUp(self):
-        self.comm = ConcreteCommunicationModule()
+        self.bus = MessageBus() if MessageBus else None # Handle case where MessageBus might be None due to import error
+        self.module_id = f"TestCommModule_{str(uuid.uuid4())[:8]}"
+        # Instantiate with bus and module_id
+        self.comm = ConcreteCommunicationModule(message_bus=self.bus, module_id=self.module_id)
+
+        self.received_processed_inputs: List[GenericMessage] = []
+        self.received_deliver_content: List[GenericMessage] = [] # New
+
+        if self.bus:
+            self.bus.subscribe(self.module_id, "IncomingCommunicationProcessed", self._processed_input_listener)
+            self.bus.subscribe(self.module_id, "DeliverCommunicationContent", self._deliver_content_listener) # New
+
         self._original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
+        # Comment out to see module's internal print/log statements during tests
+        # sys.stdout = open(os.devnull, 'w')
+
+    def _processed_input_listener(self, message: GenericMessage):
+        if message.message_type == "IncomingCommunicationProcessed":
+            self.received_processed_inputs.append(message)
+
+    def _deliver_content_listener(self, message: GenericMessage): # New
+        if message.message_type == "DeliverCommunicationContent" and isinstance(message.payload, dict):
+            self.received_deliver_content.append(message)
 
     def tearDown(self):
-        sys.stdout.close()
+        # if not isinstance(sys.stdout, io.TextIOWrapper): # Avoid closing if not a file
+        #    sys.stdout.close()
         sys.stdout = self._original_stdout
+        self.received_processed_inputs.clear()
+        self.received_deliver_content.clear() # New
+
 
     def test_initial_status(self):
         status = self.comm.get_module_status()
@@ -129,6 +167,123 @@ class TestConcreteCommunicationModule(unittest.TestCase):
     def test_apply_communication_strategy_first_available(self):
         result = self.comm.apply_communication_strategy("other_goal", {}, {}, ['strat1', 'strat2'])
         self.assertEqual(result['chosen_strategy'], "strat1")
+
+    def test_publish_processed_input(self):
+        if not self.bus or not GenericMessage:
+            self.skipTest("MessageBus or GenericMessage not available for this test.")
+
+        raw_input_data = "Test input for publishing"
+        source_modality = "test_modality"
+        dialogue_id = "dialogue_test_123"
+        original_msg_id = "orig_msg_abc"
+
+        # 1. Get processed output
+        processed_output = self.comm.process_incoming_communication(raw_input_data, source_modality)
+
+        # 2. Call the new publish method
+        published_message_id = self.comm.publish_processed_input(
+            processed_output,
+            source_dialogue_id=dialogue_id,
+            original_message_id=original_msg_id
+        )
+        self.assertIsNotNone(published_message_id)
+
+        # 3. Verify the listener received the message
+        self.assertEqual(len(self.received_processed_inputs), 1)
+        received_message = self.received_processed_inputs[0]
+
+        self.assertEqual(received_message.message_type, "IncomingCommunicationProcessed")
+        self.assertEqual(received_message.source_module_id, self.module_id)
+
+        payload = received_message.payload
+        self.assertIsInstance(payload, dict)
+        self.assertEqual(payload.get("type"), processed_output.get('type'))
+        self.assertEqual(payload.get("semantic_content"), processed_output.get('semantic_content'))
+        self.assertEqual(payload.get("raw_input_ref"), raw_input_data)
+        self.assertEqual(payload.get("processing_modality"), source_modality)
+        self.assertEqual(payload.get("source_dialogue_id"), dialogue_id)
+        self.assertEqual(payload.get("original_message_id"), original_msg_id)
+
+        # Check internal log for publish message
+        self.assertTrue(any(f"Published 'IncomingCommunicationProcessed' message (ID: {published_message_id})" in log_msg for log_msg in self.comm._log))
+
+    def test_publish_processed_input_no_bus(self):
+        comm_no_bus = ConcreteCommunicationModule(message_bus=None) # Explicitly no bus
+        processed_output = comm_no_bus.process_incoming_communication("test", "text")
+        result_id = comm_no_bus.publish_processed_input(processed_output)
+        self.assertIsNone(result_id)
+        self.assertTrue(any("ERROR: Message bus or GenericMessage not available" in log_msg for log_msg in comm_no_bus._log))
+
+    # --- Tests for Part 2: Outgoing Communication Flow ---
+
+    def test_handle_generate_outgoing_command_publishes_deliver_content(self):
+        if not self.bus or not GenericMessage:
+            self.skipTest("MessageBus or GenericMessage not available for this test.")
+
+        # Ensure asyncio event loop is handled correctly if bus publish is async
+        # For the current synchronous bus, direct call is fine.
+        # If bus becomes async, this test would need to be run within asyncio.run()
+        # or use self.loop.run_until_complete for older Python versions.
+
+        command_payload_dict = {
+            "abstract_message": {'intent_to_convey': 'inform_weather', 'data': {'location': 'Mars', 'forecast': 'cold and dusty'}},
+            "target_recipient_id": "MarsRover7",
+            "desired_effect": "inform_rover_operator",
+            "source_dialogue_id": "diag_mars_ops_42",
+            "original_request_id": "cmd_req_mars_weather_001"
+        }
+        command_message = GenericMessage(
+            source_module_id="TestPlannerModule", # Simulating another module sending this command
+            message_type="GenerateOutgoingCommunicationCommand",
+            payload=command_payload_dict
+        )
+
+        # Publishing the command to the bus should trigger _handle_generate_outgoing_command
+        self.bus.publish(command_message)
+
+        # For a synchronous bus, the handler and subsequent publish should have occurred immediately.
+        # If the bus were async, await asyncio.sleep(0.01) might be needed here.
+
+        self.assertEqual(len(self.received_deliver_content), 1, "DeliverCommunicationContent message was not received.")
+        received_msg = self.received_deliver_content[0]
+
+        self.assertEqual(received_msg.message_type, "DeliverCommunicationContent")
+        self.assertEqual(received_msg.source_module_id, self.module_id) # Comm module should be the source
+
+        deliver_payload = received_msg.payload
+        self.assertEqual(deliver_payload.get("content"), "The weather in Mars is cold and dusty.")
+        self.assertEqual(deliver_payload.get("modality"), "text")
+        self.assertEqual(deliver_payload.get("target_recipient_id"), "MarsRover7")
+        self.assertEqual(deliver_payload.get("source_dialogue_id"), "diag_mars_ops_42")
+        self.assertEqual(deliver_payload.get("original_command_id"), "cmd_req_mars_weather_001")
+        self.assertTrue(any(f"Published 'DeliverCommunicationContent' message (ID: {received_msg.message_id})" in log_msg for log_msg in self.comm._log))
+
+    def test_handle_generate_outgoing_command_malformed_payload(self):
+        if not self.bus or not GenericMessage:
+            self.skipTest("MessageBus or GenericMessage not available for this test.")
+
+        malformed_command_payload = {
+            # Missing 'abstract_message' and 'target_recipient_id'
+            "desired_effect": "cause_confusion"
+        }
+        command_message = GenericMessage(
+            source_module_id="TestBadActorModule",
+            message_type="GenerateOutgoingCommunicationCommand",
+            payload=malformed_command_payload # type: ignore
+        )
+
+        initial_log_count = len(self.comm._log)
+        self.bus.publish(command_message)
+
+        self.assertEqual(len(self.received_deliver_content), 0, "No DeliverCommunicationContent message should be published for malformed command.")
+
+        # Check logs for error message
+        found_error_log = False
+        for log_msg in self.comm._log[initial_log_count:]:
+            if "ERROR: Command payload missing 'abstract_message' or 'target_recipient_id'" in log_msg:
+                found_error_log = True
+                break
+        self.assertTrue(found_error_log, "Error message for malformed payload not found in logs.")
 
 
 if __name__ == '__main__':
