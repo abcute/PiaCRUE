@@ -288,7 +288,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## VII. Examples & General Documentation
 - [ ] Perform ongoing/second-pass updates to all READMEs for continued accuracy, clarity, and completeness, reflecting latest changes and future plans. (Derived from old ToDoList, following initial pass)
-- [ ] Create and maintain `README_CN.md` and other translated documentation versions as needed. (Derived from old ToDoList, marked as ongoing/pending true-up)
+- [ ] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02)
 
 ## Other General & Research Tasks
 - [ ] Outline a research plan for Theory of Mind (ToM) acquisition and scaffolding in early-stage PiaAGI agents, detailing experimental setups in PiaSE. (Derived from old ToDoList)

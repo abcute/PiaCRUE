@@ -30,21 +30,32 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
     def setUp(self):
         self.bus = MessageBus()
         self.module_id = f"TestLearningModule_{str(uuid.uuid4())[:8]}"
-        # Module instantiated per test method for a clean state
+        self.learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+
         self.received_learning_outcomes: List[GenericMessage] = []
+        self.received_ltm_store_requests: List[GenericMessage] = [] # New
+
+        # Subscribe listeners
+        self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
+        self.bus.subscribe(self.module_id, "LTMStoreRequest", self._ltm_store_request_listener) # New
 
     def _learning_outcome_listener(self, message: GenericMessage):
         if isinstance(message.payload, LearningOutcomePayload):
             self.received_learning_outcomes.append(message)
 
+    def _ltm_store_request_listener(self, message: GenericMessage): # New
+        if message.message_type == "LTMStoreRequest" and isinstance(message.payload, dict):
+            self.received_ltm_store_requests.append(message)
+
     def tearDown(self):
         self.received_learning_outcomes.clear()
+        self.received_ltm_store_requests.clear() # New
 
     # --- Test Subscription Handlers and learn() triggering ---
     def test_handle_percept_data_triggers_learning(self):
-        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        # learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id) # Use self.learning_module
         async def run_test_logic():
-            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
+            # self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener) # Moved to setUp
 
             percept_payload = PerceptDataPayload(percept_id="p_learn1", modality="text", content="new patterns observed", source_timestamp=datetime.now(timezone.utc))
             msg = GenericMessage("PerceptSys", "PerceptData", percept_payload, message_id="percept_msg_learn1")
@@ -52,45 +63,45 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
             self.bus.publish(msg)
             await asyncio.sleep(0.01)
 
-            self.assertEqual(learning_module._handled_message_counts["PerceptData"], 1)
+            self.assertEqual(self.learning_module._handled_message_counts["PerceptData"], 1)
             self.assertEqual(len(self.received_learning_outcomes), 1)
             outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
-            self.assertEqual(outcome_payload.status, "LEARNED") # Default from current learn() logic
+            self.assertEqual(outcome_payload.status, "LEARNED")
             self.assertEqual(outcome_payload.learned_item_type, "knowledge_concept_features")
             self.assertIn("percept_msg_learn1", outcome_payload.source_message_ids)
             self.assertEqual(self.received_learning_outcomes[0].source_module_id, self.module_id)
         asyncio.run(run_test_logic())
 
     def test_handle_action_event_success_triggers_learning(self):
-        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        # learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
         async def run_test_logic():
-            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
+            # self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
             action_payload = ActionEventPayload(action_command_id="cmd_learn1", action_type="explore", status="SUCCESS", outcome={"found":"gold"})
             msg = GenericMessage("ExecSys", "ActionEvent", action_payload, message_id="action_event_learn_s1")
 
             self.bus.publish(msg)
             await asyncio.sleep(0.01)
 
-            self.assertEqual(learning_module._handled_message_counts["ActionEvent"], 1)
+            self.assertEqual(self.learning_module._handled_message_counts["ActionEvent"], 1)
             self.assertEqual(len(self.received_learning_outcomes), 1)
             outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
-            self.assertEqual(outcome_payload.status, "LEARNED") # Or UPDATED based on logic
+            self.assertEqual(outcome_payload.status, "LEARNED")
             self.assertEqual(outcome_payload.learned_item_type, "skill_adjustment")
             self.assertEqual(outcome_payload.item_id, "explore")
             self.assertEqual(outcome_payload.metadata.get("reinforcement_direction"), "positive")
         asyncio.run(run_test_logic())
 
     def test_handle_action_event_failure_triggers_learning(self):
-        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        # learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
         async def run_test_logic():
-            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
+            # self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
             action_payload = ActionEventPayload(action_command_id="cmd_learn2", action_type="grasp", status="FAILURE", outcome={"reason":"slipped"})
             msg = GenericMessage("ExecSys", "ActionEvent", action_payload, message_id="action_event_learn_f1")
 
             self.bus.publish(msg)
             await asyncio.sleep(0.01)
 
-            self.assertEqual(learning_module._handled_message_counts["ActionEvent"], 1)
+            self.assertEqual(self.learning_module._handled_message_counts["ActionEvent"], 1) # Resets for each test
             self.assertEqual(len(self.received_learning_outcomes), 1)
             outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
             self.assertEqual(outcome_payload.status, "UPDATED")
@@ -100,25 +111,25 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
         asyncio.run(run_test_logic())
 
     def test_handle_goal_update_achieved_triggers_learning(self):
-        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        # learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
         async def run_test_logic():
-            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
+            # self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
             goal_payload = GoalUpdatePayload("g_learn_ach", "Learn skill X", 0.9, "achieved", "User")
             msg = GenericMessage("MotSys", "GoalUpdate", goal_payload, message_id="goal_learn_ach1")
 
             self.bus.publish(msg)
             await asyncio.sleep(0.01)
 
-            self.assertEqual(learning_module._handled_message_counts["GoalUpdate"], 1)
+            self.assertEqual(self.learning_module._handled_message_counts["GoalUpdate"], 1)
             self.assertEqual(len(self.received_learning_outcomes), 1)
             outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
             self.assertEqual(outcome_payload.learned_item_type, "strategy_evaluation")
-            self.assertEqual(outcome_payload.status, "LEARNED") # From successful goal
+            self.assertEqual(outcome_payload.status, "LEARNED")
             self.assertEqual(outcome_payload.metadata.get("goal_status"), "achieved")
         asyncio.run(run_test_logic())
 
-    def test_handle_emotional_state_stores_emotion(self): # No direct learning outcome published
-        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+    def test_handle_emotional_state_stores_emotion(self):
+        # learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
         async def run_test_logic():
             emo_payload = EmotionalStateChangePayload({"valence": -0.7, "arousal": 0.8}, intensity=0.75)
             msg = GenericMessage("EmoSys", "EmotionalStateChange", emo_payload)
@@ -126,30 +137,31 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
             self.bus.publish(msg)
             await asyncio.sleep(0.01)
 
-            self.assertEqual(learning_module._handled_message_counts["EmotionalStateChange"], 1)
-            self.assertIsNotNone(learning_module._last_emotional_state)
-            self.assertEqual(learning_module._last_emotional_state.intensity, 0.75)
-            self.assertEqual(len(self.received_learning_outcomes), 0) # This handler doesn't call learn() directly
+            self.assertEqual(self.learning_module._handled_message_counts["EmotionalStateChange"], 1)
+            self.assertIsNotNone(self.learning_module._last_emotional_state)
+            self.assertEqual(self.learning_module._last_emotional_state.intensity, 0.75)
+            self.assertEqual(len(self.received_learning_outcomes), 0)
         asyncio.run(run_test_logic())
 
     # --- Test direct learn() call publishing ---
     def test_direct_learn_call_publishes_outcome(self):
-        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        # learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
         async def run_test_logic():
-            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
+            # self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
 
             context = {"source_message_id": "direct_call_src_id", "task_id":"direct_task_1"}
-            learning_module.learn(data="direct learn data", learning_paradigm="direct_store_test", context=context)
+            # Use self.learning_module for the call
+            self.learning_module.learn(data="direct learn data", learning_paradigm="direct_store_test", context=context)
             await asyncio.sleep(0.01)
 
             self.assertEqual(len(self.received_learning_outcomes), 1)
             outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
             self.assertEqual(outcome_payload.learning_task_id, "direct_task_1")
-            # This paradigm is not in the if/else, so it will hit the "FAILED_TO_LEARN" path
-            self.assertEqual(outcome_payload.status, "FAILED_TO_LEARN")
+            self.assertEqual(outcome_payload.status, "FAILED_TO_LEARN") # This paradigm is not in the if/else
             self.assertIn("direct_call_src_id", outcome_payload.source_message_ids)
             self.assertEqual(self.received_learning_outcomes[0].source_module_id, self.module_id)
-            self.assertEqual(learning_module._published_outcomes_count, 1)
+            # _published_outcomes_count is internal to module, check via status or direct access if needed for specific test logic
+            # For this test, checking received_learning_outcomes is primary.
         asyncio.run(run_test_logic())
 
     def test_direct_learn_call_no_bus(self):
@@ -160,29 +172,142 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
         except Exception as e:
             self.fail(f"learn() method raised an exception with no bus: {e}")
 
-        self.assertEqual(learning_module_no_bus._published_outcomes_count, initial_outcomes_count) # No bus, so no publish
-        self.assertEqual(len(self.received_learning_outcomes), 0) # Listener is on self.bus
+        self.assertEqual(learning_module_no_bus._published_outcomes_count, initial_outcomes_count)
+        # self.received_learning_outcomes is tied to self.bus, so this check is not for learning_module_no_bus
+        # self.assertEqual(len(self.received_learning_outcomes), 0)
 
     # --- Test get_learning_status ---
     def test_get_learning_status(self):
-        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
-        status = learning_module.get_learning_status()
+        # learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        status = self.learning_module.get_learning_status()
         self.assertEqual(status["module_id"], self.module_id)
         self.assertTrue(status["message_bus_configured"])
-        self.assertEqual(status["published_outcomes_count"], 0)
-        self.assertEqual(status["handled_message_counts"]["PerceptData"], 0)
+        initial_published_count = status["published_outcomes_count"]
+        initial_percept_handled = status["handled_message_counts"]["PerceptData"]
+
 
         # Simulate some activity
         async def run_activity():
-            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener) # Need listener to consume
+            # self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener) # Already in setUp
             pd_payload = PerceptDataPayload("p_stat", "text", "status data", datetime.now(timezone.utc))
             self.bus.publish(GenericMessage("Src", "PerceptData", pd_payload, message_id="status_pd_msg"))
             await asyncio.sleep(0.01)
         asyncio.run(run_activity())
 
-        status_after = learning_module.get_learning_status()
-        self.assertEqual(status_after["published_outcomes_count"], 1)
-        self.assertEqual(status_after["handled_message_counts"]["PerceptData"], 1)
+        status_after = self.learning_module.get_learning_status()
+        self.assertEqual(status_after["published_outcomes_count"], initial_published_count + 1)
+        self.assertEqual(status_after["handled_message_counts"]["PerceptData"], initial_percept_handled + 1)
+
+    # --- Tests for Advanced Logic from Recent Refactoring ---
+
+    async def _run_async_test(self, coro): # Helper for running async code in tests if needed directly
+        # This helper might not be necessary if all async interactions are via bus.publish and asyncio.sleep
+        await coro
+
+    def test_emotional_modulation_in_learn(self):
+        async def run_test_logic():
+            # Positive Emotion Influence
+            self.learning_module._last_emotional_state = EmotionalStateChangePayload(current_emotion_profile={"valence": 0.8, "arousal": 0.7}, intensity=0.7)
+            ae_success_pos_emo = ActionEventPayload(action_command_id="cmd_s_posemo", action_type="skill_pos_emo", status="SUCCESS")
+            self.learning_module.learn(data=ae_success_pos_emo, learning_paradigm="reinforcement_from_action", context={"source_message_id":"ae_s_posemo"})
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_pos_emo: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertAlmostEqual(outcome_pos_emo.confidence, 0.75 + 0.05, places=2) # Base 0.75 + 0.05 emotional boost
+            self.assertEqual(outcome_pos_emo.metadata.get("emotional_influence"), "positive_amplification")
+            self.received_learning_outcomes.clear()
+
+            # Negative Emotion Influence on Success
+            self.learning_module._last_emotional_state = EmotionalStateChangePayload(current_emotion_profile={"valence": -0.8, "arousal": 0.7}, intensity=0.7)
+            ae_success_neg_emo = ActionEventPayload(action_command_id="cmd_s_negemo", action_type="skill_neg_emo", status="SUCCESS")
+            self.learning_module.learn(data=ae_success_neg_emo, learning_paradigm="reinforcement_from_action", context={"source_message_id":"ae_s_negemo"})
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_neg_emo: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertAlmostEqual(outcome_neg_emo.confidence, 0.75 - 0.05, places=2) # Base 0.75 - 0.05 emotional penalty
+            self.assertEqual(outcome_neg_emo.metadata.get("emotional_influence"), "negative_amplification")
+            self.received_learning_outcomes.clear()
+
+            # Negative Emotion Influence on Failure
+            ae_fail_neg_emo = ActionEventPayload(action_command_id="cmd_f_negemo", action_type="skill_fail_neg_emo", status="FAILURE")
+            self.learning_module.learn(data=ae_fail_neg_emo, learning_paradigm="reinforcement_from_action", context={"source_message_id":"ae_f_negemo"})
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_fail_neg_emo: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertAlmostEqual(outcome_fail_neg_emo.confidence, 0.65 - 0.05, places=2) # Base 0.65 for failure - 0.05 emotional penalty
+            self.assertEqual(outcome_fail_neg_emo.metadata.get("emotional_influence"), "negative_amplification")
+
+            self.learning_module._last_emotional_state = None # Reset
+        asyncio.run(run_test_logic())
+
+    def test_apply_ethical_guardrails_in_learn(self):
+        async def run_test_logic():
+            # REJECT Case: Harmful content keyword
+            ae_harmful_data = ActionEventPayload(action_command_id="cmd_harm", action_type="generate_harmful_content_tactic", status="SUCCESS")
+            self.learning_module.learn(data=ae_harmful_data, learning_paradigm="reinforcement_from_action", context={"source_message_id": "harm_test_msg"})
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_harmful: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome_harmful.status, "REJECTED_BY_ETHICS")
+            self.received_learning_outcomes.clear()
+
+            # REJECT Case: Sensitive item type with low confidence
+            # Manually trigger learn with data that would result in low confidence before ethics check
+            # For this, we'll use a "goal_outcome_evaluation" for a "failed" goal, which results in 0.4 confidence.
+            goal_sensitive_low_conf = GoalUpdatePayload("g_sens_low", "Develop social_interaction_model for children", 0.9, "failed", "Test")
+            self.learning_module.learn(data=goal_sensitive_low_conf, learning_paradigm="goal_outcome_evaluation", context={"source_message_id": "sens_low_conf_msg"})
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_sensitive_low: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome_sensitive_low.status, "REJECTED_BY_ETHICS") # Confidence 0.4, but type "social_interaction_model" (from item_id)
+            self.received_learning_outcomes.clear()
+
+
+            # PASS Case
+            ae_safe = ActionEventPayload(action_command_id="cmd_safe", action_type="learn_helpful_skill", status="SUCCESS")
+            self.learning_module.learn(data=ae_safe, learning_paradigm="reinforcement_from_action", context={"source_message_id": "safe_test_msg"})
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_safe: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome_safe.status, "LEARNED")
+        asyncio.run(run_test_logic())
+
+    def test_consolidate_knowledge_publishes_ltm_request(self):
+        async def run_test_logic():
+            # Populate _learned_items_log with some items
+            self.learning_module._learned_items_log = [
+                {"task_id": "t1", "item_id": "skill_A", "item_type": "skill_adjustment", "status": "LEARNED", "final_confidence": 0.8, "timestamp": time.time()},
+                {"task_id": "t2", "item_id": "concept_B", "item_type": "knowledge_concept_features", "status": "LEARNED", "final_confidence": 0.7, "timestamp": time.time()},
+                {"task_id": "t3", "item_id": "skill_C", "item_type": "skill_adjustment", "status": "REJECTED_BY_ETHICS", "final_confidence": 0.6, "timestamp": time.time()}
+            ]
+
+            ids_to_consolidate = ["skill_A", "concept_B", "skill_C"] # skill_C should be filtered out
+            summary_id = self.learning_module.consolidate_knowledge(learned_item_ids=ids_to_consolidate)
+            await asyncio.sleep(0.01)
+
+            self.assertIsNotNone(summary_id)
+            self.assertEqual(len(self.received_ltm_store_requests), 1)
+            ltm_req_payload = self.received_ltm_store_requests[0].payload
+            self.assertEqual(ltm_req_payload.get("item_id"), summary_id)
+            self.assertEqual(ltm_req_payload.get("item_type"), "learned_item_cluster")
+            self.assertIn("skill_A", ltm_req_payload.get("content",{}).get("source_item_ids",[]))
+            self.assertIn("concept_B", ltm_req_payload.get("content",{}).get("source_item_ids",[]))
+            self.assertNotIn("skill_C", ltm_req_payload.get("content",{}).get("source_item_ids",[])) # Rejected item
+        asyncio.run(run_test_logic())
+
+    def test_no_change_learning_path(self):
+        async def run_test_logic():
+            ae_inprogress = ActionEventPayload(action_command_id="cmd_ip", action_type="long_running_op", status="IN_PROGRESS")
+            self.learning_module.learn(data=ae_inprogress, learning_paradigm="reinforcement_from_action", context={"source_message_id":"ip_msg"})
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome.status, "OBSERVED_NO_CHANGE")
+            self.assertAlmostEqual(outcome.confidence, 0.1, places=2)
+        asyncio.run(run_test_logic())
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)

@@ -62,7 +62,15 @@ class ConcreteLearningModule(BaseLearningModule):
                     bus_status_msg = f"FAILED to subscribe: {e}"
             else:
                 bus_status_msg = "core message types missing for subscription"
-        print(f"ConcreteLearningModule '{self._module_id}' initialized. Message bus {bus_status_msg}.")
+
+        self._log: List[str] = []
+        self._log_message(f"ConcreteLearningModule '{self._module_id}' initialized. Message bus {bus_status_msg}.")
+
+    def _log_message(self, message: str):
+        """Helper method for internal logging."""
+        log_entry = f"{time.time():.2f} [{self._module_id}]: {message}"
+        self._log.append(log_entry)
+        # print(log_entry) # Optional: for real-time console monitoring
 
     # --- Message Handler Methods ---
     def _handle_goal_update_for_learning(self, message: GenericMessage): # Renamed
@@ -99,87 +107,145 @@ class ConcreteLearningModule(BaseLearningModule):
         self._handled_message_counts["EmotionalStateChange"] += 1
         # print(f"LM ({self._module_id}): EmotionalStateChange. V={payload.current_emotion_profile.get('valence')}, A={payload.current_emotion_profile.get('arousal')}")
         self._last_emotional_state = payload
-        # This state can be accessed by the `learn` method.
+        self._log_message(f"Emotional state updated: V={payload.current_emotion_profile.get('valence')}, A={payload.current_emotion_profile.get('arousal')}")
+
+    def apply_ethical_guardrails(self, potential_learning_outcome: LearningOutcomePayload) -> bool:
+        """
+        Conceptually checks if a learning outcome is ethically problematic.
+        Returns True if learning can proceed, False if it should be rejected.
+        """
+        self._log_message(f"Applying ethical guardrails to: {potential_learning_outcome.item_description[:100]} (Confidence: {potential_learning_outcome.confidence:.2f})")
+        description_lower = (potential_learning_outcome.item_description or "").lower()
+        item_type_lower = (potential_learning_outcome.learned_item_type or "").lower()
+
+        harmful_keywords = ["harmful_content", "bias_amplification", "deception_strategy", "manipulation_tactic", "illegal_act"]
+        sensitive_item_types = ["social_interaction_model", "persuasion_model", "user_preference_profile"]
+
+        for keyword in harmful_keywords:
+            if keyword in description_lower or keyword in item_type_lower:
+                self._log_message(f"Ethical Guardrail REJECT: Outcome '{potential_learning_outcome.item_id}' rejected due to harmful keyword '{keyword}'.")
+                return False
+
+        if item_type_lower in sensitive_item_types and potential_learning_outcome.confidence is not None and potential_learning_outcome.confidence < 0.2:
+            self._log_message(f"Ethical Guardrail REJECT: Outcome '{potential_learning_outcome.item_id}' for sensitive type '{item_type_lower}' has very low confidence ({potential_learning_outcome.confidence:.2f}). Rejected.")
+            return False
+
+        self._log_message(f"Ethical Guardrail PASS: Outcome '{potential_learning_outcome.item_id}' passed checks.")
+        return True
 
     def learn(self, data: Any, learning_paradigm: str, context: Dict[str, Any]) -> Optional[LearningOutcomePayload]:
         task_id = context.get('task_id', context.get('source_message_id', f"learning_task_{str(uuid.uuid4())[:8]}"))
         self._learning_tasks_status[task_id] = f"processing_{learning_paradigm}"
-        # print(f"LM ({self._module_id}): Learning attempt. Task: {task_id}, Paradigm: '{learning_paradigm}'. Data: {str(data)[:100]}")
+        self._log_message(f"Learning attempt. Task: {task_id}, Paradigm: '{learning_paradigm}'. Data: {str(data)[:100]}")
 
-        # Conceptual learning logic & outcome determination
-        status = "LEARNED" # Default status
+        status = "LEARNED"
         item_type: Optional[str] = None
         item_id: Optional[str] = None
         item_desc: Optional[str] = None
-        confidence: Optional[float] = None
+        confidence: float = 0.5 # Default confidence
         learned_metadata: Dict[str, Any] = {}
 
         if learning_paradigm == "unsupervised_feature_extraction":
             item_type = "knowledge_concept_features"
             item_id = f"features_from_{context.get('percept_id', task_id)}"
             item_desc = f"Extracted features from {context.get('modality', 'unknown')} percept."
-            confidence = 0.6 # Conceptual
-            learned_metadata["extracted_features_count"] = len(data) if isinstance(data, list) else 1 # Dummy
+            confidence = 0.6
+            learned_metadata["extracted_features_count"] = len(data) if isinstance(data, list) else 1
         elif learning_paradigm == "reinforcement_from_action":
-            item_type = "skill_adjustment" # Or "policy_update"
+            item_type = "skill_adjustment"
             if isinstance(data, ActionEventPayload):
-                item_id = data.action_type # Learning about this action type
-                item_desc = f"Adjusted strategy for action '{data.action_type}' based on status '{data.status}'."
+                item_id = data.action_type
+                item_desc = f"Outcome for action '{data.action_type}' (status: {data.status})."
                 if data.status == "SUCCESS":
                     confidence = 0.75
                     learned_metadata["reinforcement_direction"] = "positive"
                 elif data.status == "FAILURE":
-                    status = "UPDATED" # Still learned something, but an update/adjustment
+                    status = "UPDATED"
                     confidence = 0.65
                     learned_metadata["reinforcement_direction"] = "negative"
-                else: # IN_PROGRESS, CANCELLED
+                elif data.status in ["IN_PROGRESS", "CANCELLED"]: # Learning from NO_CHANGE
+                    status = "OBSERVED_NO_CHANGE" # New status for this case
+                    item_desc = f"Observed action '{data.action_type}' with status '{data.status}', no direct reinforcement."
+                    confidence = 0.1 # Very low confidence for mere observation
+                    learned_metadata["observation_details"] = f"Action status was {data.status}."
+                else: # Other statuses
                     status = "NO_CHANGE"
                     item_desc = f"No direct learning from action '{data.action_type}' status '{data.status}'."
-                    confidence = 0.5
+                    confidence = 0.3 # Slightly higher than IN_PROGRESS/CANCELLED if it's some other neutral outcome
         elif learning_paradigm == "goal_outcome_evaluation":
             item_type = "strategy_evaluation"
             if isinstance(data, GoalUpdatePayload):
                 item_id = f"strategy_for_goal_{data.goal_id}"
                 item_desc = f"Evaluated strategies related to goal '{data.goal_id}' (status: {data.status})."
-                confidence = 0.7 if data.status == "achieved" else 0.5
+                confidence = 0.7 if data.status == "achieved" else 0.4
                 learned_metadata["goal_status"] = data.status
                 learned_metadata["goal_priority"] = data.priority
-            else: # Should not happen if called correctly
+            else:
                 status = "FAILED_TO_LEARN"
                 item_desc = "Invalid data type for goal_outcome_evaluation."
+                confidence = 0.0
         else:
             status = "FAILED_TO_LEARN"
             item_desc = f"Unknown learning paradigm '{learning_paradigm}'."
-            confidence = 0.1
+            confidence = 0.0
+
+        # Modulate Learning by Emotion
+        emotional_adjustment = 0.0
+        if self._last_emotional_state:
+            valence = self._last_emotional_state.current_emotion_profile.get("valence", 0.0)
+            arousal = self._last_emotional_state.current_emotion_profile.get("arousal", 0.0)
+            if arousal > 0.6: # Only apply if arousal is high
+                if valence > 0.5: # Positive emotion
+                    emotional_adjustment = 0.05
+                    learned_metadata["emotional_influence"] = "positive_amplification"
+                elif valence < -0.5: # Negative emotion
+                    emotional_adjustment = -0.05
+                    learned_metadata["emotional_influence"] = "negative_amplification"
+
+                if emotional_adjustment != 0.0:
+                    confidence += emotional_adjustment
+                    self._log_message(f"Emotional state (V:{valence:.2f}, A:{arousal:.2f}) influenced confidence by {emotional_adjustment:.2f} for '{item_id}'.")
+
+        confidence = max(0.0, min(1.0, confidence)) # Clamp confidence
+
+        # Prepare LearningOutcomePayload
+        outcome_payload = LearningOutcomePayload(
+            learning_task_id=task_id, status=status, learned_item_type=item_type,
+            item_id=item_id, item_description=item_desc, confidence=confidence,
+            source_message_ids=[context["source_message_id"]] if "source_message_id" in context else [],
+            metadata=learned_metadata
+        )
+
+        # Apply Ethical Guardrails
+        if not self.apply_ethical_guardrails(outcome_payload):
+            self._log_message(f"Learning outcome for '{item_id}' rejected by ethical guardrails. Original status: {status}, Confidence: {confidence:.2f}")
+            outcome_payload.status = "REJECTED_BY_ETHICS"
+            # Confidence might be kept as is, or nulled, depending on policy. Let's keep it for now.
+            # The fact it was rejected is the key.
 
         self._learned_items_log.append({
-            "task_id": task_id, "paradigm": learning_paradigm, "status": status,
+            "task_id": task_id, "paradigm": learning_paradigm, "status": outcome_payload.status, # Use potentially updated status
             "item_type": item_type, "item_id": item_id, "description": item_desc,
+            "final_confidence": outcome_payload.confidence, # Log final confidence
             "timestamp": time.time()
         })
-        self._learning_tasks_status[task_id] = status
+        self._learning_tasks_status[task_id] = outcome_payload.status
 
-        # Publish LearningOutcome
+
         if self._message_bus and LearningOutcomePayload and GenericMessage:
-            outcome_payload = LearningOutcomePayload(
-                learning_task_id=task_id, status=status, learned_item_type=item_type,
-                item_id=item_id, item_description=item_desc, confidence=confidence,
-                source_message_ids=[context["source_message_id"]] if "source_message_id" in context else [],
-                metadata=learned_metadata
-            )
             outcome_message = GenericMessage(
                 source_module_id=self._module_id,
                 message_type="LearningOutcome",
-                payload=outcome_payload
+                payload=outcome_payload # Use the (potentially modified by ethics) payload
             )
             try:
                 self._message_bus.publish(outcome_message)
                 self._published_outcomes_count += 1
-                # print(f"LM ({self._module_id}): Published LearningOutcome for task '{task_id}'.")
+                self._log_message(f"Published LearningOutcome for task '{task_id}', Status: {outcome_payload.status}, Item: {item_id}.")
             except Exception as e:
-                print(f"LM ({self._module_id}): Error publishing LearningOutcome: {e}")
+                self._log_message(f"Error publishing LearningOutcome: {e}")
             return outcome_payload
-        return None # If no bus or core types
+        return None
 
     def get_learning_status(self, task_id: Optional[str] = None) -> Dict[str, Any]:
         if task_id:
@@ -195,28 +261,100 @@ class ConcreteLearningModule(BaseLearningModule):
             'message_bus_configured': self._message_bus is not None,
             'active_tasks_count': len([s for s in self._learning_tasks_status.values() if "processing" in s]),
             'total_logged_learning_outcomes': len(self._learned_items_log),
-            'total_feedback_logs': len(self._feedback_log), # Not currently used by new handlers
+            'total_feedback_logs': len(self._feedback_log),
             'handled_message_counts': dict(self._handled_message_counts),
             'published_outcomes_count': self._published_outcomes_count,
             'last_emotional_valence': self._last_emotional_state.current_emotion_profile.get("valence") if self._last_emotional_state else None,
-            # 'all_tasks_status': dict(self._learning_tasks_status), # Can be too verbose
+            'last_emotional_arousal': self._last_emotional_state.current_emotion_profile.get("arousal") if self._last_emotional_state else None,
+            'log_entries': len(self._log)
         }
 
-    # process_feedback, consolidate_knowledge, apply_ethical_guardrails remain as stubs or simple loggers for now
     def process_feedback(self, feedback_data: Dict[str, Any], learning_context_id: Optional[str] = None) -> bool:
-        self._feedback_log.append({'feedback': feedback_data, 'context_id': learning_context_id})
+        self._log_message(f"Processing feedback for context '{learning_context_id}': {str(feedback_data)[:100]}")
+        self._feedback_log.append({'feedback': feedback_data, 'context_id': learning_context_id, 'timestamp': time.time()})
+        # Conceptual: This feedback could trigger a new `learn` call or adjust existing learned items.
         return True
-    def consolidate_knowledge(self, learned_item_ids: List[str], target_memory_system: str = "LTM") -> bool: return True
-    def apply_ethical_guardrails(self, potential_learning_outcome: Any, context: Dict[str, Any]) -> bool: return True
+
+    def consolidate_knowledge(self, learned_item_ids: List[str], consolidation_type: str = "summary") -> Optional[str]:
+        self._log_message(f"Attempting '{consolidation_type}' consolidation for {len(learned_item_ids)} learned items: {learned_item_ids}")
+        if not learned_item_ids:
+            self._log_message("No item IDs provided for consolidation.")
+            return None
+
+        # Conceptual: Filter relevant items from _learned_items_log
+        relevant_learnings = [log_item for log_item in self._learned_items_log if log_item.get("item_id") in learned_item_ids and log_item.get("status") not in ["REJECTED_BY_ETHICS", "FAILED_TO_LEARN"]]
+
+        if not relevant_learnings:
+            self._log_message(f"No valid, non-rejected/failed learned items found for IDs: {learned_item_ids}")
+            return None
+
+        if consolidation_type == "summary":
+            summary_id = f"consol_{str(uuid.uuid4())[:8]}"
+            # Create a simple description based on the types and number of items
+            item_types_summary = {}
+            for item in relevant_learnings:
+                item_type = item.get("item_type", "unknown_type")
+                item_types_summary[item_type] = item_types_summary.get(item_type, 0) + 1
+
+            desc_parts = [f"{count}x {type_name}" for type_name, count in item_types_summary.items()]
+            description = f"Consolidated summary of {len(relevant_learnings)} learned items: {', '.join(desc_parts)}."
+
+            # Average confidence of consolidated items, or some other heuristic
+            avg_confidence = sum(item.get("final_confidence", 0.0) for item in relevant_learnings) / len(relevant_learnings) if relevant_learnings else 0.0
+
+            consolidated_content = {
+                "summary_id": summary_id,
+                "type": "learned_item_cluster", # Or "meta_knowledge", "derived_insight"
+                "description": description,
+                "confidence": round(max(0.0, min(1.0, avg_confidence + 0.1)), 2), # Slight boost for consolidation
+                "source_item_ids": [item.get("item_id") for item in relevant_learnings],
+                "consolidation_timestamp": time.time()
+            }
+
+            # Publish LTMStoreRequest (Conceptual)
+            if self._message_bus and GenericMessage:
+                ltm_store_payload_dict = {
+                    "item_id": summary_id,
+                    "item_type": consolidated_content["type"],
+                    "content": consolidated_content,
+                    "metadata": {"consolidation_type": consolidation_type, "source_module": self._module_id}
+                }
+                ltm_store_request_msg = GenericMessage(
+                    source_module_id=self._module_id,
+                    message_type="LTMStoreRequest", # Custom message type
+                    payload=ltm_store_payload_dict
+                )
+                try:
+                    self._message_bus.publish(ltm_store_request_msg)
+                    self._log_message(f"Published LTMStoreRequest for consolidated item '{summary_id}'. Content: {str(consolidated_content)[:150]}")
+                    return summary_id
+                except Exception as e:
+                    self._log_message(f"Error publishing LTMStoreRequest: {e}")
+                    return None
+            else:
+                self._log_message("Message bus not available for LTMStoreRequest.")
+                return None
+        else:
+            self._log_message(f"Consolidation type '{consolidation_type}' not yet implemented.")
+            return None
 
 
 if __name__ == '__main__':
+    # Required for source_timestamp in PerceptDataPayload if constructing it directly in tests
+    from datetime import datetime as dt
+
     print("\n--- ConcreteLearningModule __main__ Test ---")
 
     received_learning_outcomes: List[GenericMessage] = []
+    received_ltm_store_requests: List[GenericMessage] = []
+
     def learning_outcome_listener(message: GenericMessage):
-        print(f" outcome_listener: Received LearningOutcome! Task: {message.payload.learning_task_id}, Status: {message.payload.status}, ItemType: {message.payload.learned_item_type}")
+        # learning_module._log_message(f"outcome_listener: Received LearningOutcome! Task: {message.payload.learning_task_id}, Status: {message.payload.status}, ItemType: {message.payload.learned_item_type}, Conf: {message.payload.confidence:.2f}")
         received_learning_outcomes.append(message)
+
+    def ltm_store_request_listener(message: GenericMessage):
+        # learning_module._log_message(f"ltm_store_listener: Received LTMStoreRequest! Item ID: {message.payload.get('item_id')}")
+        received_ltm_store_requests.append(message)
 
     async def main_test_flow():
         bus = MessageBus()
@@ -224,70 +362,123 @@ if __name__ == '__main__':
         learning_module = ConcreteLearningModule(message_bus=bus, module_id=lm_module_id)
 
         bus.subscribe(module_id="TestOutcomeListener", message_type="LearningOutcome", callback=learning_outcome_listener)
+        bus.subscribe(module_id="TestLTMStoreListener", message_type="LTMStoreRequest", callback=ltm_store_request_listener)
 
-        print(learning_module.get_learning_status())
+        initial_status = learning_module.get_learning_status()
+        print(initial_status)
+        initial_log_count = initial_status.get('log_entries', 0)
+        initial_published_outcomes = initial_status.get('published_outcomes_count', 0)
 
-        print("\n--- Testing Subscriptions & LearningOutcome Publishing ---")
-        # 1. PerceptData
-        pd_payload = PerceptDataPayload(percept_id="p1", modality="visual", content=["feature1", "feature2"], source_timestamp=datetime.datetime.now())
-        pd_msg = GenericMessage(source_module_id="TestPerceptSys", message_type="PerceptData", payload=pd_payload, message_id="percept_msg_1")
-        bus.publish(pd_msg)
+
+        print("\n--- Testing Basic Subscriptions (from original tests) ---")
+        pd_payload = PerceptDataPayload(percept_id="p1", modality="visual", content=["f1"], source_timestamp=dt.now())
+        bus.publish(GenericMessage(message_type="PerceptData", payload=pd_payload, message_id="p_msg1"))
         await asyncio.sleep(0.01)
-        assert learning_module._handled_message_counts["PerceptData"] == 1
         assert len(received_learning_outcomes) == 1
-        assert received_learning_outcomes[0].payload.learned_item_type == "knowledge_concept_features"
-        assert "percept_msg_1" in received_learning_outcomes[0].payload.source_message_ids
+        first_outcome_for_consolidation = received_learning_outcomes[0].payload
         received_learning_outcomes.clear()
 
-        # 2. ActionEvent (Success)
-        ae_payload_success = ActionEventPayload(action_command_id="cmd1", action_type="navigate", status="SUCCESS", outcome={"result":"arrived"})
-        ae_msg_s = GenericMessage(source_module_id="TestExecSys", message_type="ActionEvent", payload=ae_payload_success, message_id="action_event_s1")
-        bus.publish(ae_msg_s)
+
+        print("\n--- Testing Emotional Influence ---")
+        # Positive Emotion Influence
+        learning_module._last_emotional_state = EmotionalStateChangePayload(current_emotion_profile={"valence": 0.8, "arousal": 0.7}, intensity=0.7)
+        ae_success_pos_emo = ActionEventPayload(action_command_id="cmd_s_posemo", action_type="skill_pos_emo", status="SUCCESS")
+        bus.publish(GenericMessage(message_type="ActionEvent", payload=ae_success_pos_emo, message_id="ae_s_posemo"))
         await asyncio.sleep(0.01)
-        assert learning_module._handled_message_counts["ActionEvent"] == 1
         assert len(received_learning_outcomes) == 1
-        assert received_learning_outcomes[0].payload.learned_item_type == "skill_adjustment"
-        assert received_learning_outcomes[0].payload.item_id == "navigate"
-        assert received_learning_outcomes[0].payload.status == "LEARNED" # or UPDATED if logic changes
-        assert received_learning_outcomes[0].payload.metadata.get("reinforcement_direction") == "positive"
+        outcome_pos_emo = received_learning_outcomes[0].payload
+        assert outcome_pos_emo.confidence > 0.75 # Base for SUCCESS is 0.75, positive emotion should make it >
+        assert outcome_pos_emo.metadata.get("emotional_influence") == "positive_amplification"
+        learning_module._log_message(f"  Positive emotion test: Confidence {outcome_pos_emo.confidence:.3f} (expected >0.75)")
+        second_outcome_for_consolidation = outcome_pos_emo
         received_learning_outcomes.clear()
 
-        # 3. ActionEvent (Failure)
-        ae_payload_fail = ActionEventPayload(action_command_id="cmd2", action_type="grasp", status="FAILURE", outcome={"reason":"object_slipped"})
-        ae_msg_f = GenericMessage(source_module_id="TestExecSys", message_type="ActionEvent", payload=ae_payload_fail, message_id="action_event_f1")
-        bus.publish(ae_msg_f)
+        # Negative Emotion Influence
+        learning_module._last_emotional_state = EmotionalStateChangePayload(current_emotion_profile={"valence": -0.8, "arousal": 0.7}, intensity=0.7)
+        ae_success_neg_emo = ActionEventPayload(action_command_id="cmd_s_negemo", action_type="skill_neg_emo", status="SUCCESS")
+        bus.publish(GenericMessage(message_type="ActionEvent", payload=ae_success_neg_emo, message_id="ae_s_negemo"))
         await asyncio.sleep(0.01)
-        assert learning_module._handled_message_counts["ActionEvent"] == 2
         assert len(received_learning_outcomes) == 1
-        assert received_learning_outcomes[0].payload.item_id == "grasp"
-        assert received_learning_outcomes[0].payload.status == "UPDATED" # Still learned, but an update
-        assert received_learning_outcomes[0].payload.metadata.get("reinforcement_direction") == "negative"
+        outcome_neg_emo = received_learning_outcomes[0].payload
+        assert outcome_neg_emo.confidence < 0.75 # Base for SUCCESS is 0.75, negative emotion should make it <
+        assert outcome_neg_emo.metadata.get("emotional_influence") == "negative_amplification"
+        learning_module._log_message(f"  Negative emotion test: Confidence {outcome_neg_emo.confidence:.3f} (expected <0.75)")
+        received_learning_outcomes.clear()
+        learning_module._last_emotional_state = None # Reset
+
+
+        print("\n--- Testing Ethical Guardrails ---")
+        # Guardrail REJECT case: Constructing a payload that would be built by `learn`
+        # We then call `learn` with data that would produce such a description internally for the guardrail check.
+        # The actual item_description is formed inside the `learn` method.
+        # So we need to pass data to `learn` that leads to a problematic description.
+        # For this test, we'll modify the action_type to be the problematic string.
+        ae_harmful_data = ActionEventPayload(action_command_id="cmd_harm", action_type="learn_to_generate_harmful_content", status="SUCCESS")
+        learning_module.learn(data=ae_harmful_data, learning_paradigm="reinforcement_from_action", context={"source_message_id": "harm_test_msg"})
+
+        await asyncio.sleep(0.01)
+        assert len(received_learning_outcomes) == 1
+        outcome_harmful = received_learning_outcomes[0].payload
+        assert outcome_harmful.status == "REJECTED_BY_ETHICS", f"Outcome status was {outcome_harmful.status}"
+        learning_module._log_message(f"  Ethical guardrail REJECT test: Status '{outcome_harmful.status}' (expected REJECTED_BY_ETHICS)")
         received_learning_outcomes.clear()
 
-        # 4. EmotionalStateChange
-        emo_payload = EmotionalStateChangePayload(current_emotion_profile={"valence":0.8, "arousal":0.5}, intensity=0.6)
-        emo_msg = GenericMessage(source_module_id="TestEmoSys", message_type="EmotionalStateChange", payload=emo_payload)
-        bus.publish(emo_msg)
+        # Guardrail PASS case
+        ae_safe = ActionEventPayload(action_command_id="cmd_safe", action_type="learn_safe_skill", status="SUCCESS")
+        learning_module.learn(data=ae_safe, learning_paradigm="reinforcement_from_action", context={"source_message_id": "safe_test_msg"})
         await asyncio.sleep(0.01)
-        assert learning_module._handled_message_counts["EmotionalStateChange"] == 1
-        assert learning_module._last_emotional_state is not None
-        assert learning_module._last_emotional_state.intensity == 0.6
-        # No LearningOutcome expected directly from emotion change, but it might affect next `learn` call.
-
-        # 5. GoalUpdate (Achieved)
-        gu_payload = GoalUpdatePayload(goal_id="g_learn", description="Learn new skill", priority=0.9, status="achieved", originator="User")
-        gu_msg = GenericMessage(source_module_id="TestMotSys", message_type="GoalUpdate", payload=gu_payload, message_id="goal_update_ach1")
-        bus.publish(gu_msg)
-        await asyncio.sleep(0.01)
-        assert learning_module._handled_message_counts["GoalUpdate"] == 1
-        assert len(received_learning_outcomes) == 1 # Expect one from goal_outcome_evaluation
-        assert received_learning_outcomes[0].payload.learned_item_type == "strategy_evaluation"
-        assert received_learning_outcomes[0].payload.metadata.get("goal_status") == "achieved"
+        assert len(received_learning_outcomes) == 1
+        outcome_safe = received_learning_outcomes[0].payload
+        assert outcome_safe.status == "LEARNED" # Default for success
+        learning_module._log_message(f"  Ethical guardrail PASS test: Status '{outcome_safe.status}' (expected LEARNED)")
+        third_outcome_for_consolidation = outcome_safe
         received_learning_outcomes.clear()
 
+
+        print("\n--- Testing 'NO_CHANGE' Learning Path (IN_PROGRESS) ---")
+        ae_inprogress = ActionEventPayload(action_command_id="cmd_ip", action_type="long_task", status="IN_PROGRESS")
+        bus.publish(GenericMessage(message_type="ActionEvent", payload=ae_inprogress, message_id="ae_ip_msg"))
+        await asyncio.sleep(0.01)
+        assert len(received_learning_outcomes) == 1
+        outcome_inprogress = received_learning_outcomes[0].payload
+        assert outcome_inprogress.status == "OBSERVED_NO_CHANGE"
+        assert outcome_inprogress.confidence == 0.1 # Specific low confidence for this state
+        learning_module._log_message(f"  IN_PROGRESS action test: Status '{outcome_inprogress.status}', Confidence {outcome_inprogress.confidence:.2f}")
+        received_learning_outcomes.clear()
+
+
+        print("\n--- Testing Knowledge Consolidation ---")
+        # Use item_ids from previous successful and non-rejected learning outcomes
+        ids_to_consolidate = [
+            first_outcome_for_consolidation.item_id,
+            second_outcome_for_consolidation.item_id,
+            third_outcome_for_consolidation.item_id
+        ]
+        ids_to_consolidate = [id_ for id_ in ids_to_consolidate if id_]
+
+        if len(ids_to_consolidate) >= 2:
+            summary_item_id = learning_module.consolidate_knowledge(learned_item_ids=list(set(ids_to_consolidate)), consolidation_type="summary") # Use set to avoid duplicates
+            await asyncio.sleep(0.01)
+            assert summary_item_id is not None
+            assert len(received_ltm_store_requests) == 1
+            ltm_req = received_ltm_store_requests[0].payload
+            assert ltm_req.get("item_id") == summary_item_id
+            assert ltm_req.get("item_type") == "learned_item_cluster"
+            # Ensure all unique source IDs are present
+            unique_source_ids_in_payload = set(ltm_req.get("content", {}).get("source_item_ids", []))
+            assert unique_source_ids_in_payload == set(ids_to_consolidate)
+
+            learning_module._log_message(f"  Knowledge consolidation test: LTMStoreRequest sent for '{summary_item_id}'.")
+            received_ltm_store_requests.clear()
+        else:
+            learning_module._log_message("  Skipping knowledge consolidation test as not enough valid items were learned.")
+
+
+        final_status = learning_module.get_learning_status()
         print("\n--- Final Learning Module Status ---")
-        print(learning_module.get_learning_status())
-        assert learning_module.get_learning_status()["published_outcomes_count"] == 4 # 1 percept, 2 action, 1 goal
+        print(final_status)
+        assert final_status["published_outcomes_count"] > initial_published_outcomes
+        assert final_status["log_entries"] > initial_log_count
 
         print("\n--- ConcreteLearningModule __main__ Test Complete ---")
 

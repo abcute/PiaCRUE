@@ -35,6 +35,14 @@ class TestConcretePlanningDecisionMakingModuleIntegration(unittest.TestCase):
         # Module instantiated per test method for a clean state
         self.received_action_commands: List[GenericMessage] = []
         self.received_ltm_queries: List[GenericMessage] = []
+        self.received_ethical_review_requests: List[GenericMessage] = [] # New
+
+        self.pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        # Subscribe listeners here if they are general enough for all tests in the class
+        self.bus.subscribe(self.pdm_module_id, "ActionCommand", self._action_command_listener)
+        self.bus.subscribe(self.pdm_module_id, "LTMQuery", self._ltm_query_listener)
+        self.bus.subscribe(self.pdm_module_id, "EthicalReviewRequest", self._ethical_review_listener)
+
 
     def _action_command_listener(self, message: GenericMessage):
         if isinstance(message.payload, ActionCommandPayload):
@@ -44,9 +52,15 @@ class TestConcretePlanningDecisionMakingModuleIntegration(unittest.TestCase):
         if isinstance(message.payload, LTMQueryPayload):
             self.received_ltm_queries.append(message)
 
+    def _ethical_review_listener(self, message: GenericMessage): # New
+        # Assuming EthicalReviewRequest has a dict payload as per recent refactoring
+        if message.message_type == "EthicalReviewRequest" and isinstance(message.payload, dict):
+            self.received_ethical_review_requests.append(message)
+
     def tearDown(self):
         self.received_action_commands.clear()
         self.received_ltm_queries.clear()
+        self.received_ethical_review_requests.clear() # New
 
     # --- Test Subscription Handlers and Internal State Updates ---
     def test_handle_goal_update_updates_active_goals(self):
@@ -245,6 +259,124 @@ class TestConcretePlanningDecisionMakingModuleIntegration(unittest.TestCase):
         self.assertEqual(status["active_goals_count"], 0)
         self.assertEqual(status["recent_percepts_count"], 0)
         # ... other initial state checks
+
+    # --- Tests for Advanced Logic from Recent Refactoring ---
+
+    def test_plan_retrieval_from_ltm(self):
+        pdm_module = self.pdm_module # Use the one from setUp for consistent bus interactions
+        async def run_test_logic():
+            ltm_plan_query_id = "ltm_plan_q_world_peace"
+            goal_desc_for_ltm_plan = "achieve lasting world peace"
+            ltm_plan_steps = [
+                {"action_type": "diplomacy_initiative", "parameters": {"target_region": "global"}},
+                {"action_type": "resource_allocation", "parameters": {"type": "education", "scope": "global"}, "expected_outcome_summary": "Improved global understanding"}
+            ]
+            # Pre-populate LTM results
+            pdm_module._ltm_query_results[ltm_plan_query_id] = LTMQueryResultPayload(
+                query_id=ltm_plan_query_id,
+                results=[MemoryItem(item_id="plan_wp_v1", content=ltm_plan_steps, metadata={"plan_name": "WorldPeacePlan"})],
+                success_status=True,
+                query_metadata={"query_type": "get_action_plan_for_goal", "original_query_content": goal_desc_for_ltm_plan}
+            )
+
+            goal = GoalUpdatePayload("g_world_peace", goal_desc_for_ltm_plan, 0.99, "ACTIVE", "UN")
+            self.bus.publish(GenericMessage(pdm_module.get_module_status()["module_id"], "GoalUpdate", goal)) # Use module_id from status
+            await asyncio.sleep(0.01)
+
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_action_commands), 2, "Expected 2 actions from LTM plan.")
+            self.assertEqual(self.received_action_commands[0].payload.action_type, "diplomacy_initiative")
+            self.assertEqual(self.received_action_commands[0].payload.parameters.get("target_region"), "global")
+            self.assertTrue("ltm_retrieved" in self.received_action_commands[0].payload.parameters.get("plan_source", ""))
+            self.assertEqual(self.received_action_commands[1].payload.action_type, "resource_allocation")
+            self.assertEqual(self.received_action_commands[1].payload.expected_outcome_summary, "Improved global understanding")
+        asyncio.run(run_test_logic())
+
+    def test_ltm_query_for_missing_plan(self):
+        pdm_module = self.pdm_module
+        async def run_test_logic():
+            goal_desc = "resolve_quantum_paradox"
+            goal = GoalUpdatePayload("g_quantum", goal_desc, 0.9, "ACTIVE", "PhysicsDept")
+
+            # Ensure no relevant plan exists in LTM results for this goal
+            pdm_module._ltm_query_results.clear()
+            pdm_module._awaiting_plan_for_goal.clear()
+
+            self.bus.publish(GenericMessage(pdm_module.get_module_status()["module_id"], "GoalUpdate", goal))
+            await asyncio.sleep(0.01)
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_ltm_queries), 1, "Expected an LTMQuery to be published.")
+            ltm_query_payload: LTMQueryPayload = self.received_ltm_queries[0].payload
+            self.assertEqual(ltm_query_payload.query_type, "get_action_plan_for_goal")
+            self.assertEqual(ltm_query_payload.query_content, goal_desc)
+            self.assertIn("g_quantum", pdm_module._awaiting_plan_for_goal)
+            self.assertEqual(pdm_module._awaiting_plan_for_goal["g_quantum"], ltm_query_payload.query_id)
+
+            self.assertTrue(len(self.received_action_commands) >= 1, "Expected default actions.")
+            self.assertTrue("(LTM query initiated)" in self.received_action_commands[0].payload.parameters.get("plan_source", ""))
+        asyncio.run(run_test_logic())
+
+    def test_ethical_review_request_publication_for_sensitive_goal(self):
+        pdm_module = self.pdm_module
+        async def run_test_logic():
+            goal_desc = "delete user_profile_for_user123" # Contains "delete" and "user"
+            goal = GoalUpdatePayload("g_sensitive_delete", goal_desc, 0.8, "ACTIVE", "Admin")
+            self.bus.publish(GenericMessage(pdm_module.get_module_status()["module_id"], "GoalUpdate", goal))
+            await asyncio.sleep(0.01)
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_ethical_review_requests), 1, "Expected an EthicalReviewRequest.")
+            review_request_msg = self.received_ethical_review_requests[0]
+            self.assertEqual(review_request_msg.message_type, "EthicalReviewRequest")
+            payload = review_request_msg.payload
+            self.assertIn("request_id", payload)
+            self.assertEqual(payload["action_proposal"]["reason"], f"Executing plan for goal: {goal_desc} (ID: g_sensitive_delete)")
+            self.assertTrue(len(payload["action_proposal"]["plan_summary"]) > 0) # Default plan summary
+            self.assertEqual(payload["context"]["goal_id"], "g_sensitive_delete")
+            self.assertTrue(len(self.received_action_commands) >= 1, "Actions should still be dispatched.")
+        asyncio.run(run_test_logic())
+
+    def test_handle_ltm_query_result_for_awaited_plan(self):
+        pdm_module = self.pdm_module
+        async def run_test_logic():
+            goal_id_await = "g_await_plan"
+            goal_desc_await = "design_new_propulsion_system"
+
+            # Step 1: Trigger LTM query for a plan (similar to test_ltm_query_for_missing_plan)
+            pdm_module._ltm_query_results.clear()
+            pdm_module._awaiting_plan_for_goal.clear()
+            goal_await = GoalUpdatePayload(goal_id_await, goal_desc_await, 0.88, "ACTIVE", "Engineering")
+            self.bus.publish(GenericMessage(pdm_module.get_module_status()["module_id"], "GoalUpdate", goal_await))
+            await asyncio.sleep(0.01)
+            pdm_module.process_highest_priority_goal() # This will send the LTM Query
+            await asyncio.sleep(0.01)
+
+            self.assertIn(goal_id_await, pdm_module._awaiting_plan_for_goal)
+            ltm_query_id_for_awaited_plan = pdm_module._awaiting_plan_for_goal[goal_id_await]
+            initial_log_count = len(pdm_module._log)
+
+            # Step 2: Simulate LTM sending back the result for this query
+            ltm_plan_steps = [{"action_type": "research_theories"}, {"action_type": "simulate_designs"}]
+            ltm_result_payload = LTMQueryResultPayload(
+                query_id=ltm_query_id_for_awaited_plan,
+                results=[MemoryItem(item_id="propulsion_plan_v1", content=ltm_plan_steps)],
+                success_status=True,
+                query_metadata={"query_type": "get_action_plan_for_goal", "original_query_content": goal_desc_await}
+            )
+            # Directly call the handler as if the message came from the bus
+            pdm_module._handle_ltm_query_result_message(GenericMessage("LTMSys", "LTMQueryResult", ltm_result_payload))
+            await asyncio.sleep(0.01) # Give handler time if it had async ops (though current one is sync)
+
+            self.assertNotIn(goal_id_await, pdm_module._awaiting_plan_for_goal, "Goal ID should be cleared from awaiting list.")
+            self.assertTrue(any(f"LTM Plan result received for QueryID '{ltm_query_id_for_awaited_plan}'" in log_msg for log_msg in pdm_module._log[initial_log_count:]))
+            self.assertTrue(any(f"Goal '{goal_id_await}' is still active. A re-plan could be triggered" in log_msg for log_msg in pdm_module._log[initial_log_count:]))
+
+        asyncio.run(run_test_logic())
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
