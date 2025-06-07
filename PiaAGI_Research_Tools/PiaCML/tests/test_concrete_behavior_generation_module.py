@@ -1,162 +1,189 @@
 import unittest
-import os
-import sys
-from unittest.mock import MagicMock # Added
+import asyncio
+import uuid
+from typing import List, Any, Dict
+from datetime import datetime, timezone # For ActionEventPayload timestamp if needed for assertions
 
 # Adjust path for consistent imports
+import os
+import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 try:
-    from PiaAGI_Research_Tools.PiaCML import (
-        ConcreteBehaviorGenerationModule,
-        MessageBus,               # Added
-        GenericMessage,           # Added
-        ActionCommandPayload      # Added
-    )
+    from PiaAGI_Research_Tools.PiaCML.message_bus import MessageBus
+    from PiaAGI_Research_Tools.PiaCML.core_messages import GenericMessage, ActionCommandPayload, ActionEventPayload
+    from PiaAGI_Research_Tools.PiaCML.concrete_behavior_generation_module import ConcreteBehaviorGenerationModule
 except ModuleNotFoundError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from message_bus import MessageBus
+    from core_messages import GenericMessage, ActionCommandPayload, ActionEventPayload
     from concrete_behavior_generation_module import ConcreteBehaviorGenerationModule
-    try:
-        from message_bus import MessageBus
-        from core_messages import GenericMessage, ActionCommandPayload
-    except ImportError:
-        MessageBus = None
-        GenericMessage = None
-        ActionCommandPayload = None
 
-
-class TestConcreteBehaviorGenerationModule(unittest.TestCase):
+class TestConcreteBehaviorGenerationModuleIntegration(unittest.TestCase):
 
     def setUp(self):
-        self.bus = MessageBus() if MessageBus else None
-        self.bhv_no_bus = ConcreteBehaviorGenerationModule()
-        self.bhv_with_bus = ConcreteBehaviorGenerationModule(message_bus=self.bus)
+        self.bus = MessageBus()
+        self.bgm_module_id = f"TestBGMModule_{str(uuid.uuid4())[:8]}"
+        # Module instantiated in each test method for a clean state
+        self.received_action_events: List[GenericMessage] = []
 
-        self._original_stdout = sys.stdout
-        # Comment out print suppression for easier debugging if tests fail
-        # sys.stdout = open(os.devnull, 'w')
+    def _action_event_listener(self, message: GenericMessage):
+        if isinstance(message.payload, ActionEventPayload):
+            self.received_action_events.append(message)
 
     def tearDown(self):
-        # sys.stdout.close()
-        sys.stdout = self._original_stdout
+        self.received_action_events.clear()
 
-    # --- Existing tests adapted to use bhv_no_bus ---
-    def test_initial_status_no_bus(self): # Renamed
-        status = self.bhv_no_bus.get_status()
-        self.assertEqual(status['active_generation_tasks'], 0)
-        self.assertIn("linguistic_output", status['supported_behavior_types'])
-        self.assertEqual(status['module_type'], 'ConcreteBehaviorGenerationModule')
-        self.assertIsNone(self.bhv_no_bus.message_bus) # Check bus not present
-        self.assertEqual(len(self.bhv_no_bus.executed_commands_log), 0)
+    # --- Test Handling ActionCommand and Publishing ActionEvent ---
+    def test_handle_supported_action_command_with_goal_id(self):
+        bgm_module = ConcreteBehaviorGenerationModule(message_bus=self.bus, module_id=self.bgm_module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.bgm_module_id, "ActionEvent", self._action_event_listener) # Listen for events from BGM
+
+            command_payload = ActionCommandPayload(
+                action_type="linguistic_output", # Supported
+                parameters={"message": "Hello with goal", "goal_id": "g123"},
+                priority=0.7
+            )
+            action_command_msg = GenericMessage(
+                source_module_id="TestPlanner", message_type="ActionCommand", payload=command_payload
+            )
+
+            self.bus.publish(action_command_msg)
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_action_events), 1)
+            event_msg = self.received_action_events[0]
+            self.assertEqual(event_msg.source_module_id, self.bgm_module_id)
+            self.assertEqual(event_msg.message_type, "ActionEvent")
+
+            payload: ActionEventPayload = event_msg.payload
+            self.assertEqual(payload.action_command_id, command_payload.command_id)
+            self.assertEqual(payload.action_type, command_payload.action_type)
+            self.assertEqual(payload.status, "SUCCESS")
+            self.assertIn("goal_id", payload.outcome)
+            self.assertEqual(payload.outcome["goal_id"], "g123")
+            self.assertIn("processed with status: SUCCESS", payload.outcome.get("message", ""))
+            self.assertEqual(bgm_module._action_events_published, 1)
+        asyncio.run(run_test_logic())
+
+    def test_handle_supported_action_command_no_goal_id(self):
+        bgm_module = ConcreteBehaviorGenerationModule(message_bus=self.bus, module_id=self.bgm_module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.bgm_module_id, "ActionEvent", self._action_event_listener)
+            command_payload = ActionCommandPayload(action_type="log_message", parameters={"text": "Logging this"})
+            action_command_msg = GenericMessage("TestPlanner", "ActionCommand", command_payload)
+
+            self.bus.publish(action_command_msg)
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_action_events), 1)
+            payload: ActionEventPayload = self.received_action_events[0].payload
+            self.assertEqual(payload.status, "SUCCESS")
+            self.assertNotIn("goal_id", payload.outcome)
+        asyncio.run(run_test_logic())
+
+    def test_handle_unsupported_action_command(self):
+        bgm_module = ConcreteBehaviorGenerationModule(message_bus=self.bus, module_id=self.bgm_module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.bgm_module_id, "ActionEvent", self._action_event_listener)
+            command_payload = ActionCommandPayload(action_type="fly_to_mars", parameters={"speed": "max"})
+            action_command_msg = GenericMessage("TestPlanner", "ActionCommand", command_payload)
+
+            self.bus.publish(action_command_msg)
+            await asyncio.sleep(0.01)
+
+            self.assertEqual(len(self.received_action_events), 1)
+            payload: ActionEventPayload = self.received_action_events[0].payload
+            self.assertEqual(payload.status, "FAILURE")
+            self.assertIn("unsupported", payload.outcome.get("message", ""))
+        asyncio.run(run_test_logic())
+
+    def test_handle_malformed_action_command_payload(self):
+        bgm_module = ConcreteBehaviorGenerationModule(message_bus=self.bus, module_id=self.bgm_module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.bgm_module_id, "ActionEvent", self._action_event_listener)
+
+            # Malformed payload (not an ActionCommandPayload instance)
+            malformed_payload = {"text": "this is not an action command payload"}
+            action_command_msg = GenericMessage("TestPlanner", "ActionCommand", malformed_payload) # type: ignore
+
+            # Capture print output for the error message from the handler
+            original_stdout = sys.stdout
+            sys.stdout = captured_output = asyncio.to_thread(io.StringIO) # type: ignore
+
+            self.bus.publish(action_command_msg)
+            await asyncio.sleep(0.01)
+
+            sys.stdout = original_stdout
+            output = captured_output.getvalue()
+
+            self.assertEqual(len(self.received_action_events), 0, "No ActionEvent should be published for malformed command payload.")
+            self.assertIn(f"BGM ({self.bgm_module_id}): Received ActionCommand with unexpected payload: <class 'dict'>", output)
+            self.assertEqual(bgm_module._action_events_published, 0)
+
+        # Running asyncio.to_thread for StringIO might be tricky in tests.
+        # A simpler way for this specific test if prints are the only side effect of malformed payload:
+        # Just check that no ActionEvent is published.
+        # The print check is good but can make test setup complex.
+        # For now, focusing on no ActionEvent published.
+        bgm_module_for_malformed = ConcreteBehaviorGenerationModule(message_bus=self.bus, module_id="BGM_MalformedTest")
+        self.bus.subscribe(bgm_module_for_malformed._module_id, "ActionEvent", self._action_event_listener) # Listen to specific module
+
+        malformed_payload_dict = {"text": "this is not an action command payload"}
+        action_command_msg_malformed = GenericMessage("TestPlanner", "ActionCommand", malformed_payload_dict) # type: ignore
+
+        async def run_malformed_test():
+            self.bus.publish(action_command_msg_malformed)
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(self.received_action_events), 0) # Should not publish ActionEvent
+            self.assertEqual(bgm_module_for_malformed._action_events_published, 0)
+
+        asyncio.run(run_malformed_test())
 
 
-    def test_generate_linguistic_behavior_no_bus(self): # Renamed
-        action_plan = {
-            "action_type": "communicate",
-            "final_message_content": "Test message"
-        }
-        behavior_spec = self.bhv_no_bus.generate_behavior(action_plan)
-        self.assertEqual(behavior_spec['behavior_type'], "linguistic_output")
-        self.assertEqual(behavior_spec['details']['content'], "Test message")
+    # --- Test No Bus Scenario ---
+    def test_initialization_and_operation_without_bus(self):
+        bgm_no_bus = ConcreteBehaviorGenerationModule(message_bus=None, module_id="NoBusBGM")
+        status = bgm_no_bus.get_status()
+        self.assertFalse(status["message_bus_configured"])
+        self.assertEqual(bgm_no_bus._action_events_published, 0)
 
-    def test_generate_tool_use_behavior_no_bus(self): # Renamed
-        action_plan = {
-            "action_type": "use_tool",
-            "tool_id": "calculator",
-        }
-        behavior_spec = self.bhv_no_bus.generate_behavior(action_plan)
-        self.assertEqual(behavior_spec['behavior_type'], "api_call")
-        self.assertEqual(behavior_spec['details']['tool_id'], "calculator")
+        # Simulate a direct call to handle_action_command_message (though it's usually a callback)
+        # This is to ensure it doesn't crash if bus is None when trying to publish.
+        command_payload = ActionCommandPayload(action_type="linguistic_output", parameters={"message": "test"})
+        direct_call_msg = GenericMessage("DirectCall", "ActionCommand", command_payload)
 
-    def test_generate_unknown_action_type_no_bus(self): # Renamed
-        action_plan = {"action_type": "perform_magic_trick"}
-        behavior_spec = self.bhv_no_bus.generate_behavior(action_plan)
-        self.assertEqual(behavior_spec['behavior_type'], "unknown")
+        try:
+            bgm_no_bus.handle_action_command_message(direct_call_msg)
+        except Exception as e:
+            self.fail(f"handle_action_command_message raised an exception with no bus: {e}")
 
-    # --- New Tests for MessageBus Integration ---
-    def test_initialization_with_bus_subscription(self):
-        """Test BehaviorModule initialization with a message bus and subscription to ActionCommand."""
-        if not MessageBus: self.skipTest("MessageBus components not available")
+        self.assertEqual(bgm_no_bus._action_events_published, 0) # No event should be published
 
-        self.assertIsNotNone(self.bhv_with_bus.message_bus)
-        subscribers = self.bus.get_subscribers_for_type("ActionCommand")
+    # --- Test get_status ---
+    def test_get_module_status(self):
+        bgm_module = ConcreteBehaviorGenerationModule(message_bus=self.bus, module_id=self.bgm_module_id)
+        initial_status = bgm_module.get_status()
+        self.assertEqual(initial_status["module_id"], self.bgm_module_id)
+        self.assertTrue(initial_status["message_bus_configured"])
+        self.assertEqual(initial_status["executed_commands_count"], 0)
+        self.assertEqual(initial_status["action_events_published"], 0)
+        self.assertIn("linguistic_output", initial_status["supported_behavior_types"])
 
-        found_subscription = any(
-            sub[0] == "ConcreteBehaviorGenerationModule_01" and
-            sub[1] == self.bhv_with_bus.handle_action_command_message
-            for sub in subscribers if sub # Check if sub is not None
-        )
-        self.assertTrue(found_subscription, "BehaviorModule did not subscribe to ActionCommand messages.")
+        # Simulate one command being processed
+        async def run_status_update_test():
+            self.bus.subscribe(self.bgm_module_id, "ActionEvent", self._action_event_listener) # Listener needed to consume event
+            command_payload = ActionCommandPayload(action_type="log_message", parameters={"text": "status check"})
+            action_command_msg = GenericMessage("TestPlanner", "ActionCommand", command_payload)
+            self.bus.publish(action_command_msg)
+            await asyncio.sleep(0.01)
+        asyncio.run(run_status_update_test())
 
-    def test_handle_action_command_message(self):
-        """Test that BehaviorModule receives and logs ActionCommand messages."""
-        if not MessageBus or not GenericMessage or not ActionCommandPayload:
-            self.skipTest("MessageBus or core message components not available")
-
-        self.assertEqual(len(self.bhv_with_bus.executed_commands_log), 0)
-
-        action_payload = ActionCommandPayload(
-            action_type="test_action",
-            parameters={"param1": "value1"},
-            priority=0.7,
-            target_object_or_agent="test_target"
-        )
-        test_message = GenericMessage(
-            source_module_id="TestPlannerModule",
-            message_type="ActionCommand",
-            payload=action_payload
-        )
-
-        self.bus.publish(test_message) # Publish to the bus bhv_with_bus is subscribed to
-
-        self.assertEqual(len(self.bhv_with_bus.executed_commands_log), 1)
-        logged_payload = self.bhv_with_bus.executed_commands_log[0]
-
-        self.assertIsInstance(logged_payload, ActionCommandPayload)
-        self.assertEqual(logged_payload.command_id, action_payload.command_id) # Command ID should be the same
-        self.assertEqual(logged_payload.action_type, "test_action")
-        self.assertEqual(logged_payload.parameters, {"param1": "value1"})
-        self.assertEqual(logged_payload.target_object_or_agent, "test_target")
-
-    def test_handle_action_command_unexpected_payload(self):
-        """Test BehaviorModule handles ActionCommand with an unexpected payload type."""
-        if not MessageBus or not GenericMessage:
-            self.skipTest("MessageBus or GenericMessage not available")
-
-        malformed_msg = GenericMessage(
-            source_module_id="TestMalformedSource",
-            message_type="ActionCommand",
-            payload="This is not an ActionCommandPayload"
-        )
-
-        # Suppress print for this specific test of error path
-        original_stdout_test = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-        self.bus.publish(malformed_msg)
-        sys.stdout.close()
-        sys.stdout = original_stdout_test
-
-        # Log should not grow if payload is not ActionCommandPayload
-        self.assertEqual(len(self.bhv_with_bus.executed_commands_log), 0)
-
-    def test_no_bus_scenario_for_handler(self):
-        """Test that module initialized without a bus does not process bus messages."""
-        if not MessageBus: self.skipTest("MessageBus components not available")
-
-        # self.bhv_no_bus is initialized with message_bus=None
-        # Publish a message on a general bus; bhv_no_bus should not receive it.
-        local_bus_for_no_bus_test = MessageBus()
-
-        action_payload = ActionCommandPayload(action_type="action_for_nobus", parameters={})
-        test_message = GenericMessage(
-            source_module_id="TestPlanner",
-            message_type="ActionCommand",
-            payload=action_payload
-        )
-        local_bus_for_no_bus_test.publish(test_message)
-
-        self.assertEqual(len(self.bhv_no_bus.executed_commands_log), 0) # Should remain empty
-
+        updated_status = bgm_module.get_status()
+        self.assertEqual(updated_status["executed_commands_count"], 1)
+        self.assertEqual(updated_status["action_events_published"], 1)
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
+```

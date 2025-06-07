@@ -1,212 +1,251 @@
 import unittest
+import asyncio
+import uuid
+from collections import deque # For checking _current_percepts type
+from typing import List, Any, Dict
+import time # For timestamps
+from datetime import datetime, timezone # For timestamps in payloads
+
+# Adjust imports
 import os
 import sys
-import uuid # For plan IDs if needed, and message IDs implicitly
-from unittest.mock import MagicMock, call
-import time # For timestamps if needed for GoalUpdatePayload
-
-# Adjust path for consistent imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 try:
-    from PiaAGI_Research_Tools.PiaCML import (
-        ConcretePlanningAndDecisionMakingModule,
-        MessageBus,
-        GenericMessage,
-        GoalUpdatePayload, # For receiving goals
-        ActionCommandPayload # For publishing actions
-        # Goal dataclass might be imported if planner internally converts payload to Goal objects
+    from PiaAGI_Research_Tools.PiaCML.message_bus import MessageBus
+    from PiaAGI_Research_Tools.PiaCML.core_messages import (
+        GenericMessage, GoalUpdatePayload, PerceptDataPayload, LTMQueryResultPayload,
+        EmotionalStateChangePayload, AttentionFocusUpdatePayload, ActionCommandPayload, LTMQueryPayload, MemoryItem
     )
+    from PiaAGI_Research_Tools.PiaCML.concrete_planning_decision_making_module import ConcretePlanningAndDecisionMakingModule
 except ModuleNotFoundError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from message_bus import MessageBus
+    from core_messages import (
+        GenericMessage, GoalUpdatePayload, PerceptDataPayload, LTMQueryResultPayload,
+        EmotionalStateChangePayload, AttentionFocusUpdatePayload, ActionCommandPayload, LTMQueryPayload, MemoryItem
+    )
     from concrete_planning_decision_making_module import ConcretePlanningAndDecisionMakingModule
-    try:
-        from message_bus import MessageBus
-        from core_messages import GenericMessage, GoalUpdatePayload, ActionCommandPayload
-    except ImportError:
-        MessageBus = None
-        GenericMessage = None
-        GoalUpdatePayload = None
-        ActionCommandPayload = None
 
-class TestConcretePlanningAndDecisionMakingModule(unittest.TestCase):
+class TestConcretePlanningDecisionMakingModuleIntegration(unittest.TestCase):
 
     def setUp(self):
-        self.bus = MessageBus() if MessageBus else None# Real bus for testing subscription
-        self.mock_bus = MagicMock(spec=MessageBus) if MessageBus else None # Mock bus for testing publishing
+        self.bus = MessageBus()
+        self.pdm_module_id = f"TestPDMModule_{str(uuid.uuid4())[:8]}"
+        # Module instantiated per test method for a clean state
+        self.received_action_commands: List[GenericMessage] = []
+        self.received_ltm_queries: List[GenericMessage] = []
 
-        self.planner_no_bus = ConcretePlanningAndDecisionMakingModule()
-        self.planner_with_mock_bus = ConcretePlanningAndDecisionMakingModule(message_bus=self.mock_bus)
-        self.planner_with_real_bus = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus)
+    def _action_command_listener(self, message: GenericMessage):
+        if isinstance(message.payload, ActionCommandPayload):
+            self.received_action_commands.append(message)
 
-        self._original_stdout = sys.stdout
-        # Comment out print suppression for easier debugging if tests fail
-        # sys.stdout = open(os.devnull, 'w')
+    def _ltm_query_listener(self, message: GenericMessage):
+        if isinstance(message.payload, LTMQueryPayload):
+            self.received_ltm_queries.append(message)
 
     def tearDown(self):
-        # sys.stdout.close()
-        sys.stdout = self._original_stdout
+        self.received_action_commands.clear()
+        self.received_ltm_queries.clear()
 
-    # --- Existing tests adapted to use planner_no_bus ---
-    def test_initial_status_no_bus(self): # Renamed
-        status = self.planner_no_bus.get_module_status()
-        self.assertEqual(status['module_type'], 'ConcretePlanningAndDecisionMakingModule')
-        self.assertEqual(status['known_plan_templates_count'], 2) # Updated based on current implementation
-        # These are no longer part of status for the bus-integrated version
-        # self.assertEqual(status['evaluated_plans_count'], 0)
-        # self.assertIsNone(status['last_selected_plan_id'])
-        self.assertEqual(len(self.planner_no_bus.pending_goals), 0)
+    # --- Test Subscription Handlers and Internal State Updates ---
+    def test_handle_goal_update_updates_active_goals(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        async def run_test_logic():
+            goal1 = GoalUpdatePayload("g1", "Goal 1", 0.8, "ACTIVE", "Test")
+            goal2 = GoalUpdatePayload("g2", "Goal 2", 0.9, "PENDING", "Test")
+            bus_msg1 = GenericMessage(self.pdm_module_id, "GoalUpdate", goal1)
+            bus_msg2 = GenericMessage(self.pdm_module_id, "GoalUpdate", goal2)
 
+            self.bus.publish(bus_msg1)
+            self.bus.publish(bus_msg2)
+            await asyncio.sleep(0.01)
 
-    def test_create_plan_from_template_no_bus(self): # Renamed
-        goal = {"description": "achieve_goal_A"} # This still uses the old dict format for goal
-        plans = self.planner_no_bus.create_plan(goal, {}, {})
-        self.assertEqual(len(plans), 1)
-        plan = plans[0]
-        self.assertEqual(plan['goal_description'], "achieve_goal_A")
-        self.assertEqual(len(plan['steps']), 2)
+            self.assertEqual(len(pdm_module._active_goals), 2)
+            self.assertEqual(pdm_module._active_goals[0].goal_id, "g2") # Sorted by priority
+            self.assertEqual(pdm_module._active_goals[1].goal_id, "g1")
 
-    def test_create_plan_default_no_bus(self): # Renamed
-        goal = {"description": "non_existent_goal"}
-        plans = self.planner_no_bus.create_plan(goal, {}, {})
-        self.assertEqual(len(plans), 1)
-        plan = plans[0]
-        self.assertEqual(plan['steps'][0]['action_type'], "default_action_for_unknown_goal")
+            # Test update
+            goal2_updated = GoalUpdatePayload("g2", "Goal 2 Updated", 0.7, "ACTIVE", "Test")
+            bus_msg2_updated = GenericMessage(self.pdm_module_id, "GoalUpdate", goal_payload2_updated)
+            self.bus.publish(bus_msg2_updated)
+            await asyncio.sleep(0.01)
 
-    def test_evaluate_plan_basic_score_no_bus(self): # Renamed
-        plan = {"plan_id": "test_plan1", "steps": [{}, {}, {}]}
-        # evaluate_plan is not directly used by the bus-integrated path for now
-        evaluation = self.planner_no_bus.evaluate_plan(plan, {}, {})
-        self.assertEqual(evaluation['plan_id'], "test_plan1")
-        self.assertEqual(evaluation['score'], 70)
+            self.assertEqual(len(pdm_module._active_goals), 2)
+            self.assertEqual(pdm_module._active_goals[0].goal_id, "g1") # g1 now higher prio
+            self.assertEqual(pdm_module._active_goals[1].goal_id, "g2")
+            self.assertEqual(pdm_module._active_goals[1].priority, 0.7)
 
-    def test_select_action_or_plan_no_bus(self): # Renamed
-        eval_plan1 = {"plan_id": "p1", "score": 80}
-        eval_plan2 = {"plan_id": "p2", "score": 95}
-        selected_eval = self.planner_no_bus.select_action_or_plan([eval_plan1, eval_plan2])
-        self.assertEqual(selected_eval['plan_id'], "p2")
+            # Test removal by status
+            goal1_achieved = GoalUpdatePayload("g1", "Goal 1", 0.8, "ACHIEVED", "Test")
+            bus_msg1_achieved = GenericMessage(self.pdm_module_id, "GoalUpdate", goal1_achieved)
+            self.bus.publish(bus_msg1_achieved)
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(pdm_module._active_goals), 1)
+            self.assertEqual(pdm_module._active_goals[0].goal_id, "g2")
 
+        asyncio.run(run_test_logic())
 
-    # --- New Tests for MessageBus Integration ---
-    def test_initialization_with_bus_subscription(self):
-        """Test Planner initialization with a message bus and subscription to GoalUpdate."""
-        if not MessageBus: self.skipTest("MessageBus components not available")
+    def test_handle_percept_data_updates_current_percepts(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        async def run_test_logic():
+            percept1 = PerceptDataPayload("p1", "text", "Percept 1", datetime.now(timezone.utc))
+            bus_msg1 = GenericMessage(self.pdm_module_id, "PerceptData", percept1)
+            self.bus.publish(bus_msg1)
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(pdm_module._current_percepts), 1)
+            self.assertEqual(pdm_module._current_percepts[0].percept_id, "p1")
 
-        self.assertIsNotNone(self.planner_with_real_bus.message_bus)
-        subscribers = self.bus.get_subscribers_for_type("GoalUpdate")
+            # Test deque maxlen
+            for i in range(pdm_module.MAX_PERCEPTS_HISTORY + 5):
+                p = PerceptDataPayload(f"p{i+2}", "text", f"Percept {i+2}", datetime.now(timezone.utc))
+                self.bus.publish(GenericMessage(self.pdm_module_id, "PerceptData", p))
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(pdm_module._current_percepts), pdm_module.MAX_PERCEPTS_HISTORY)
+            self.assertEqual(pdm_module._current_percepts[-1].percept_id, f"p{pdm_module.MAX_PERCEPTS_HISTORY + 1}") # p2 to p11, last is p11
+            self.assertEqual(pdm_module._current_percepts[0].percept_id, "p2")
 
-        found_subscription = any(
-            sub[0] == "ConcretePlanningAndDecisionMakingModule_01" and
-            sub[1] == self.planner_with_real_bus.handle_goal_update_message
-            for sub in subscribers if sub # Check if sub is not None
-        )
-        self.assertTrue(found_subscription, "Planner did not subscribe to GoalUpdate messages.")
+        asyncio.run(run_test_logic())
 
-    def test_handle_goal_update_message(self):
-        """Test that Planner receives and stores GoalUpdate messages."""
-        if not MessageBus or not GenericMessage or not GoalUpdatePayload:
-            self.skipTest("MessageBus or core message components not available")
+    def test_handle_ltm_query_result_updates_results(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        async def run_test_logic():
+            ltm_res1 = LTMQueryResultPayload("q1", [MemoryItem("m1","content1")], True)
+            bus_msg1 = GenericMessage(self.pdm_module_id, "LTMQueryResult", ltm_res1)
+            self.bus.publish(bus_msg1)
+            await asyncio.sleep(0.01)
+            self.assertIn("q1", pdm_module._ltm_query_results)
+            self.assertEqual(pdm_module._ltm_query_results["q1"].results[0].item_id, "m1")
+        asyncio.run(run_test_logic())
 
-        self.assertEqual(len(self.planner_with_real_bus.pending_goals), 0)
+    def test_handle_emotional_state_change_updates_emotion(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        async def run_test_logic():
+            emo_state = EmotionalStateChangePayload({"v":0.5, "a":0.3}, intensity=0.4)
+            bus_msg = GenericMessage(self.pdm_module_id, "EmotionalStateChange", emo_state)
+            self.bus.publish(bus_msg)
+            await asyncio.sleep(0.01)
+            self.assertIsNotNone(pdm_module._current_emotional_state)
+            self.assertEqual(pdm_module._current_emotional_state.intensity, 0.4)
+        asyncio.run(run_test_logic())
 
-        goal_payload1 = GoalUpdatePayload(goal_id="g1", goal_description="Goal 1", priority=0.8, status="ACTIVE", originator="Test")
-        msg1 = GenericMessage(source_module_id="TestMotSys", message_type="GoalUpdate", payload=goal_payload1)
+    def test_handle_attention_focus_update_updates_focus(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        async def run_test_logic():
+            attn_focus = AttentionFocusUpdatePayload("item1", "goal_directed", 0.9, timestamp=datetime.now(timezone.utc))
+            bus_msg = GenericMessage(self.pdm_module_id, "AttentionFocusUpdate", attn_focus)
+            self.bus.publish(bus_msg)
+            await asyncio.sleep(0.01)
+            self.assertIsNotNone(pdm_module._current_attention_focus)
+            self.assertEqual(pdm_module._current_attention_focus.focused_item_id, "item1")
+        asyncio.run(run_test_logic())
 
-        goal_payload2 = GoalUpdatePayload(goal_id="g2", goal_description="Goal 2", priority=0.9, status="PENDING", originator="Test")
-        msg2 = GenericMessage(source_module_id="TestMotSys", message_type="GoalUpdate", payload=goal_payload2)
+    # --- Test Publishing LTMQuery ---
+    def test_request_ltm_data_publishes_ltm_query(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.pdm_module_id, "LTMQuery", self._ltm_query_listener)
 
-        self.bus.publish(msg1)
-        self.bus.publish(msg2)
+            query_id = pdm_module.request_ltm_data("info about topic X", "semantic_search", target_memory_type="semantic")
+            self.assertIsNotNone(query_id)
+            await asyncio.sleep(0.01)
 
-        self.assertEqual(len(self.planner_with_real_bus.pending_goals), 2)
-        # Check if sorted by priority (g2 should be first)
-        self.assertEqual(self.planner_with_real_bus.pending_goals[0].goal_id, "g2")
-        self.assertEqual(self.planner_with_real_bus.pending_goals[1].goal_id, "g1")
+            self.assertEqual(len(self.received_ltm_queries), 1)
+            msg = self.received_ltm_queries[0]
+            self.assertEqual(msg.source_module_id, self.pdm_module_id)
+            self.assertEqual(msg.message_type, "LTMQuery")
 
-        # Test duplicate handling (same id, same status - should not add)
-        self.bus.publish(msg2) # Publish g2 again
-        self.assertEqual(len(self.planner_with_real_bus.pending_goals), 2)
+            payload: LTMQueryPayload = msg.payload
+            self.assertEqual(payload.query_id, query_id)
+            self.assertEqual(payload.requester_module_id, self.pdm_module_id)
+            self.assertEqual(payload.query_content, "info about topic X")
+            self.assertEqual(payload.query_type, "semantic_search")
+            self.assertEqual(payload.target_memory_type, "semantic")
+        asyncio.run(run_test_logic())
 
-        # Test update (same id, different status - should replace)
-        goal_payload2_updated = GoalUpdatePayload(goal_id="g2", goal_description="Goal 2 Updated", priority=0.95, status="ACTIVE", originator="Test")
-        msg2_updated = GenericMessage(source_module_id="TestMotSys", message_type="GoalUpdate", payload=goal_payload2_updated)
-        self.bus.publish(msg2_updated)
-        self.assertEqual(len(self.planner_with_real_bus.pending_goals), 2)
-        self.assertEqual(self.planner_with_real_bus.pending_goals[0].priority, 0.95) # g2 updated and still highest
-        self.assertEqual(self.planner_with_real_bus.pending_goals[0].goal_description, "Goal 2 Updated")
+    # --- Test Publishing ActionCommand ---
+    def test_process_goal_publishes_action_command(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.pdm_module_id, "ActionCommand", self._action_command_listener)
 
+            # Add a goal first
+            goal = GoalUpdatePayload("g_act", "Goal for Action", 0.8, "ACTIVE", "Test")
+            self.bus.publish(GenericMessage(self.pdm_module_id, "GoalUpdate", goal))
+            await asyncio.sleep(0.01) # Ensure goal is processed
 
-    def test_develop_and_dispatch_plan_publishes_action_commands(self):
-        """Test that develop_and_dispatch_plan publishes ActionCommand messages."""
-        if not MessageBus or not GenericMessage or not ActionCommandPayload or not GoalUpdatePayload:
-            self.skipTest("MessageBus or core message components not available")
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01)
 
-        sample_goal_payload = GoalUpdatePayload(
-            goal_id="g_plan_test", goal_description="Test plan dispatch",
-            priority=0.8, status="ACTIVE", originator="Test"
-        )
+            self.assertTrue(len(self.received_action_commands) >= 1)
+            cmd_payload: ActionCommandPayload = self.received_action_commands[0].payload
+            self.assertEqual(cmd_payload.parameters.get("goal_id"), "g_act")
+            self.assertEqual(self.received_action_commands[0].source_module_id, self.pdm_module_id)
+        asyncio.run(run_test_logic())
 
-        success = self.planner_with_mock_bus.develop_and_dispatch_plan(sample_goal_payload)
-        self.assertTrue(success)
+    def test_process_goal_action_varies_by_emotion(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.pdm_module_id, "ActionCommand", self._action_command_listener)
+            goal = GoalUpdatePayload("g_emo_plan", "Plan with emotion", 0.8, "ACTIVE", "Test")
+            self.bus.publish(GenericMessage(self.pdm_module_id, "GoalUpdate", goal))
 
-        self.mock_bus.publish.assert_called() # Called at least once
-        # Check details of the first call (conceptual step 1)
-        args, _ = self.mock_bus.publish.call_args_list[0]
-        published_message: GenericMessage = args[0]
-        self.assertEqual(published_message.message_type, "ActionCommand")
-        self.assertIsInstance(published_message.payload, ActionCommandPayload)
-        self.assertEqual(published_message.payload.parameters["task"], "Step 1 for Test plan dispatch")
-        self.assertEqual(published_message.payload.priority, 0.8)
+            # Publish negative emotion
+            emo_state = EmotionalStateChangePayload({"valence": -0.7, "arousal": 0.6}, intensity=0.65) # Negative emotion
+            self.bus.publish(GenericMessage(self.pdm_module_id, "EmotionalStateChange", emo_state))
+            await asyncio.sleep(0.01)
 
-        # Check if a second action was published (since priority > 0.7)
-        self.assertGreaterEqual(self.mock_bus.publish.call_count, 2)
-        args_step2, _ = self.mock_bus.publish.call_args_list[1]
-        published_message_step2: GenericMessage = args_step2[0]
-        self.assertEqual(published_message_step2.payload.parameters["task"], "Step 2 for Test plan dispatch")
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01)
 
+            self.assertTrue(len(self.received_action_commands) >= 1)
+            cmd_payload: ActionCommandPayload = self.received_action_commands[0].payload
+            self.assertTrue("cautious_action" in cmd_payload.action_type)
+            self.assertEqual(cmd_payload.parameters.get("caution_level"), "high")
+        asyncio.run(run_test_logic())
 
-    def test_process_one_pending_goal_publishes_actions(self):
-        """Test process_one_pending_goal selects a goal and publishes actions."""
-        if not MessageBus or not GenericMessage or not ActionCommandPayload or not GoalUpdatePayload:
-            self.skipTest("MessageBus or core message components not available")
+    def test_process_goal_action_varies_by_percept(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.pdm_module_id, "ActionCommand", self._action_command_listener)
+            goal = GoalUpdatePayload("g_percept_plan", "Plan with percept", 0.8, "ACTIVE", "Test")
+            self.bus.publish(GenericMessage(self.pdm_module_id, "GoalUpdate", goal))
 
-        # Add a goal to pending_goals (can be done via handle_goal_update or directly for isolated test)
-        goal_payload = GoalUpdatePayload(
-            goal_id="g_process_test", goal_description="Process this goal",
-            priority=0.9, status="ACTIVE", originator="TestProcess"
-        )
-        # Simulate receiving this goal
-        if self.planner_with_mock_bus.message_bus: # It has a mock bus, but handle_goal_update is for real bus
-             self.planner_with_mock_bus.handle_goal_update_message(
-                 GenericMessage(source_module_id="sim", message_type="GoalUpdate", payload=goal_payload)
-             )
-        else: # Fallback if direct add is needed because bus setup is complex
-            self.planner_with_mock_bus.pending_goals.append(goal_payload)
-            self.planner_with_mock_bus.pending_goals.sort(key=lambda g: g.priority, reverse=True)
+            # Publish urgent percept
+            percept = PerceptDataPayload("p_urgent", "text", {"type":"linguistic_analysis", "text": "This is an urgent request!"}, datetime.now(timezone.utc))
+            self.bus.publish(GenericMessage(self.pdm_module_id, "PerceptData", percept))
+            await asyncio.sleep(0.01)
 
-        self.assertEqual(len(self.planner_with_mock_bus.pending_goals), 1)
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01)
 
-        processed = self.planner_with_mock_bus.process_one_pending_goal()
-        self.assertTrue(processed)
-        self.assertEqual(len(self.planner_with_mock_bus.pending_goals), 0) # Goal should be removed
+            self.assertTrue(len(self.received_action_commands) >= 1)
+            cmd_payload: ActionCommandPayload = self.received_action_commands[0].payload
+            self.assertTrue("urgent_response_action" in cmd_payload.action_type)
+            self.assertEqual(cmd_payload.parameters.get("urgency"), "critical")
+        asyncio.run(run_test_logic())
 
-        self.mock_bus.publish.assert_called() # At least one action command published
-        # Further checks on published message content could be added here, similar to above test
+    # --- Test No Bus Scenario ---
+    def test_no_bus_operations_graceful(self):
+        pdm_module_no_bus = ConcretePlanningAndDecisionMakingModule(message_bus=None, module_id="NoBusPDM")
+        self.assertIsNone(pdm_module_no_bus.request_ltm_data("test", "test"))
 
-    def test_no_bus_scenarios(self):
-        """Test behavior when no message bus is configured."""
-        self.assertIsNone(self.planner_no_bus.message_bus)
-        sample_goal_payload = GoalUpdatePayload(
-            goal_id="g_no_bus", goal_description="No bus test",
-            priority=0.5, status="ACTIVE", originator="TestNoBus"
-        )
-        # This should not error and return False as no bus to publish to
-        self.assertFalse(self.planner_no_bus.develop_and_dispatch_plan(sample_goal_payload))
+        # Add a goal directly to its internal list for testing process_highest_priority_goal
+        goal = GoalUpdatePayload("g_direct", "Direct Goal", 0.9, "ACTIVE", "Test")
+        pdm_module_no_bus._active_goals.append(goal) # Manually set up state
+        self.assertFalse(pdm_module_no_bus.process_highest_priority_goal()) # Should return False as it cannot publish
+        self.assertEqual(len(self.received_action_commands), 0)
+        self.assertEqual(len(self.received_ltm_queries), 0)
 
-        # Add to pending_goals directly for planner_no_bus
-        self.planner_no_bus.pending_goals.append(sample_goal_payload)
-        self.assertFalse(self.planner_no_bus.process_one_pending_goal()) # Should also be false as it calls develop_and_dispatch_plan
-
+    def test_get_module_status(self):
+        pdm_module = ConcretePlanningAndDecisionMakingModule(message_bus=self.bus, module_id=self.pdm_module_id)
+        status = pdm_module.get_module_status()
+        self.assertEqual(status["module_id"], self.pdm_module_id)
+        self.assertTrue(status["message_bus_configured"])
+        self.assertEqual(status["active_goals_count"], 0)
+        self.assertEqual(status["recent_percepts_count"], 0)
+        # ... other initial state checks
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
+```

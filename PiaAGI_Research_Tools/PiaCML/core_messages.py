@@ -153,6 +153,21 @@ class ActionEventPayload:
     timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
     metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
 
+@dataclass
+class LearningOutcomePayload:
+    """
+    Payload for communicating the outcome of a learning process.
+    """
+    learning_task_id: str # Identifier for the learning task or episode
+    status: str # E.g., "LEARNED", "UPDATED", "FAILED_TO_LEARN", "NO_CHANGE"
+    learned_item_type: Optional[str] = None # E.g., "skill", "knowledge_concept", "association", "parameter_tuning"
+    item_id: Optional[str] = None # ID of the learned/updated item, if applicable
+    item_description: Optional[str] = None # Brief description of what was learned or the outcome
+    confidence: Optional[float] = None # Confidence in the learned item or outcome
+    source_message_ids: List[str] = field(default_factory=list) # IDs of messages that triggered/informed this learning
+    metadata: Dict[str, Any] = field(default_factory=dict) # Additional details, e.g., specific parameters learned
+    timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
+
 
 if __name__ == '__main__':
     # Test MemoryItem
@@ -290,5 +305,21 @@ if __name__ == '__main__':
     assert action_event_payload.status == "SUCCESS"
     assert action_event_payload.outcome["final_coordinates"]["x"] == 100
     assert isinstance(action_event_payload.timestamp, datetime.datetime)
+
+    # Test LearningOutcomePayload
+    learning_outcome = LearningOutcomePayload(
+        learning_task_id="task_rl_001",
+        status="UPDATED",
+        learned_item_type="skill_parameter",
+        item_id="skill_navigate",
+        item_description="Adjusted turning radius parameter based on collision data.",
+        confidence=0.85,
+        source_message_ids=["action_event_col123", "percept_bump456"],
+        metadata={"parameter_changed": "turning_radius", "old_value": 0.5, "new_value": 0.45}
+    )
+    print(learning_outcome)
+    assert learning_outcome.status == "UPDATED"
+    assert learning_outcome.confidence == 0.85
+    assert "parameter_changed" in learning_outcome.metadata
 
     print("\nCore messages example usage complete.")

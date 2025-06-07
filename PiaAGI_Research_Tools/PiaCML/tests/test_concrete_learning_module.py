@@ -1,210 +1,190 @@
 import unittest
-import os
-import sys
-from unittest.mock import MagicMock # Added
+import asyncio
+import uuid
+from typing import List, Any, Dict
+from datetime import datetime, timezone # For payloads
 
 # Adjust path for consistent imports
+import os
+import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 try:
-    from PiaAGI_Research_Tools.PiaCML import (
-        ConcreteLearningModule,
-        MessageBus,               # Added
-        GenericMessage,           # Added
-        GoalUpdatePayload         # Added
+    from PiaAGI_Research_Tools.PiaCML.message_bus import MessageBus
+    from PiaAGI_Research_Tools.PiaCML.core_messages import (
+        GenericMessage, PerceptDataPayload, GoalUpdatePayload, ActionEventPayload,
+        EmotionalStateChangePayload, LearningOutcomePayload
     )
+    from PiaAGI_Research_Tools.PiaCML.concrete_learning_module import ConcreteLearningModule
 except ModuleNotFoundError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from message_bus import MessageBus
+    from core_messages import (
+        GenericMessage, PerceptDataPayload, GoalUpdatePayload, ActionEventPayload,
+        EmotionalStateChangePayload, LearningOutcomePayload
+    )
     from concrete_learning_module import ConcreteLearningModule
-    try:
-        from message_bus import MessageBus
-        from core_messages import GenericMessage, GoalUpdatePayload
-    except ImportError:
-        MessageBus = None
-        GenericMessage = None
-        GoalUpdatePayload = None
 
-
-class TestConcreteLearningModule(unittest.TestCase):
+class TestConcreteLearningModuleIntegration(unittest.TestCase):
 
     def setUp(self):
-        self.bus = MessageBus() if MessageBus else None
-        self.learning_module_no_bus = ConcreteLearningModule()
-        self.learning_module_with_bus = ConcreteLearningModule(message_bus=self.bus)
+        self.bus = MessageBus()
+        self.module_id = f"TestLearningModule_{str(uuid.uuid4())[:8]}"
+        # Module instantiated per test method for a clean state
+        self.received_learning_outcomes: List[GenericMessage] = []
 
-        self._original_stdout = sys.stdout
-        # Comment out print suppression for easier debugging if tests fail
-        # sys.stdout = open(os.devnull, 'w')
+    def _learning_outcome_listener(self, message: GenericMessage):
+        if isinstance(message.payload, LearningOutcomePayload):
+            self.received_learning_outcomes.append(message)
 
     def tearDown(self):
-        # sys.stdout.close()
-        sys.stdout = self._original_stdout
+        self.received_learning_outcomes.clear()
 
-    # --- Existing tests adapted to use learning_module_no_bus ---
-    def test_initial_status(self):
-        status = self.learning_module_no_bus.get_learning_status()
-        self.assertEqual(status['active_tasks_count'], 0)
-        self.assertEqual(status['total_logged_learning_attempts'], 0)
-        # ... (rest of assertions from existing test, using self.learning_module_no_bus)
-        self.assertIsNone(self.learning_module_no_bus.message_bus)
-        self.assertEqual(len(self.learning_module_no_bus.processed_goal_updates_for_learning),0)
+    # --- Test Subscription Handlers and learn() triggering ---
+    def test_handle_percept_data_triggers_learning(self):
+        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
 
+            percept_payload = PerceptDataPayload(percept_id="p_learn1", modality="text", content="new patterns observed", source_timestamp=datetime.now(timezone.utc))
+            msg = GenericMessage("PerceptSys", "PerceptData", percept_payload, message_id="percept_msg_learn1")
 
-    def test_learn_direct_store(self):
-        data_to_store = "Important fact to remember."
-        context = {'task_id': 'store_fact_1'}
-        outcome = self.learning_module_no_bus.learn(data_to_store, "direct_store", context)
-        self.assertEqual(outcome['status'], 'success')
-        # ... (rest of assertions)
+            self.bus.publish(msg)
+            await asyncio.sleep(0.01)
 
-    def test_learn_supervised_dummy(self):
-        data = {'features': [0.1, 0.2], 'label': 'B'}
-        context = {'task_id': 'classify_b'}
-        outcome = self.learning_module_no_bus.learn(data, "supervised_dummy", context)
-        self.assertEqual(outcome['status'], 'success')
-        # ... (rest of assertions)
+            self.assertEqual(learning_module._handled_message_counts["PerceptData"], 1)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome_payload.status, "LEARNED") # Default from current learn() logic
+            self.assertEqual(outcome_payload.learned_item_type, "knowledge_concept_features")
+            self.assertIn("percept_msg_learn1", outcome_payload.source_message_ids)
+            self.assertEqual(self.received_learning_outcomes[0].source_module_id, self.module_id)
+        asyncio.run(run_test_logic())
 
-    def test_learn_other_paradigm_logging(self):
-        context = {'task_id': 'other_task'}
-        outcome = self.learning_module_no_bus.learn("some_data", "unknown_paradigm", context)
-        self.assertEqual(outcome['status'], 'logged_not_processed')
-        # ... (rest of assertions)
+    def test_handle_action_event_success_triggers_learning(self):
+        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
+            action_payload = ActionEventPayload(action_command_id="cmd_learn1", action_type="explore", status="SUCCESS", outcome={"found":"gold"})
+            msg = GenericMessage("ExecSys", "ActionEvent", action_payload, message_id="action_event_learn_s1")
 
-    def test_process_feedback(self):
-        feedback_data = {'type': 'reward', 'value': 10}
-        context_id = 'task_for_feedback'
-        self.learning_module_no_bus._learning_tasks_status[context_id] = 'processing_rl'
-        success = self.learning_module_no_bus.process_feedback(feedback_data, context_id)
-        self.assertTrue(success)
-        # ... (rest of assertions)
+            self.bus.publish(msg)
+            await asyncio.sleep(0.01)
 
-    def test_consolidate_knowledge_placeholder(self):
-        item_ids = ['task_beta', 'task_gamma']
-        self.learning_module_no_bus._learning_tasks_status['task_beta'] = 'learned'
-        success = self.learning_module_no_bus.consolidate_knowledge(item_ids)
-        self.assertTrue(success)
-        # ... (rest of assertions)
+            self.assertEqual(learning_module._handled_message_counts["ActionEvent"], 1)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome_payload.status, "LEARNED") # Or UPDATED based on logic
+            self.assertEqual(outcome_payload.learned_item_type, "skill_adjustment")
+            self.assertEqual(outcome_payload.item_id, "explore")
+            self.assertEqual(outcome_payload.metadata.get("reinforcement_direction"), "positive")
+        asyncio.run(run_test_logic())
 
-    def test_apply_ethical_guardrails_permissible(self):
-        outcome_data = {'info': 'This is fine.'}
-        is_permissible = self.learning_module_no_bus.apply_ethical_guardrails(outcome_data, {})
-        self.assertTrue(is_permissible)
+    def test_handle_action_event_failure_triggers_learning(self):
+        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
+            action_payload = ActionEventPayload(action_command_id="cmd_learn2", action_type="grasp", status="FAILURE", outcome={"reason":"slipped"})
+            msg = GenericMessage("ExecSys", "ActionEvent", action_payload, message_id="action_event_learn_f1")
 
-    def test_apply_ethical_guardrails_impermissible_by_data(self):
-        outcome_data = {'info': 'This is bad.', 'is_disallowed': True}
-        is_permissible = self.learning_module_no_bus.apply_ethical_guardrails(outcome_data, {})
-        self.assertFalse(is_permissible)
+            self.bus.publish(msg)
+            await asyncio.sleep(0.01)
 
-    def test_apply_ethical_guardrails_impermissible_by_context(self):
-        outcome_data = {'info': 'This is also bad.'}
-        context = {'contains_disallowed_content': True}
-        is_permissible = self.learning_module_no_bus.apply_ethical_guardrails(outcome_data, context)
-        self.assertFalse(is_permissible)
+            self.assertEqual(learning_module._handled_message_counts["ActionEvent"], 1)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome_payload.status, "UPDATED")
+            self.assertEqual(outcome_payload.learned_item_type, "skill_adjustment")
+            self.assertEqual(outcome_payload.item_id, "grasp")
+            self.assertEqual(outcome_payload.metadata.get("reinforcement_direction"), "negative")
+        asyncio.run(run_test_logic())
 
-    def test_get_learning_status_specific_task_unknown(self):
-        status = self.learning_module_no_bus.get_learning_status('unknown_task_id')
-        self.assertEqual(status['status'], 'unknown_task')
+    def test_handle_goal_update_achieved_triggers_learning(self):
+        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
+            goal_payload = GoalUpdatePayload("g_learn_ach", "Learn skill X", 0.9, "achieved", "User")
+            msg = GenericMessage("MotSys", "GoalUpdate", goal_payload, message_id="goal_learn_ach1")
 
-    def test_learn_reinforcement_dummy(self):
-        data = {'state': 's1', 'action': 'a1'}
-        context = {'task_id': 'rl_task_1', 'reward_signal': 1.0}
-        outcome = self.learning_module_no_bus.learn(data, "reinforcement_dummy", context)
-        self.assertEqual(outcome['status'], 'success')
-        # ... (rest of assertions)
+            self.bus.publish(msg)
+            await asyncio.sleep(0.01)
 
-    def test_learn_unsupervised_dummy(self):
-        data = {'features': [0.1, 0.2, 0.3, 0.4]}
-        context = {'task_id': 'ul_task_1'}
-        outcome = self.learning_module_no_bus.learn(data, "unsupervised_dummy", context)
-        self.assertEqual(outcome['status'], 'success')
-        # ... (rest of assertions)
+            self.assertEqual(learning_module._handled_message_counts["GoalUpdate"], 1)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome_payload.learned_item_type, "strategy_evaluation")
+            self.assertEqual(outcome_payload.status, "LEARNED") # From successful goal
+            self.assertEqual(outcome_payload.metadata.get("goal_status"), "achieved")
+        asyncio.run(run_test_logic())
 
-    # --- New Tests for MessageBus Integration ---
-    def test_initialization_with_bus_subscription(self):
-        """Test LearningModule initialization with a message bus and subscription to GoalUpdate."""
-        if not MessageBus: self.skipTest("MessageBus components not available")
+    def test_handle_emotional_state_stores_emotion(self): # No direct learning outcome published
+        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        async def run_test_logic():
+            emo_payload = EmotionalStateChangePayload({"valence": -0.7, "arousal": 0.8}, intensity=0.75)
+            msg = GenericMessage("EmoSys", "EmotionalStateChange", emo_payload)
 
-        self.assertIsNotNone(self.learning_module_with_bus.message_bus)
-        subscribers = self.bus.get_subscribers_for_type("GoalUpdate")
+            self.bus.publish(msg)
+            await asyncio.sleep(0.01)
 
-        found_subscription = any(
-            sub[0] == "ConcreteLearningModule_01" and
-            sub[1] == self.learning_module_with_bus.handle_goal_update_for_learning
-            for sub in subscribers if sub # Check if sub is not None
-        )
-        self.assertTrue(found_subscription, "LearningModule did not subscribe to GoalUpdate messages.")
+            self.assertEqual(learning_module._handled_message_counts["EmotionalStateChange"], 1)
+            self.assertIsNotNone(learning_module._last_emotional_state)
+            self.assertEqual(learning_module._last_emotional_state.intensity, 0.75)
+            self.assertEqual(len(self.received_learning_outcomes), 0) # This handler doesn't call learn() directly
+        asyncio.run(run_test_logic())
 
-    def test_handle_goal_update_for_learning(self):
-        """Test that LearningModule receives and logs GoalUpdate messages."""
-        if not MessageBus or not GenericMessage or not GoalUpdatePayload:
-            self.skipTest("MessageBus or core message components not available")
+    # --- Test direct learn() call publishing ---
+    def test_direct_learn_call_publishes_outcome(self):
+        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        async def run_test_logic():
+            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
 
-        self.assertEqual(len(self.learning_module_with_bus.processed_goal_updates_for_learning), 0)
+            context = {"source_message_id": "direct_call_src_id", "task_id":"direct_task_1"}
+            learning_module.learn(data="direct learn data", learning_paradigm="direct_store_test", context=context)
+            await asyncio.sleep(0.01)
 
-        goal_payload_achieved = GoalUpdatePayload(
-            goal_id="g_learn_achieved", goal_description="Learn X",
-            priority=0.8, status="achieved", originator="TestMotSys"
-        )
-        msg_achieved = GenericMessage(source_module_id="TestMotSys", message_type="GoalUpdate", payload=goal_payload_achieved)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome_payload: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome_payload.learning_task_id, "direct_task_1")
+            # This paradigm is not in the if/else, so it will hit the "FAILED_TO_LEARN" path
+            self.assertEqual(outcome_payload.status, "FAILED_TO_LEARN")
+            self.assertIn("direct_call_src_id", outcome_payload.source_message_ids)
+            self.assertEqual(self.received_learning_outcomes[0].source_module_id, self.module_id)
+            self.assertEqual(learning_module._published_outcomes_count, 1)
+        asyncio.run(run_test_logic())
 
-        goal_payload_failed = GoalUpdatePayload(
-            goal_id="g_learn_failed", goal_description="Learn Y",
-            priority=0.7, status="failed", originator="TestMotSys"
-        )
-        msg_failed = GenericMessage(source_module_id="TestMotSys", message_type="GoalUpdate", payload=goal_payload_failed)
+    def test_direct_learn_call_no_bus(self):
+        learning_module_no_bus = ConcreteLearningModule(message_bus=None, module_id="NoBusLM")
+        initial_outcomes_count = learning_module_no_bus._published_outcomes_count
+        try:
+            learning_module_no_bus.learn("data", "paradigm", {})
+        except Exception as e:
+            self.fail(f"learn() method raised an exception with no bus: {e}")
 
-        self.bus.publish(msg_achieved)
-        self.bus.publish(msg_failed)
+        self.assertEqual(learning_module_no_bus._published_outcomes_count, initial_outcomes_count) # No bus, so no publish
+        self.assertEqual(len(self.received_learning_outcomes), 0) # Listener is on self.bus
 
-        self.assertEqual(len(self.learning_module_with_bus.processed_goal_updates_for_learning), 2)
-        logged_payload_1 = self.learning_module_with_bus.processed_goal_updates_for_learning[0]
-        logged_payload_2 = self.learning_module_with_bus.processed_goal_updates_for_learning[1]
+    # --- Test get_learning_status ---
+    def test_get_learning_status(self):
+        learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
+        status = learning_module.get_learning_status()
+        self.assertEqual(status["module_id"], self.module_id)
+        self.assertTrue(status["message_bus_configured"])
+        self.assertEqual(status["published_outcomes_count"], 0)
+        self.assertEqual(status["handled_message_counts"]["PerceptData"], 0)
 
-        self.assertIsInstance(logged_payload_1, GoalUpdatePayload)
-        self.assertEqual(logged_payload_1.goal_id, "g_learn_achieved")
-        self.assertEqual(logged_payload_1.status, "achieved")
+        # Simulate some activity
+        async def run_activity():
+            self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener) # Need listener to consume
+            pd_payload = PerceptDataPayload("p_stat", "text", "status data", datetime.now(timezone.utc))
+            self.bus.publish(GenericMessage("Src", "PerceptData", pd_payload, message_id="status_pd_msg"))
+            await asyncio.sleep(0.01)
+        asyncio.run(run_activity())
 
-        self.assertIsInstance(logged_payload_2, GoalUpdatePayload)
-        self.assertEqual(logged_payload_2.goal_id, "g_learn_failed")
-        self.assertEqual(logged_payload_2.status, "failed")
-
-    def test_handle_goal_update_unexpected_payload(self):
-        """Test LearningModule handles GoalUpdate with an unexpected payload type."""
-        if not MessageBus or not GenericMessage:
-            self.skipTest("MessageBus or GenericMessage not available")
-
-        malformed_msg = GenericMessage(
-            source_module_id="TestMalformedSource",
-            message_type="GoalUpdate",
-            payload="This is not a GoalUpdatePayload"
-        )
-
-        # Suppress print for this specific test of error path
-        original_stdout_test = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-        self.bus.publish(malformed_msg)
-        sys.stdout.close()
-        sys.stdout = original_stdout_test
-
-        self.assertEqual(len(self.learning_module_with_bus.processed_goal_updates_for_learning), 0)
-
-    def test_no_bus_scenario_for_handler(self):
-        """Test that module initialized without a bus does not process bus messages."""
-        if not MessageBus or not GenericMessage or not GoalUpdatePayload:
-            self.skipTest("MessageBus or core message components not available")
-
-        local_bus_for_no_bus_test = MessageBus()
-        goal_payload = GoalUpdatePayload(
-            goal_id="g_no_bus_test", goal_description="Test",
-            priority=0.5, status="active", originator="Test"
-        )
-        test_message = GenericMessage(
-            source_module_id="TestMotSys", message_type="GoalUpdate", payload=goal_payload
-        )
-        local_bus_for_no_bus_test.publish(test_message)
-
-        self.assertEqual(len(self.learning_module_no_bus.processed_goal_updates_for_learning), 0)
-
+        status_after = learning_module.get_learning_status()
+        self.assertEqual(status_after["published_outcomes_count"], 1)
+        self.assertEqual(status_after["handled_message_counts"]["PerceptData"], 1)
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
+
+```
