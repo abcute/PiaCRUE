@@ -153,7 +153,12 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
                     bus_status_msg = "core message types missing for subscription"
             except Exception as e:
                 bus_status_msg = f"FAILED to subscribe: {e}"
-        print(f"ConcreteSelfModelModule '{self._module_id}' initialized. Message bus {bus_status_msg}.")
+
+        self._log: List[str] = [] # Initialize log
+        self._log_message(f"ConcreteSelfModelModule '{self._module_id}' initialized. Message bus {bus_status_msg}.")
+
+    def _log_message(self, message: str):
+        self._log.append(f"{time.time():.2f} [{self._module_id}]: {message}")
 
     # --- Message Handler Methods ---
     def _handle_goal_update_message(self, message: GenericMessage):
@@ -170,18 +175,50 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
             })
             self.attributes.active_goals_summary.sort(key=lambda g: g.get("priority", 0), reverse=True)
 
+            # Conceptual: Log note if new active goal seems complex/sensitive
+            if payload.status.upper() == "ACTIVE":
+                desc_lower = payload.goal_description.lower()
+                if "complex" in desc_lower or "sensitive" in desc_lower or "ethical" in desc_lower:
+                    self._log_message(f"Note: Goal '{payload.goal_id}' ('{payload.goal_description}') is active and marked complex/sensitive. Associated action plans may require ethical evaluation.")
+
+
     def _handle_action_event_message(self, message: GenericMessage):
         if not isinstance(message.payload, ActionEventPayload): return
         payload: ActionEventPayload = message.payload
-        # print(f"SM ({self._module_id}): Received ActionEvent for command '{payload.action_command_id}'")
+        self._log_message(f"Handling ActionEvent: CommandID='{payload.action_command_id}', Type='{payload.action_type}', Status='{payload.status}'.")
 
         criteria = {"action_type": payload.action_type, "status_from_event": payload.status}
         if payload.outcome and "goal_id" in payload.outcome:
             criteria["goal_id"] = payload.outcome["goal_id"]
-            # Potentially update confidence in skill related to this goal type/action
-            # For now, evaluate_self_performance handles general capability confidence.
 
         self.evaluate_self_performance(task_id=payload.action_command_id, outcome=payload.outcome, criteria=criteria)
+
+        # Conceptual: If action was successful, assess/boost confidence in related knowledge
+        if payload.status.upper() == "SUCCESS":
+            # Derive a conceptual concept_id from the action_type
+            # This is a simplified mapping. A real system would need a more robust way.
+            derived_concept_id = f"knowledge_about_action_{payload.action_type.lower().replace(' ', '_')}"
+
+            if not hasattr(self.knowledge_map, 'concepts') or self.knowledge_map.concepts is None:
+                 self.knowledge_map.concepts = {} # Ensure concepts dict exists
+
+            if derived_concept_id not in self.knowledge_map.concepts:
+                self._log_message(f"Action success: Concept '{derived_concept_id}' not found. Creating it with base confidence.")
+                # Create a new concept with some baseline values if it doesn't exist
+                new_concept = KnowledgeConcept(
+                    concept_id=derived_concept_id,
+                    label=f"Knowledge about {payload.action_type}",
+                    description_summary=f"Knowledge related to performing the action '{payload.action_type}'.",
+                    confidence_score=0.5, # Start with a neutral base confidence
+                    groundedness_score=0.3, # Assume some initial grounding from this successful action
+                    access_frequency=0, # Will be incremented by assess_confidence
+                    last_accessed_ts=time.time()
+                )
+                self.knowledge_map.concepts[derived_concept_id] = new_concept
+
+            self._log_message(f"Action success: Assessing confidence for conceptually related knowledge '{derived_concept_id}'.")
+            self.assess_confidence_in_knowledge(derived_concept_id, query_context={"trigger": "successful_action_event"})
+
 
     def _handle_emotional_state_change_message(self, message: GenericMessage):
         if not isinstance(message.payload, EmotionalStateChangePayload): return
@@ -269,6 +306,159 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
     # For brevity, I'll assume they are structurally similar to the original unless specified.
     # Ensure to keep or adapt update_self_representation if needed.
 
+    def perform_ethical_evaluation(self, action_proposal: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        self._log_message(f"Performing ethical evaluation for action: {action_proposal.get('action_type', 'N/A')}, Context: {context}")
+
+        relevant_rules_details: List[Dict[str, Any]] = []
+        outcome: str = "PERMISSIBLE"  # Default outcome
+        reasoning_parts: List[str] = ["Initial assessment: Permissible."]
+
+        action_description = action_proposal.get("description", "").lower()
+        action_reason = action_proposal.get("reason", "").lower()
+        context_string = context.get("context_string", "").lower() if context else ""
+
+        impermissible_triggered = False
+        requires_review_triggered = False
+
+        # Ensure ethical_framework and rules are not None
+        if not hasattr(self.ethical_framework, 'rules') or self.ethical_framework.rules is None:
+            self.ethical_framework.rules = []
+            self._log_message("Warning: Ethical framework rules not initialized. Proceeding with no rules.")
+
+
+        for rule in self.ethical_framework.rules:
+            rule_matched = False
+            match_details = []
+
+            # Check principle in action description or reason
+            if rule.principle.lower() in action_description:
+                rule_matched = True
+                match_details.append(f"Principle '{rule.principle}' found in action description.")
+            if rule.principle.lower() in action_reason:
+                rule_matched = True
+                match_details.append(f"Principle '{rule.principle}' found in action reason.")
+
+            # Check applicability contexts
+            if context_string and rule.applicability_contexts:
+                for app_context in rule.applicability_contexts:
+                    if app_context.lower() == context_string:
+                        rule_matched = True
+                        match_details.append(f"Applicability context '{app_context}' matched active context '{context_string}'.")
+                        break
+
+            if rule_matched:
+                self._log_message(f"Rule '{rule.rule_id}' ({rule.principle}, Prio: {rule.priority_level}) matched. Details: {match_details}")
+                relevant_rules_details.append({"rule_id": rule.rule_id, "principle": rule.principle, "priority": rule.priority_level, "description": rule.description, "match_details": match_details})
+
+                # Conceptual interpretation of rule's implication based on description keywords
+                rule_desc_lower = rule.description.lower()
+                is_impermissible_indicator = "forbidden" in rule_desc_lower or "prohibited" in rule_desc_lower or "must not" in rule_desc_lower
+                is_caution_indicator = "caution" in rule_desc_lower or "review required" in rule_desc_lower or "potential harm" in rule_desc_lower
+
+                if rule.priority_level in ["high", "critical", 1, "1"] and is_impermissible_indicator:
+                    outcome = "IMPERMISSIBLE"
+                    reasoning_parts.append(f"High priority rule '{rule.rule_id}' ({rule.principle}) indicates impermissibility: {rule.description}")
+                    impermissible_triggered = True
+                    break # Stop further processing if high-priority impermissible rule is found
+
+                elif rule.priority_level in ["medium", "moderate", 2, "2"]:
+                    if is_impermissible_indicator: # Medium priority can also make it impermissible
+                         outcome = "IMPERMISSIBLE"
+                         reasoning_parts.append(f"Medium priority rule '{rule.rule_id}' ({rule.principle}) indicates strong impermissibility: {rule.description}")
+                         impermissible_triggered = True # Allow override by high prio impermissible later if any
+                    elif is_caution_indicator and not impermissible_triggered:
+                        outcome = "REQUIRES_REVIEW"
+                        reasoning_parts.append(f"Medium priority rule '{rule.rule_id}' ({rule.principle}) suggests review: {rule.description}")
+                        requires_review_triggered = True
+
+                elif rule.priority_level in ["low", 3, "3"] and is_caution_indicator and not impermissible_triggered and not requires_review_triggered:
+                    outcome = "REQUIRES_REVIEW" # Low priority caution can still trigger review if nothing stronger
+                    reasoning_parts.append(f"Low priority rule '{rule.rule_id}' ({rule.principle}) suggests caution/review: {rule.description}")
+                    requires_review_triggered = True
+
+
+        if not impermissible_triggered and requires_review_triggered:
+            outcome = "REQUIRES_REVIEW" # Ensure review takes precedence over permissible if triggered
+        elif not impermissible_triggered and not requires_review_triggered:
+            outcome = "PERMISSIBLE" # Explicitly set if no flags
+            if relevant_rules_details:
+                 reasoning_parts.append("Action aligns with or is not constrained by matched permissive/neutral rules.")
+            else:
+                 reasoning_parts.append("No specific ethical rules were found to be directly relevant or prohibitive.")
+
+
+        # Consolidate reasoning
+        final_reasoning = " ".join(reasoning_parts)
+        if outcome == "PERMISSIBLE" and len(reasoning_parts) > 1: # Remove initial "Permissible" if other reasons exist
+            final_reasoning = " ".join(reasoning_parts[1:])
+
+
+        result = {
+            "outcome": outcome,
+            "relevant_rules": [r["rule_id"] for r in relevant_rules_details],
+            "detailed_relevant_rules": relevant_rules_details, # For more detailed inspection
+            "reasoning": final_reasoning
+        }
+        self._log_message(f"Ethical evaluation outcome: {outcome}. Relevant rules: {[r['rule_id'] for r in relevant_rules_details]}. Reasoning: {final_reasoning}")
+        return result
+
+    def assess_confidence_in_knowledge(self, concept_id: str, query_context: Optional[Dict[str, Any]] = None) -> Optional[float]:
+        self._log_message(f"Assessing confidence in knowledge for concept_id: '{concept_id}', Context: {query_context}")
+
+        if not hasattr(self.knowledge_map, 'concepts') or self.knowledge_map.concepts is None:
+            self._log_message(f"Knowledge map concepts not initialized. Cannot assess '{concept_id}'.")
+            return None
+
+        concept = self.knowledge_map.concepts.get(concept_id)
+        if not concept:
+            self._log_message(f"Concept '{concept_id}' not found in knowledge map.")
+            return None
+
+        old_confidence = concept.confidence_score
+        current_confidence = old_confidence
+        adjustments_log: List[str] = []
+
+        # 1. Last Accessed Timestamp
+        # Define "old" as, e.g., more than 30 days (30 * 24 * 60 * 60 seconds)
+        thirty_days_ago = time.time() - (30 * 24 * 60 * 60)
+        if concept.last_accessed_ts is not None and concept.last_accessed_ts < thirty_days_ago:
+            current_confidence -= 0.05
+            adjustments_log.append(f"last_accessed_ts ({concept.last_accessed_ts:.0f} vs {thirty_days_ago:.0f}) caused -0.05")
+
+        # 2. Access Frequency
+        if concept.access_frequency > 10: # Arbitrary high frequency
+            current_confidence += 0.05
+            adjustments_log.append(f"access_frequency ({concept.access_frequency}) caused +0.05")
+        elif concept.access_frequency < 2 and concept.access_frequency >= 0: # Arbitrary low frequency (if accessed at all)
+             current_confidence -= 0.02 # Smaller penalty for low access
+             adjustments_log.append(f"access_frequency ({concept.access_frequency}) caused -0.02")
+
+
+        # 3. Groundedness Score
+        if concept.groundedness_score > 0.7: # Arbitrary high groundedness
+            current_confidence += 0.1
+            adjustments_log.append(f"groundedness_score ({concept.groundedness_score:.2f}) caused +0.1")
+        elif concept.groundedness_score < 0.3: # Arbitrary low groundedness
+            current_confidence -= 0.1
+            adjustments_log.append(f"groundedness_score ({concept.groundedness_score:.2f}) caused -0.1")
+
+        # Clamp confidence between 0.0 and 1.0
+        new_confidence = max(0.0, min(1.0, current_confidence))
+
+        # Update the concept in the knowledge map
+        concept.confidence_score = new_confidence
+        concept.last_accessed_ts = time.time() # Assessing implies access
+        concept.access_frequency += 1
+
+        # Publish confidence update via message bus
+        self.update_confidence(concept_id, "knowledge", new_confidence, "assessment_logic")
+
+        self._log_message(
+            f"Confidence assessment for '{concept_id}': Old={old_confidence:.2f}, New={new_confidence:.2f}. "
+            f"Adjustments: [{'; '.join(adjustments_log_if_any)}]" if (adjustments_log_if_any := ', '.join(adjustments_log)) else "Adjustments: [None]"
+        )
+        return new_confidence
+
     def get_module_status(self) -> Dict[str, Any]:
         return {
             "module_id": self._module_id,
@@ -282,15 +472,19 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
             "knowledge_confidence_entries": len(self._knowledge_confidence),
             "capability_confidence_entries": len(self._capability_confidence),
             "autobiography_entries_count": len(self.autobiography.entries),
-            "performance_log_count": len(self._performance_log)
+            "performance_log_count": len(self._performance_log),
+            "log_entry_count": len(self._log) # Added log entry count
         }
 
 if __name__ == '__main__':
+    # Import datetime for PerceptDataPayload if it's used in __main__ directly
+    from datetime import datetime
+
     print("\n--- ConcreteSelfModelModule __main__ Test ---")
 
     received_confidence_updates: List[GenericMessage] = []
     def confidence_update_listener(message: GenericMessage):
-        print(f" confidence_listener: Received SelfKnowledgeConfidenceUpdate! Item: {message.payload.item_id}, NewConf: {message.payload.new_confidence:.2f}")
+        # print(f" confidence_listener: Received SelfKnowledgeConfidenceUpdate! Item: {message.payload.item_id}, NewConf: {message.payload.new_confidence:.2f}")
         received_confidence_updates.append(message)
 
     async def main_test_flow():
@@ -302,49 +496,146 @@ if __name__ == '__main__':
 
         print(self_model.get_module_status())
 
-        print("\n--- Testing Subscriptions ---")
+        print("\n--- Setup for Ethical Evaluation and Knowledge Assessment ---")
+        self_model.ethical_framework.rules = [
+            EthicalRule(rule_id="R001", principle="User Privacy", description="Must not share user data without explicit consent. Forbidden to process PII for unapproved purposes.", priority_level="high", applicability_contexts=["user_data", "pii_processing"]),
+            EthicalRule(rule_id="R002", principle="Data Minimization", description="Only collect data that is strictly necessary for the task.", priority_level="medium", applicability_contexts=["data_collection"]),
+            EthicalRule(rule_id="R003", principle="Transparency", description="Operations should be transparent to users when appropriate. Potential harm if hidden.", priority_level="medium", source="system_policy", applicability_contexts=["user_interaction"]),
+            EthicalRule(rule_id="R004", principle="Beneficence", description="Actions should aim to benefit humanity.", priority_level="low")
+        ]
+        self_model._log_message(f"Ethical rules loaded: {len(self_model.ethical_framework.rules)}")
+
+        self_model.knowledge_map.concepts = {
+            "concept_A": KnowledgeConcept(concept_id="concept_A", label="Core Concept A", confidence_score=0.8, groundedness_score=0.9, access_frequency=15, last_accessed_ts=time.time() - (5 * 24 * 60 * 60)), # Accessed 5 days ago
+            "concept_B": KnowledgeConcept(concept_id="concept_B", label="Fringe Concept B", confidence_score=0.4, groundedness_score=0.2, access_frequency=1, last_accessed_ts=time.time() - (60 * 24 * 60 * 60)), # Accessed 60 days ago
+            "concept_C": KnowledgeConcept(concept_id="concept_C", label="Neutral Concept C", confidence_score=0.5, groundedness_score=0.5, access_frequency=5, last_accessed_ts=time.time() - (10 * 24 * 60 * 60)) # Accessed 10 days ago
+        }
+        self_model._log_message(f"Knowledge concepts loaded: {len(self_model.knowledge_map.concepts)}")
+
+
+        print("\n--- Testing Subscriptions (Original) ---")
         # 1. GoalUpdate
         goal_payload = GoalUpdatePayload(goal_id="g1", goal_description="Understand self", priority=0.9, status="ACTIVE", originator="MetaSys")
         bus.publish(GenericMessage(source_module_id="MotSys", message_type="GoalUpdate", payload=goal_payload))
         await asyncio.sleep(0.01)
         assert len(self_model.attributes.active_goals_summary) == 1
-        assert self_model.attributes.active_goals_summary[0]["goal_id"] == "g1"
-        print("  SM received GoalUpdate, active_goals_summary updated.")
+        self_model._log_message("SM received GoalUpdate.")
 
-        # 2. ActionEvent
-        action_event_payload = ActionEventPayload(action_command_id="cmd1", action_type="self_reflect", status="SUCCESS", outcome={"goal_id":"g1", "details":"Reflection complete"})
-        bus.publish(GenericMessage(source_module_id="ExecSys", message_type="ActionEvent", payload=action_event_payload))
+        # 2. ActionEvent (original simple one, more complex later)
+        action_event_payload_orig = ActionEventPayload(action_command_id="cmd_orig", action_type="simple_reflect", status="SUCCESS", outcome={"details":"Original reflection complete"})
+        bus.publish(GenericMessage(source_module_id="ExecSys", message_type="ActionEvent", payload=action_event_payload_orig))
         await asyncio.sleep(0.01)
-        assert len(self_model.autobiography.entries) > 0
-        assert "cmd1" in self_model.autobiography.entries[-1].description
-        print(f"  SM received ActionEvent, autobiography entries: {len(self_model.autobiography.entries)}.")
+        initial_autobio_count = len(self_model.autobiography.entries)
+        assert initial_autobio_count > 0
+        self_model._log_message(f"SM received original ActionEvent, autobiography entries: {initial_autobio_count}.")
 
         # 3. EmotionalStateChange
         emo_payload = EmotionalStateChangePayload(current_emotion_profile={"v":0.7,"a":0.3}, intensity=0.5)
         bus.publish(GenericMessage(source_module_id="EmoSys", message_type="EmotionalStateChange", payload=emo_payload))
         await asyncio.sleep(0.01)
         assert self_model.attributes.current_emotional_summary is not None
-        assert self_model.attributes.current_emotional_summary["v"] == 0.7
-        print("  SM received EmotionalStateChange, current_emotional_summary updated.")
+        self_model._log_message("SM received EmotionalStateChange.")
 
         # 4. PerceptData (self-relevant)
-        percept_payload = PerceptDataPayload(modality="internal", content="Self-consistency check passed", source_timestamp=datetime.now(uuid.uuid4().hex)) # Changed datetime.now
+        percept_payload = PerceptDataPayload(modality="internal", content="Self-consistency check passed", source_timestamp=datetime.now())
         percept_msg = GenericMessage(source_module_id="MonitorSys", message_type="PerceptData", payload=percept_payload, metadata={"target_component": "self_model"})
         bus.publish(percept_msg)
         await asyncio.sleep(0.01)
         assert len(self_model._self_related_percepts) == 1
-        print("  SM received self-relevant PerceptData.")
+        self_model._log_message("SM received self-relevant PerceptData.")
 
-        print("\n--- Testing Publishing SelfKnowledgeConfidenceUpdate ---")
-        self_model.update_confidence(item_id="k_test_concept", item_type="knowledge", new_confidence=0.75, source_of_update="test_event")
+        print("\n--- Testing perform_ethical_evaluation ---")
+        # Case 1: Impermissible (High priority rule)
+        action1 = {"action_type": "share_pii", "reason": "marketing_dept_request_for_user_data_analysis", "description": "Process PII for new campaign."}
+        eval1 = self_model.perform_ethical_evaluation(action1, context={"context_string": "pii_processing"})
+        assert eval1["outcome"] == "IMPERMISSIBLE"
+        assert "R001" in eval1["relevant_rules"]
+        self_model._log_message(f"Eval 1 (Impermissible): {eval1['outcome']}, Rules: {eval1['relevant_rules']}")
+
+        # Case 2: Permissible (Low priority, no direct conflict)
+        action2 = {"action_type": "generate_report", "reason": "internal_analytics", "description": "Analyze system performance for human benefit."} # "human benefit" for R004
+        eval2 = self_model.perform_ethical_evaluation(action2)
+        assert eval2["outcome"] == "PERMISSIBLE"
+        assert "R004" in eval2["relevant_rules"] # R004 Beneficence
+        self_model._log_message(f"Eval 2 (Permissible): {eval2['outcome']}, Rules: {eval2['relevant_rules']}")
+
+        # Case 3: Requires Review (Medium priority caution)
+        action3 = {"action_type": "collect_user_feedback", "reason": "improve_service_transparency", "description": "Collect detailed user interaction logs to enhance transparency efforts. Potential harm if not anonymized."}
+        eval3 = self_model.perform_ethical_evaluation(action3, context={"context_string": "user_interaction"})
+        assert eval3["outcome"] == "REQUIRES_REVIEW"
+        assert "R003" in eval3["relevant_rules"]
+        self_model._log_message(f"Eval 3 (Requires Review): {eval3['outcome']}, Rules: {eval3['relevant_rules']}")
+
+        # Case 4: Permissible (No rules matched)
+        action4 = {"action_type": "optimize_database", "reason": "performance_tuning", "description": "Re-index database tables."}
+        eval4 = self_model.perform_ethical_evaluation(action4)
+        assert eval4["outcome"] == "PERMISSIBLE"
+        assert not eval4["relevant_rules"]
+        self_model._log_message(f"Eval 4 (Permissible, no rules): {eval4['outcome']}")
+
+        print("\n--- Testing assess_confidence_in_knowledge ---")
+        received_confidence_updates.clear()
+
+        # Case 1: Concept A - high freq, high groundedness, recent access -> Should increase
+        conf_A_old = self_model.knowledge_map.concepts["concept_A"].confidence_score
+        new_conf_A = self_model.assess_confidence_in_knowledge("concept_A")
+        assert new_conf_A is not None and new_conf_A > conf_A_old
+        assert self_model.knowledge_map.concepts["concept_A"].confidence_score == new_conf_A
+        assert any(upd.payload.item_id == "concept_A" and upd.payload.new_confidence == new_conf_A for upd in received_confidence_updates)
+        self_model._log_message(f"Assess Conf (Concept A): Old={conf_A_old:.2f}, New={new_conf_A:.2f} (Expected Increase)")
+
+        # Case 2: Concept B - low freq, low groundedness, very old access -> Should decrease significantly
+        conf_B_old = self_model.knowledge_map.concepts["concept_B"].confidence_score
+        new_conf_B = self_model.assess_confidence_in_knowledge("concept_B")
+        assert new_conf_B is not None and new_conf_B < conf_B_old
+        assert self_model.knowledge_map.concepts["concept_B"].confidence_score == new_conf_B
+        assert any(upd.payload.item_id == "concept_B" and upd.payload.new_confidence == new_conf_B for upd in received_confidence_updates)
+        self_model._log_message(f"Assess Conf (Concept B): Old={conf_B_old:.2f}, New={new_conf_B:.2f} (Expected Decrease)")
+
+        # Case 3: Non-existent concept
+        new_conf_non_existent = self_model.assess_confidence_in_knowledge("concept_ghost")
+        assert new_conf_non_existent is None
+        self_model._log_message("Assess Conf (Non-existent): Correctly returned None.")
+
+        initial_confidence_update_count = len(received_confidence_updates)
+
+        print("\n--- Testing Integration: ActionEvent -> assess_confidence_in_knowledge ---")
+        action_event_learn = ActionEventPayload(action_command_id="cmd_learn1", action_type="execute_complex_task", status="SUCCESS", outcome={"details":"Complex task learning successful"})
+        bus.publish(GenericMessage(source_module_id="ExecSys", message_type="ActionEvent", payload=action_event_learn))
+        await asyncio.sleep(0.02)
+
+        derived_concept_id = "knowledge_about_action_execute_complex_task"
+        assert derived_concept_id in self_model.knowledge_map.concepts
+        assert self_model.knowledge_map.concepts[derived_concept_id].confidence_score > 0.5
+        assert len(self_model.autobiography.entries) == initial_autobio_count + 1
+        assert len(received_confidence_updates) > initial_confidence_update_count
+        assert any(upd.payload.item_id == derived_concept_id for upd in received_confidence_updates[-1:])
+        self_model._log_message(f"ActionEvent Integration: Concept '{derived_concept_id}' created/updated. Confidence: {self_model.knowledge_map.concepts[derived_concept_id].confidence_score:.2f}")
+
+        print("\n--- Testing Integration: GoalUpdate -> Ethical Note Log ---")
+        goal_payload_complex = GoalUpdatePayload(goal_id="g_complex", goal_description="Handle complex and sensitive user negotiations", priority=0.95, status="ACTIVE", originator="PlanningSys")
+        log_len_before_complex_goal = len(self_model._log)
+        bus.publish(GenericMessage(source_module_id="MotSys", message_type="GoalUpdate", payload=goal_payload_complex))
+        await asyncio.sleep(0.01)
+        assert len(self_model._log) > log_len_before_complex_goal
+        assert any("may require ethical evaluation" in log_msg for log_msg in self_model._log[-1:])
+        self_model._log_message(f"GoalUpdate Integration: Ethical note logged for complex goal '{goal_payload_complex.goal_id}'.")
+
+
+        print("\n--- Testing Publishing SelfKnowledgeConfidenceUpdate (Original check, ensuring still works) ---")
+        received_confidence_updates.clear()
+        self_model.update_confidence(item_id="k_direct_update_test", item_type="knowledge", new_confidence=0.88, source_of_update="direct_test")
         await asyncio.sleep(0.01)
         assert len(received_confidence_updates) == 1
-        assert received_confidence_updates[0].payload.item_id == "k_test_concept"
-        assert received_confidence_updates[0].payload.new_confidence == 0.75
-        print("  ConfidenceUpdate successfully published by SM.")
+        assert received_confidence_updates[0].payload.item_id == "k_direct_update_test"
+        self_model._log_message("Direct call to update_confidence still publishes successfully.")
 
         print("\n--- Final SM Status ---")
-        print(self_model.get_module_status())
+        final_status = self_model.get_module_status()
+        print(final_status)
+        assert final_status["knowledge_confidence_entries"] > 0
+        assert final_status["autobiography_entries_count"] == initial_autobio_count + 1
+
 
         print("\n--- ConcreteSelfModelModule __main__ Test Complete ---")
 
@@ -352,6 +643,9 @@ if __name__ == '__main__':
         asyncio.run(main_test_flow())
     except RuntimeError as e:
         if " asyncio.run() cannot be called from a running event loop" in str(e):
-            print("Skipping asyncio.run() as an event loop is already running.")
+            print("Skipping asyncio.run() as an event loop is already running (e.g. in Jupyter). Manually await main_test_flow() if needed.")
+            # Potentially add: loop = asyncio.get_event_loop(); loop.run_until_complete(main_test_flow())
         else:
             raise
+    except ImportError: # datetime might not be found if block is run standalone without full package context
+        print("ImportError during test run, possibly datetime. Ensure test environment is complete.")

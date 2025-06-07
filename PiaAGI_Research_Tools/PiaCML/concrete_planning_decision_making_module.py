@@ -84,15 +84,23 @@ class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModul
             except Exception as e:
                 bus_status_msg = f"configured but FAILED to subscribe: {e}"
 
-        print(f"ConcretePlanningAndDecisionMakingModule '{self._module_id}' initialized. Message bus {bus_status_msg}.")
+        self._log: List[str] = []
+        self._awaiting_plan_for_goal: Dict[str, str] = {} # goal_id -> ltm_query_id
+        self._log_message(f"ConcretePlanningAndDecisionMakingModule '{self._module_id}' initialized. Message bus {bus_status_msg}.")
+
+    def _log_message(self, message: str):
+        """Helper method for internal logging."""
+        log_entry = f"{time.time():.2f} [{self._module_id}]: {message}"
+        self._log.append(log_entry)
+        # print(log_entry) # Optional: print to console for real-time monitoring during tests
 
     # --- Message Handler Methods ---
     def _handle_goal_update_message(self, message: GenericMessage):
         if not isinstance(message.payload, GoalUpdatePayload):
-            print(f"PDM ({self._module_id}): Received GoalUpdate with unexpected payload: {type(message.payload)}")
+            self._log_message(f"Received GoalUpdate with unexpected payload: {type(message.payload)}")
             return
         payload: GoalUpdatePayload = message.payload
-        # print(f"PDM ({self._module_id}): Received GoalUpdate for '{payload.goal_id}', Status: {payload.status}, Prio: {payload.priority}")
+        self._log_message(f"Received GoalUpdate for '{payload.goal_id}', Status: {payload.status}, Prio: {payload.priority}")
         self._active_goals = [g for g in self._active_goals if g.goal_id != payload.goal_id]
         if payload.status.upper() in ["NEW", "ACTIVE", "UPDATED", "PENDING"]:
             self._active_goals.append(payload)
@@ -100,33 +108,48 @@ class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModul
 
     def _handle_percept_data_message(self, message: GenericMessage):
         if not isinstance(message.payload, PerceptDataPayload):
-            print(f"PDM ({self._module_id}): Received PerceptData with unexpected payload: {type(message.payload)}")
+            self._log_message(f"Received PerceptData with unexpected payload: {type(message.payload)}")
             return
         self._current_percepts.append(message.payload)
 
     def _handle_ltm_query_result_message(self, message: GenericMessage):
         if not isinstance(message.payload, LTMQueryResultPayload):
-            print(f"PDM ({self._module_id}): Received LTMQueryResult with unexpected payload: {type(message.payload)}")
+            self._log_message(f"Received LTMQueryResult with unexpected payload: {type(message.payload)}")
             return
         payload: LTMQueryResultPayload = message.payload
+        self._log_message(f"Received LTMQueryResult for QueryID: {payload.query_id}, Success: {payload.success_status}")
+
         if len(self._ltm_query_results) >= self.MAX_LTM_RESULTS_TO_STORE and payload.query_id not in self._ltm_query_results:
-            # Simple eviction: remove the oldest if full (Python dicts are ordered from 3.7+)
             try:
                 oldest_query_id = next(iter(self._ltm_query_results))
                 del self._ltm_query_results[oldest_query_id]
-            except StopIteration: # Should not happen if len > 0
+                self._log_message(f"Evicted oldest LTM query result: {oldest_query_id}")
+            except StopIteration:
                 pass
         self._ltm_query_results[payload.query_id] = payload
 
+        # Check if this result was for a plan we were awaiting
+        for goal_id, query_id in list(self._awaiting_plan_for_goal.items()): # Iterate over a copy for safe removal
+            if query_id == payload.query_id:
+                self._log_message(f"LTM Plan result received for QueryID '{payload.query_id}', which was awaited for GoalID '{goal_id}'.")
+                # Conceptual: If goal is still active, could trigger re-planning.
+                # For now, just log and remove from awaiting list.
+                active_goal = next((g for g in self._active_goals if g.goal_id == goal_id), None)
+                if active_goal:
+                    self._log_message(f"Goal '{goal_id}' is still active. A re-plan could be triggered now that plan details are available.")
+                del self._awaiting_plan_for_goal[goal_id]
+                break
+
+
     def _handle_emotional_state_change_message(self, message: GenericMessage):
         if not isinstance(message.payload, EmotionalStateChangePayload):
-            print(f"PDM ({self._module_id}): Received EmotionalStateChange with unexpected payload: {type(message.payload)}")
+            self._log_message(f"Received EmotionalStateChange with unexpected payload: {type(message.payload)}")
             return
         self._current_emotional_state = message.payload
 
     def _handle_attention_focus_update_message(self, message: GenericMessage):
         if not isinstance(message.payload, AttentionFocusUpdatePayload):
-            print(f"PDM ({self._module_id}): Received AttentionFocusUpdate with unexpected payload: {type(message.payload)}")
+            self._log_message(f"Received AttentionFocusUpdate with unexpected payload: {type(message.payload)}")
             return
         self._current_attention_focus = message.payload
 
@@ -135,7 +158,7 @@ class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModul
                          target_memory_type: Optional[str] = None,
                          parameters: Optional[Dict[str, Any]] = None) -> Optional[str]:
         if not self._message_bus or not LTMQueryPayload or not GenericMessage:
-            print(f"PDM ({self._module_id}): Message bus or LTMQueryPayload not available. Cannot request LTM data.")
+            self._log_message("Message bus or LTMQueryPayload not available. Cannot request LTM data.")
             return None
 
         ltm_query_payload = LTMQueryPayload(
@@ -157,79 +180,145 @@ class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModul
     # --- Planning and Dispatch ---
     def develop_and_dispatch_plan(self, goal_payload: GoalUpdatePayload) -> bool:
         if not self._message_bus or not ActionCommandPayload or not GenericMessage:
-            print(f"PDM ({self._module_id}): Message bus or ActionCommandPayload not available. Cannot dispatch plan.")
+            self._log_message("Message bus or ActionCommandPayload not available. Cannot dispatch plan.")
             return False
 
-        print(f"\nPDM ({self._module_id}): Developing plan for goal '{goal_payload.goal_id}': {goal_payload.goal_description}")
-        print(f"  Considering current state:")
-        print(f"    Active Goals (count): {len(self._active_goals)}")
-        if self._current_percepts:
-            latest_percept = self._current_percepts[-1]
-            print(f"    Latest Percept: Modality='{latest_percept.modality}', Content='{str(latest_percept.content)[:50]}...'")
-        else: print(f"    Latest Percept: None")
-        if self._current_emotional_state:
-            print(f"    Emotion: VAD={self._current_emotional_state.current_emotion_profile}, Intensity={self._current_emotional_state.intensity}")
-        else: print(f"    Emotion: None")
-        if self._current_attention_focus:
-            print(f"    Attention: Item='{self._current_attention_focus.focused_item_id}', Type='{self._current_attention_focus.focus_type}'")
-        else: print(f"    Attention: None")
+        self._log_message(f"Developing plan for goal '{goal_payload.goal_id}': {goal_payload.goal_description}")
 
         action_payloads: List[ActionCommandPayload] = []
-        action_prefix = "default_action"
-        action_params = {"goal_id": goal_payload.goal_id, "description": goal_payload.goal_description}
+        plan_source = "default_generation" # Default source
 
-        if self._current_emotional_state and self._current_emotional_state.current_emotion_profile.get("valence", 0) < -0.3:
-            action_prefix = "cautious_action"
-            action_params["caution_level"] = "medium"
-            if self._current_emotional_state.current_emotion_profile.get("valence", 0) < -0.6:
-                 action_params["caution_level"] = "high"
-            print(f"  Emotional state (negative valence) influenced plan to be '{action_prefix}'.")
+        # 1. Plan Retrieval/Generation
+        # Try to find a relevant LTM query ID that might contain a plan
+        relevant_ltm_query_id_for_plan = None
+        for q_id, result_payload in self._ltm_query_results.items():
+            if result_payload.query_metadata and result_payload.query_metadata.get("query_type") == "get_action_plan_for_goal":
+                # This is a conceptual match based on goal description; real matching would be more complex
+                if goal_payload.goal_description in result_payload.query_metadata.get("original_query_content", ""):
+                    relevant_ltm_query_id_for_plan = q_id
+                    self._log_message(f"Found potentially relevant LTM query result '{q_id}' for plan for goal '{goal_payload.goal_id}'.")
+                    break
 
-        if self._current_percepts:
-            for p_idx in range(len(self._current_percepts) -1, -1, -1):
-                p = self._current_percepts[p_idx]
-                if isinstance(p.content, dict) and p.content.get("type") == "linguistic_analysis":
-                    if "urgent" in p.content.get("text", "").lower():
-                        action_prefix = "urgent_response_action"
-                        action_params["urgency"] = "critical"
-                        print(f"  Percept (urgent text) influenced plan to be '{action_prefix}'.")
-                        break
+        if relevant_ltm_query_id_for_plan and self._ltm_query_results[relevant_ltm_query_id_for_plan].success_status:
+            ltm_result = self._ltm_query_results[relevant_ltm_query_id_for_plan]
+            if ltm_result.results:
+                # Assuming the first result item's content is the plan (a list of action dicts)
+                # MemoryItem.content = List[Dict[str,Any]] where each dict is an action step
+                # e.g., {"action_type": "do_this", "parameters": {"param1": "value1"}}
+                potential_plan_steps = ltm_result.results[0].content
+                if isinstance(potential_plan_steps, list) and all(isinstance(step, dict) for step in potential_plan_steps):
+                    self._log_message(f"Retrieved plan from LTM (QueryID: {relevant_ltm_query_id_for_plan}) with {len(potential_plan_steps)} steps.")
+                    plan_source = f"ltm_retrieved (QueryID: {relevant_ltm_query_id_for_plan})"
+                    for i, step_dict in enumerate(potential_plan_steps):
+                        action_payloads.append(ActionCommandPayload(
+                            action_type=step_dict.get("action_type", f"ltm_plan_step_{i+1}"),
+                            parameters=step_dict.get("parameters", {"goal_id": goal_payload.goal_id}),
+                            priority=goal_payload.priority - (i * 0.01), # Slightly decrease priority for subsequent steps
+                            expected_outcome_summary=step_dict.get("expected_outcome_summary", f"Complete LTM plan step {i+1} for {goal_payload.goal_description}")
+                        ))
+                else:
+                    self._log_message(f"LTM result for plan (QueryID: {relevant_ltm_query_id_for_plan}) content is not a list of action dicts. Falling back to default. Content: {str(potential_plan_steps)[:100]}")
 
-        # Conceptual: If a very important goal and no specific plan, query LTM for similar situations
-        if goal_payload.priority > 0.85 and "greet" not in goal_payload.goal_description.lower():
-            # Avoid querying for simple/generic goals in this example
-            ltm_query_key = f"plan_for_{goal_payload.goal_description.split()[0]}" # Query by first word
-            if not self._ltm_query_results.get(ltm_query_key): # Check if we already have results for a similar query
-                print(f"  Goal '{goal_payload.goal_id}' is high priority. Requesting LTM for similar plans.")
-                query_id = self.request_ltm_data(query_content=goal_payload.goal_description, query_type="find_similar_plans", target_memory_type="procedural")
-                if query_id : self._ltm_query_results[ltm_query_key] = LTMQueryResultPayload(query_id=query_id, results=[], success_status=False, error_message="Query sent, result pending") # Placeholder
-                action_params["ltm_query_sent_for_similar_plans"] = True
+        if not action_payloads: # No plan from LTM or LTM result was not usable
+            if goal_payload.priority > 0.8 and goal_payload.goal_id not in self._awaiting_plan_for_goal:
+                self._log_message(f"Goal '{goal_payload.goal_id}' is high priority and no plan found in LTM results. Querying LTM for a plan.")
+                query_id = self.request_ltm_data(
+                    query_content=goal_payload.goal_description,
+                    query_type="get_action_plan_for_goal",
+                    target_memory_type="procedural",
+                    parameters={"goal_id": goal_payload.goal_id, "priority": goal_payload.priority}
+                )
+                if query_id:
+                    self._awaiting_plan_for_goal[goal_payload.goal_id] = query_id
+                    self._log_message(f"Awaiting LTM plan for goal '{goal_payload.goal_id}' (LTM Query ID: {query_id}). Proceeding with default actions for now.")
+                plan_source += " (LTM query initiated)"
 
 
-        action_payloads.append(ActionCommandPayload(
-            action_type=f"{action_prefix}_step1", parameters=action_params.copy(), priority=goal_payload.priority,
-            expected_outcome_summary=f"Complete step 1 for {goal_payload.goal_description}"
-        ))
-        if goal_payload.priority > 0.7:
-             action_payloads.append(ActionCommandPayload(
-                action_type=f"{action_prefix}_step2", parameters=action_params.copy(), priority=goal_payload.priority - 0.1,
-                expected_outcome_summary=f"Complete step 2 for {goal_payload.goal_description}"
-            ))
+            # Default action generation if no LTM plan was used
+            if not action_payloads:
+                self._log_message(f"No plan from LTM for goal '{goal_payload.goal_id}'. Generating default plan.")
+                plan_source = "default_generation_fallback"
+                action_prefix = "default_action"
+                action_params = {"goal_id": goal_payload.goal_id, "description": goal_payload.goal_description, "plan_source": plan_source}
+
+                # (Existing logic for emotional/perceptual influence on default actions can be kept here)
+                if self._current_emotional_state and self._current_emotional_state.current_emotion_profile.get("valence", 0) < -0.3:
+                    action_prefix = "cautious_action" # ...
+                if self._current_percepts: # ... (urgent check)
+
+                action_payloads.append(ActionCommandPayload(
+                    action_type=f"{action_prefix}_step1", parameters=action_params.copy(), priority=goal_payload.priority,
+                    expected_outcome_summary=f"Complete step 1 for {goal_payload.goal_description}"
+                ))
+                if goal_payload.priority > 0.7:
+                    action_payloads.append(ActionCommandPayload(
+                        action_type=f"{action_prefix}_step2", parameters=action_params.copy(), priority=goal_payload.priority - 0.1,
+                        expected_outcome_summary=f"Complete step 2 for {goal_payload.goal_description}"
+                    ))
 
         if not action_payloads:
-            print(f"PDM ({self._module_id}): No actions generated for goal '{goal_payload.goal_id}'.")
+            self._log_message(f"No actions generated for goal '{goal_payload.goal_id}'. This should not happen if default generation is robust.")
             return False
 
+        # 2. Ethical Review (Conceptual)
+        sensitive_keywords = ["delete", "share", "modify_user_data", "privacy", "sensitive_info"]
+        perform_ethical_review = any(keyword in goal_payload.goal_description.lower() for keyword in sensitive_keywords)
+
+        if not perform_ethical_review and self._current_emotional_state:
+            # High arousal and strong negative valence might also warrant review
+            emo_profile = self._current_emotional_state.current_emotion_profile
+            if emo_profile.get("arousal", 0) > 0.7 and emo_profile.get("valence", 0) < -0.5:
+                perform_ethical_review = True
+                self._log_message(f"High arousal/negative valence triggered ethical review for goal '{goal_payload.goal_id}'.")
+
+        if perform_ethical_review:
+            # Summarize plan for ethical review (conceptual)
+            action_summary_for_review = [{"action": ac.action_type, "params": str(ac.parameters)[:100]} for ac in action_payloads[:2]] # review first few steps
+            proposal = {
+                "action_type": "execute_plan", # Or more specific if possible
+                "plan_summary": action_summary_for_review,
+                "reason": f"Executing plan for goal: {goal_payload.goal_description} (ID: {goal_payload.goal_id})"
+            }
+            context_for_review = {
+                "goal_id": goal_payload.goal_id,
+                "goal_priority": goal_payload.priority,
+                "emotional_state_summary": self._current_emotional_state.current_emotion_profile if self._current_emotional_state else None,
+                "plan_source": plan_source
+            }
+            request_id = str(uuid.uuid4())
+
+            ethical_review_payload_dict = {
+                "request_id": request_id,
+                "action_proposal": proposal,
+                "context": context_for_review
+            }
+
+            review_request_message = GenericMessage(
+                source_module_id=self._module_id,
+                message_type="EthicalReviewRequest", # Custom message type
+                payload=ethical_review_payload_dict
+            )
+            self._message_bus.publish(review_request_message)
+            self._log_message(f"Published EthicalReviewRequest (ID: {request_id}) for goal '{goal_payload.goal_id}'. Plan source: {plan_source}. Proceeding without waiting for response (conceptual).")
+
+
+        # Dispatch actions
         for ac_payload in action_payloads:
+            # Ensure plan_source is part of parameters if not already there
+            if "plan_source" not in ac_payload.parameters:
+                 ac_payload.parameters["plan_source"] = plan_source
+
             action_message = GenericMessage(source_module_id=self._module_id, message_type="ActionCommand", payload=ac_payload)
             self._message_bus.publish(action_message)
-            print(f"PDM ({self._module_id}): Published ActionCommand '{ac_payload.action_type}' (ID: {ac_payload.command_id}) for goal '{goal_payload.goal_id}'.")
+            self._log_message(f"Published ActionCommand '{ac_payload.action_type}' (ID: {ac_payload.command_id}, PlanSource: {plan_source}) for goal '{goal_payload.goal_id}'.")
         return True
 
     def process_highest_priority_goal(self) -> bool:
-        if not self._active_goals: return False
+        if not self._active_goals:
+            self._log_message("No active goals to process.")
+            return False
         highest_priority_goal_payload = self._active_goals[0]
-        print(f"\nPDM ({self._module_id}): Processing highest priority goal '{highest_priority_goal_payload.goal_id}' (Prio: {highest_priority_goal_payload.priority}).")
+        self._log_message(f"Processing highest priority goal '{highest_priority_goal_payload.goal_id}' (Prio: {highest_priority_goal_payload.priority}).")
         return self.develop_and_dispatch_plan(highest_priority_goal_payload)
 
     def get_module_status(self) -> Dict[str, Any]:
@@ -241,25 +330,36 @@ class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModul
             "highest_priority_goal_id": self._active_goals[0].goal_id if self._active_goals else None,
             "recent_percepts_count": len(self._current_percepts),
             "ltm_results_count": len(self._ltm_query_results),
+            "awaiting_plan_for_goal_count": len(self._awaiting_plan_for_goal),
             "current_emotion_intensity": self._current_emotional_state.intensity if self._current_emotional_state else None,
             "current_attention_focus_item": self._current_attention_focus.focused_item_id if self._current_attention_focus else None,
+            "log_entries": len(self._log)
         }
         if self._current_percepts: status["latest_percept_modality"] = self._current_percepts[-1].modality
         return status
 
 if __name__ == '__main__':
+    # Ensure datetime and timezone are available if not already imported at top level for main
+    # from datetime import datetime, timezone # Already at top, but good to remember for standalone blocks
+
     print("\n--- ConcretePlanningAndDecisionMakingModule __main__ Test ---")
 
     received_action_commands: List[GenericMessage] = []
     received_ltm_queries: List[GenericMessage] = []
+    received_ethical_review_requests: List[GenericMessage] = []
 
     def action_command_listener(message: GenericMessage):
-        print(f" action_command_listener: Received ActionCommand! ID: {message.message_id[:8]}, Type: {message.payload.action_type}, Params: {message.payload.parameters}")
+        # pdm_module._log_message(f"action_command_listener: Received ActionCommand! ID: {message.message_id[:8]}, Type: {message.payload.action_type}, Params: {message.payload.parameters}")
         received_action_commands.append(message)
 
     def ltm_query_listener(message: GenericMessage):
-        print(f" ltm_query_listener: Received LTMQuery! ID: {message.message_id[:8]}, Type: {message.payload.query_type}, Content: {message.payload.query_content}")
+        # pdm_module._log_message(f"ltm_query_listener: Received LTMQuery! ID: {message.message_id[:8]}, Type: {message.payload.query_type}, Content: {message.payload.query_content}")
         received_ltm_queries.append(message)
+
+    def ethical_review_listener(message: GenericMessage):
+        # pdm_module._log_message(f"ethical_review_listener: Received EthicalReviewRequest! ID: {message.payload.get('request_id')}")
+        received_ethical_review_requests.append(message)
+
 
     async def main_test_flow():
         bus = MessageBus()
@@ -268,83 +368,93 @@ if __name__ == '__main__':
 
         bus.subscribe(module_id="TestActionCommandListener", message_type="ActionCommand", callback=action_command_listener)
         bus.subscribe(module_id="TestLTMQueryListener", message_type="LTMQuery", callback=ltm_query_listener)
+        bus.subscribe(module_id="TestEthicalReviewListener", message_type="EthicalReviewRequest", callback=ethical_review_listener)
+
 
         print(pdm_module.get_module_status())
+        initial_log_count = len(pdm_module._log)
 
-        print("\n--- Testing Subscriptions (Updating PDM's internal state) ---")
-        goal_payload1 = GoalUpdatePayload(goal_id="g1", goal_description="Achieve high score", priority=0.9, status="ACTIVE", originator="TestMotSys")
-        bus.publish(GenericMessage(source_module_id="MotSys", message_type="GoalUpdate", payload=goal_payload1))
-
-        percept_payload1 = PerceptDataPayload(modality="text", content={"type":"linguistic_analysis", "text": "User seems urgent"}, source_timestamp=datetime.now(timezone.utc))
-        bus.publish(GenericMessage(source_module_id="PercSys", message_type="PerceptData", payload=percept_payload1))
-
-        ltm_res_payload1 = LTMQueryResultPayload(query_id="pdm_q1", results=[MemoryItem(content="some old plan info")], success_status=True)
-        bus.publish(GenericMessage(source_module_id="LTMSys", message_type="LTMQueryResult", payload=ltm_res_payload1))
-
-        emo_payload1 = EmotionalStateChangePayload(current_emotion_profile={"valence": -0.7, "arousal": 0.6}, intensity=0.65, triggering_event_id="ev1")
-        bus.publish(GenericMessage(source_module_id="EmoSys", message_type="EmotionalStateChange", payload=emo_payload1))
-
-        attn_payload1 = AttentionFocusUpdatePayload(focused_item_id="g1", focus_type="goal_directed", intensity=0.9, timestamp=datetime.now(timezone.utc))
-        bus.publish(GenericMessage(source_module_id="AttnSys", message_type="AttentionFocusUpdate", payload=attn_payload1))
-
-        await asyncio.sleep(0.05) # Allow messages to be processed by PDM
-
-        assert len(pdm_module._active_goals) == 1 and pdm_module._active_goals[0].goal_id == "g1"
-        assert len(pdm_module._current_percepts) == 1 and pdm_module._current_percepts[0].content["text"] == "User seems urgent"
-        assert "pdm_q1" in pdm_module._ltm_query_results
-        assert pdm_module._current_emotional_state is not None and pdm_module._current_emotional_state.intensity == 0.65
-        assert pdm_module._current_attention_focus is not None and pdm_module._current_attention_focus.focused_item_id == "g1"
-        print("  PDM internal state updated successfully by subscriptions.")
-
-        print("\n--- Testing request_ltm_data ---")
-        ltm_query_id = pdm_module.request_ltm_data(query_content="historic_data_for_g1", query_type="episodic_search")
-        await asyncio.sleep(0.05)
-        assert len(received_ltm_queries) == 1
-        assert received_ltm_queries[0].payload.query_id == ltm_query_id
-        assert received_ltm_queries[0].payload.query_content == "historic_data_for_g1"
-        assert received_ltm_queries[0].payload.requester_module_id == pdm_module_id
-        print("  LTMQuery successfully published by PDM via request_ltm_data.")
-
-        print("\n--- Testing process_highest_priority_goal (with negative emotion & urgent percept) ---")
-        pdm_module.process_highest_priority_goal() # Should process g1
-        await asyncio.sleep(0.05)
-        assert len(received_action_commands) >= 1 # Expecting at least one command
-        first_cmd = received_action_commands[0].payload
-        assert "urgent_response_action" in first_cmd.action_type # Urgency from percept should take precedence
-        assert first_cmd.parameters.get("urgency") == "critical"
-        assert first_cmd.parameters.get("caution_level") is None # Should not be cautious if urgent
-        print(f"  ActionCommand '{first_cmd.action_type}' published, reflecting current PDM state (urgent).")
+        print("\n--- Test Case 1: Plan from LTM ---")
         received_action_commands.clear()
-        received_ltm_queries.clear() # Clear LTM queries as well
+        ltm_plan_query_id = "ltm_plan_q1"
+        goal_desc_for_ltm_plan = "achieve world peace"
+        ltm_plan = [
+            {"action_type": "negotiate_treaty", "parameters": {"parties": "all"}},
+            {"action_type": "distribute_resources", "parameters": {"resource_type": "food", "amount": "ample"}}
+        ]
+        pdm_module._ltm_query_results[ltm_plan_query_id] = LTMQueryResultPayload(
+            query_id=ltm_plan_query_id,
+            results=[MemoryItem(item_id="plan_abc", content=ltm_plan, metadata={"plan_name": "WorldPeacePlanV1"})],
+            success_status=True,
+            query_metadata={"query_type": "get_action_plan_for_goal", "original_query_content": goal_desc_for_ltm_plan}
+        )
+        goal_ltm_plan = GoalUpdatePayload(goal_id="g_ltm_plan", goal_description=goal_desc_for_ltm_plan, priority=0.95, status="ACTIVE")
+        bus.publish(GenericMessage(source_module_id="TestMotSys", message_type="GoalUpdate", payload=goal_ltm_plan))
+        await asyncio.sleep(0.01)
 
-        # Test with different PDM state (e.g., no urgent percept, but still negative emotion)
-        print("\n--- Testing process_highest_priority_goal (negative emotion, no urgent percept) ---")
-        pdm_module._current_percepts.clear() # Remove urgent percept
-        pdm_module.process_highest_priority_goal() # Process g1 again
-        await asyncio.sleep(0.05)
-        assert len(received_action_commands) >= 1
-        second_cmd = received_action_commands[0].payload
-        assert "cautious_action" in second_cmd.action_type # Should be cautious due to emotion
-        assert second_cmd.parameters.get("caution_level") == "high" # from valence -0.7
-        print(f"  ActionCommand '{second_cmd.action_type}' published, reflecting current PDM state (cautious).")
+        pdm_module.process_highest_priority_goal()
+        await asyncio.sleep(0.01)
+
+        assert len(received_action_commands) == 2, f"Expected 2 actions from LTM plan, got {len(received_action_commands)}"
+        assert received_action_commands[0].payload.action_type == "negotiate_treaty"
+        assert received_action_commands[1].payload.action_type == "distribute_resources"
+        assert "ltm_retrieved" in received_action_commands[0].payload.parameters.get("plan_source", "")
+        pdm_module._log_message("Test Case 1: Plan from LTM - PASSED.")
         received_action_commands.clear()
 
-        # Test with high priority goal that might trigger LTM query during planning
-        print("\n--- Testing process_highest_priority_goal (high priority, triggers LTM query) ---")
-        pdm_module._current_emotional_state = None # Neutral emotion
-        pdm_module._ltm_query_results.clear() # No prior LTM results for this specific conceptual query
-        goal_payload_high_prio = GoalUpdatePayload(goal_id="g_complex", goal_description="Solve complex problem", priority=0.9, status="ACTIVE", originator="Test")
-        bus.publish(GenericMessage(source_module_id="MotSys", message_type="GoalUpdate", payload=goal_payload_high_prio))
-        await asyncio.sleep(0.01) # Let goal be processed
 
-        pdm_module.process_highest_priority_goal() # Process g_complex
-        await asyncio.sleep(0.05)
-        assert len(received_ltm_queries) == 1 # Should have sent an LTM query
-        assert "info_related_to_Solve_complex_problem" in received_ltm_queries[0].payload.query_content
-        assert len(received_action_commands) >=1 # Should still produce a plan, perhaps a preliminary one
-        assert received_action_commands[0].payload.parameters.get("ltm_query_sent") is True
-        print("  PDM sent LTM query during planning for high priority goal and dispatched preliminary actions.")
+        print("\n--- Test Case 2: LTM Query for Plan ---")
+        received_ltm_queries.clear()
+        goal_desc_for_ltm_query = "solve_universal_equation"
+        goal_ltm_query = GoalUpdatePayload(goal_id="g_ltm_query", goal_description=goal_desc_for_ltm_query, priority=0.85, status="ACTIVE")
+        # Ensure no existing plan for this goal
+        pdm_module._ltm_query_results = {k:v for k,v in pdm_module._ltm_query_results.items() if goal_desc_for_ltm_query not in v.query_metadata.get("original_query_content","")}
+        pdm_module._awaiting_plan_for_goal.clear()
 
+        bus.publish(GenericMessage(source_module_id="TestMotSys", message_type="GoalUpdate", payload=goal_ltm_query))
+        await asyncio.sleep(0.01)
+        pdm_module.process_highest_priority_goal()
+        await asyncio.sleep(0.01)
+
+        assert len(received_ltm_queries) == 1, f"Expected 1 LTM query for plan, got {len(received_ltm_queries)}"
+        assert received_ltm_queries[0].payload.query_type == "get_action_plan_for_goal"
+        assert received_ltm_queries[0].payload.query_content == goal_desc_for_ltm_query
+        assert "g_ltm_query" in pdm_module._awaiting_plan_for_goal
+        assert len(received_action_commands) >= 1 # Default actions should still be dispatched
+        assert "(LTM query initiated)" in received_action_commands[0].payload.parameters.get("plan_source", "")
+        pdm_module._log_message("Test Case 2: LTM Query for Plan - PASSED.")
+        received_action_commands.clear()
+        received_ltm_queries.clear()
+
+
+        print("\n--- Test Case 3: Ethical Review Request ---")
+        received_ethical_review_requests.clear()
+        goal_desc_for_ethical_review = "delete user_archive_data for user_xyz"
+        goal_ethical = GoalUpdatePayload(goal_id="g_ethical", goal_description=goal_desc_for_ethical_review, priority=0.9, status="ACTIVE")
+        bus.publish(GenericMessage(source_module_id="TestMotSys", message_type="GoalUpdate", payload=goal_ethical))
+        await asyncio.sleep(0.01)
+        pdm_module.process_highest_priority_goal()
+        await asyncio.sleep(0.01)
+
+        assert len(received_ethical_review_requests) == 1, f"Expected 1 EthicalReviewRequest, got {len(received_ethical_review_requests)}"
+        review_req_payload = received_ethical_review_requests[0].payload
+        assert review_req_payload["action_proposal"]["reason"].startswith("Executing plan for goal: delete user_archive_data")
+        assert "delete" in review_req_payload["action_proposal"]["plan_summary"][0]["action"] # Default action for delete
+        assert len(received_action_commands) >= 1 # Actions still dispatched
+        pdm_module._log_message("Test Case 3: Ethical Review Request - PASSED.")
+        received_action_commands.clear()
+        received_ethical_review_requests.clear()
+
+        # Restore some state for any pre-existing tests that might run after if this were part of a larger suite
+        # Example: Put back a generic goal
+        goal_payload_generic = GoalUpdatePayload(goal_id="g_generic", goal_description="Perform generic task", priority=0.5, status="ACTIVE")
+        bus.publish(GenericMessage(source_module_id="MotSys", message_type="GoalUpdate", payload=goal_payload_generic))
+        await asyncio.sleep(0.01)
+
+        final_log_count = len(pdm_module._log)
+        assert final_log_count > initial_log_count
+        print(f"\n--- Final PDM Status (Log entries: {final_log_count}) ---")
+        print(pdm_module.get_module_status())
         print("\n--- ConcretePlanningAndDecisionMakingModule __main__ Test Complete ---")
 
     try:

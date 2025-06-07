@@ -251,17 +251,102 @@ class ConcreteWorldModel(BaseWorldModel):
     # They would need to be reviewed to ensure they use the new _entity_repository etc. correctly.
     def query_world_state(self, query_params: Dict[str, Any]) -> Dict[str, Any]:
         self._log_message(f"Querying world state with params: {query_params}")
-        # Basic implementation, can be expanded
-        if query_params.get("type") == "entity_state" and "entity_id" in query_params:
-            entity = self.get_entity_representation(query_params["entity_id"])
-            return {"success": True, "data": entity.to_dict()} if entity else {"success": False, "error": "Entity not found"}
-        if query_params.get("type") == "all_entities":
-            return {"success": True, "data": [e.to_dict() for e in self._entity_repository.values()]}
-        if query_params.get("type") == "recent_events":
-            count = query_params.get("count", 5)
-            return {"success": True, "data": [e.to_dict() for e in self._temporal_model_events[-count:]]}
-        return {"success": False, "error": "Unsupported query"}
+        query_type = query_params.get("query_type") # Changed "type" to "query_type" for clarity
 
+        if query_type == "entity_state" and "entity_id" in query_params:
+            entity_id = query_params["entity_id"]
+            self._log_message(f"Query: Get entity state for '{entity_id}'.")
+            entity = self.get_entity_representation(entity_id)
+            return {"success": True, "data": entity.to_dict()} if entity else {"success": False, "error": f"Entity '{entity_id}' not found"}
+
+        elif query_type == "all_entities":
+            self._log_message("Query: Get all entities.")
+            return {"success": True, "data": [e.to_dict() for e in self._entity_repository.values()]}
+
+        elif query_type == "entities_by_type" and "entity_type" in query_params:
+            entity_type_query = query_params["entity_type"]
+            self._log_message(f"Query: Get entities by type '{entity_type_query}'.")
+            result = [e.to_dict() for e in self._entity_repository.values() if e.type == entity_type_query]
+            return {"success": True, "data": result}
+
+        elif query_type == "entities_by_location" and "location_id" in query_params:
+            location_id_query = query_params["location_id"]
+            self._log_message(f"Query: Get entities by location_id '{location_id_query}'.")
+            result = [e.to_dict() for e in self._entity_repository.values() if e.location_id == location_id_query]
+            return {"success": True, "data": result}
+
+        elif query_type == "recent_events":
+            count = query_params.get("count", 5)
+            self._log_message(f"Query: Get {count} recent events.")
+            return {"success": True, "data": [e.to_dict() for e in self._temporal_model_events[-count:]]}
+
+        elif query_type == "events_by_type" and "event_type" in query_params:
+            event_type_query = query_params["event_type"]
+            self._log_message(f"Query: Get events by type '{event_type_query}'.")
+            result = [e.to_dict() for e in self._temporal_model_events if e.type == event_type_query]
+            return {"success": True, "data": result}
+
+        elif query_type == "events_by_involved_entities" and "entity_ids" in query_params:
+            entity_ids_query = query_params["entity_ids"]
+            if not isinstance(entity_ids_query, list):
+                self._log_message("Query: Get events by involved entities - FAILED (entity_ids not a list).")
+                return {"success": False, "error": "entity_ids must be a list"}
+            self._log_message(f"Query: Get events by involved entities (any of: {entity_ids_query}).")
+            result = [
+                e.to_dict() for e in self._temporal_model_events
+                if any(ent_id in e.involved_entities for ent_id in entity_ids_query)
+            ]
+            return {"success": True, "data": result}
+
+        self._log_message(f"Query: Unsupported query type '{query_type}' or missing params.")
+        return {"success": False, "error": f"Unsupported query_type '{query_type}' or missing parameters"}
+
+    def predict_future_state(self, entity_id: str, time_horizon: float) -> Optional[Dict[str, Any]]:
+        self._log_message(f"Attempting to predict future state for entity '{entity_id}' with time horizon {time_horizon}s.")
+        entity = self.get_entity_representation(entity_id)
+
+        if not entity:
+            self._log_message(f"Prediction failed: Entity '{entity_id}' not found.")
+            return None
+
+        current_state_copy = entity.to_dict() # Work with a copy
+
+        # Basic physics rule: if velocity and no obstacle, predict new position
+        has_velocity = "velocity" in entity.state and isinstance(entity.state["velocity"], (list, tuple)) and len(entity.state["velocity"]) == 3
+        has_position = "position" in entity.state and isinstance(entity.state["position"], (list, tuple)) and len(entity.state["position"]) == 3
+
+        # Simplified obstacle check: assumes 'obstacle' is a relationship type
+        # A more robust check might involve querying spatial model or specific obstacle states
+        is_obstructed = "obstacle" in entity.relationships and len(entity.relationships["obstacle"]) > 0
+
+        if has_velocity and has_position and not is_obstructed:
+            try:
+                vx, vy, vz = entity.state["velocity"]
+                px, py, pz = entity.state["position"]
+
+                new_position = [
+                    px + vx * time_horizon,
+                    py + vy * time_horizon,
+                    pz + vz * time_horizon
+                ]
+
+                predicted_state_changes = {"position": new_position}
+                current_state_copy["state"].update(predicted_state_changes)
+                current_state_copy["prediction_confidence"] = "high"
+                current_state_copy["prediction_rule"] = "simple_physics_velocity_displacement"
+
+                self._log_message(f"Predicted new position for '{entity_id}': {new_position} with high confidence.")
+                return current_state_copy
+            except (TypeError, ValueError) as e:
+                self._log_message(f"Error during physics prediction for '{entity_id}': {e}. Returning current state with low confidence.")
+                current_state_copy["prediction_confidence"] = "low"
+                current_state_copy["prediction_error"] = f"Calculation error: {e}"
+                return current_state_copy
+        else:
+            self._log_message(f"No specific prediction rules applicable for '{entity_id}'. Returning current state with low confidence.")
+            current_state_copy["prediction_confidence"] = "low"
+            current_state_copy["prediction_rule"] = "no_specific_rule_applied"
+            return current_state_copy
 
     def get_world_model_status(self) -> Dict[str, Any]: # Renamed from get_status for clarity
         self._log_message("Getting world model status.")
@@ -346,18 +431,70 @@ if __name__ == '__main__':
         assert len(world_model._temporal_model_events) == 2
         print("  WM processed CREATE_OBJECT ActionEvent, created new entity and added temporal event.")
 
+        print("\n--- Testing Enhanced Queries ---")
+        # Query entities by type 'fruit'
+        query_fruit = world_model.query_world_state({"query_type": "entities_by_type", "entity_type": "fruit"})
+        assert query_fruit["success"] and len(query_fruit["data"]) == 1 and query_fruit["data"][0]["id"] == "RedApple"
+        print(f"  Query entities by type 'fruit': {len(query_fruit['data'])} found.")
+
+        # Query entities by location 'loc_tabletop'
+        query_loc_tabletop = world_model.query_world_state({"query_type": "entities_by_location", "location_id": "loc_tabletop"})
+        assert query_loc_tabletop["success"] and len(query_loc_tabletop["data"]) == 1 and query_loc_tabletop["data"][0]["id"] == "box01"
+        print(f"  Query entities by location 'loc_tabletop': {len(query_loc_tabletop['data'])} found.")
+
+        # Query events by type 'action_outcome_MOVE_AGENT'
+        query_move_events = world_model.query_world_state({"query_type": "events_by_type", "event_type": "action_outcome_MOVE_AGENT"})
+        assert query_move_events["success"] and len(query_move_events["data"]) == 1 and query_move_events["data"][0]["involved_entities"][0] == "RedApple"
+        print(f"  Query events by type 'action_outcome_MOVE_AGENT': {len(query_move_events['data'])} found.")
+
+        # Query events involving 'RedApple' OR 'box01'
+        query_involved_entities = world_model.query_world_state({"query_type": "events_by_involved_entities", "entity_ids": ["RedApple", "box01"]})
+        assert query_involved_entities["success"] and len(query_involved_entities["data"]) == 2 # Both events should match
+        print(f"  Query events by involved entities ['RedApple', 'box01']: {len(query_involved_entities['data'])} found.")
+
+        # Query for a non-existent entity
+        query_non_existent = world_model.query_world_state({"query_type": "entity_state", "entity_id": "ghost01"})
+        assert not query_non_existent["success"]
+        print(f"  Query for non-existent entity 'ghost01': Success={query_non_existent['success']}.")
+
+        print("\n--- Testing Prediction ---")
+        # Add position and velocity to RedApple for prediction
+        world_model.update_entity_state("RedApple", {"state": {"position": [10, 5, 0], "velocity": [1, 0, 0]}})
+        predicted_state_apple = world_model.predict_future_state("RedApple", time_horizon=5.0)
+        assert predicted_state_apple is not None
+        assert predicted_state_apple["prediction_confidence"] == "high"
+        assert predicted_state_apple["state"]["position"] == [15, 5, 0] # 10 + 1*5
+        print(f"  Predicted state for RedApple (with velocity): {predicted_state_apple['state']['position']}, Confidence: {predicted_state_apple['prediction_confidence']}")
+
+        # Predict for an entity without velocity (should return current with low confidence)
+        predicted_state_box = world_model.predict_future_state("box01", time_horizon=5.0)
+        assert predicted_state_box is not None
+        assert predicted_state_box["prediction_confidence"] == "low"
+        assert predicted_state_box["state"].get("position") is None # No position initially
+        print(f"  Predicted state for box01 (no velocity): Confidence: {predicted_state_box['prediction_confidence']}")
+
+        # Predict for non-existent entity
+        predicted_non_existent = world_model.predict_future_state("ghost02", time_horizon=5.0)
+        assert predicted_non_existent is None
+        print(f"  Attempted prediction for non-existent 'ghost02': Result is None.")
+
+
         print("\n--- Final World Model Status ---")
         final_status = world_model.get_world_model_status()
         print(final_status)
-        assert final_status["entity_count"] == 4 # RedApple, TableTop, chair05, box01
+        # Counts remain same, just testing query and prediction logic
+        assert final_status["entity_count"] == 4
         assert final_status["event_count"] == 2
         assert final_status["handled_message_counts"]["PerceptData"] == 1
         assert final_status["handled_message_counts"]["LTMQueryResult"] == 1
         assert final_status["handled_message_counts"]["ActionEvent"] == 2
 
+
         print("\n--- ConcreteWorldModel __main__ Test Complete ---")
 
     try:
+        # Ensure datetime is available for PerceptDataPayload's source_timestamp
+        import datetime # Moved import here to be within async context if needed by older pythons with asyncio issues
         asyncio.run(main_test_flow())
     except RuntimeError as e:
         if " asyncio.run() cannot be called from a running event loop" in str(e):

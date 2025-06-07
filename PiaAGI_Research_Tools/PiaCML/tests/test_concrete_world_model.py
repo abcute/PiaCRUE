@@ -196,6 +196,117 @@ class TestConcreteWorldModelModuleIntegration(unittest.TestCase):
         self.assertEqual(updated_status["entity_count"], 1)
         self.assertEqual(updated_status["handled_message_counts"]["PerceptData"], 1)
 
+
+class TestConcreteWorldModelAdvancedLogic(unittest.TestCase):
+
+    def setUp(self):
+        self.world_model = ConcreteWorldModel(message_bus=None, module_id="TestWMLogic")
+        # Ensure clean state for repositories for each test
+        self.world_model._entity_repository = {}
+        self.world_model._temporal_model_events = []
+        self.world_model._log = [] # Clear logs too
+
+    def test_predict_future_state(self):
+        # Test case 1: Entity with velocity and position, no obstacle
+        entity1_id = "car1"
+        self.world_model._entity_repository[entity1_id] = WorldEntity(
+            id=entity1_id, type="vehicle",
+            state={"position": [0, 0, 0], "velocity": [10, 5, 0]},
+            properties={}, affordances=[], relationships={}
+        )
+        prediction1 = self.world_model.predict_future_state(entity1_id, time_horizon=2.0)
+        self.assertIsNotNone(prediction1)
+        self.assertEqual(prediction1["state"]["position"], [20, 10, 0])
+        self.assertEqual(prediction1["prediction_confidence"], "high")
+        self.assertIn(f"Predicted new position for '{entity1_id}'", self.world_model._log[-1])
+
+        # Test case 2: Entity without velocity
+        entity2_id = "rock1"
+        self.world_model._entity_repository[entity2_id] = WorldEntity(
+            id=entity2_id, type="static_object",
+            state={"position": [10, 10, 10]},
+            properties={}, affordances=[], relationships={}
+        )
+        prediction2 = self.world_model.predict_future_state(entity2_id, time_horizon=2.0)
+        self.assertIsNotNone(prediction2)
+        self.assertEqual(prediction2["state"]["position"], [10, 10, 10]) # Position unchanged
+        self.assertEqual(prediction2["prediction_confidence"], "low")
+        self.assertIn(f"No specific prediction rules applicable for '{entity2_id}'", self.world_model._log[-1])
+
+        # Test case 3: Entity with velocity but an obstacle
+        entity3_id = "car2_blocked"
+        self.world_model._entity_repository[entity3_id] = WorldEntity(
+            id=entity3_id, type="vehicle",
+            state={"position": [0, 0, 0], "velocity": [10, 0, 0]},
+            properties={}, affordances=[], relationships={"obstacle": ["wall1"]}
+        )
+        prediction3 = self.world_model.predict_future_state(entity3_id, time_horizon=2.0)
+        self.assertIsNotNone(prediction3)
+        self.assertEqual(prediction3["state"]["position"], [0, 0, 0]) # Position unchanged
+        self.assertEqual(prediction3["prediction_confidence"], "low") # Or "medium_uncertain" if logic changes
+        self.assertIn(f"No specific prediction rules applicable for '{entity3_id}'", self.world_model._log[-1])
+
+
+        # Test case 4: Non-existent entity
+        prediction4 = self.world_model.predict_future_state("non_existent_entity", time_horizon=2.0)
+        self.assertIsNone(prediction4)
+        self.assertIn("Prediction failed: Entity 'non_existent_entity' not found", self.world_model._log[-1])
+
+    def test_query_world_state_advanced_queries(self):
+        # Populate entities
+        self.world_model._entity_repository = {
+            "e1": WorldEntity(id="e1", type="fruit", state={}, properties={}, affordances=[], relationships={}, location_id="loc1"),
+            "e2": WorldEntity(id="e2", type="tool", state={}, properties={}, affordances=[], relationships={}, location_id="loc2"),
+            "e3": WorldEntity(id="e3", type="fruit", state={}, properties={}, affordances=[], relationships={}, location_id="loc1"),
+            "e4": WorldEntity(id="e4", type="animal", state={}, properties={}, affordances=[], relationships={}, location_id="loc3"),
+        }
+        # Populate events
+        self.world_model._temporal_model_events = [
+            TemporalEvent(id="evt1", type="perception_event", timestamp=time.time() - 10, description="Saw fruit", involved_entities=["e1", "e4"]),
+            TemporalEvent(id="evt2", type="interaction_event", timestamp=time.time() - 5, description="Tool used", involved_entities=["e2", "agent01"]),
+            TemporalEvent(id="evt3", type="perception_event", timestamp=time.time() - 2, description="Saw more fruit", involved_entities=["e3"]),
+        ]
+
+        # Test 1: Query entities by type
+        query_fruit = self.world_model.query_world_state({"query_type": "entities_by_type", "entity_type": "fruit"})
+        self.assertTrue(query_fruit["success"])
+        self.assertEqual(len(query_fruit["data"]), 2)
+        self.assertIn("Query: Get entities by type 'fruit'", self.world_model._log[-1])
+
+        # Test 2: Query entities by location_id
+        query_loc1 = self.world_model.query_world_state({"query_type": "entities_by_location", "location_id": "loc1"})
+        self.assertTrue(query_loc1["success"])
+        self.assertEqual(len(query_loc1["data"]), 2)
+        entity_ids_in_loc1 = {e["id"] for e in query_loc1["data"]}
+        self.assertEqual(entity_ids_in_loc1, {"e1", "e3"})
+        self.assertIn("Query: Get entities by location_id 'loc1'", self.world_model._log[-1])
+
+        # Test 3: Query events by event_type
+        query_percept_events = self.world_model.query_world_state({"query_type": "events_by_type", "event_type": "perception_event"})
+        self.assertTrue(query_percept_events["success"])
+        self.assertEqual(len(query_percept_events["data"]), 2)
+        self.assertIn("Query: Get events by type 'perception_event'", self.world_model._log[-1])
+
+        # Test 4: Query events by involved_entities
+        query_events_e1_or_e2 = self.world_model.query_world_state({"query_type": "events_by_involved_entities", "entity_ids": ["e1", "e2"]})
+        self.assertTrue(query_events_e1_or_e2["success"])
+        self.assertEqual(len(query_events_e1_or_e2["data"]), 2) # evt1 (e1), evt2 (e2)
+        event_ids_e1_e2 = {e["id"] for e in query_events_e1_or_e2["data"]}
+        self.assertEqual(event_ids_e1_e2, {"evt1", "evt2"})
+        self.assertIn("Query: Get events by involved entities (any of: ['e1', 'e2'])", self.world_model._log[-1])
+
+        query_events_e4_only = self.world_model.query_world_state({"query_type": "events_by_involved_entities", "entity_ids": ["e4"]})
+        self.assertTrue(query_events_e4_only["success"])
+        self.assertEqual(len(query_events_e4_only["data"]), 1) # evt1 (e1, e4)
+        self.assertEqual(query_events_e4_only["data"][0]["id"], "evt1")
+
+
+        # Test 5: Query with unknown query_type
+        query_unknown = self.world_model.query_world_state({"query_type": "non_existent_query", "param": "value"})
+        self.assertFalse(query_unknown["success"])
+        self.assertIn("Unsupported query_type", query_unknown.get("error", ""))
+        self.assertIn("Query: Unsupported query type 'non_existent_query'", self.world_model._log[-1])
+
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
 
