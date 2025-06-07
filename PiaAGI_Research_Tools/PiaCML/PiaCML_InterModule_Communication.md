@@ -30,7 +30,7 @@ A **hybrid approach combining an Asynchronous Message Bus (or Event Bus) with st
     *   **Loose Coupling:** Publishers and subscribers don't need direct knowledge of each other.
     *   **Scalability:** Easy to add new publishers or subscribers.
     *   **Flexibility:** Supports various communication patterns (pub/sub, targeted messages if the bus allows).
-    *   **Asynchronous Nature:** Allows modules to operate concurrently without blocking, crucial for a responsive AGI.
+    *   **Asynchronous Nature:** Allows modules to operate concurrently without blocking, crucial for a responsive AGI. The PiaCML Message Bus implementation leverages `asyncio` to execute asynchronous callbacks, ensuring that long-running or I/O-bound message handlers do not stall other bus operations or module processing.
 *   **Direct API Call Benefits:**
     *   **Lower Latency:** Can be faster for specific, well-defined interactions.
     *   **Simplicity for Tight Coupling:** Easier for cases where two modules are inherently closely linked for a specific function.
@@ -39,6 +39,8 @@ A **hybrid approach combining an Asynchronous Message Bus (or Event Bus) with st
 *   **Primary Mode (Message Bus): Asynchronous Publish/Subscribe.**
     *   Modules register with the message bus, declaring which message types they can publish and which they wish to subscribe to.
     *   When a module publishes a message, the bus routes it to all subscribed modules.
+    *   **Enhanced Filtering:** Subscribers can register for messages not only by `message_type` and an optional custom `filter_func` (a Python callable that inspects the message), but also by providing a `metadata_filter` (a dictionary). If a `metadata_filter` is provided, the bus will only deliver messages where the `GenericMessage.metadata` field contains all key-value pairs specified in the subscriber's `metadata_filter`.
+    *   **Error Handling and Subscriber Suspension:** The message bus includes robust error handling for subscriber callbacks. If a specific subscriber's callback repeatedly raises exceptions (exceeding a predefined threshold), that subscriber will be temporarily suspended to prevent it from disrupting other message processing. Suspended subscribers will not receive further messages until explicitly unsuspended. This mechanism enhances the overall stability of the communication system.
 *   **Secondary Mode (Direct API): Synchronous Request/Response (typically).**
     *   Used for specific, pre-defined interface methods.
 *   **Message Identification:** Each message type will have a unique identifier (e.g., a string name like "PerceptDataAvailable" or "LTMQueryRequest").
@@ -56,7 +58,7 @@ GenericMessage {
     message_type: String      // E.g., "PerceptData", "LTMQuery"
     timestamp: DateTime       // Timestamp of message creation (UTC)
     payload: Object           // The actual specific message data (e.g., PerceptData object)
-    metadata: Dict            // Optional: For routing tags, priority, or other bus-specific info
+    metadata: Dict            // Optional: For routing tags (e.g., for `metadata_filter` subscriptions), priority, or other bus-specific info. Also used by the bus for internal tracking if needed.
 }
 ```
 
@@ -128,6 +130,31 @@ GenericMessage {
         *   `expected_outcome_summary`: String // Brief description of what this action is intended to achieve
         *   `priority`: Float // Priority of this action
 
+7.  **`ActionEvent`**
+    *   **Purpose**: For Behavior Generation or other action-performing modules to report the outcome of an executed action.
+    *   **`message_type`**: "ActionEvent"
+    *   **Payload Fields**:
+        *   `action_command_id: UUID` // ID of the original ActionCommand
+        *   `action_type: String` // Type of the action that was executed
+        *   `status: String` // e.g., "SUCCESS", "FAILURE", "IN_PROGRESS"
+        *   `outcome: Dict` // Specific results or details of the action's execution (e.g., `{"goal_id": "g1", "value_changed": 10}`)
+        *   `timestamp: DateTime` // Timestamp of the event
+        *   `metadata: Dict` // Optional metadata
+
+8.  **`LearningOutcome`**
+    *   **Purpose**: For Learning modules to announce the result of a learning process.
+    *   **`message_type`**: "LearningOutcome"
+    *   **Payload Fields**:
+        *   `learning_task_id: String` // Identifier for the learning task
+        *   `status: String` // e.g., "LEARNED", "UPDATED", "FAILED_TO_LEARN"
+        *   `learned_item_type: String` // Optional: e.g., "skill", "knowledge_concept", "association"
+        *   `item_id: String` // Optional: ID of the learned/updated item
+        *   `item_description: String` // Optional: Brief description of what was learned
+        *   `confidence: Float` // Optional: Confidence in the learned item
+        *   `source_message_ids: List[String]` // Optional: IDs of messages that contributed to this learning
+        *   `metadata: Dict` // Optional: Additional details about the learning outcome
+        *   `timestamp: DateTime` // Timestamp of the learning outcome
+
 ## 4. Interaction Patterns (Examples)
 
 1.  **Perception to LTM Query:**
@@ -155,7 +182,7 @@ GenericMessage {
     *   The `GenericMessage` wrapper remains the same.
 *   **Versioning:** As message structures evolve, a versioning system for payload schemas might be necessary (e.g., `message_type_v2`). This can be included in the `GenericMessage.metadata` or as part of the `message_type` string.
 *   **Service Discovery:** For more complex scenarios, a service discovery mechanism could allow modules to dynamically find out about other modules and the message types they handle.
-*   **Quality of Service (QoS):** The message bus implementation could offer different QoS levels (e.g., guaranteed delivery, best effort) for different message types, potentially managed via `GenericMessage.metadata`.
+*   **Bus Robustness and QoS:** The current PiaCML Message Bus implements callback error tracking and automatic suspension of persistently failing subscribers. The asynchronous dispatch mechanism is built on `asyncio`. Future enhancements could include more explicit QoS levels (e.g., guaranteed delivery, at-least-once, best-effort semantics) for different message types, potentially managed via `GenericMessage.metadata` or dedicated bus channels.
 *   **Security and Permissions:** In multi-agent or externally exposed systems, message validation and module permissions for publishing/subscribing to certain topics might be needed.
 
 ---

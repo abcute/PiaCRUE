@@ -1,9 +1,14 @@
 from typing import Any, Dict, List, Optional
+import uuid # For module ID generation if needed, and triggering_event_id
+import datetime # For payloads if not already imported by core_messages
 
 try:
     from .base_emotion_module import BaseEmotionModule
+    from .message_bus import MessageBus # Import MessageBus
+    from .core_messages import GenericMessage, GoalUpdatePayload, EmotionalStateChangePayload # Import message types
 except ImportError:
     # Fallback for standalone execution or if .base_emotion_module is not found in the current path
+    print("Warning: Running ConcreteEmotionModule with stubbed imports (MessageBus, core_messages, BaseEmotionModule).")
     class BaseEmotionModule: # Minimal stub
         def update_emotional_state(self, appraisal_info: Dict[str, Any], event_source: Optional[str] = None) -> None: pass
         def get_current_emotional_state(self) -> Dict[str, Any]: return {}
@@ -13,23 +18,38 @@ except ImportError:
         def get_emotional_influence_on_cognition(self) -> Dict: return {}
         def set_personality_profile(self, profile: Dict) -> None: pass
 
+    class MessageBus: # Minimal stub
+        def subscribe(self, module_id: str, message_type: str, callback: Any, metadata_filter: Optional[Dict[str,Any]] = None): pass
+        def publish(self, message: Any, dispatch_mode: str = "synchronous"): pass
+
+    class GenericMessage: pass
+    class GoalUpdatePayload: pass
+    class EmotionalStateChangePayload: pass
+
 
 class ConcreteEmotionModule(BaseEmotionModule):
     """
     A concrete implementation of the BaseEmotionModule focusing on a dimensional
     emotional state (Valence, Arousal, Dominance - VAD).
-    Phase 1 enhancements include a more detailed appraisal mechanism based on
-    event properties and a basic decay function.
+    Integrated with a MessageBus for receiving GoalUpdates and publishing EmotionalStateChanges.
     """
 
-    def __init__(self, initial_vad_state: Optional[Dict[str, float]] = None):
+    def __init__(self,
+                 initial_vad_state: Optional[Dict[str, float]] = None,
+                 message_bus: Optional[MessageBus] = None,
+                 module_id: str = f"ConcreteEmotionModule_{str(uuid.uuid4())[:8]}"):
         """
         Initializes the emotion module.
 
         Args:
             initial_vad_state: Optional dictionary to set the initial VAD state.
                                Defaults to {"valence": 0.0, "arousal": 0.0, "dominance": 0.0}.
+            message_bus: Optional instance of the MessageBus for communication.
+            module_id: A unique identifier for this module instance.
         """
+        self._message_bus = message_bus
+        self._module_id = module_id
+
         if initial_vad_state is None:
             self.current_emotion_state: Dict[str, float] = {"valence": 0.0, "arousal": 0.0, "dominance": 0.0}
         else:
@@ -39,11 +59,19 @@ class ConcreteEmotionModule(BaseEmotionModule):
                 "dominance": self._clamp_value(initial_vad_state.get("dominance", 0.0))
             }
 
-        # self.decay_rate = 0.05 # Optional, if used in a time-based decay not directly tied to appraise_event
-        self._reactivity_modifier_arousal: float = 1.0 # Can be set by personality
+        self._reactivity_modifier_arousal: float = 1.0
         self._personality_profile: Optional[Dict[str, Any]] = None
 
-        print("ConcreteEmotionModule (Phase 1 Enhanced) initialized.")
+        if self._message_bus:
+            self._message_bus.subscribe(
+                module_id=self._module_id,
+                message_type="GoalUpdate",
+                callback=self._handle_goal_update_for_appraisal
+            )
+            print(f"ConcreteEmotionModule '{self._module_id}' initialized and subscribed to 'GoalUpdate' on the message bus.")
+        else:
+            print(f"ConcreteEmotionModule '{self._module_id}' initialized without a message bus.")
+
 
     def _clamp_value(self, value: float, min_val: float = -1.0, max_val: float = 1.0) -> float:
         """Clamps a value between a minimum and maximum."""
@@ -64,10 +92,49 @@ class ConcreteEmotionModule(BaseEmotionModule):
         self.current_emotion_state["dominance"] = self._clamp_value(self.current_emotion_state["dominance"] * decay_factor)
         # print(f"Debug: Emotions decayed to V:{self.current_emotion_state['valence']:.2f} A:{self.current_emotion_state['arousal']:.2f} D:{self.current_emotion_state['dominance']:.2f}")
 
+    def _handle_goal_update_for_appraisal(self, message: GenericMessage) -> None:
+        """
+        Handles GoalUpdate messages from the message bus and triggers appraisal.
+        """
+        if not isinstance(message.payload, GoalUpdatePayload):
+            print(f"ERROR ({self._module_id}): Received non-GoalUpdatePayload for _handle_goal_update_for_appraisal: {type(message.payload)}")
+            return
+
+        payload: GoalUpdatePayload = message.payload
+        print(f"INFO ({self._module_id}): Handling GoalUpdate: {payload.goal_id}, Status: {payload.status}, Priority: {payload.priority}")
+
+        event_details: Dict[str, Any] = {
+            "type": "GOAL_STATUS_UPDATE",
+            "intensity": self._clamp_value(payload.priority * 0.5, 0.0, 1.0), # Scale priority to intensity (0-1)
+            "goal_importance": self._clamp_value(payload.priority, 0.0, 1.0),
+            "triggering_message_id": message.message_id # Pass message ID for traceability
+        }
+
+        status_to_congruence = {
+            "achieved": 1.0,
+            "failed": -1.0,
+            "active": 0.1,  # Slightly positive as it's being pursued
+            "suspended": -0.2, # Slightly negative as it's paused
+            "new": 0.05, # Mildly positive for new goals
+            "updated": 0.0, # Neutral for simple updates unless content implies more
+            "progressing": 0.3, # From previous compatibility logic
+            "threatened": -0.5   # From previous compatibility logic
+        }
+        event_details["goal_congruence"] = status_to_congruence.get(payload.status.lower(), 0.0)
+
+        # Consider adding other appraisal dimensions if derivable from GoalUpdatePayload
+        # For example, if a goal is "new", it might imply some novelty.
+        if payload.status.lower() == "new":
+            event_details["novelty"] = 0.6 # New goals are somewhat novel
+            event_details["expectedness"] = 0.4 # And perhaps not fully expected
+
+        self.appraise_event(event_details)
+
 
     def appraise_event(self, event_details: Dict[str, Any]) -> None:
         """
         Appraises an event and updates the VAD emotional state.
+        If a message bus is configured, publishes an EmotionalStateChange message.
 
         Args:
             event_details: A dictionary containing details about the event. Example structure:
@@ -135,7 +202,23 @@ class ConcreteEmotionModule(BaseEmotionModule):
         # print(f"Debug: VAD before decay: V:{self.current_emotion_state['valence']:.2f} A:{self.current_emotion_state['arousal']:.2f} D:{self.current_emotion_state['dominance']:.2f}")
         self._decay_emotions() # Apply decay after each appraisal update
 
-        print(f"ConcreteEmotionModule: VAD updated to V:{self.current_emotion_state['valence']:.2f} A:{self.current_emotion_state['arousal']:.2f} D:{self.current_emotion_state['dominance']:.2f}")
+        print(f"ConcreteEmotionModule ({self._module_id}): VAD updated to V:{self.current_emotion_state['valence']:.2f} A:{self.current_emotion_state['arousal']:.2f} D:{self.current_emotion_state['dominance']:.2f}")
+
+        if self._message_bus:
+            esc_payload = EmotionalStateChangePayload(
+                current_emotion_profile=self.current_emotion_state.copy(),
+                primary_emotion=None, # Optional for now
+                intensity=self.current_emotion_state['arousal'], # Using arousal as overall intensity proxy
+                triggering_event_id=event_details.get("triggering_message_id"),
+                behavioral_impact_suggestions=[] # Optional for now
+            )
+            emotional_change_message = GenericMessage(
+                source_module_id=self._module_id,
+                message_type="EmotionalStateChange",
+                payload=esc_payload
+            )
+            self._message_bus.publish(emotional_change_message)
+            print(f"INFO ({self._module_id}): Published EmotionalStateChange message (triggered by: {esc_payload.triggering_event_id}).")
 
 
     def get_simulated_physiological_effects(self) -> Dict[str, Any]:
@@ -180,13 +263,14 @@ class ConcreteEmotionModule(BaseEmotionModule):
         The new `appraise_event` expects a more structured `event_details`.
         This method attempts to map `appraisal_info` to that structure.
         """
-        print(f"ConcreteEmotionModule: `update_emotional_state` (compatibility) called. Delegating to `appraise_event`.")
+        print(f"ConcreteEmotionModule ({self._module_id}): `update_emotional_state` (compatibility) called. Delegating to `appraise_event`.")
         event_details = {
             "type": appraisal_info.get("type", "unknown"), # Retain original event type if available
             "intensity": appraisal_info.get("event_intensity", appraisal_info.get("intensity", 0.5)), # Check both keys
             "novelty": appraisal_info.get("event_novelty", appraisal_info.get("novelty", 0.0)),
             "expectedness": appraisal_info.get("expectedness", 1.0), # Default to expected if not specified
-            "controllability": appraisal_info.get("controllability", 0.5) # Default to moderately controllable
+            "controllability": appraisal_info.get("controllability", 0.5), # Default to moderately controllable
+            "triggering_message_id": appraisal_info.get("message_id") # If old system passed message_id
         }
 
         # Map goal_status to goal_congruence
@@ -219,7 +303,7 @@ class ConcreteEmotionModule(BaseEmotionModule):
         Returns a representation of the current VAD state for expression.
         Phase 1: Simplified to return VAD without categorical label.
         """
-        # print(f"ConcreteEmotionModule: express_emotion called. VAD: {self.current_emotion_state}")
+        # print(f"ConcreteEmotionModule ({self._module_id}): express_emotion called. VAD: {self.current_emotion_state}")
         return {
             "vad_state": self.current_emotion_state.copy(),
             "intensity_conceptual": self.current_emotion_state['arousal'], # Using arousal as proxy
@@ -229,16 +313,17 @@ class ConcreteEmotionModule(BaseEmotionModule):
     def get_status(self) -> Dict[str, Any]:
         """Returns the current status of the Emotion Module."""
         return {
-            "module_type": "ConcreteEmotionModule (Phase 1 Enhanced)",
+            "module_id": self._module_id,
+            "module_type": "ConcreteEmotionModule (Message Bus Integrated)",
             "current_vad_state": self.current_emotion_state.copy(),
+            "message_bus_connected": self._message_bus is not None,
             "personality_profile_active": self._personality_profile is not None,
             "reactivity_modifier_arousal": self._reactivity_modifier_arousal
-            # Removed appraisal_log_count and categorical for Phase 1 focus
         }
 
     def regulate_emotion(self, strategy: str, target_emotion_details: Dict[str, Any]) -> bool:
         """Placeholder for emotion regulation. Not implemented in Phase 1."""
-        print(f"ConcreteEmotionModule: regulate_emotion called (Placeholder). Strategy: {strategy}, Target: {target_emotion_details}")
+        print(f"ConcreteEmotionModule ({self._module_id}): regulate_emotion called (Placeholder). Strategy: {strategy}, Target: {target_emotion_details}")
         # Conceptual: Could try to shift VAD towards a target, e.g., reduce arousal.
         # Example: if strategy == "dampen_arousal": self.current_emotion_state["arousal"] *= 0.7
         # self._decay_emotions() # Apply decay after conceptual regulation
@@ -249,12 +334,12 @@ class ConcreteEmotionModule(BaseEmotionModule):
         Returns conceptual influences on cognition based on the VAD state.
         This is similar to get_simulated_physiological_effects for Phase 1.
         """
-        # print(f"ConcreteEmotionModule: get_emotional_influence_on_cognition called.")
+        # print(f"ConcreteEmotionModule ({self._module_id}): get_emotional_influence_on_cognition called.")
         return self.get_simulated_physiological_effects()
 
     def set_personality_profile(self, profile: Dict[str, Any]) -> None:
         """Sets a personality profile that might influence emotional responses and baseline VAD."""
-        print(f"ConcreteEmotionModule: set_personality_profile called with {profile}.")
+        print(f"ConcreteEmotionModule ({self._module_id}): set_personality_profile called with {profile}.")
         self._personality_profile = profile
 
         # Adjust baseline VAD based on personality profile, if specified
@@ -275,76 +360,175 @@ class ConcreteEmotionModule(BaseEmotionModule):
         if 'reactivity_modifier_arousal' in profile and isinstance(profile['reactivity_modifier_arousal'], (int, float)):
             self._reactivity_modifier_arousal = float(profile['reactivity_modifier_arousal'])
 
-        print(f"ConcreteEmotionModule: VAD state potentially adjusted by personality: {self.current_emotion_state}")
+        print(f"ConcreteEmotionModule ({self._module_id}): VAD state potentially adjusted by personality: {self.current_emotion_state}")
 
 
 if __name__ == '__main__':
-    emotion_module = ConcreteEmotionModule()
+    import asyncio
+    import time
 
-    print("\n--- Initial Status ---")
-    print(emotion_module.get_status())
-    print("Initial VAD state:", emotion_module.get_emotional_state())
-
-    print("\n--- Appraise Event: Positive Goal Achievement ---")
-    event1 = {
-        "type": "GOAL_PROGRESS", "intensity": 0.8, "novelty": 0.2, "expectedness": 0.9,
-        "goal_congruence": 0.9, "goal_importance": 0.8, "controllability": 0.7
-    }
-    emotion_module.appraise_event(event1)
-    # Expected: Valence increases, Arousal increases moderately, Dominance increases slightly.
-
-    print("\n--- Appraise Event: Negative, Unexpected, Uncontrollable ---")
-    event2 = {
-        "type": "EXTERNAL_SENSOR", "intensity": 0.9, "novelty": 0.8, "expectedness": 0.1,
-        "goal_congruence": -0.7, "goal_importance": 0.9, # Obstructs important goal
-        "controllability": 0.1, "norm_alignment": -0.5 # Violates a norm
-    }
-    emotion_module.appraise_event(event2)
-    # Expected: Valence decreases significantly, Arousal increases significantly, Dominance decreases.
-
-    print("\n--- Appraise Event: Mildly Surprising, Neutral ---")
-    event3 = {
-        "type": "EXTERNAL_SENSOR", "intensity": 0.3, "novelty": 0.6, "expectedness": 0.5,
-        # No goal_congruence, controllability, norm_alignment specified
-    }
-    emotion_module.appraise_event(event3)
-    # Expected: Arousal increases mildly, Valence/Dominance minor changes.
-
-    print("\n--- Several Decays (simulating time passing) ---")
-    current_vad = emotion_module.get_emotional_state()
-    print(f"VAD before extra decays: V:{current_vad['valence']:.2f} A:{current_vad['arousal']:.2f} D:{current_vad['dominance']:.2f}")
-    for i in range(5):
-        emotion_module._decay_emotions(decay_factor=0.8) # Stronger decay for test visibility
-        # print(f"After decay {i+1}: {emotion_module.get_emotional_state()}")
-    print("VAD after several decays:", emotion_module.get_emotional_state())
-
-    print("\n--- Simulated Physiological Effects ---")
-    # Manually set a state to test effects
-    emotion_module.current_emotion_state = {"valence": -0.6, "arousal": 0.75, "dominance": -0.4}
-    print(f"Manually set VAD to: {emotion_module.current_emotion_state}")
-    effects = emotion_module.get_simulated_physiological_effects()
-    print("Simulated effects:", effects)
-    assert effects.get("attention_focus") == "narrowed"
-    assert effects.get("cognitive_bias") == "threat_detection_priority"
-
-    emotion_module.current_emotion_state = {"valence": 0.7, "arousal": 0.5, "dominance": 0.3}
-    print(f"Manually set VAD to: {emotion_module.current_emotion_state}")
-    effects_joy = emotion_module.get_simulated_physiological_effects()
-    print("Simulated effects (joyful):", effects_joy)
-    assert effects_joy.get("learning_rate_modifier_suggestion") == 1.2
-    assert effects_joy.get("cognitive_bias") == "opportunity_seeking"
+    # Attempt to import MessageBus and core_messages from the local directory structure
+    # This is for the __main__ block to find them if not installed as a package.
+    try:
+        from message_bus import MessageBus
+        from core_messages import GenericMessage, GoalUpdatePayload, EmotionalStateChangePayload
+    except ImportError:
+        print("CRITICAL: Failed to import MessageBus or core_messages for __main__ test. Ensure they are in Python path or same directory.")
+        # Fallback to stubs if they were defined above due to initial import error
+        if 'MessageBus' not in globals(): # Re-define if initial import failed and stubs were used
+            class MessageBus:
+                def subscribe(self, module_id: str, message_type: str, callback: Any, metadata_filter: Optional[Dict[str,Any]] = None): print(f"StubBus: {module_id} subscribed to {message_type}")
+                def publish(self, message: Any, dispatch_mode: str = "synchronous"): print(f"StubBus: Publishing {message.message_type}")
+            class GenericMessage:
+                def __init__(self, source_module_id, message_type, payload, message_id=None):
+                    self.source_module_id = source_module_id
+                    self.message_type = message_type
+                    self.payload = payload
+                    self.message_id = message_id or str(uuid.uuid4())
+            class GoalUpdatePayload:
+                def __init__(self, goal_id, goal_description, priority, status, originator):
+                    self.goal_id = goal_id
+                    self.goal_description = goal_description
+                    self.priority = priority
+                    self.status = status
+                    self.originator = originator
+            class EmotionalStateChangePayload: pass # Already stubbed if needed
 
 
-    print("\n--- Test Compatibility `update_emotional_state` (old method name) ---")
-    emotion_module.current_emotion_state = {"valence": 0.0, "arousal": 0.0, "dominance": 0.0} # Reset
-    compat_event = {"type": "goal_status", "goal_id": "g_compat", "goal_status": "achieved",
-                    "event_intensity": 0.7, "goal_importance": 0.9}
-    # This old method `update_emotional_state` will call the new `appraise_event`
-    emotion_module.update_emotional_state(compat_event, event_source="compat_test_source")
-    final_vad = emotion_module.get_emotional_state()
-    print("VAD after compatibility call:", final_vad)
-    # Check if valence increased significantly (0.9 congruence * 0.9 importance * 0.7 intensity approx 0.567)
-    # This should be reflected in the final valence after decay.
-    assert final_vad["valence"] > 0.3 # Allowing for decay from the initial positive impact
+    print("--- ConcreteEmotionModule __main__ Test ---")
 
-    print("\nExample Usage Complete (Phase 1 Enhanced Emotion Module).")
+    # Listener for EmotionalStateChange messages
+    received_emotional_states: List[GenericMessage] = []
+    def emotional_state_listener(message: GenericMessage):
+        print(f"\n émotion_state_listener: Received EmotionalStateChange! ID: {message.message_id[:8]}")
+        if isinstance(message.payload, EmotionalStateChangePayload):
+            payload: EmotionalStateChangePayload = message.payload
+            print(f"  Source: {message.source_module_id}")
+            print(f"  VAD: {payload.current_emotion_profile}")
+            print(f"  Intensity (Arousal): {payload.intensity:.2f}")
+            print(f"  Triggering Event ID: {payload.triggering_event_id[:8] if payload.triggering_event_id else 'N/A'}")
+            received_emotional_states.append(message)
+        else:
+            print(f"  ERROR: Listener received non-EmotionalStateChangePayload: {type(message.payload)}")
+
+    async def main_test_flow():
+        # 1. Setup
+        bus = MessageBus()
+        emotion_module = ConcreteEmotionModule(message_bus=bus, module_id="EmotionModTest01")
+
+        print("\n--- Initial Status ---")
+        print(emotion_module.get_status())
+        print("Initial VAD state:", emotion_module.get_emotional_state())
+
+        bus.subscribe(
+            module_id="TestListener",
+            message_type="EmotionalStateChange",
+            callback=emotional_state_listener
+        )
+        print("\nTestListener subscribed to EmotionalStateChange.")
+
+        # 2. Simulate a GoalUpdate message
+        print("\n--- Simulating GoalUpdate (Goal Achieved) ---")
+        goal_achieved_payload = GoalUpdatePayload(
+            goal_id="test_goal_001",
+            goal_description="Test achieving a goal",
+            priority=0.8, # High priority
+            status="achieved",
+            originator="TestSystem"
+        )
+        goal_achieved_message = GenericMessage(
+            source_module_id="GoalSetterModule",
+            message_type="GoalUpdate",
+            payload=goal_achieved_payload
+        )
+        bus.publish(goal_achieved_message) # Default sync dispatch
+
+        # Allow some time for bus processing if it were async, or for prints
+        await asyncio.sleep(0.05)
+
+        assert len(received_emotional_states) > 0, "EmotionalStateChange was not received by listener"
+        if received_emotional_states:
+            last_esc_payload = received_emotional_states[-1].payload
+            assert isinstance(last_esc_payload, EmotionalStateChangePayload)
+            assert last_esc_payload.triggering_event_id == goal_achieved_message.message_id
+            # Check if VAD reflects positive change (valence > 0, arousal > 0)
+            assert last_esc_payload.current_emotion_profile["valence"] > 0.2 # Increased from 0
+            assert last_esc_payload.current_emotion_profile["arousal"] > 0.1 # Increased from 0
+            print(f"Listener correctly received EmotionalStateChange triggered by {goal_achieved_message.message_id[:8]}.")
+
+
+        print("\n--- Simulating GoalUpdate (Goal Failed, Async Dispatch) ---")
+        received_emotional_states.clear()
+        goal_failed_payload = GoalUpdatePayload(
+            goal_id="test_goal_002",
+            goal_description="Test failing a goal",
+            priority=0.9, # High priority
+            status="failed",
+            originator="TestSystem"
+        )
+        goal_failed_message = GenericMessage(
+            source_module_id="GoalSetterModule",
+            message_type="GoalUpdate",
+            payload=goal_failed_payload
+        )
+        bus.publish(goal_failed_message, dispatch_mode="asynchronous")
+
+        await asyncio.sleep(0.1) # Give async tasks time to run
+
+        assert len(received_emotional_states) > 0, "EmotionalStateChange (async) was not received"
+        if received_emotional_states:
+            last_esc_payload_async = received_emotional_states[-1].payload
+            assert isinstance(last_esc_payload_async, EmotionalStateChangePayload)
+            assert last_esc_payload_async.triggering_event_id == goal_failed_message.message_id
+            assert last_esc_payload_async.current_emotion_profile["valence"] < -0.2 # Decreased from positive
+            print(f"Listener correctly received async EmotionalStateChange triggered by {goal_failed_message.message_id[:8]}.")
+
+
+        print("\n--- Appraise Event Directly (no bus trigger) ---")
+        # This should still publish if bus is available
+        received_emotional_states.clear()
+        event_direct = {
+            "type": "DIRECT_APPRAISAL", "intensity": 0.7, "novelty": 0.1, "expectedness": 0.8,
+            "goal_congruence": 0.6, "goal_importance": 0.7, "controllability": 0.6,
+            # No "triggering_message_id" for direct calls unless manually added
+        }
+        emotion_module.appraise_event(event_direct)
+        await asyncio.sleep(0.05)
+
+        assert len(received_emotional_states) > 0, "EmotionalStateChange (direct appraisal) was not received"
+        if received_emotional_states:
+            direct_esc_payload = received_emotional_states[-1].payload
+            assert isinstance(direct_esc_payload, EmotionalStateChangePayload)
+            assert direct_esc_payload.triggering_event_id is None # Because it wasn't in event_details
+            print("Listener correctly received EmotionalStateChange from direct appraisal.")
+
+
+        print("\n--- Test with NO MessageBus ---")
+        emotion_module_no_bus = ConcreteEmotionModule(module_id="NoBusMod")
+        print(emotion_module_no_bus.get_status())
+        # This should not error and not try to publish
+        emotion_module_no_bus.appraise_event({"type": "TEST_NO_BUS", "intensity": 0.5, "goal_congruence": 0.5, "goal_importance": 0.5})
+        print("Appraisal with no bus completed without error.")
+
+        print("\n--- ConcreteEmotionModule __main__ Test Complete ---")
+
+    # Run the async main function
+    try:
+        asyncio.run(main_test_flow())
+    except RuntimeError as e:
+        if " asyncio.run() cannot be called from a running event loop" in str(e):
+            print("Skipping asyncio.run() as an event loop is already running (e.g. in Jupyter/IPython).")
+            # You might need to await main_test_flow() directly if in such an environment.
+            # loop = asyncio.get_event_loop()
+            # loop.run_until_complete(main_test_flow())
+        else:
+            raise
+
+
+    # Old __main__ content for reference or non-bus testing:
+    # emotion_module = ConcreteEmotionModule()
+    # print("\n--- Initial Status ---")
+    # print(emotion_module.get_status())
+    # print("Initial VAD state:", emotion_module.get_emotional_state())
+    # ... (rest of old main commented out for brevity in diff, but kept in actual file if needed) ...
+    # print("\nExample Usage Complete (Phase 1 Enhanced Emotion Module).")

@@ -132,14 +132,42 @@ class ToMInferenceUpdatePayload:
     timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
 
 
-# Example EmotionalStateChangePayload (not explicitly requested by the prompt for this file)
-# @dataclass
-# class EmotionalStateChangePayload:
-#     current_emotion_profile: Dict[str, float] # e.g., {"valence": 0.7, "arousal": 0.5}
-#     primary_emotion: Optional[str] = None
-#     intensity: Optional[float] = None
-#     triggering_event_id: Optional[str] = None
-#     behavioral_impact_suggestions: List[str] = field(default_factory=list)
+@dataclass
+class EmotionalStateChangePayload:
+    current_emotion_profile: Dict[str, float] # e.g., {"valence": 0.7, "arousal": 0.5}
+    primary_emotion: Optional[str] = None
+    intensity: Optional[float] = None # Overall intensity, could be arousal
+    triggering_event_id: Optional[str] = None # ID of event/message that triggered this
+    behavioral_impact_suggestions: List[str] = field(default_factory=list)
+    timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+@dataclass
+class ActionEventPayload:
+    """
+    Payload for communicating the outcome or status of an action.
+    """
+    action_command_id: str # Links back to the ActionCommand that initiated this event
+    action_type: str # The type of action that was executed
+    status: str # E.g., "SUCCESS", "FAILURE", "IN_PROGRESS", "CANCELLED"
+    outcome: Optional[Dict[str, Any]] = field(default_factory=dict) # Results or details
+    timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
+    metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+@dataclass
+class LearningOutcomePayload:
+    """
+    Payload for communicating the outcome of a learning process.
+    """
+    learning_task_id: str # Identifier for the learning task or episode
+    status: str # E.g., "LEARNED", "UPDATED", "FAILED_TO_LEARN", "NO_CHANGE"
+    learned_item_type: Optional[str] = None # E.g., "skill", "knowledge_concept", "association", "parameter_tuning"
+    item_id: Optional[str] = None # ID of the learned/updated item, if applicable
+    item_description: Optional[str] = None # Brief description of what was learned or the outcome
+    confidence: Optional[float] = None # Confidence in the learned item or outcome
+    source_message_ids: List[str] = field(default_factory=list) # IDs of messages that triggered/informed this learning
+    metadata: Dict[str, Any] = field(default_factory=dict) # Additional details, e.g., specific parameters learned
+    timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
+
 
 if __name__ == '__main__':
     # Test MemoryItem
@@ -253,5 +281,45 @@ if __name__ == '__main__':
     print(tom_inf1)
     assert tom_inf1.confidence == 0.7
     assert len(tom_inf1.source_evidence_ids) == 2
+
+    # Test EmotionalStateChangePayload
+    esc_payload = EmotionalStateChangePayload(
+        current_emotion_profile={"valence": 0.6, "arousal": 0.7, "dominance": 0.4},
+        primary_emotion="joyful_anticipation",
+        intensity=0.7,
+        triggering_event_id="event_xyz"
+    )
+    print(esc_payload)
+    assert esc_payload.intensity == 0.7
+    assert isinstance(esc_payload.timestamp, datetime.datetime)
+
+    # Test ActionEventPayload
+    action_event_payload = ActionEventPayload(
+        action_command_id="cmd_12345",
+        action_type="NAVIGATE_TO_POINT",
+        status="SUCCESS",
+        outcome={"final_coordinates": {"x": 100, "y": 250}, "path_taken_id": "path_seg_abc"},
+        metadata={"source_behavior_module": "NavigationUnit_02"}
+    )
+    print(action_event_payload)
+    assert action_event_payload.status == "SUCCESS"
+    assert action_event_payload.outcome["final_coordinates"]["x"] == 100
+    assert isinstance(action_event_payload.timestamp, datetime.datetime)
+
+    # Test LearningOutcomePayload
+    learning_outcome = LearningOutcomePayload(
+        learning_task_id="task_rl_001",
+        status="UPDATED",
+        learned_item_type="skill_parameter",
+        item_id="skill_navigate",
+        item_description="Adjusted turning radius parameter based on collision data.",
+        confidence=0.85,
+        source_message_ids=["action_event_col123", "percept_bump456"],
+        metadata={"parameter_changed": "turning_radius", "old_value": 0.5, "new_value": 0.45}
+    )
+    print(learning_outcome)
+    assert learning_outcome.status == "UPDATED"
+    assert learning_outcome.confidence == 0.85
+    assert "parameter_changed" in learning_outcome.metadata
 
     print("\nCore messages example usage complete.")

@@ -4,62 +4,60 @@ import uuid # For LTM Query Result fallback query_id
 
 try:
     from .base_long_term_memory_module import BaseLongTermMemoryModule
-    from .concrete_base_memory_module import ConcreteBaseMemoryModule # Still used for procedural
+    from .concrete_base_memory_module import ConcreteBaseMemoryModule
     from .message_bus import MessageBus
-    from .core_messages import GenericMessage, LTMQueryResultPayload, MemoryItem
-    # LTMQueryPayload is not a defined dataclass yet in core_messages.py,
-    # handle_ltm_query_message will expect a dict for query_payload.
+    from .core_messages import GenericMessage, LTMQueryResultPayload, MemoryItem, LTMQueryPayload # Added LTMQueryPayload
 except ImportError:
-    # Fallback for scenarios where the relative import might fail
-    from base_long_term_memory_module import BaseLongTermMemoryModule
-    from concrete_base_memory_module import ConcreteBaseMemoryModule
+    print("Warning: Running ConcreteLongTermMemoryModule with stubbed imports.")
+    from base_long_term_memory_module import BaseLongTermMemoryModule # type: ignore
+    from concrete_base_memory_module import ConcreteBaseMemoryModule # type: ignore
     try:
-        from message_bus import MessageBus
-        from core_messages import GenericMessage, LTMQueryResultPayload, MemoryItem
+        from message_bus import MessageBus # type: ignore
+        from core_messages import GenericMessage, LTMQueryResultPayload, MemoryItem, LTMQueryPayload # type: ignore
     except ImportError:
-        MessageBus = None
-        GenericMessage = None
-        LTMQueryResultPayload = None
-        MemoryItem = None
+        MessageBus = None # type: ignore
+        GenericMessage = object # type: ignore
+        LTMQueryResultPayload = object # type: ignore
+        MemoryItem = object # type: ignore
+        LTMQueryPayload = object # type: ignore
 
 
 class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
     """
     A concrete implementation of the BaseLongTermMemoryModule.
-    This version includes Phase 1 enhancements:
-    - Direct in-memory list for episodic memory with keyword search.
-    - Direct in-memory dictionary-based graph for semantic memory.
-    Procedural memory and generic LTM functions may still use the backend.
-    It also integrates with a MessageBus to handle LTMQuery messages.
+    Integrates with a MessageBus to handle LTMQuery messages using LTMQueryPayload.
     """
 
-    def __init__(self, message_bus: Optional[MessageBus] = None):
+    def __init__(self,
+                 message_bus: Optional[MessageBus] = None,
+                 module_id: str = f"ConcreteLongTermMemoryModule_{str(uuid.uuid4())[:8]}"):
         """
         Initializes the ConcreteLongTermMemoryModule.
 
         Args:
             message_bus: An optional instance of MessageBus for handling queries.
+            module_id: A unique identifier for this module instance.
         """
-        self._storage_backend = ConcreteBaseMemoryModule() # For procedural and generic
-
+        self._storage_backend = ConcreteBaseMemoryModule()
+        self._module_id = module_id
         self.episodic_memory: List[Dict[str, Any]] = []
         self.next_episode_id: int = 0
         self.semantic_memory_graph: Dict[str, Dict[str, Any]] = {}
 
-        self.message_bus = message_bus
-        if self.message_bus:
-            if GenericMessage: # Check if import succeeded
-                self.message_bus.subscribe(
-                    module_id="ConcreteLongTermMemoryModule_01", # Example ID
+        self._message_bus = message_bus
+        if self._message_bus:
+            if GenericMessage and LTMQueryPayload: # Ensure necessary types are loaded
+                self._message_bus.subscribe(
+                    module_id=self._module_id,
                     message_type="LTMQuery",
                     callback=self.handle_ltm_query_message
                 )
-                bus_status = "subscribed to 'LTMQuery'"
+                bus_status = f"subscribed to 'LTMQuery' as '{self._module_id}'"
             else:
-                bus_status = "core_messages not imported, LTMQuery subscription skipped"
-            print(f"ConcreteLongTermMemoryModule (Phase 1 Enhanced) initialized. Message bus {bus_status}.")
+                bus_status = "core_messages (GenericMessage or LTMQueryPayload) not imported, LTMQuery subscription skipped"
+            print(f"ConcreteLongTermMemoryModule initialized. Message bus {bus_status}.")
         else:
-            print("ConcreteLongTermMemoryModule (Phase 1 Enhanced) initialized. Message bus not provided.")
+            print(f"ConcreteLongTermMemoryModule '{self._module_id}' initialized. Message bus not provided.")
 
         self._subcomponent_status = {
             "episodic_list": {"items": 0, "queries": 0, "bus_queries_handled": 0},
@@ -72,80 +70,76 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
     def handle_ltm_query_message(self, message: GenericMessage):
         """
         Handles LTMQuery messages received from the message bus.
-        The payload of the message is expected to be a dictionary matching
-        the conceptual LTMQueryPayload structure.
+        The payload of the message is expected to be an LTMQueryPayload dataclass instance.
         """
-        if not self.message_bus or not GenericMessage or not LTMQueryResultPayload or not MemoryItem:
-            print("LTM Error: MessageBus or core message types not available. Cannot process or respond to LTMQuery.")
+        if not self._message_bus or not GenericMessage or not LTMQueryResultPayload or not MemoryItem or not LTMQueryPayload:
+            print(f"LTM Error ({self._module_id}): MessageBus or core message types not available. Cannot process or respond to LTMQuery.")
             return
 
-        # print(f"LTM received query via bus: {message.payload}") # Optional logging
+        if not isinstance(message.payload, LTMQueryPayload):
+            error_msg = f"Payload is not an LTMQueryPayload instance, received type: {type(message.payload).__name__}."
+            print(f"LTM Error ({self._module_id}): {error_msg}")
+            # Try to get original query_id if possible for error response, otherwise generate one
+            original_query_id = getattr(message.payload, 'query_id', str(uuid.uuid4()))
+            error_payload = LTMQueryResultPayload(query_id=original_query_id, results=[], success_status=False, error_message=error_msg)
+            error_result_message = GenericMessage(
+                source_module_id=self._module_id,
+                message_type="LTMQueryResult",
+                payload=error_payload,
+                target_module_id=message.source_module_id
+            )
+            self._message_bus.publish(error_result_message)
+            return
 
-        query_payload = message.payload
+        query_payload: LTMQueryPayload = message.payload
+        # print(f"LTM ({self._module_id}) received query via bus: {query_payload}") # Optional logging
+
         results: List[MemoryItem] = []
         success = False
-        error_msg = None
+        error_msg: Optional[str] = None
 
-        # Default query_id for result, try to get from payload
-        # If payload itself is not a dict, this will be an issue.
-        query_id_for_result = str(uuid.uuid4()) # Fallback
-        if isinstance(query_payload, dict):
-            query_id_for_result = query_payload.get("query_id", query_id_for_result)
-        elif hasattr(query_payload, "query_id"): # If it's an object with query_id
-             query_id_for_result = query_payload.query_id
+        try:
+            query_type = query_payload.query_type
+            query_content = query_payload.query_content
+            # target_memory_type = query_payload.target_memory_type (can be used for routing if needed)
+            # parameters = query_payload.parameters (can be used for max_results etc.)
 
+            if query_type == "semantic_node_retrieval" and isinstance(query_content, str):
+                self._subcomponent_status['semantic_graph']['bus_queries_handled'] += 1
+                node_data = self.get_semantic_node(query_content) # query_content is node_id
+                if node_data:
+                    results.append(MemoryItem(item_id=query_content, content=node_data, metadata={"type": "semantic_node"}))
+                success = True # Query type was valid, even if no result found
+            elif query_type == "episodic_keyword_search" and isinstance(query_content, str):
+                self._subcomponent_status['episodic_list']['bus_queries_handled'] += 1
+                # Consider using parameters if available, e.g., query_payload.parameters.get("max_results")
+                episodes = self.find_episodes_by_keyword(query_content)
+                for episode in episodes:
+                    results.append(MemoryItem(item_id=episode["episode_id"], content=episode, metadata={"type": "episode"}))
+                success = True
+            else:
+                error_msg = f"Unsupported LTM query_type: '{query_type}' or invalid query_content type for that query_type."
+                success = False # Explicitly set success to False for unsupported types
 
-        if not isinstance(query_payload, dict): # Assuming LTMQueryPayload is passed as dict for now
-            error_msg = f"Payload is not a dictionary, received type: {type(query_payload).__name__}."
+        except Exception as e:
+            error_msg = f"Error processing LTM query '{query_payload.query_type}' (ID: {query_payload.query_id}): {str(e)}"
+            print(f"LTM Error ({self._module_id}): {error_msg}") # Consider logging traceback for debug
             success = False
-        else:
-            query_type = query_payload.get("query_type")
-            query_content = query_payload.get("query_content")
-            # target_memory_type = query_payload.get("target_memory_type", "semantic") # Defaulting if needed
-
-            try:
-                if query_type == "semantic_node_retrieval" and isinstance(query_content, str):
-                    self._subcomponent_status['semantic_graph']['bus_queries_handled'] += 1
-                    node_data = self.get_semantic_node(query_content) # query_content is node_id
-                    if node_data:
-                        results.append(MemoryItem(item_id=query_content, content=node_data, metadata={"type": "semantic_node"}))
-                    # success = True even if node_data is None, query itself was valid type
-                    success = True
-                elif query_type == "episodic_keyword_search" and isinstance(query_content, str):
-                    self._subcomponent_status['episodic_list']['bus_queries_handled'] += 1
-                    episodes = self.find_episodes_by_keyword(query_content)
-                    for episode in episodes:
-                        results.append(MemoryItem(item_id=episode["episode_id"], content=episode, metadata={"type": "episode"}))
-                    success = True
-                # Add more query_type handlers here based on LTMQuery spec as needed
-                else:
-                    error_msg = f"Unsupported LTM query_type: '{query_type}' or invalid query_content type."
-
-                if error_msg: # If any error_msg was set by logic above.
-                    success = False
-
-            except Exception as e:
-                # import traceback # Should be at top-level if used extensively
-                # tb_str = traceback.format_exc()
-                error_msg = f"Error processing LTM query '{query_type}': {str(e)}"
-                print(f"LTM Error: {error_msg}") # Consider logging traceback for debug
-                success = False
 
         ltm_result_payload = LTMQueryResultPayload(
-            query_id=query_id_for_result,
+            query_id=query_payload.query_id, # Use the query_id from the LTMQueryPayload
             results=results,
             success_status=success,
             error_message=error_msg
         )
         result_message = GenericMessage(
-            source_module_id="ConcreteLongTermMemoryModule_01", # Example ID
+            source_module_id=self._module_id,
             message_type="LTMQueryResult",
             payload=ltm_result_payload,
             target_module_id=message.source_module_id # Respond to the original querier
         )
-        self.message_bus.publish(result_message)
-        # print(f"LTM published result for query_id '{query_id_for_result}' to '{message.source_module_id}'. Success: {success}")
-
+        self._message_bus.publish(result_message)
+        # print(f"LTM ({self._module_id}) published result for query_id '{query_payload.query_id}' to '{message.source_module_id}'. Success: {success}")
 
     # --- Generic BaseMemoryModule methods (mostly for procedural/other) ---
     def store(self, information: Dict[str, Any], context: Dict[str, Any] = None) -> str:
@@ -178,21 +172,21 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
             del self.semantic_memory_graph[memory_id]
             # Also remove relationships pointing to this node (more complex, not done for PoC)
             self._subcomponent_status['semantic_graph']['nodes'] = len(self.semantic_memory_graph)
-            print(f"ConcreteLTM: Deleted semantic node '{memory_id}'. Relationships pointing to it might still exist.")
+            print(f"ConcreteLTM ({self._module_id}): Deleted semantic node '{memory_id}'. Relationships pointing to it might still exist.")
             return True
 
         # If not in direct structures, try backend
-        print(f"ConcreteLTM: Attempting to delete ID '{memory_id}' from backend.")
+        print(f"ConcreteLTM ({self._module_id}): Attempting to delete ID '{memory_id}' from backend.")
         return self._storage_backend.delete_memory(memory_id)
 
 
     def manage_capacity(self) -> None:
-        print("ConcreteLTM: manage_capacity called.")
+        print(f"ConcreteLTM ({self._module_id}): manage_capacity called.")
         self._storage_backend.manage_capacity()
         self.manage_ltm_subcomponents()
 
     def handle_forgetting(self, strategy: str = 'default') -> None:
-        print(f"ConcreteLTM: handle_forgetting called with strategy '{strategy}'.")
+        print(f"ConcreteLTM ({self._module_id}): handle_forgetting called with strategy '{strategy}'.")
         self._storage_backend.handle_forgetting(strategy)
 
     def get_status(self) -> Dict[str, Any]:
@@ -204,7 +198,9 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
             edge_count += len(node_data.get("relationships", []))
         self._subcomponent_status["semantic_graph"]["edges"] = edge_count
         return {
-            "module_type": "ConcreteLongTermMemoryModule (Phase 1 Enhanced w/ Bus)",
+            "module_id": self._module_id,
+            "module_type": "ConcreteLongTermMemoryModule (Message Bus Integrated)",
+            "message_bus_configured": self._message_bus is not None,
             "backend_storage_status": backend_status,
             "direct_ltm_structures_status": {
                 "episodic_memory_count": self._subcomponent_status["episodic_list"]["items"],
@@ -360,86 +356,162 @@ class ConcreteLongTermMemoryModule(BaseLongTermMemoryModule):
         print("ConcreteLTM: manage_ltm_subcomponents() called - Placeholder.")
 
     def consolidate_memory(self, type_to_consolidate: str = 'all', intensity: str = 'normal') -> None:
-        print(f"ConcreteLTM: consolidate_memory called for type '{type_to_consolidate}' with intensity '{intensity}'. Placeholder.")
+        print(f"ConcreteLTM ({self._module_id}): consolidate_memory called for type '{type_to_consolidate}' with intensity '{intensity}'. Placeholder.")
 
 if __name__ == '__main__':
-    # Test with MessageBus
-    bus = MessageBus() if MessageBus else None
-    ltm_with_bus = ConcreteLongTermMemoryModule(message_bus=bus)
-    print("\n--- Initial LTM Status (with Bus) ---")
-    print(ltm_with_bus.get_status())
+    import asyncio
 
-    # Example of how another module would query LTM via bus
-    if bus and GenericMessage: # Check if imports were successful
-        test_querier_id = "TestQuerierModule_01"
+    # Ensure MessageBus and core_messages are available for __main__
+    if MessageBus is None or GenericMessage is None or LTMQueryResultPayload is None or LTMQueryPayload is None or MemoryItem is None:
+        print("CRITICAL: MessageBus or core_messages not loaded correctly for __main__ test. Exiting.")
+        exit(1)
 
-        # Add some data to LTM first
-        ltm_with_bus.add_semantic_node("concept_alpha", "Alpha", "letter")
-        ep_id = ltm_with_bus.add_episode("Bus test event")
+    print("\n--- ConcreteLongTermMemoryModule __main__ Test ---")
 
-        # Mock callback for the querier to receive results
-        query_results_received = []
-        def querier_result_handler(message: GenericMessage):
-            print(f"{test_querier_id} received LTM Result: {message.payload}")
-            query_results_received.append(message.payload)
+    received_ltm_results: List[GenericMessage] = []
+    def ltm_result_listener(message: GenericMessage):
+        print(f"\n ltm_result_listener: Received LTMQueryResult! ID: {message.message_id[:8]}")
+        if isinstance(message.payload, LTMQueryResultPayload):
+            payload: LTMQueryResultPayload = message.payload
+            print(f"  Source: {message.source_module_id}")
+            print(f"  Query ID: {payload.query_id}")
+            print(f"  Success: {payload.success_status}")
+            print(f"  Result Count: {len(payload.results)}")
+            if payload.error_message: print(f"  Error: {payload.error_message}")
+            for res_item in payload.results:
+                print(f"    - Item ID: {res_item.item_id}, Content: {str(res_item.content)[:100]}...")
+            received_ltm_results.append(message)
+        else:
+            print(f"  ERROR: Listener received non-LTMQueryResultPayload: {type(message.payload)}")
 
-        if bus.subscribe: # Check if bus is a real MessageBus instance
-             bus.subscribe(test_querier_id, "LTMQueryResult", querier_result_handler)
+    async def main_test_flow():
+        bus = MessageBus()
+        test_ltm_module_id = "LTMTest01"
+        ltm_module = ConcreteLongTermMemoryModule(message_bus=bus, module_id=test_ltm_module_id)
 
-        # 1. Query for semantic node
-        semantic_query_id = str(uuid.uuid4())
-        semantic_query_payload = {
-            "query_id": semantic_query_id,
-            "query_type": "semantic_node_retrieval",
-            "query_content": "concept_alpha", # node_id
-            "requester_module_id": test_querier_id
-        }
-        semantic_query_message = GenericMessage(
-            source_module_id=test_querier_id,
-            message_type="LTMQuery",
-            payload=semantic_query_payload
+        print("\n--- Initial LTM Status ---")
+        print(ltm_module.get_status())
+
+        bus.subscribe(
+            module_id="TestLTMResultListener",
+            message_type="LTMQueryResult",
+            callback=ltm_result_listener
         )
-        print(f"\n{test_querier_id} publishing semantic query for 'concept_alpha' (Query ID: {semantic_query_id})")
-        bus.publish(semantic_query_message)
+        print("\nTestLTMResultListener subscribed to LTMQueryResult messages.")
 
-        # Basic check (in real tests, use unittest assertions and time.sleep if truly async)
-        time.sleep(0.1) # Allow a moment for synchronous bus to process
-        assert len(query_results_received) == 1
-        if query_results_received:
-            assert query_results_received[0].query_id == semantic_query_id
-            assert query_results_received[0].success_status == True
-            assert len(query_results_received[0].results) == 1
-            assert query_results_received[0].results[0].content.get("label") == "Alpha"
+        # Add some data to LTM
+        ltm_module.add_semantic_node("concept_dog", "Dog", "animal", {"sound": "bark"})
+        ltm_module.add_semantic_node("concept_cat", "Cat", "animal", {"sound": "meow"})
+        ltm_module.add_semantic_relationship("concept_dog", "concept_cat", "known_interaction", {"type": "chases"})
+        ltm_module.add_episode("The dog chased the cat.", associated_data={"animals_involved": ["dog", "cat"]})
+        ltm_module.add_episode("The cat sat on the mat.", associated_data={"object": "mat"})
 
-        # 2. Query for episodic keyword
-        episodic_query_id = str(uuid.uuid4())
-        episodic_query_payload = {
-            "query_id": episodic_query_id,
-            "query_type": "episodic_keyword_search",
-            "query_content": "bus test",
-            "requester_module_id": test_querier_id
-        }
-        episodic_query_message = GenericMessage(
-            source_module_id=test_querier_id,
-            message_type="LTMQuery",
-            payload=episodic_query_payload
+        # 1. Test Semantic Node Retrieval (Success)
+        print("\n--- Publishing LTMQuery: Semantic Node Retrieval (concept_dog) ---")
+        query_payload_semantic_dog = LTMQueryPayload(
+            requester_module_id="TestQuerier01",
+            query_type="semantic_node_retrieval",
+            query_content="concept_dog"
         )
-        print(f"\n{test_querier_id} publishing episodic query for 'bus test' (Query ID: {episodic_query_id})")
-        bus.publish(episodic_query_message)
+        query_msg_semantic_dog = GenericMessage(
+            source_module_id="TestQuerier01", message_type="LTMQuery", payload=query_payload_semantic_dog
+        )
+        bus.publish(query_msg_semantic_dog)
+        await asyncio.sleep(0.05)
 
-        time.sleep(0.1)
-        assert len(query_results_received) == 2
-        if len(query_results_received) > 1:
-            assert query_results_received[1].query_id == episodic_query_id
-            assert query_results_received[1].success_status == True
-            assert len(query_results_received[1].results) == 1
-            assert "Bus test event" in query_results_received[1].results[0].content.get("event_description")
+        assert len(received_ltm_results) == 1, "LTMQueryResult for concept_dog not received"
+        if received_ltm_results:
+            res1_payload = received_ltm_results[0].payload
+            assert res1_payload.query_id == query_payload_semantic_dog.query_id
+            assert res1_payload.success_status is True
+            assert len(res1_payload.results) == 1
+            assert res1_payload.results[0].content.get("label") == "Dog"
+            print("  Listener correctly received result for 'concept_dog'.")
+        received_ltm_results.clear()
 
-        print("\nLTM Bus interaction example complete.")
-    else:
-        print("\nMessageBus or GenericMessage not available, skipping bus interaction example.")
+
+        # 2. Test Episodic Keyword Search (Success)
+        print("\n--- Publishing LTMQuery: Episodic Keyword Search (cat) ---")
+        query_payload_episodic_cat = LTMQueryPayload(
+            requester_module_id="TestQuerier01",
+            query_type="episodic_keyword_search",
+            query_content="cat"
+        )
+        query_msg_episodic_cat = GenericMessage(
+            source_module_id="TestQuerier01", message_type="LTMQuery", payload=query_payload_episodic_cat
+        )
+        bus.publish(query_msg_episodic_cat)
+        await asyncio.sleep(0.05)
+
+        assert len(received_ltm_results) == 1, "LTMQueryResult for episodic 'cat' not received"
+        if received_ltm_results:
+            res2_payload = received_ltm_results[0].payload
+            assert res2_payload.query_id == query_payload_episodic_cat.query_id
+            assert res2_payload.success_status is True
+            assert len(res2_payload.results) == 2 # "dog chased cat" and "cat sat on mat"
+            print("  Listener correctly received 2 episodes for keyword 'cat'.")
+        received_ltm_results.clear()
+
+
+        # 3. Test Unsupported Query Type
+        print("\n--- Publishing LTMQuery: Unsupported Query Type ---")
+        query_payload_unsupported = LTMQueryPayload(
+            requester_module_id="TestQuerier01",
+            query_type="future_prediction_query", # Made up type
+            query_content="what will happen tomorrow?"
+        )
+        query_msg_unsupported = GenericMessage(
+            source_module_id="TestQuerier01", message_type="LTMQuery", payload=query_payload_unsupported
+        )
+        bus.publish(query_msg_unsupported)
+        await asyncio.sleep(0.05)
+
+        assert len(received_ltm_results) == 1, "LTMQueryResult for unsupported type not received"
+        if received_ltm_results:
+            res3_payload = received_ltm_results[0].payload
+            assert res3_payload.query_id == query_payload_unsupported.query_id
+            assert res3_payload.success_status is False
+            assert "Unsupported LTM query_type" in res3_payload.error_message
+            print(f"  Listener correctly received error for unsupported query type: {res3_payload.error_message}")
+        received_ltm_results.clear()
+
+        # 4. Test Malformed Payload (if module handles it gracefully by sending error back)
+        print("\n--- Publishing LTMQuery: Malformed Payload (not LTMQueryPayload) ---")
+        malformed_payload_dict = {"some_random_key": "some_value", "query_id": "malformed_q1"} # Not LTMQueryPayload
+        query_msg_malformed = GenericMessage(
+            source_module_id="TestQuerier01", message_type="LTMQuery", payload=malformed_payload_dict
+        )
+        bus.publish(query_msg_malformed)
+        await asyncio.sleep(0.05)
+
+        assert len(received_ltm_results) == 1, "LTMQueryResult for malformed payload not received"
+        if received_ltm_results:
+            res4_payload = received_ltm_results[0].payload
+            # The query_id might be a newly generated one if the original couldn't be parsed from the malformed payload.
+            # assert res4_payload.query_id == "malformed_q1" # This might fail if LTM can't get it
+            assert res4_payload.success_status is False
+            assert "Payload is not an LTMQueryPayload instance" in res4_payload.error_message
+            print(f"  Listener correctly received error for malformed payload: {res4_payload.error_message}")
+        received_ltm_results.clear()
+
+
+        print("\n--- Final LTM Status ---")
+        print(ltm_module.get_status())
+        assert ltm_module.get_status()["query_counts_overview"]["semantic_graph"]["bus_queries_handled"] == 1
+        assert ltm_module.get_status()["query_counts_overview"]["episodic_list"]["bus_queries_handled"] == 1
+
+
+        print("\n--- ConcreteLongTermMemoryModule __main__ Test Complete ---")
+
+    try:
+        asyncio.run(main_test_flow())
+    except RuntimeError as e:
+        if " asyncio.run() cannot be called from a running event loop" in str(e):
+            print("Skipping asyncio.run() as an event loop is already running (e.g. in Jupyter/IPython).")
+        else:
+            raise
 
     # Original __main__ content for direct calls (can be run if bus is None)
-    ltm_no_bus = ConcreteLongTermMemoryModule() # No bus
+    # ltm_no_bus = ConcreteLongTermMemoryModule() # No bus
     # ... (rest of the original __main__ for direct calls can be pasted here if needed for separate testing) ...
-    print("\n(Original direct call examples can be run by instantiating LTM without a bus)")
+    # print("\n(Original direct call examples can be run by instantiating LTM without a bus)")

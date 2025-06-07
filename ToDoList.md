@@ -179,7 +179,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [x] **Prototype Advanced Motivational System (Phase 1):** Implement a computational model for one intrinsic motivation (e.g., curiosity) based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
 - [x] **Prototype Advanced Emotion Module (Phase 1):** Implement enhanced appraisal mechanisms based on the `PiaCML_Advanced_Roadmap.md`. (Completed on 2024-03-08 by Jules)
 - [x] **Implement Core Inter-Module Communication System (Phase 1 - Basic Bus & Data Structures):** Defined core message data structures and implemented a basic synchronous in-memory Message Bus with subscribe/publish capabilities. (Completed on 2024-03-08 by Jules)
-- [ ] **Implement Core Inter-Module Communication System (Phase 2 - Advanced Bus Features & Full Module Integration):** Enhance Message Bus (e.g., with asynchronous capabilities, improved error handling, filtering options) and integrate it thoroughly with all relevant CML modules, replacing direct calls where appropriate.
+- [x] **Implement Core Inter-Module Communication System (Phase 2 - Advanced Bus Features & Full Module Integration):** Enhanced Message Bus (with asynchronous capabilities using asyncio, error handling with subscriber suspension, metadata filtering options) and integrated it with all core CML modules (Perception, WM, LTM, Attention, Learning, Motivation, Emotion, Planning, Behavior Gen, Self-Model, ToM, World Model), replacing direct calls where appropriate. (Completed by Jules)
 - [x] Added conceptual hook for asynchronous message dispatch to MessageBus. (Completed on 2024-03-08 by Jules)
 - [x] Implemented enhanced error logging (including tracebacks) for callback exceptions in MessageBus. (Completed on 2024-03-08 by Jules)
 - [x] Added basic message filtering capability to `subscribe` method in MessageBus. (Completed on 2024-03-08 by Jules)
@@ -235,6 +235,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 ## Cross-Cutting Future Enhancements (From User's New List)
 - [x] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
 - [x] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
+- [ ] **Refine CML Module Interactions & Message Payloads:** Continuously review and refine the specific data passed in message payloads between CML modules and the direct API calls that remain, to optimize information flow and module decoupling for advanced scenarios.
 - [ ] **Tooling for AGI's Internalization of Developer Tools & Meta-Cognitive Patterns (MCPs):**
 - [ ] **PiaAVT Logging for Meta-Cognition:** Formally propose and document new event types in `Logging_Specification.md` related to AGI self-analysis, internal simulation, MCP generation, and cognitive reconfiguration. (Covers "Extend Logging Spec" from AVT new list)
 - [ ] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles.
