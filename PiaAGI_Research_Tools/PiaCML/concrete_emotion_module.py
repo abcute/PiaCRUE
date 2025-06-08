@@ -61,17 +61,41 @@ class ConcreteEmotionModule(BaseEmotionModule):
 
         self._reactivity_modifier_arousal: float = 1.0
         self._personality_profile: Optional[Dict[str, Any]] = None
+        self._log: List[str] = [] # Initialize log
 
+        bus_status_msg = "initialized without a message bus"
         if self._message_bus:
-            self._message_bus.subscribe(
-                module_id=self._module_id,
-                message_type="GoalUpdate",
-                callback=self._handle_goal_update_for_appraisal
-            )
-            print(f"ConcreteEmotionModule '{self._module_id}' initialized and subscribed to 'GoalUpdate' on the message bus.")
-        else:
-            print(f"ConcreteEmotionModule '{self._module_id}' initialized without a message bus.")
+            subscriptions = [
+                ("GoalUpdate", self._handle_goal_update_for_appraisal),
+                ("PerceptData", self._handle_percept_data_for_appraisal), # New
+                ("ActionEvent", self._handle_action_event_for_appraisal)   # New
+            ]
+            subscribed_types = []
+            try:
+                # Ensure core message types are available if using type hints for them in handlers
+                # from .core_messages import PerceptDataPayload, ActionEventPayload # Already imported at top
+                for msg_type, callback in subscriptions:
+                    self._message_bus.subscribe(
+                        module_id=self._module_id,
+                        message_type=msg_type,
+                        callback=callback
+                    )
+                    subscribed_types.append(msg_type)
+                if subscribed_types:
+                    bus_status_msg = f"initialized and subscribed to: {', '.join(subscribed_types)}"
+                else: # Should not happen if subscriptions list is not empty
+                    bus_status_msg = "initialized but no subscriptions made"
+            except Exception as e:
+                bus_status_msg = f"FAILED to subscribe: {e}"
 
+        self._log_message(f"ConcreteEmotionModule '{self._module_id}' {bus_status_msg}.")
+
+
+    def _log_message(self, message: str):
+        """Helper method for internal logging."""
+        log_entry = f"{datetime.datetime.now(datetime.timezone.utc).isoformat()} [{self._module_id}]: {message}"
+        self._log.append(log_entry)
+        # print(log_entry) # Optional for real-time debugging
 
     def _clamp_value(self, value: float, min_val: float = -1.0, max_val: float = 1.0) -> float:
         """Clamps a value between a minimum and maximum."""
@@ -130,6 +154,79 @@ class ConcreteEmotionModule(BaseEmotionModule):
 
         self.appraise_event(event_details)
 
+    def _handle_percept_data_for_appraisal(self, message: GenericMessage) -> None:
+        """Handles PerceptData messages for emotional appraisal."""
+        # Ensure PerceptDataPayload is imported if type checking: from .core_messages import PerceptDataPayload
+        if not hasattr(message.payload, 'modality') or not hasattr(message.payload, 'content'): # Basic check for PerceptDataPayload structure
+            self._log_message(f"ERROR: Received non-PerceptDataPayload for _handle_percept_data_for_appraisal: {type(message.payload)}")
+            return
+
+        payload = message.payload # Assuming it's PerceptDataPayload
+        self._log_message(f"Handling PerceptData for appraisal: Modality='{payload.modality}', Content='{str(payload.content)[:100]}...'")
+
+        event_details: Dict[str, Any] = {
+            "type": f"PERCEPTION_{payload.modality.upper()}",
+            "intensity": 0.5, # Default intensity for percepts
+            "novelty": 0.5,   # Default novelty
+            "expectedness": 0.5, # Default expectedness
+            "triggering_message_id": message.message_id
+        }
+
+        if payload.modality == "sound" and isinstance(payload.content, dict) and payload.content.get("type") == "sudden_loud_noise":
+            event_details["intensity"] = 0.9
+            event_details["novelty"] = 0.8
+            event_details["expectedness"] = 0.1 # Unexpected
+            self._log_message(f"Appraisal derived from 'sudden_loud_noise': High intensity, novelty; Low expectedness.")
+        elif payload.modality == "text" and isinstance(payload.content, dict):
+            sentiment = payload.content.get("sentiment", "neutral")
+            keywords = payload.content.get("keywords", [])
+            if sentiment == "very_negative" or "warning" in keywords or "danger" in keywords:
+                event_details["intensity"] = 0.8
+                event_details["goal_congruence"] = -0.7 # Conceptual: implies general threat/negative impact
+                event_details["expectedness"] = 0.3 # Negative events often less expected
+                self._log_message(f"Appraisal derived from negative text/keywords: High intensity, negative congruence.")
+            elif sentiment == "very_positive" or "congratulations" in keywords:
+                event_details["intensity"] = 0.7
+                event_details["goal_congruence"] = 0.6
+                self._log_message(f"Appraisal derived from positive text/keywords: Positive congruence.")
+
+        self.appraise_event(event_details)
+
+    def _handle_action_event_for_appraisal(self, message: GenericMessage) -> None:
+        """Handles ActionEvent messages for emotional appraisal."""
+        # Ensure ActionEventPayload is imported if type checking: from .core_messages import ActionEventPayload
+        if not hasattr(message.payload, 'action_type') or not hasattr(message.payload, 'status'): # Basic check
+            self._log_message(f"ERROR: Received non-ActionEventPayload for _handle_action_event_for_appraisal: {type(message.payload)}")
+            return
+
+        payload = message.payload # Assuming it's ActionEventPayload
+        self._log_message(f"Handling ActionEvent for appraisal: Type='{payload.action_type}', Status='{payload.status}'")
+
+        # Conceptual mapping
+        intensity = payload.outcome.get("action_priority", 0.5) if payload.outcome else 0.5 # Assuming outcome might contain priority
+        goal_importance = payload.outcome.get("goal_priority", 0.5) if payload.outcome else 0.5
+
+        goal_congruence = 0.0
+        expectedness = 0.5 # Neutral expectedness by default
+
+        if payload.status == "SUCCESS":
+            goal_congruence = 0.8
+            expectedness = 0.7 # Successful actions might be more expected if agent is competent
+        elif payload.status == "FAILURE":
+            goal_congruence = -0.8
+            expectedness = 0.3 # Failures might be less expected
+            intensity = max(intensity, 0.6) # Failures can be more intense emotionally
+
+        event_details: Dict[str, Any] = {
+            "type": f"ACTION_OUTCOME_{payload.action_type.upper()}",
+            "intensity": self._clamp_value(intensity, 0.0, 1.0),
+            "goal_congruence": goal_congruence,
+            "goal_importance": self._clamp_value(goal_importance, 0.0, 1.0),
+            "expectedness": expectedness,
+            "triggering_message_id": message.message_id
+        }
+        self._log_message(f"Appraisal derived from ActionEvent: Congruence={goal_congruence}, Expectedness={expectedness}, Intensity={event_details['intensity']}.")
+        self.appraise_event(event_details)
 
     def appraise_event(self, event_details: Dict[str, Any]) -> None:
         """
@@ -139,17 +236,17 @@ class ConcreteEmotionModule(BaseEmotionModule):
         Args:
             event_details: A dictionary containing details about the event. Example structure:
                 {
-                    "type": str, // e.g., "GOAL_PROGRESS", "EXTERNAL_SENSOR", "SOCIAL_INTERACTION"
+                    "type": str, // e.g., "GOAL_PROGRESS", "PERCEPTION_SOUND", "ACTION_OUTCOME_NAVIGATE"
                     "intensity": float, // Perceived intensity of the event (0-1)
-                    "novelty": float, // (0-1)
-                    "expectedness": float, // 0 (unexpected) to 1 (expected)
-                    "goal_congruence": Optional[float], // -1 (obstructs) to 1 (achieves), 0 (neutral)
-                    "goal_importance": Optional[float], // (0-1) Priority of the affected goal
-                    "controllability": Optional[float], // (0-1) Agent's perceived control
-                    "norm_alignment": Optional[float] // -1 (violates norms) to 1 (aligns)
+                    "novelty": float, // (0-1) - Optional, defaults if not present
+                    "expectedness": float, // 0 (unexpected) to 1 (expected) - Optional, defaults
+                    "goal_congruence": Optional[float], // -1 (obstructs) to 1 (achieves), 0 (neutral) - Optional
+                    "goal_importance": Optional[float], // (0-1) Priority of the affected goal - Optional
+                    "controllability": Optional[float], // (0-1) Agent's perceived control - Optional
+                    "norm_alignment": Optional[float] // -1 (violates norms) to 1 (aligns) - Optional
                 }
         """
-        print(f"ConcreteEmotionModule: Appraising event: {event_details.get('type', 'N/A')}")
+        self._log_message(f"Appraising event: Type='{event_details.get('type', 'N/A')}', Intensity='{event_details.get('intensity', 'N/A')}'")
 
         valence_change = 0.0
         arousal_change = 0.0
@@ -202,9 +299,9 @@ class ConcreteEmotionModule(BaseEmotionModule):
         # print(f"Debug: VAD before decay: V:{self.current_emotion_state['valence']:.2f} A:{self.current_emotion_state['arousal']:.2f} D:{self.current_emotion_state['dominance']:.2f}")
         self._decay_emotions() # Apply decay after each appraisal update
 
-        print(f"ConcreteEmotionModule ({self._module_id}): VAD updated to V:{self.current_emotion_state['valence']:.2f} A:{self.current_emotion_state['arousal']:.2f} D:{self.current_emotion_state['dominance']:.2f}")
+        self._log_message(f"VAD updated to V:{self.current_emotion_state['valence']:.2f} A:{self.current_emotion_state['arousal']:.2f} D:{self.current_emotion_state['dominance']:.2f}")
 
-        if self._message_bus:
+        if self._message_bus and EmotionalStateChangePayload and GenericMessage: # Check core types too
             esc_payload = EmotionalStateChangePayload(
                 current_emotion_profile=self.current_emotion_state.copy(),
                 primary_emotion=None, # Optional for now
@@ -218,7 +315,7 @@ class ConcreteEmotionModule(BaseEmotionModule):
                 payload=esc_payload
             )
             self._message_bus.publish(emotional_change_message)
-            print(f"INFO ({self._module_id}): Published EmotionalStateChange message (triggered by: {esc_payload.triggering_event_id}).")
+            self._log_message(f"Published EmotionalStateChange message (triggered by: {esc_payload.triggering_event_id}).")
 
 
     def get_simulated_physiological_effects(self) -> Dict[str, Any]:
@@ -263,10 +360,10 @@ class ConcreteEmotionModule(BaseEmotionModule):
         The new `appraise_event` expects a more structured `event_details`.
         This method attempts to map `appraisal_info` to that structure.
         """
-        print(f"ConcreteEmotionModule ({self._module_id}): `update_emotional_state` (compatibility) called. Delegating to `appraise_event`.")
+        self._log_message(f"`update_emotional_state` (compatibility) called. Delegating to `appraise_event`. Source: {event_source}")
         event_details = {
             "type": appraisal_info.get("type", "unknown"), # Retain original event type if available
-            "intensity": appraisal_info.get("event_intensity", appraisal_info.get("intensity", 0.5)), # Check both keys
+            "intensity": appraisal_info.get("event_intensity", appraisal_info.get("intensity", 0.5)),
             "novelty": appraisal_info.get("event_novelty", appraisal_info.get("novelty", 0.0)),
             "expectedness": appraisal_info.get("expectedness", 1.0), # Default to expected if not specified
             "controllability": appraisal_info.get("controllability", 0.5), # Default to moderately controllable
@@ -303,10 +400,10 @@ class ConcreteEmotionModule(BaseEmotionModule):
         Returns a representation of the current VAD state for expression.
         Phase 1: Simplified to return VAD without categorical label.
         """
-        # print(f"ConcreteEmotionModule ({self._module_id}): express_emotion called. VAD: {self.current_emotion_state}")
+        self._log_message(f"express_emotion called. VAD: {self.current_emotion_state}")
         return {
             "vad_state": self.current_emotion_state.copy(),
-            "intensity_conceptual": self.current_emotion_state['arousal'], # Using arousal as proxy
+            "intensity_conceptual": self.current_emotion_state['arousal'],
             "expression_modality_hints": ["vocal_tone_change_vad", "facial_expression_vad_based"] # Conceptual
         }
 
@@ -318,28 +415,26 @@ class ConcreteEmotionModule(BaseEmotionModule):
             "current_vad_state": self.current_emotion_state.copy(),
             "message_bus_connected": self._message_bus is not None,
             "personality_profile_active": self._personality_profile is not None,
-            "reactivity_modifier_arousal": self._reactivity_modifier_arousal
+            "reactivity_modifier_arousal": self._reactivity_modifier_arousal,
+            "log_entries": len(self._log) # Added log entry count
         }
 
     def regulate_emotion(self, strategy: str, target_emotion_details: Dict[str, Any]) -> bool:
         """Placeholder for emotion regulation. Not implemented in Phase 1."""
-        print(f"ConcreteEmotionModule ({self._module_id}): regulate_emotion called (Placeholder). Strategy: {strategy}, Target: {target_emotion_details}")
-        # Conceptual: Could try to shift VAD towards a target, e.g., reduce arousal.
-        # Example: if strategy == "dampen_arousal": self.current_emotion_state["arousal"] *= 0.7
-        # self._decay_emotions() # Apply decay after conceptual regulation
-        return False # No actual regulation applied in this phase
+        self._log_message(f"regulate_emotion called (Placeholder). Strategy: {strategy}, Target: {target_emotion_details}")
+        return False
 
     def get_emotional_influence_on_cognition(self) -> Dict[str, Any]:
         """
         Returns conceptual influences on cognition based on the VAD state.
         This is similar to get_simulated_physiological_effects for Phase 1.
         """
-        # print(f"ConcreteEmotionModule ({self._module_id}): get_emotional_influence_on_cognition called.")
+        self._log_message("get_emotional_influence_on_cognition called.")
         return self.get_simulated_physiological_effects()
 
     def set_personality_profile(self, profile: Dict[str, Any]) -> None:
         """Sets a personality profile that might influence emotional responses and baseline VAD."""
-        print(f"ConcreteEmotionModule ({self._module_id}): set_personality_profile called with {profile}.")
+        self._log_message(f"set_personality_profile called with {profile}.")
         self._personality_profile = profile
 
         # Adjust baseline VAD based on personality profile, if specified
@@ -360,18 +455,26 @@ class ConcreteEmotionModule(BaseEmotionModule):
         if 'reactivity_modifier_arousal' in profile and isinstance(profile['reactivity_modifier_arousal'], (int, float)):
             self._reactivity_modifier_arousal = float(profile['reactivity_modifier_arousal'])
 
-        print(f"ConcreteEmotionModule ({self._module_id}): VAD state potentially adjusted by personality: {self.current_emotion_state}")
+        self._log_message(f"VAD state potentially adjusted by personality: {self.current_emotion_state}")
 
 
 if __name__ == '__main__':
     import asyncio
     import time
+    # Ensure PerceptDataPayload and ActionEventPayload are available for the __main__ if used directly
+    # For this refactoring, they are not directly constructed in __main__ but handled by module.
+    # However, if you were to add tests here that publish them, you'd need:
+    # from .core_messages import PerceptDataPayload, ActionEventPayload # If running as part of package
+    # Or define stubs if running standalone and they are not in the stub section.
+
 
     # Attempt to import MessageBus and core_messages from the local directory structure
     # This is for the __main__ block to find them if not installed as a package.
     try:
         from message_bus import MessageBus
         from core_messages import GenericMessage, GoalUpdatePayload, EmotionalStateChangePayload
+        # Add PerceptDataPayload and ActionEventPayload if you plan to manually create and publish them in __main__
+        # from core_messages import PerceptDataPayload, ActionEventPayload
     except ImportError:
         print("CRITICAL: Failed to import MessageBus or core_messages for __main__ test. Ensure they are in Python path or same directory.")
         # Fallback to stubs if they were defined above due to initial import error
@@ -393,6 +496,8 @@ if __name__ == '__main__':
                     self.status = status
                     self.originator = originator
             class EmotionalStateChangePayload: pass # Already stubbed if needed
+            # class PerceptDataPayload: pass # Add if needed for __main__ tests
+            # class ActionEventPayload: pass # Add if needed for __main__ tests
 
 
     print("--- ConcreteEmotionModule __main__ Test ---")
@@ -401,15 +506,15 @@ if __name__ == '__main__':
     received_emotional_states: List[GenericMessage] = []
     def emotional_state_listener(message: GenericMessage):
         print(f"\n émotion_state_listener: Received EmotionalStateChange! ID: {message.message_id[:8]}")
-        if isinstance(message.payload, EmotionalStateChangePayload):
-            payload: EmotionalStateChangePayload = message.payload
+        if hasattr(message.payload, 'current_emotion_profile'): # Check if it's likely an EmotionalStateChangePayload
+            payload = message.payload # type: ignore
             print(f"  Source: {message.source_module_id}")
-            print(f"  VAD: {payload.current_emotion_profile}")
-            print(f"  Intensity (Arousal): {payload.intensity:.2f}")
-            print(f"  Triggering Event ID: {payload.triggering_event_id[:8] if payload.triggering_event_id else 'N/A'}")
+            print(f"  VAD: {payload.current_emotion_profile}") # type: ignore
+            print(f"  Intensity (Arousal): {payload.intensity:.2f}") # type: ignore
+            print(f"  Triggering Event ID: {payload.triggering_event_id[:8] if payload.triggering_event_id else 'N/A'}") # type: ignore
             received_emotional_states.append(message)
         else:
-            print(f"  ERROR: Listener received non-EmotionalStateChangePayload: {type(message.payload)}")
+            print(f"  ERROR: Listener received non-EmotionalStateChangePayload structured message: {type(message.payload)}")
 
     async def main_test_flow():
         # 1. Setup
@@ -508,7 +613,7 @@ if __name__ == '__main__':
         print(emotion_module_no_bus.get_status())
         # This should not error and not try to publish
         emotion_module_no_bus.appraise_event({"type": "TEST_NO_BUS", "intensity": 0.5, "goal_congruence": 0.5, "goal_importance": 0.5})
-        print("Appraisal with no bus completed without error.")
+        emotion_module_no_bus._log_message("Appraisal with no bus completed without error.")
 
         print("\n--- ConcreteEmotionModule __main__ Test Complete ---")
 

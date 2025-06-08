@@ -152,28 +152,74 @@ class BasicSimulationEngine(SimulationEngine):
                     first_step = self.curriculum_manager.get_next_step(agent_id) # Should get the very first step
                     if first_step:
                         self.curriculum_manager.set_current_step(agent_id, first_step.order, increment_attempt=False) # Sets attempts to 0 for first time
-                        self.log_event("DSE_AGENT_CURRICULUM_START", agent_id, {
+                        # <<< START NEW LOGIC HERE >>>
+                        # Environment Reconfiguration from DSE first step
+                        if hasattr(first_step, 'environment_config_overrides') and first_step.environment_config_overrides and isinstance(first_step.environment_config_overrides, dict):
+                            self.log_event("DSE_INITIAL_ENV_RECONFIG_START", agent_id, {"step_name": first_step.name, "config_keys": list(first_step.environment_config_overrides.keys())})
+                            print(f"DSE (Initialize): Agent '{agent_id}' applying initial environment reconfiguration from step '{first_step.name}'.")
+                            try:
+                                if self.environment: # Ensure environment exists
+                                    reconfigure_success = self.environment.reconfigure(first_step.environment_config_overrides)
+                                    self.log_event("DSE_INITIAL_ENV_RECONFIG_RESULT", agent_id, {"step_name": first_step.name, "success": reconfigure_success})
+                                    if not reconfigure_success:
+                                        print(f"DSE Warning (Initialize): Initial environment reconfiguration failed for agent {agent_id}, step '{first_step.name}'.")
+                                        self.log_event("DSE_INITIAL_ENV_RECONFIG_FAILED", agent_id, {"step_name": first_step.name, "message": "Environment.reconfigure() returned False."})
+                                    else:
+                                        print(f"DSE (Initialize): Initial environment successfully reconfigured for agent {agent_id}, step '{first_step.name}'.")
+                            except Exception as e_reconfig:
+                                print(f"DSE Error (Initialize): Exception during initial environment reconfiguration for agent {agent_id}, step '{first_step.name}': {e_reconfig}")
+                                self.log_event("DSE_INITIAL_ENV_RECONFIG_ERROR", agent_id, {"step_name": first_step.name, "error": str(e_reconfig)})
+
+                        # Agent Reconfiguration from DSE first step
+                        if hasattr(first_step, 'agent_config_overrides') and first_step.agent_config_overrides and isinstance(first_step.agent_config_overrides, dict):
+                            self.log_event("DSE_INITIAL_AGENT_RECONFIG_START", agent_id, {"step_name": first_step.name, "config_keys": list(first_step.agent_config_overrides.keys())})
+                            print(f"DSE (Initialize): Agent '{agent_id}' applying initial agent reconfiguration from step '{first_step.name}'.")
+                            if hasattr(agent, 'configure') and callable(getattr(agent, 'configure')):
+                                try:
+                                    agent.configure(config=first_step.agent_config_overrides) # Pass the config dictionary
+                                    self.log_event("DSE_INITIAL_AGENT_RECONFIG_APPLIED", agent_id, {"step_name": first_step.name})
+                                    print(f"DSE (Initialize): Initial agent {agent_id} configuration applied for step '{first_step.name}'.")
+                                except Exception as e_agent_reconfig:
+                                    print(f"DSE Error (Initialize): Exception during initial agent reconfiguration for agent {agent_id}, step '{first_step.name}': {e_agent_reconfig}")
+                                    self.log_event("DSE_INITIAL_AGENT_RECONFIG_ERROR", agent_id, {"step_name": first_step.name, "error": str(e_agent_reconfig)})
+                            else:
+                                self.log_event("DSE_INITIAL_AGENT_RECONFIG_SKIP", agent_id, {"step_name": first_step.name, "reason": "Agent has no callable 'configure' method."})
+                                print(f"DSE Warning (Initialize): Agent {agent_id} has no 'configure' method. Skipping initial agent reconfiguration for step '{first_step.name}'.")
+                        # <<< END NEW LOGIC >>>
+
+                        self.log_event("DSE_AGENT_CURRICULUM_START", agent_id, { # Existing log
                             "curriculum_name": self.curriculum_manager.current_curriculum.name,
                             "first_step_name": first_step.name,
                             "first_step_order": first_step.order
                         })
-                        # Conceptual: Apply first_step.agent_config_overrides or prompt to agent here
-                        # Conceptual: Apply first_step.environment_config_overrides to environment here
                         print(f"DSE: Agent '{agent_id}' starting curriculum '{self.curriculum_manager.current_curriculum.name}' at step '{first_step.name}'.")
-                    else:
-                        self.log_event("DSE_ERROR", agent_id, {"message": "Failed to get first curriculum step."})
-                        self.dse_active_for_agents[agent_id] = False # Disable DSE for this agent if first step fails
-                else:
-                    self.log_event("DSE_ERROR", agent_id, {"message": f"Failed to load curriculum: {self.agent_curricula[agent_id]}"})
-                    self.dse_active_for_agents[agent_id] = False # Disable DSE if curriculum load fails
-            else:
-                self.dse_active_for_agents[agent_id] = False # Agent not managed by DSE
 
-            # Initial perception for all agents
-            initial_observation = self.environment.get_observation(agent_id)
-            self.log_event("AGENT_PERCEPTION", agent_id, initial_observation.model_dump() if hasattr(initial_observation, 'model_dump') else initial_observation)
-            agent.perceive(initial_observation)
-            print(f"BasicSimulationEngine: Agent '{agent_id}' initialized. DSE Active: {self.dse_active_for_agents[agent_id]}")
+                        # Initial perception for DSE agent *after* its specific first_step configs
+                        dse_initial_observation = self.environment.get_observation(agent_id)
+                        self.log_event("AGENT_PERCEPTION", agent_id, dse_initial_observation.model_dump() if hasattr(dse_initial_observation, 'model_dump') else dse_initial_observation)
+                        agent.perceive(dse_initial_observation)
+                        print(f"BasicSimulationEngine: DSE Agent '{agent_id}' initialized and perceived post-DSE-config. DSE Active: True")
+                    else: # No first_step
+                        self.log_event("DSE_ERROR", agent_id, {"message": "Failed to get first curriculum step."})
+                        self.dse_active_for_agents[agent_id] = False
+                        # Non-DSE agent initial perception (because DSE setup failed here)
+                        initial_observation = self.environment.get_observation(agent_id)
+                        self.log_event("AGENT_PERCEPTION", agent_id, initial_observation.model_dump() if hasattr(initial_observation, 'model_dump') else initial_observation)
+                        agent.perceive(initial_observation)
+                        print(f"BasicSimulationEngine: Agent '{agent_id}' (DSE init failed) initialized and perceived. DSE Active: False")
+                else: # Curriculum load failed
+                    self.log_event("DSE_ERROR", agent_id, {"message": f"Failed to load curriculum: {self.agent_curricula[agent_id]}"})
+                    self.dse_active_for_agents[agent_id] = False
+                    initial_observation = self.environment.get_observation(agent_id)
+                    self.log_event("AGENT_PERCEPTION", agent_id, initial_observation.model_dump() if hasattr(initial_observation, 'model_dump') else initial_observation)
+                    agent.perceive(initial_observation)
+                    print(f"BasicSimulationEngine: Agent '{agent_id}' (DSE curriculum load failed) initialized and perceived. DSE Active: False")
+            else: # Agent not managed by DSE or DSE components not available
+                self.dse_active_for_agents[agent_id] = False
+                initial_observation = self.environment.get_observation(agent_id)
+                self.log_event("AGENT_PERCEPTION", agent_id, initial_observation.model_dump() if hasattr(initial_observation, 'model_dump') else initial_observation)
+                agent.perceive(initial_observation)
+                print(f"BasicSimulationEngine: Non-DSE Agent '{agent_id}' initialized and perceived. DSE Active: False")
 
         print("BasicSimulationEngine: Initialization complete.")
 

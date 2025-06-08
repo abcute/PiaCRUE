@@ -13,20 +13,24 @@ try:
         MessageBus,
         GenericMessage,
         GoalUpdatePayload,
-        AttentionFocusUpdatePayload
-        # Assuming EmotionalStateChangePayload will be a dict for tests if not defined in core_messages
+        AttentionFocusUpdatePayload,
+        EmotionalStateChangePayload # Added formal import
     )
 except ModuleNotFoundError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from concrete_attention_module import ConcreteAttentionModule
     try:
         from message_bus import MessageBus
-        from core_messages import GenericMessage, GoalUpdatePayload, AttentionFocusUpdatePayload
+        from core_messages import (
+            GenericMessage, GoalUpdatePayload, AttentionFocusUpdatePayload,
+            EmotionalStateChangePayload # Added formal import
+        )
     except ImportError:
         MessageBus = None
         GenericMessage = None
         GoalUpdatePayload = None
         AttentionFocusUpdatePayload = None
+        EmotionalStateChangePayload = None # Added
 
 class TestConcreteAttentionModule(unittest.TestCase):
 
@@ -187,15 +191,24 @@ class TestConcreteAttentionModule(unittest.TestCase):
         self.attn_with_real_bus.set_attention_focus("initial_item", "background", 0.4, "init_msg")
         mock_attention_subscriber.reset_mock() # Reset after initial focus publish
 
-        high_arousal_emotion_payload = {"valence": -0.5, "arousal": 0.8} # High arousal
+        emotion_profile_data = {"valence": -0.5, "arousal": 0.8, "dominance": 0.0} # High arousal
+        # Create the EmotionalStateChangePayload instance
+        # Assuming intensity in the payload is also relevant, let's use arousal for it as per module logic example
+        high_arousal_emotion_payload_obj = EmotionalStateChangePayload(
+            current_emotion_profile=emotion_profile_data,
+            intensity=emotion_profile_data["arousal"]
+        )
         emotion_update_msg = GenericMessage(
             source_module_id="TestEmotionSys", message_type="EmotionalStateChange",
-            payload=high_arousal_emotion_payload, message_id="emotion_msg_1"
+            payload=high_arousal_emotion_payload_obj, # Use the dataclass instance
+            message_id="emotion_msg_1"
         )
 
         self.bus.publish(emotion_update_msg)
+        await asyncio.sleep(0.01) # Allow message to be processed
 
-        self.assertIn(high_arousal_emotion_payload, self.attn_with_real_bus.handled_emotion_updates_for_attention)
+        # The handler stores the .current_emotion_profile dict
+        self.assertIn(emotion_profile_data, self.attn_with_real_bus.handled_emotion_updates_for_attention)
 
         mock_attention_subscriber.assert_called_once()
         received_focus_update_msg: GenericMessage = mock_attention_subscriber.call_args[0][0]

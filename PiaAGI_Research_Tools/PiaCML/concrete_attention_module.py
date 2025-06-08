@@ -4,19 +4,24 @@ import datetime # Added for AttentionFocusUpdatePayload timestamp
 try:
     from .base_attention_module import BaseAttentionModule
     from .message_bus import MessageBus
-    from .core_messages import GenericMessage, GoalUpdatePayload, AttentionFocusUpdatePayload
-    # Assuming EmotionalStateChangePayload will be handled as a Dict for now if not formally defined in core_messages
+    from .core_messages import (
+        GenericMessage, GoalUpdatePayload, AttentionFocusUpdatePayload,
+        EmotionalStateChangePayload # Added formal import
+    )
 except ImportError:
-    from base_attention_module import BaseAttentionModule
+    from base_attention_module import BaseAttentionModule # type: ignore
     try:
-        from message_bus import MessageBus
-        from core_messages import GenericMessage, GoalUpdatePayload, AttentionFocusUpdatePayload
+        from message_bus import MessageBus # type: ignore
+        from core_messages import ( # type: ignore
+            GenericMessage, GoalUpdatePayload, AttentionFocusUpdatePayload, # type: ignore
+            EmotionalStateChangePayload # type: ignore
+        )
     except ImportError:
         MessageBus = None # type: ignore
         GenericMessage = None # type: ignore
         GoalUpdatePayload = None # type: ignore
         AttentionFocusUpdatePayload = None # type: ignore
-        # EmotionalStateChangePayload would also be None or a placeholder if imported
+        EmotionalStateChangePayload = None # type: ignore
 
 class ConcreteAttentionModule(BaseAttentionModule):
     """
@@ -115,36 +120,44 @@ class ConcreteAttentionModule(BaseAttentionModule):
 
     def handle_emotion_update_for_attention(self, message: GenericMessage):
         """Handles EmotionalStateChange messages to potentially modulate attention."""
-        # Assuming EmotionalStateChangePayload is a dict for now, as per prompt.
-        # Replace with `isinstance(message.payload, EmotionalStateChangePayload)` if defined.
-        if isinstance(message.payload, dict) and "valence" in message.payload and "arousal" in message.payload:
-            payload: dict = message.payload
-            self.handled_emotion_updates_for_attention.append(payload)
-            # print(f"AttentionModule: Received EmotionalStateChange: V={payload.get('valence')}, A={payload.get('arousal')}") # Optional
+        if not (EmotionalStateChangePayload and isinstance(message.payload, EmotionalStateChangePayload)):
+            print(f"AttentionModule received EmotionalStateChange with unexpected payload type: {type(message.payload)}")
+            return
 
-            arousal = payload.get("arousal", 0.0)
-            if arousal > 0.7: # Example: High arousal intensifies focus
-                # print(f"  AttentionModule: High arousal ({arousal:.2f}) detected. Conceptually intensifying current focus.")
-                current_item_id = self.current_focus.focused_item_id if self.current_focus else "general_environment_due_to_high_arousal"
-                current_intensity = self.current_focus.intensity if self.current_focus else 0.3 # Base intensity if no prior focus
+        payload: EmotionalStateChangePayload = message.payload
+        # Store the raw payload if needed, or just relevant parts. Storing the dict for compatibility if old tests use it.
+        self.handled_emotion_updates_for_attention.append(payload.current_emotion_profile)
 
-                self.set_attention_focus(
-                    item_id=current_item_id,
-                    focus_type="emotion_triggered_intensity_increase",
-                    intensity=min(1.0, current_intensity + 0.1 + (arousal - 0.7)*0.5), # Increase intensity based on arousal
-                    source_trigger_id=message.message_id
-                )
-            elif arousal < 0.2 and self.current_focus and self.current_focus.focus_type == "emotion_triggered_intensity_increase":
-                # Example: If arousal drops significantly, and current focus was due to emotion, maybe reduce intensity
-                # print(f"  AttentionModule: Low arousal ({arousal:.2f}) detected. Reducing intensity of emotion-triggered focus.")
-                self.set_attention_focus(
-                    item_id=self.current_focus.focused_item_id,
-                    focus_type=self.current_focus.focus_type, # Keep type or change to "relaxed"
-                    intensity=max(0.1, self.current_focus.intensity * 0.7), # Reduce intensity
-                    source_trigger_id=message.message_id
-                )
-        else:
-            print(f"AttentionModule received EmotionalStateChange with unexpected payload structure: {type(message.payload)}")
+        arousal = payload.current_emotion_profile.get("arousal", 0.0)
+        valence = payload.current_emotion_profile.get("valence", 0.0) # For logging or more complex logic
+
+        print(f"AttentionModule: Received EmotionalStateChange: V={valence:.2f}, A={arousal:.2f}, Intensity (from payload): {payload.intensity:.2f}")
+
+
+        if arousal > 0.7: # Example: High arousal intensifies focus
+            print(f"  AttentionModule: High arousal ({arousal:.2f}) detected. Conceptually intensifying current focus.")
+            current_item_id = self.current_focus.focused_item_id if self.current_focus else "general_environment_due_to_high_arousal"
+            current_intensity = self.current_focus.intensity if self.current_focus else 0.3 # Base intensity if no prior focus
+
+            new_intensity = min(1.0, current_intensity + 0.1 + (arousal - 0.7) * 0.5) # Increase intensity based on arousal
+            self.set_attention_focus(
+                item_id=current_item_id,
+                focus_type="emotion_triggered_intensity_increase",
+                intensity=new_intensity,
+                source_trigger_id=message.message_id
+            )
+        elif arousal < 0.2 and self.current_focus and self.current_focus.focus_type == "emotion_triggered_intensity_increase":
+            # Example: If arousal drops significantly, and current focus was due to emotion, maybe reduce intensity
+            print(f"  AttentionModule: Low arousal ({arousal:.2f}) detected. Reducing intensity of emotion-triggered focus.")
+            new_intensity = max(0.1, self.current_focus.intensity * 0.7) # Reduce intensity
+            self.set_attention_focus(
+                item_id=self.current_focus.focused_item_id,
+                focus_type=self.current_focus.focus_type, # Keep type or change to "relaxed"
+                intensity=new_intensity,
+                source_trigger_id=message.message_id
+            )
+        # else: # No significant attentional shift based purely on this arousal level
+            # print(f"  AttentionModule: Arousal level {arousal:.2f} did not trigger major focus intensity shift.")
 
 
     def filter_information(self, information_stream: List[Dict[str, Any]], current_focus_override: Optional[Any] = None) -> List[Dict[str, Any]]:
@@ -277,20 +290,34 @@ if __name__ == '__main__':
 
         # Simulate high arousal emotion
         print("\n--- Simulating EmotionalStateChange Message Reception ---")
-        mock_emotion_payload = {"valence": -0.5, "arousal": 0.85, "dominance": -0.3} # High arousal
-        emotion_message = GenericMessage(
-            source_module_id="EmotionModule",
-            message_type="EmotionalStateChange",
-            payload=mock_emotion_payload,
-            message_id="emotion_flare_002"
-        )
-        bus.publish(emotion_message)
-        print("State after high arousal emotion update:")
-        final_state_after_emotion = attention_module.get_attentional_state()
-        print(final_state_after_emotion)
-        # Intensity should have increased from the emotion trigger
-        # Initial: 0.95. After emotion: min(1.0, 0.95 + 0.1 + (0.85-0.7)*0.5) = min(1.0, 0.95 + 0.1 + 0.075) = min(1.0, 1.125) = 1.0
-        assert final_state_after_emotion['current_focus_payload']['intensity'] == 1.0
-        assert final_state_after_emotion['current_focus_payload']['focus_type'] == "emotion_triggered_intensity_increase"
+        if EmotionalStateChangePayload: # Check if class is available
+            mock_emotion_data = {"valence": -0.5, "arousal": 0.85, "dominance": -0.3}
+            # Use arousal as intensity for this payload, or a separate field if EmotionalStateChangePayload defines it differently
+            # The current EmotionalStateChangePayload uses payload.intensity for the overall event intensity.
+            # Let's assume the .intensity field of the payload is what we care about for overall impact,
+            # and current_emotion_profile["arousal"] is the specific dimension value.
+            # The handler uses payload.current_emotion_profile.get("arousal", 0.0).
+            mock_emotion_payload_obj = EmotionalStateChangePayload(
+                current_emotion_profile=mock_emotion_data,
+                intensity=mock_emotion_data["arousal"] # Using arousal as proxy for payload intensity here
+            )
+            emotion_message = GenericMessage(
+                source_module_id="EmotionModule",
+                message_type="EmotionalStateChange",
+                payload=mock_emotion_payload_obj, # Use the dataclass instance
+                message_id="emotion_flare_002"
+            )
+            bus.publish(emotion_message)
+            print("State after high arousal emotion update:")
+            final_state_after_emotion = attention_module.get_attentional_state()
+            print(final_state_after_emotion)
+            # Intensity calculation based on handler:
+            # current_intensity (was 0.95 from goal)
+            # arousal = 0.85
+            # new_intensity = min(1.0, 0.95 + 0.1 + (0.85 - 0.7) * 0.5) = min(1.0, 0.95 + 0.1 + 0.15 * 0.5) = min(1.0, 0.95 + 0.1 + 0.075) = min(1.0, 1.125) = 1.0
+            assert final_state_after_emotion['current_focus_payload']['intensity'] == 1.0
+            assert final_state_after_emotion['current_focus_payload']['focus_type'] == "emotion_triggered_intensity_increase"
+        else:
+            print("Skipping EmotionalStateChange simulation in __main__ due to missing EmotionalStateChangePayload class.")
 
     print("\nExample Usage Complete.")
