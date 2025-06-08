@@ -39,6 +39,7 @@ The Motivational System is deeply interconnected with other PiaCML modules:
 ### 2.3. Goal Management
 *   **Generation:** Goals can be generated extrinsically (e.g., from user prompts, scenario definitions) or intrinsically (e.g., based on curiosity, competence drives).
 *   **Representation:** Each goal is represented as a data structure including: `goal_id`, `description`, `type` (e.g., `EXTRINSIC_TASK`, `INTRINSIC_CURIOSITY`, `INTRINSIC_COMPETENCE`), `priority` (dynamic), `status` (e.g., `PENDING`, `ACTIVE`, `IN_PROGRESS`, `BLOCKED`, `ACHIEVED`, `FAILED`), `creation_timestamp`, `source_trigger_details`, `parent_goal_id` (for hierarchies), associated conditions for success/failure.
+    Recent enhancements to the conceptual `Goal` dataclass in the Python implementation also include `target_skill_id: Optional[str]`, `target_task_domain: Optional[str]`, and `competence_details: Optional[Dict[str, Any]]` to better support competence-driven goals.
 *   **Prioritization:** A dynamic prioritization mechanism is used to rank active goals. This determines which goals are primarily pursued. See Section 2.3.1 for details.
 *   **Tracking:** The module continuously tracks the status of all active goals, updating them based on feedback from other modules (e.g., Planning, Learning, World Model).
 
@@ -53,7 +54,7 @@ $P(g) = w_{base} \cdot 	ext{BasePriority}(g) + w_{int} \cdot 	ext{Intensity}(g) 
 
 Where:
 *   $	ext{BasePriority}(g)$: The initial or inherent priority of the goal type (e.g., safety goals > curiosity goals).
-*   $	ext{Intensity}(g)$: For intrinsic goals, the calculated drive intensity (e.g., $I_c$ or $I_m$). For extrinsic goals, this might be user-assigned importance.
+*   $	ext{Intensity}(g)$: For intrinsic goals, the calculated drive intensity (e.g., $I_c$ or $I_m$). For extrinsic goals, this might be user-assigned importance. The `Intensity(g)` term in this formula for intrinsic goals (Curiosity, Competence) is now more concretely derived from the `calculated_intensity` generated during their assessment (see Sections 3.3.1 and 4.3.1). For extrinsic goals, it can be mapped from the `goal.priority` field.
 *   $	ext{Urgency}(g)$: Time-sensitivity or deadline associated with the goal.
 *   $	ext{ValueAlignment}(g)$: Score indicating how well the goal aligns with the agent's core values (from Self-Model's `EthicalFramework`).
 *   $	ext{DependencyFactor}(g)$: Increases priority if other important goals depend on this one's completion.
@@ -61,6 +62,7 @@ Where:
 *   $w_...$: Configurable weights.
 
 The list of active goals is then sorted by $P(g)$ to determine the current focus.
+The `ConcreteMotivationalSystemModule` implements a `_calculate_dynamic_priority` method that operationalizes this concept. It uses the calculated intrinsic intensities and various placeholder factors (urgency, value alignment, etc.) with defined weights to compute a dynamic score. The `get_active_goals` method then sorts goals based on this dynamic score. The system also logs potential conflicts if top-priority goals have very similar dynamic scores.
 
 **B. Conflict Resolution Strategies:**
 
@@ -127,10 +129,7 @@ Activation occurs if the calculated intensity of the curiosity trigger (see belo
 ### 3.3. Intensity Dynamics
 
 #### 3.3.1. Calculation
-The intensity of a curiosity drive (`curiosity_intensity`) for a specific item of interest (stimulus, concept, event) could be calculated as a function:
-`curiosity_intensity = f(novelty_score, prediction_error_magnitude, uncertainty_metric, complexity_score, relevance_to_active_goals, time_since_last_explored)`
-*   Weights for each factor can be learned or configured.
-*   `relevance_to_active_goals` increases intensity if the information sought could unblock an important current goal.
+The intensity of a curiosity drive (`curiosity_intensity`) for a specific item of interest (stimulus, concept, event) is calculated based on weighted factors such as `novelty_score`, `prediction_error_magnitude`, `uncertainty_metric` (e.g., 1 - confidence), and `complexity_score`. This raw score can be further modulated by `relevance_to_active_goals` and a `recency_factor`. Example conceptual formula: `intensity_raw = w_n*novelty + w_e*error + w_u*uncertainty + w_c*complexity; final_intensity = intensity_raw * (1 + w_r*relevance) * recency_factor` (weights `w_*` are configurable).
 
 #### 3.3.2. Factors Influencing Change
 *   **Habituation/Satiation:** Intensity decreases upon repeated exposure to the same novel stimulus without further information gain, or once an information gap is filled.
@@ -155,25 +154,27 @@ A scalar value (e.g., normalized between 0.0 and 1.0) associated with each poten
     *   Identified knowledge gaps/uncertainty from Self-Model's `KnowledgeMap` (e.g., low `understanding_level` for a relevant concept).
 2.  Upon detection of a trigger:
     a.  Identify the `trigger_source_details` (e.g., specific stimulus ID, concept URI, nature of prediction error).
-    b.  Calculate `curiosity_intensity` for the identified target based on the function defined in Section 3.3.1 (considering novelty, error magnitude, uncertainty, complexity, relevance, recency).
+    b.  Calculate `curiosity_intensity` using a method like `_calculate_curiosity_intensity` (which incorporates factors like novelty, error, uncertainty, complexity, relevance, and recency).
 3.  If `curiosity_intensity` surpasses a configurable activation threshold (and is not vetoed by higher-priority systemic needs):
-    a.  Define the `target_identifier` based on the trigger (e.g., the ID of the novel object, the URI of the uncertain concept in `KnowledgeMap`).
-    b.  Formulate a `description` for the goal (e.g., "Investigate [target_identifier] due to novelty score X and relevance Y", "Resolve uncertainty for concept [target_identifier]").
+    a.  Define the `target_identifier` (e.g., object ID, concept URI).
+    b.  Formulate a `description` reflecting the trigger and intensity (e.g., 'Investigate novel [target_identifier] (Novelty: N, Calculated Intensity: I)').
     c.  Create a new goal object, for example:
         ```
         {
           goal_id: generate_unique_id(),
-          description: "Investigate novel object [object_ID_123]",
+          description: "Investigate novel [object_ID_123] (Novelty: 0.8, Calculated Intensity: 0.75)",
           type: "INTRINSIC_CURIOSITY",
-          priority: map_intensity_to_priority_scale(curiosity_intensity), // Function to scale intensity to a system-wide priority value
+          priority: map_intensity_to_priority_scale(0.75), // Derived from curiosity_intensity
           status: "PENDING",
           creation_timestamp: current_time(),
           source_trigger_details: {
             type: "NOVELTY_DETECTED", // or "PREDICTION_ERROR", "KNOWLEDGE_GAP"
-            trigger_value: specific_novelty_score, // or error_details, concept_uncertainty_metric
+            novelty_score: 0.8,
+            complexity_score: 0.6, // Example if available
+            calculated_intensity: 0.75,
             origin_module: "PerceptionModule" // or "WorldModel", "SelfModel"
           },
-          target_identifier: "[object_ID_123]", // or "[concept_URI_abc]"
+          target_identifier: "[object_ID_123]",
           information_sought: "Determine properties and function of [object_ID_123]" // Optional
         }
         ```
@@ -226,7 +227,7 @@ A scalar value (e.g., normalized between 0.0 and 1.0) associated with each poten
         }
         ```
     c.  Send the generated reward signal to the Learning Module(s) to reinforce the behaviors or cognitive processes that led to the information gain.
-    d.  Optionally, update the status of the related curiosity goal (e.g., to `ACHIEVED` or reduce its intensity if partially satisfied).
+    d.  Optionally, update the status of the related curiosity goal (e.g., to `ACHIEVED` or reduce its intensity if partially satisfied). This reward generation is conceptually triggered when an `INTRINSIC_CURIOSITY` goal is marked 'ACHIEVED', for instance, after an `ActionEvent` confirms successful investigation or information acquisition.
 
 #### 3.5.2. Magnitude Calculation
 Proportional to the assessed "information gain":
@@ -273,12 +274,7 @@ Activation occurs if the calculated intensity (see below) is sufficient and the 
 ### 4.3. Intensity Dynamics
 
 #### 4.3.1. Calculation
-The intensity of a competence drive (`competence_intensity`) for a specific skill or task domain:
-`competence_intensity = f(proficiency_gap, skill_importance, success_rate_trend, perceived_learnability)`
-*   `proficiency_gap`: Difference between current and target/desired proficiency.
-*   `skill_importance`: Relevance/frequency of the skill for achieving high-priority goals.
-*   `success_rate_trend`: A declining trend in success for a skill might increase intensity.
-*   `perceived_learnability`: Higher if the Self-Model assesses the skill as learnable with available resources.
+The intensity of a competence drive (`competence_intensity`) for a specific skill or task domain is calculated based on factors like `proficiency_gap` (target_proficiency - current_proficiency) and `skill_importance`. Conceptual formula: `intensity = w_gap * proficiency_gap + w_importance * importance`. Modulators like `success_rate_trend` and `perceived_learnability` are placeholders for future expansion.
 
 #### 4.3.2. Factors Influencing Change
 *   **Skill Improvement:** As proficiency increases, intensity for that specific skill may decrease (unless new, higher mastery levels are set).
@@ -303,27 +299,32 @@ A scalar value (e.g., normalized 0.0-1.0) associated with each relevant skill ID
     *   Detection of Zone of Proximal Development (ZPD) opportunities (e.g., consistent high success in a skill domain suggests readiness for increased challenge).
 2.  Upon detection of a trigger:
     a.  Identify the `trigger_source_details` (e.g., specific failed `goal_id`, `skill_id` from `CapabilityInventory`, task domain).
-    b.  Calculate `competence_intensity` for the identified skill or task domain based on the function defined in Section 4.3.1 (considering proficiency gap, skill importance, success rate trend, perceived learnability).
+    b.  Calculate `competence_intensity` using a method like `_calculate_competence_drive_intensity`.
 3.  If `competence_intensity` surpasses a configurable activation threshold (and is not vetoed by higher-priority needs):
-    a.  Define the `target_skill_id` (from `CapabilityInventory`) or `target_task_domain`.
-    b.  Formulate a `description` for the goal (e.g., "Improve skill [target_skill_id] due to recent task failures and proficiency gap of Z", "Master advanced aspects of task [target_task_domain]").
+    a.  Define the `target_skill_id` or `target_task_domain`.
+    b.  Formulate a `description` (e.g., 'Improve skill [skill_id] (Current Proficiency: P, Calculated Intensity: I)').
     c.  Create a new goal object, for example:
         ```
         {
           goal_id: generate_unique_id(),
-          description: "Improve_skill [WeldingSkill_003] to increase task success rate",
+          description: "Improve skill [WeldingSkill_003] (Current Proficiency: 0.4, Calculated Intensity: 0.65)",
           type: "INTRINSIC_COMPETENCE",
-          priority: map_intensity_to_priority_scale(competence_intensity), // Function to scale intensity
+          priority: map_intensity_to_priority_scale(0.65), // Derived from competence_intensity
           status: "PENDING",
           creation_timestamp: current_time(),
           source_trigger_details: {
-            type: "TASK_PERFORMANCE_FEEDBACK", // or "SELF_MODEL_ASSESSMENT", "ZPD_OPPORTUNITY"
-            trigger_value: "Low success rate in task [Task_RoboticAssembly_7]",
+            type: "LOW_PROFICIENCY", // or "TASK_PERFORMANCE_FEEDBACK"
             skill_id: "[WeldingSkill_003]",
             current_proficiency: 0.4,
-            target_proficiency: 0.7 // Optional
+            importance_rating: 0.7, // Example
+            calculated_intensity: 0.65
           },
-          target_skill_id: "[WeldingSkill_003]"
+          target_skill_id: "[WeldingSkill_003]",
+          competence_details: {
+            "current_proficiency": 0.4,
+            "target_proficiency_assumed": 1.0,
+            "initial_importance": 0.7
+          }
         }
         ```
     d.  Add the newly created goal to the Motivational System's central list of active/pending goals for prioritization.
@@ -379,7 +380,7 @@ A scalar value (e.g., normalized 0.0-1.0) associated with each relevant skill ID
         }
         ```
     c.  Send the generated reward signal to the Learning Module(s) to reinforce the behaviors, strategies, or practice that led to the competence gain.
-    d.  Optionally, update the status of the related competence goal (e.g., to `ACHIEVED` if target proficiency met, or adjust intensity).
+    d.  Optionally, update the status of the related competence goal (e.g., to `ACHIEVED` if target proficiency met, or adjust intensity). This reward generation is conceptually triggered when an `INTRINSIC_COMPETENCE` goal is marked 'ACHIEVED', for example, after an `ActionEvent` indicates successful application of the improved skill or mastery of a challenging task.
 
 #### 4.5.2. Magnitude Calculation
 Proportional to:

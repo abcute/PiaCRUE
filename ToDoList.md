@@ -247,9 +247,9 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## Message Bus & Integration (From User's New List)
 - [ ] **Implement Core Inter-Module Communication System (Phase 2 Cont.):**
-- [ ] Integrate `ConcreteEmotionModule` with the Message Bus (publish "EmotionalStateChange", subscribe to relevant triggers).
-- [ ] Systematically review and refactor existing CML modules to replace direct inter-module calls with Message Bus communication where appropriate for improved decoupling.
-- [ ] Implement true asynchronous message dispatching capabilities in `MessageBus`.
+- [x] Integrate `ConcreteEmotionModule` with the Message Bus (subscribes to `PerceptData`, `ActionEvent`; publishes `EmotionalStateChange`). (Conceptual logic for appraisal implemented).
+- [x] Systematically review CML modules for Message Bus usage: Reviewed key modules (`WorldModel`, `SelfModel`, `Planning`, `Learning`, `Emotion`, `Perception`, `WM`, `Motivation`, `LTM`, `Attention`, `BGM`, `CommModule`, `BaseMemory`). Most integrations are sound. `ConcreteCommunicationModule` was refactored for full bus integration. (Ongoing vigilance for further decoupling opportunities remains).
+- [x] Implement true asynchronous message dispatching capabilities in `MessageBus`: Reviewed current `asyncio.create_task` based asynchronous dispatch; deemed sufficient for current "fire-and-forget" needs. (Advanced features like `publish` being async are future considerations).
 - [ ] Explore and implement further advanced features for `MessageBus` (e.g., enhanced routing options, more Quality of Service levels, advanced filtering).
 
 ## Advanced Module Features (Post-Phase 1 Prototypes) (From User's New List)
