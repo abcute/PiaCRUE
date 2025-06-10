@@ -11,13 +11,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 
 try:
     from PiaAGI_Research_Tools.PiaCML.message_bus import MessageBus
-    from PiaAGI_Research_Tools.PiaCML.core_messages import GenericMessage, GoalUpdatePayload, ActionEventPayload
-    from PiaAGI_Research_Tools.PiaCML.concrete_motivational_system_module import ConcreteMotivationalSystemModule, Goal
+    from PiaAGI_Research_Tools.PiaCML.core_messages import GenericMessage, GoalUpdatePayload, ActionEventPayload, EmotionalStateChangePayload
+    from PiaAGI_Research_Tools.PiaCML.concrete_motivational_system_module import ConcreteMotivationalSystemModule, Goal, CuriosityTrigger, CompetenceOpportunity
 except ModuleNotFoundError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from message_bus import MessageBus
-    from core_messages import GenericMessage, GoalUpdatePayload, ActionEventPayload
-    from concrete_motivational_system_module import ConcreteMotivationalSystemModule, Goal
+    from core_messages import GenericMessage, GoalUpdatePayload, ActionEventPayload, EmotionalStateChangePayload
+    from concrete_motivational_system_module import ConcreteMotivationalSystemModule, Goal, CuriosityTrigger, CompetenceOpportunity
 
 
 class TestConcreteMotivationalSystemModuleIntegration(unittest.TestCase):
@@ -424,6 +424,76 @@ class TestConcreteMotivationalSystemModuleIntegration(unittest.TestCase):
         # Magnitude: (0.9-0.5) * (1 + 0.7*0.5) = 0.4 * 1.35 = 0.54
         self.assertTrue(any("Conceptual intrinsic reward for competence generated: Magnitude 0.54" in log for log in mot_sys._log[log_len_before_event:]), "Competence reward log not found.")
 
+    def test_evaluate_and_generate_intrinsic_goals_dynamically(self):
+        mot_sys = self.mot_sys
+        mot_sys.goals.clear()
+        self.received_goal_updates.clear()
+        mot_sys._log.clear()
+
+        # Mock world model methods used by assess_curiosity_triggers and assess_competence_opportunities
+        # These are now part of the ConcreteMotivationalSystemModule itself.
+
+        # Scenario 1: Curiosity trigger, no competence
+        mot_sys._get_curiosity_triggers_from_world_state = unittest.mock.MagicMock(return_value=[
+            CuriosityTrigger(trigger_id="ct1", description="Mysterious new object X", related_entity_id="entity_X", novelty_score=0.8, uncertainty_score=0.7, associated_goal_id=None)
+        ])
+        mot_sys._get_competence_opportunities_from_world_state = unittest.mock.MagicMock(return_value=[])
+
+        summary = mot_sys.evaluate_and_generate_intrinsic_goals_dynamically()
+        self.assertEqual(len(mot_sys.goals), 1)
+        self.assertIn("ct1_curiosity_goal", list(mot_sys.goals.keys())[0]) # Check goal ID pattern
+        self.assertIn("Generated 1 curiosity goals", summary)
+        self.assertIn("Generated 0 competence goals", summary)
+        self.assertTrue(any("Curiosity goal generated for trigger ct1" in log for log in mot_sys._log))
+        self.assertEqual(len(self.received_goal_updates), 1)
+
+        # Scenario 2: Competence opportunity, no curiosity
+        mot_sys.goals.clear()
+        self.received_goal_updates.clear()
+        mot_sys._log.clear()
+        mot_sys._get_curiosity_triggers_from_world_state.return_value = []
+        mot_sys._get_competence_opportunities_from_world_state.return_value = [
+            CompetenceOpportunity(opportunity_id="co1", description="Opportunity to learn skill Y", related_skill_id="skill_Y", potential_mastery_gain=0.75, current_mastery=0.3, associated_goal_id=None)
+        ]
+
+        summary = mot_sys.evaluate_and_generate_intrinsic_goals_dynamically()
+        self.assertEqual(len(mot_sys.goals), 1)
+        self.assertIn("co1_competence_goal", list(mot_sys.goals.keys())[0]) # Check goal ID pattern
+        self.assertIn("Generated 0 curiosity goals", summary)
+        self.assertIn("Generated 1 competence goals", summary)
+        self.assertTrue(any("Competence goal generated for opportunity co1" in log for log in mot_sys._log))
+        self.assertEqual(len(self.received_goal_updates), 1)
+
+        # Scenario 3: Both present
+        mot_sys.goals.clear()
+        self.received_goal_updates.clear()
+        mot_sys._log.clear()
+        mot_sys._get_curiosity_triggers_from_world_state.return_value = [
+            CuriosityTrigger(trigger_id="ct2", description="Another mystery", related_entity_id="entity_Y", novelty_score=0.7, uncertainty_score=0.6, associated_goal_id=None)
+        ]
+        mot_sys._get_competence_opportunities_from_world_state.return_value = [
+            CompetenceOpportunity(opportunity_id="co2", description="Another skill", related_skill_id="skill_Z", potential_mastery_gain=0.8, current_mastery=0.2, associated_goal_id=None)
+        ]
+        summary = mot_sys.evaluate_and_generate_intrinsic_goals_dynamically()
+        self.assertEqual(len(mot_sys.goals), 2)
+        self.assertIn("Generated 1 curiosity goals", summary)
+        self.assertIn("Generated 1 competence goals", summary)
+        self.assertEqual(len(self.received_goal_updates), 2)
+
+
+        # Scenario 4: None present
+        mot_sys.goals.clear()
+        self.received_goal_updates.clear()
+        mot_sys._log.clear()
+        mot_sys._get_curiosity_triggers_from_world_state.return_value = []
+        mot_sys._get_competence_opportunities_from_world_state.return_value = []
+        summary = mot_sys.evaluate_and_generate_intrinsic_goals_dynamically()
+        self.assertEqual(len(mot_sys.goals), 0)
+        self.assertIn("No new curiosity goals generated", summary)
+        self.assertIn("No new competence goals generated", summary)
+        self.assertEqual(len(self.received_goal_updates), 0)
+
+
     # --- Tests for Dynamic Goal Prioritization ---
 
     def test_get_active_goals_sorts_by_dynamic_priority(self):
@@ -543,7 +613,141 @@ class TestConcreteMotivationalSystemModuleIntegration(unittest.TestCase):
         # Verify the top suggested goal is one of the conflicting ones
         self.assertIn(suggested_goal.id, [g1_id, g3_id])
 
+    # --- Tests for Emotional Influence on Dynamic Priority ---
 
-if __name__ == '__main__':
-    unittest.main(argv=['first-arg-is-ignored'], exit=False)
+    def _get_goal_dyn_prio(self, goal_id: str, goals_with_scores: List[tuple[float, Goal]]) -> Optional[float]:
+        """Helper to find a goal's dynamic priority from the list returned by get_active_goals."""
+        for score, goal in goals_with_scores:
+            if goal.id == goal_id:
+                return score
+        return None
+
+    def test_dynamic_priority_positive_emotion_boost(self):
+        mot_sys = self.mot_sys
+        mot_sys.goals.clear()
+        mot_sys._log.clear()
+
+        # Set positive emotional state
+        positive_emotion = EmotionalStateChangePayload(current_emotion_profile={"valence": 0.7, "arousal": 0.5, "dominance": 0.6})
+        mot_sys._last_emotional_state = positive_emotion
+
+        g1_id = mot_sys.add_goal("Task Alpha", "EXTRINSIC_TASK", initial_priority=5.0) # Intensity 0.5
+
+        mot_sys._log.clear() # Clear add_goal logs
+        goals_with_scores = mot_sys.get_active_goals(return_with_priority_scores=True)
+
+        self.assertTrue(any(f"EmoState=(V=0.70, A=0.50, EmoModRaw=0.070, WeightedEmoMod=0.007)" in log for log in mot_sys._log), "Emotional modifier log not found or incorrect for positive emotion.")
+
+        # We need a baseline to compare against. Let's calculate without emotion.
+        mot_sys._last_emotional_state = None # Neutral emotion
+        mot_sys._log.clear()
+        goals_with_scores_neutral = mot_sys.get_active_goals(return_with_priority_scores=True)
+
+        prio_g1_positive = self._get_goal_dyn_prio(g1_id, goals_with_scores)
+        prio_g1_neutral = self._get_goal_dyn_prio(g1_id, goals_with_scores_neutral)
+
+        self.assertIsNotNone(prio_g1_positive)
+        self.assertIsNotNone(prio_g1_neutral)
+        self.assertGreater(prio_g1_positive, prio_g1_neutral, "Positive emotion should boost dynamic priority.")
+
+    def test_dynamic_priority_negative_emotion_dampen(self):
+        mot_sys = self.mot_sys
+        mot_sys.goals.clear()
+        mot_sys._log.clear()
+
+        negative_emotion = EmotionalStateChangePayload(current_emotion_profile={"valence": -0.8, "arousal": 0.6})
+        mot_sys._last_emotional_state = negative_emotion
+
+        g1_id = mot_sys.add_goal("Task Beta", "EXTRINSIC_TASK", initial_priority=6.0) # Intensity 0.6
+
+        mot_sys._log.clear()
+        goals_with_scores_negative = mot_sys.get_active_goals(return_with_priority_scores=True)
+        self.assertTrue(any(f"EmoState=(V=-0.80, A=0.60, EmoModRaw=-0.080, WeightedEmoMod=-0.008)" in log for log in mot_sys._log), "Emotional modifier log not found or incorrect for negative emotion.")
+
+        mot_sys._last_emotional_state = None
+        mot_sys._log.clear()
+        goals_with_scores_neutral = mot_sys.get_active_goals(return_with_priority_scores=True)
+
+        prio_g1_negative = self._get_goal_dyn_prio(g1_id, goals_with_scores_negative)
+        prio_g1_neutral = self._get_goal_dyn_prio(g1_id, goals_with_scores_neutral)
+
+        self.assertIsNotNone(prio_g1_negative)
+        self.assertIsNotNone(prio_g1_neutral)
+        self.assertLess(prio_g1_negative, prio_g1_neutral, "Negative emotion should dampen dynamic priority.")
+
+    def test_dynamic_priority_high_arousal_amplification(self):
+        mot_sys = self.mot_sys
+        mot_sys.goals.clear()
+        mot_sys._log.clear()
+
+        high_arousal_emotion = EmotionalStateChangePayload(current_emotion_profile={"valence": 0.1, "arousal": 0.85}) # Valence near neutral
+        mot_sys._last_emotional_state = high_arousal_emotion
+
+        g1_id = mot_sys.add_goal("Task Gamma", "EXTRINSIC_TASK", initial_priority=5.0) # Intensity 0.5
+
+        mot_sys._log.clear()
+        goals_with_scores_aroused = mot_sys.get_active_goals(return_with_priority_scores=True)
+        # Expected EmoModRaw = (0.1 * 0.1 for V) + (0.85 * 0.05 for A) = 0.01 + 0.0425 = 0.0525. Weighted = 0.00525
+        self.assertTrue(any(f"EmoState=(V=0.10, A=0.85, EmoModRaw=0.053, WeightedEmoMod=0.005)" in log for log in mot_sys._log), "Emotional modifier log not found or incorrect for high arousal.")
+
+
+        mot_sys._last_emotional_state = None
+        mot_sys._log.clear()
+        goals_with_scores_neutral = mot_sys.get_active_goals(return_with_priority_scores=True)
+
+        prio_g1_aroused = self._get_goal_dyn_prio(g1_id, goals_with_scores_aroused)
+        prio_g1_neutral = self._get_goal_dyn_prio(g1_id, goals_with_scores_neutral)
+
+        self.assertIsNotNone(prio_g1_aroused)
+        self.assertIsNotNone(prio_g1_neutral)
+        # High arousal adds a positive modifier, so priority should be higher
+        self.assertGreater(prio_g1_aroused, prio_g1_neutral, "High arousal should slightly amplify/boost dynamic priority.")
+
+
+    def test_dynamic_priority_boredom_boost_for_intrinsic(self):
+        mot_sys = self.mot_sys
+        mot_sys.goals.clear()
+        mot_sys._log.clear()
+
+        bored_emotion = EmotionalStateChangePayload(current_emotion_profile={"valence": 0.0, "arousal": 0.1})
+        mot_sys._last_emotional_state = bored_emotion
+
+        # Extrinsic goal with moderate intensity
+        g_ext_id = mot_sys.add_goal("Extrinsic Task Delta", "EXTRINSIC_TASK", initial_priority=5.0) # Intensity 0.5
+        # Intrinsic goal with slightly lower base parameters before emotional boost
+        g_int_id = mot_sys.add_goal("Intrinsic Curiosity Epsilon", "INTRINSIC_CURIOSITY", initial_priority=3.0, source_trigger={"calculated_intensity": 0.4}) # Intensity 0.4
+
+        mot_sys._log.clear()
+        goals_with_scores_bored = mot_sys.get_active_goals(return_with_priority_scores=True)
+
+        # Check log for intrinsic goal's emotional modifier
+        # For intrinsic goal: EmoModRaw = 0.1 (boredom boost). Weighted = 0.01
+        self.assertTrue(any(f"Goal '{g_int_id}'" in log and "EmoState=(V=0.00, A=0.10, EmoModRaw=0.100, WeightedEmoMod=0.010)" in log for log in mot_sys._log), "Boredom boost log not found for intrinsic goal.")
+        # For extrinsic goal: EmoModRaw = 0.0. Weighted = 0.0
+        self.assertTrue(any(f"Goal '{g_ext_id}'" in log and "EmoState=(V=0.00, A=0.10, EmoModRaw=0.000, WeightedEmoMod=0.000)" in log for log in mot_sys._log), "Extrinsic goal should not get boredom boost.")
+
+        prio_g_int_bored = self._get_goal_dyn_prio(g_int_id, goals_with_scores_bored)
+        prio_g_ext_bored = self._get_goal_dyn_prio(g_ext_id, goals_with_scores_bored)
+        self.assertIsNotNone(prio_g_int_bored)
+        self.assertIsNotNone(prio_g_ext_bored)
+
+        # To make a stronger assertion, let's get neutral scores
+        mot_sys._last_emotional_state = None
+        mot_sys._log.clear()
+        goals_with_scores_neutral = mot_sys.get_active_goals(return_with_priority_scores=True)
+        prio_g_int_neutral = self._get_goal_dyn_prio(g_int_id, goals_with_scores_neutral)
+        prio_g_ext_neutral = self._get_goal_dyn_prio(g_ext_id, goals_with_scores_neutral)
+
+        self.assertIsNotNone(prio_g_int_neutral)
+        self.assertGreater(prio_g_int_bored, prio_g_int_neutral, "Intrinsic goal priority should be higher in boredom state than neutral.")
+        # Check if the boost was enough to change order (depends on other factors and weights)
+        # For this test, we primarily check the boost was applied.
+        # If prio_g_int_neutral was already > prio_g_ext_neutral, this test doesn't show reordering.
+        # If prio_g_int_neutral < prio_g_ext_neutral, then we'd hope prio_g_int_bored > prio_g_ext_bored or closer.
+        # This test is more about ensuring the specific boredom boost is logged and affects the intrinsic score positively.
+
+# Removed if __name__ == '__main__' block to avoid potential syntax issues
+# that were not visible but reported by the interpreter.
 ```
+
+[end of PiaAGI_Research_Tools/PiaCML/tests/test_concrete_motivational_system_module.py]

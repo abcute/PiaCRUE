@@ -4,24 +4,25 @@ import time
 import uuid # For module_id generation
 
 try:
-    from .base_motivational_system_module import BaseMotivationalSystemModule
+    from .motivational_system_module import MotivationalSystemModule # Corrected import
     from .message_bus import MessageBus
-    from .core_messages import GenericMessage, GoalUpdatePayload, ActionEventPayload # Added ActionEventPayload
+    from .core_messages import GenericMessage, GoalUpdatePayload, ActionEventPayload, EmotionalStateChangePayload # Added ActionEventPayload & EmotionalStateChangePayload
 except ImportError:
     print("Warning: Running ConcreteMotivationalSystemModule with stubbed imports.")
-    class BaseMotivationalSystemModule:
+    class MotivationalSystemModule: # Corrected stub class name
         def manage_goals(self, action: str, goal_data: Optional[Dict[str, Any]] = None) -> Any: pass
         def get_active_goals(self, N: int = 0, min_priority: float = 0.0) -> List[Dict[str, Any]]: return []
         def update_motivation_state(self, new_state_info: Dict[str, Any]) -> bool: return False
 
     try:
         from message_bus import MessageBus # type: ignore
-        from core_messages import GenericMessage, GoalUpdatePayload, ActionEventPayload # type: ignore
+        from core_messages import GenericMessage, GoalUpdatePayload, ActionEventPayload, EmotionalStateChangePayload # type: ignore
     except ImportError:
         MessageBus = None # type: ignore
         GenericMessage = object # type: ignore # So isinstance checks don't fail immediately
         GoalUpdatePayload = object # type: ignore
         ActionEventPayload = object # type: ignore
+        EmotionalStateChangePayload = object # type: ignore
 
 
 @dataclass
@@ -41,7 +42,7 @@ class Goal:
     target_task_domain: Optional[str] = None
     competence_details: Optional[Dict[str, Any]] = None # e.g., {"current_proficiency": 0.3, "target_proficiency": 0.8}
 
-class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
+class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected base class
     """
     A concrete implementation of the BaseMotivationalSystemModule using a structured Goal dataclass.
     Manages a list of goals and includes basic mechanisms for intrinsic motivation (curiosity).
@@ -64,20 +65,31 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
         self._message_bus = message_bus
         self._module_id = module_id
         self._log: List[str] = [] # New log list
+        self._last_emotional_state: Optional[EmotionalStateChangePayload] = None
         bus_status = "configured" if self._message_bus else "not configured"
-        self._log_message(f"ConcreteMotivationalSystemModule '{self._module_id}' initialized. Message bus {bus_status}.")
 
+        subscriptions_log = []
         if self._message_bus:
             self._message_bus.subscribe(
                 module_id=self._module_id,
                 message_type="ActionEvent",
                 callback=self._handle_action_event
             )
-            self._log_message("Subscribed to 'ActionEvent' messages.")
+            subscriptions_log.append("ActionEvent")
+
+            self._message_bus.subscribe(
+                module_id=self._module_id,
+                message_type="EmotionalStateChange",
+                callback=self._handle_emotional_state_change
+            )
+            subscriptions_log.append("EmotionalStateChange")
+
             # Conceptual: Future subscriptions for advanced curiosity triggers
             # self._message_bus.subscribe(module_id=self._module_id, message_type="PerceptData", callback=self._handle_percept_for_curiosity)
             # self._message_bus.subscribe(module_id=self._module_id, message_type="WorldModelPredictionError", callback=self._handle_prediction_error_for_curiosity)
             # self._message_bus.subscribe(module_id=self._module_id, message_type="SelfModelKnowledgeGap", callback=self._handle_knowledge_gap_for_curiosity)
+
+        self._log_message(f"ConcreteMotivationalSystemModule '{self._module_id}' initialized. Message bus {bus_status}. Subscribed to: {', '.join(subscriptions_log) if subscriptions_log else 'None'}.")
 
     def _log_message(self, message: str):
         """Helper method for internal logging."""
@@ -241,7 +253,7 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
             # For sorting, the 0-1 scale is fine.
             # The operational_priority (0-10) was logged in _calculate_dynamic_priority,
             # but the returned normalized_priority (0-1) is used for sorting here.
-            dyn_prio_normalized = self._calculate_dynamic_priority(goal, all_current_active_pending_goals)
+            dyn_prio_normalized = self._calculate_dynamic_priority(goal, all_current_active_pending_goals, self._last_emotional_state)
             goals_with_dynamic_priority.append((dyn_prio_normalized, goal))
 
         # Sort by dynamic priority (the first element of the tuple), descending
@@ -556,7 +568,23 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
         # For now, placeholder (low cost)
         return 0.1
 
-    def _calculate_dynamic_priority(self, goal: Goal, all_active_goals_for_context: List[Goal]) -> float:
+    def _handle_emotional_state_change(self, message: GenericMessage):
+        """Handles EmotionalStateChange messages by updating the internal emotional state."""
+        if not isinstance(message.payload, EmotionalStateChangePayload):
+            self._log_message(f"ERROR: Received non-EmotionalStateChangePayload for EmotionalStateChange: {type(message.payload)}")
+            return
+
+        self._last_emotional_state = message.payload
+        # Example: VAD profile: {'valence': 0.2, 'arousal': 0.6, 'dominance': 0.4}
+        profile_summary = {
+            "V": self._last_emotional_state.current_emotion_profile.get('valence', 'N/A'),
+            "A": self._last_emotional_state.current_emotion_profile.get('arousal', 'N/A'),
+            "D": self._last_emotional_state.current_emotion_profile.get('dominance', 'N/A')
+        }
+        self._log_message(f"Received and stored new emotional state. Profile (V,A,D): {profile_summary}. Primary: {self._last_emotional_state.primary_emotion}, Intensity: {self._last_emotional_state.intensity}")
+
+
+    def _calculate_dynamic_priority(self, goal: Goal, all_active_goals_for_context: List[Goal], current_emotional_state: Optional[EmotionalStateChangePayload]) -> float:
         """Calculates a dynamic priority for a goal based on multiple factors, normalized to 0-1."""
 
         base_priority_for_type = ConcreteMotivationalSystemModule._get_base_priority(goal.type)
@@ -584,6 +612,7 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
         w_val = 0.15
         w_dep = 0.10
         w_cost = 0.10 # Cost is subtracted
+        w_emo = 0.10  # Weight for emotional modifier
 
         dynamic_p_raw = (
             w_base * base_priority_for_type +
@@ -593,6 +622,27 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
             w_dep * dependency_factor -
             w_cost * estimated_cost
         )
+
+        emotional_modifier = 0.0
+        log_emo_details = "None"
+        if current_emotional_state and current_emotional_state.current_emotion_profile:
+            V = current_emotional_state.current_emotion_profile.get('valence', 0.0)
+            A = current_emotional_state.current_emotion_profile.get('arousal', 0.0)
+            log_emo_details = f"V={V:.2f}, A={A:.2f}"
+
+            if V > 0.5: # Positive affect
+                emotional_modifier += V * 0.1
+            elif V < -0.5: # Negative affect
+                emotional_modifier -= abs(V) * 0.1
+
+            if A > 0.7: # High arousal
+                emotional_modifier += A * 0.05
+            elif A < 0.2 and goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]: # Low arousal/boredom
+                emotional_modifier += 0.1 # Specific boost for intrinsic goals
+
+            dynamic_p_raw += w_emo * emotional_modifier
+            log_emo_details += f", EmoModRaw={emotional_modifier:.3f}, WeightedEmoMod={(w_emo * emotional_modifier):.3f}"
+
 
         # Conceptual heuristic: If no high-priority extrinsic tasks are pressing, slightly boost intrinsic goals.
         is_intrinsic = goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]
@@ -618,248 +668,175 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
             f"Urg={urgency_factor:.2f}(w:{w_urg:.2f}), "
             f"ValAlign={value_alignment_score:.2f}(w:{w_val:.2f}), "
             f"Dep={dependency_factor:.2f}(w:{w_dep:.2f}), "
-            f"Cost={estimated_cost:.2f}(w:{w_cost:.2f}) "
+            f"Cost={estimated_cost:.2f}(w:{w_cost:.2f}) " # Removed comma
+            f"EmoState=({log_emo_details}) "
             f"-> RawDynP(post-boost if any)={dynamic_p_raw:.3f} -> NormDynP={normalized_priority:.3f}"
         )
         return normalized_priority
 
-    # --- Placeholder Helper Functions for Dynamic Priority ---
-    @staticmethod
-    def _get_base_priority(goal_type: str) -> float:
-        if goal_type == "EXTRINSIC_TASK": return 0.5
-        if goal_type == "INTRINSIC_CURIOSITY": return 0.3
-        if goal_type == "INTRINSIC_COMPETENCE": return 0.35
-        return 0.2
-
-    @staticmethod
-    def _get_urgency_factor(goal: Goal, current_context: Optional[Dict] = None) -> float:
-        # Example: if goal.deadline is approaching, increase urgency.
-        # For now, placeholder.
-        return 0.0
-
-    @staticmethod
-    def _get_value_alignment_score(goal: Goal, self_model_snapshot: Optional[Dict] = None) -> float:
-        # Example: Check if goal.description aligns with self_model_snapshot.values
-        # For now, placeholder (1.0 = neutral or perfectly aligned)
-        return 1.0
-
-    @staticmethod
-    def _get_dependency_factor(goal: Goal, active_goals: List[Goal]) -> float:
-        # Example: If other high-priority goals depend on this one.
-        # For now, placeholder (0.0 = no strong dependencies increasing its priority)
-        return 0.0
-
-    @staticmethod
-    def _get_estimated_cost(goal: Goal, planning_snapshot: Optional[Dict] = None) -> float:
-        # Example: Higher cost (time, resources, risk) slightly reduces priority.
-        # For now, placeholder (low cost)
-        return 0.1
-
-    def _calculate_dynamic_priority(self, goal: Goal, all_active_goals_for_context: List[Goal]) -> float:
-        """Calculates a dynamic priority for a goal based on multiple factors, normalized to 0-1."""
-
-        base_priority_for_type = ConcreteMotivationalSystemModule._get_base_priority(goal.type)
-
-        intensity = 0.0
-        if goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]:
-            # Intensity for intrinsic goals is pre-calculated and stored in source_trigger
-            intensity = goal.source_trigger.get("calculated_intensity", 0.0) if goal.source_trigger else 0.0
-        elif goal.type == "EXTRINSIC_TASK":
-            # For EXTRINSIC_TASK, goal.priority is the externally set importance (e.g., 0-10).
-            # We map this to a 0-1 intensity scale for the formula.
-            intensity = goal.priority / 10.0
-        # Add other goal types if necessary, or assign a default intensity based on goal.priority
-
-        # These would ideally take more specific context snapshots (e.g., from WM, SM, Planner)
-        urgency_factor = ConcreteMotivationalSystemModule._get_urgency_factor(goal, None)
-        value_alignment_score = ConcreteMotivationalSystemModule._get_value_alignment_score(goal, None)
-        dependency_factor = ConcreteMotivationalSystemModule._get_dependency_factor(goal, all_active_goals_for_context)
-        estimated_cost = ConcreteMotivationalSystemModule._get_estimated_cost(goal, None)
-
-        # Weights for combining factors - these should sum roughly to 1 if factors are 0-1
-        w_base = 0.20
-        w_int = 0.30  # Combined weight for initial/intrinsic intensity
-        w_urg = 0.15
-        w_val = 0.15
-        w_dep = 0.10
-        w_cost = 0.10 # Weight for cost (subtracted)
-
-        dynamic_p_raw = (
-            w_base * base_priority_for_type +
-            w_int * intensity +
-            w_urg * urgency_factor +
-            w_val * value_alignment_score +
-            w_dep * dependency_factor - # Cost is subtracted
-            w_cost * estimated_cost
-        )
-
-        # Conceptual heuristic: If no high-priority extrinsic tasks are pressing, slightly boost intrinsic goals.
-        is_intrinsic = goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]
-        if is_intrinsic:
-            has_high_priority_extrinsic = False
-            # Check against base priority of other active goals for simplicity in this heuristic
-            for g_other in all_active_goals_for_context:
-                if g_other.id != goal.id and g_other.type == "EXTRINSIC_TASK" and \
-                   g_other.status == "ACTIVE" and g_other.priority > 7.0: # Example threshold for "high base priority extrinsic"
-                    has_high_priority_extrinsic = True
-                    break
-            if not has_high_priority_extrinsic:
-                boost_amount = 0.05 # Small boost (on the 0-1 scale)
-                self._log_message(f"Goal '{goal.id}' ({goal.type}): Applying +{boost_amount:.2f} intrinsic boost (RawP before boost: {dynamic_p_raw:.3f}). No high-prio extrinsic tasks.")
-                dynamic_p_raw += boost_amount
-
-        normalized_priority = max(0.0, min(1.0, dynamic_p_raw)) # Ensure it's capped at 0-1
-
-        self._log_message(
-            f"Goal '{goal.id}' ({goal.type}, InitialPrioField:{goal.priority:.2f}): "
-            f"TypeBase={base_priority_for_type:.2f}(w:{w_base:.2f}), "
-            f"Intensity={intensity:.2f}(w:{w_int:.2f}), "
-            f"Urg={urgency_factor:.2f}(w:{w_urg:.2f}), "
-            f"ValAlign={value_alignment_score:.2f}(w:{w_val:.2f}), "
-            f"Dep={dependency_factor:.2f}(w:{w_dep:.2f}), "
-            f"Cost={estimated_cost:.2f}(w:{w_cost:.2f}) "
-            f"-> RawDynP(post-boost if any)={dynamic_p_raw:.3f} -> NormDynP={normalized_priority:.3f}"
-        )
-        return normalized_priority
-
-    def _generate_competence_satisfaction_reward(self, satisfied_goal: Goal, competence_gain_details: Dict) -> Optional[Dict]:
-        """
-        Generates a conceptual intrinsic reward signal when a competence goal is satisfied or significant competence gain occurs.
-        competence_gain_details: e.g. {"type": "skill_proficiency_increased", "skill_id": "...", "old_proficiency": 0.4, "new_proficiency": 0.6, "task_difficulty": 0.7}
-                                     {"type": "challenging_task_mastered", "task_id": "...", "skill_id_applied": "...", "perceived_challenge": 0.8}
-        """
-        if satisfied_goal.type != "INTRINSIC_COMPETENCE" and "skill_id" not in competence_gain_details : # Allow reward even if not direct goal if skill improves
-            self._log_message(f"Attempted to generate competence reward for non-competence goal: {satisfied_goal.id} or missing skill_id in details.")
-            return None
-
-        reward_magnitude = 0.0
-        gain_type = competence_gain_details.get("type")
-        skill_id = competence_gain_details.get("skill_id", satisfied_goal.target_skill_id)
-
-        if gain_type == "skill_proficiency_increased":
-            old_prof = competence_gain_details.get("old_proficiency", 0.0)
-            new_prof = competence_gain_details.get("new_proficiency", 0.0)
-            task_difficulty = competence_gain_details.get("task_difficulty", 0.5) # How hard was the task that led to this?
-            reward_magnitude = (new_prof - old_prof) * (1 + task_difficulty * 0.5) # More difficult tasks give more reward for same gain
-        elif gain_type == "challenging_task_mastered":
-            perceived_challenge = competence_gain_details.get("perceived_challenge", 0.5)
-            reward_magnitude = perceived_challenge * 0.7 # Mastering a challenge is rewarding
-        else:
-            self._log_message(f"Unknown competence gain type '{gain_type}' for reward calculation for goal {satisfied_goal.id} / skill {skill_id}.")
-            reward_magnitude = 0.1 # Small default for achieving a competence goal
-
-        clamped_reward = max(0.0, min(1.0, reward_magnitude))
-
-        reward_signal = {
-            "type": "INTRINSIC_COMPETENCE_SATISFACTION",
-            "magnitude": clamped_reward,
-            "goal_id": satisfied_goal.id if satisfied_goal.type == "INTRINSIC_COMPETENCE" else None,
-            "skill_id": skill_id,
-            "satisfaction_details": competence_gain_details
-        }
-        self._log_message(f"Conceptual intrinsic reward for competence generated: Magnitude {clamped_reward:.2f} for Goal ID '{satisfied_goal.id}' / Skill '{skill_id}'. Details: {str(competence_gain_details)[:100]}")
-        return reward_signal
-
-    # --- Placeholder Helper Functions for Dynamic Priority ---
-    @staticmethod
-    def _get_base_priority(goal_type: str) -> float:
-        if goal_type == "EXTRINSIC_TASK": return 0.5
-        if goal_type == "INTRINSIC_CURIOSITY": return 0.3
-        if goal_type == "INTRINSIC_COMPETENCE": return 0.35
-        return 0.2
-
-    @staticmethod
-    def _get_urgency_factor(goal: Goal, current_context: Optional[Dict] = None) -> float:
-        # Example: if goal.deadline is approaching, increase urgency.
-        # For now, placeholder.
-        return 0.0
-
-    @staticmethod
-    def _get_value_alignment_score(goal: Goal, self_model_snapshot: Optional[Dict] = None) -> float:
-        # Example: Check if goal.description aligns with self_model_snapshot.values
-        # For now, placeholder (1.0 = neutral or perfectly aligned)
-        return 1.0
-
-    @staticmethod
-    def _get_dependency_factor(goal: Goal, active_goals: List[Goal]) -> float:
-        # Example: If other high-priority goals depend on this one.
-        # For now, placeholder (0.0 = no strong dependencies increasing its priority)
-        return 0.0
-
-    @staticmethod
-    def _get_estimated_cost(goal: Goal, planning_snapshot: Optional[Dict] = None) -> float:
-        # Example: Higher cost (time, resources, risk) slightly reduces priority.
-        # For now, placeholder (low cost)
-        return 0.1
-
-    def _calculate_dynamic_priority(self, goal: Goal, all_active_goals_for_context: List[Goal]) -> float:
-        """Calculates a dynamic priority for a goal based on multiple factors, normalized to 0-1."""
-
-        base_priority_for_type = ConcreteMotivationalSystemModule._get_base_priority(goal.type)
-
-        intensity = 0.0
-        if goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]:
-            # Intensity for intrinsic goals is pre-calculated and stored in source_trigger
-            intensity = goal.source_trigger.get("calculated_intensity", 0.0) if goal.source_trigger else 0.0
-        elif goal.type == "EXTRINSIC_TASK":
-            # For EXTRINSIC_TASK, goal.priority is the externally set importance (e.g., 0-10).
-            # We map this to a 0-1 intensity scale for the formula.
-            intensity = goal.priority / 10.0
-        # Add other goal types if necessary, or assign a default intensity based on goal.priority
-
-        # These would ideally take more specific context snapshots (e.g., from WM, SM, Planner)
-        urgency_factor = ConcreteMotivationalSystemModule._get_urgency_factor(goal, None)
-        value_alignment_score = ConcreteMotivationalSystemModule._get_value_alignment_score(goal, None)
-        dependency_factor = ConcreteMotivationalSystemModule._get_dependency_factor(goal, all_active_goals_for_context)
-        estimated_cost = ConcreteMotivationalSystemModule._get_estimated_cost(goal, None)
-
-        # Weights for combining factors - these should sum roughly to 1 if factors are 0-1
-        w_base = 0.20
-        w_int = 0.30  # Combined weight for initial/intrinsic intensity
-        w_urg = 0.15
-        w_val = 0.15
-        w_dep = 0.10
-        w_cost = 0.10 # Weight for cost (subtracted)
-
-        dynamic_p_raw = (
-            w_base * base_priority_for_type +
-            w_int * intensity +
-            w_urg * urgency_factor +
-            w_val * value_alignment_score +
-            w_dep * dependency_factor - # Cost is subtracted
-            w_cost * estimated_cost
-        )
-
-        # Conceptual heuristic: If no high-priority extrinsic tasks are pressing, slightly boost intrinsic goals.
-        is_intrinsic = goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]
-        if is_intrinsic:
-            has_high_priority_extrinsic = False
-            # Check against base priority of other active goals for simplicity in this heuristic
-            for g_other in all_active_goals_for_context:
-                if g_other.id != goal.id and g_other.type == "EXTRINSIC_TASK" and \
-                   g_other.status == "ACTIVE" and g_other.priority > 7.0: # Example threshold for "high base priority extrinsic"
-                    has_high_priority_extrinsic = True
-                    break
-            if not has_high_priority_extrinsic:
-                boost_amount = 0.05 # Small boost (on the 0-1 scale)
-                self._log_message(f"Goal '{goal.id}' ({goal.type}): Applying +{boost_amount:.2f} intrinsic boost (RawP before boost: {dynamic_p_raw:.3f}). No high-prio extrinsic tasks.")
-                dynamic_p_raw += boost_amount
-
-        normalized_priority = max(0.0, min(1.0, dynamic_p_raw)) # Ensure it's capped at 0-1
-
-        self._log_message(
-            f"Goal '{goal.id}' ({goal.type}, InitialPrioField:{goal.priority:.2f}): "
-            f"TypeBase={base_priority_for_type:.2f}(w:{w_base:.2f}), "
-            f"Intensity={intensity:.2f}(w:{w_int:.2f}), "
-            f"Urg={urgency_factor:.2f}(w:{w_urg:.2f}), "
-            f"ValAlign={value_alignment_score:.2f}(w:{w_val:.2f}), "
-            f"Dep={dependency_factor:.2f}(w:{w_dep:.2f}), "
-            f"Cost={estimated_cost:.2f}(w:{w_cost:.2f}) "
-            f"-> RawDynP(post-boost if any)={dynamic_p_raw:.3f} -> NormDynP={normalized_priority:.3f}"
-        )
-        return normalized_priority
+    # The _generate_competence_satisfaction_reward method and the duplicated
+    # dynamic priority helper functions and _calculate_dynamic_priority method
+    # were here. Removing them. The correct versions are earlier in the file.
 
     def suggest_highest_priority_goal(self) -> Optional[Goal]:
+
+        intensity = 0.0
+        if goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]:
+            # Intensity for intrinsic goals is pre-calculated and stored in source_trigger
+            intensity = goal.source_trigger.get("calculated_intensity", 0.0) if goal.source_trigger else 0.0
+        elif goal.type == "EXTRINSIC_TASK":
+            # For EXTRINSIC_TASK, goal.priority is the externally set importance (e.g., 0-10).
+            # We map this to a 0-1 intensity scale for the formula.
+            intensity = goal.priority / 10.0
+        # Add other goal types if necessary, or assign a default intensity based on goal.priority
+
+        # These would ideally take more specific context snapshots (e.g., from WM, SM, Planner)
+        urgency_factor = ConcreteMotivationalSystemModule._get_urgency_factor(goal, None)
+        value_alignment_score = ConcreteMotivationalSystemModule._get_value_alignment_score(goal, None)
+        dependency_factor = ConcreteMotivationalSystemModule._get_dependency_factor(goal, all_active_goals_for_context)
+        estimated_cost = ConcreteMotivationalSystemModule._get_estimated_cost(goal, None)
+
+        """
+        Suggests the highest priority goal based on dynamic calculation.
+        Returns the Goal object.
+        """
+        active_goals_with_dyn_prio = self.get_active_goals(return_with_priority_scores=True)
+
+        if not active_goals_with_dyn_prio: # This list now contains (dynamic_priority_score, Goal)
+            self._log_message("No active goals to suggest.")
+            return None
+
+        highest_priority_score, highest_goal = active_goals_with_dyn_prio[0]
+
+        if len(active_goals_with_dyn_prio) > 1:
+            second_highest_priority_score, _ = active_goals_with_dyn_prio[1]
+            if (highest_priority_score - second_highest_priority_score) < 0.05: # Using 0-1 scale for comparison
+                top_goals_log = [
+                    f"{g.id} (DynP:{p_score:.3f}, BaseP:{g.priority:.2f})" for p_score, g in active_goals_with_dyn_prio[:3]
+                ]
+                self._log_message(
+                    f"Potential goal conflict or similar high dynamic priority for goals: {', '.join(top_goals_log)}. "
+                    f"Highest suggested: {highest_goal.id} (DynP:{highest_priority_score:.3f}). "
+                    "Further resolution might be needed."
+                )
+
+        self._log_message(f"Suggested highest priority goal: {highest_goal.id} with dynamic priority {highest_priority_score:.3f} (BasePrioField: {highest_goal.priority:.2f}, Type: {highest_goal.type})")
+        return highest_goal
+
+    def get_module_status(self) -> Dict[str, Any]:
+        """Returns the current status of the Motivational System Module."""
+        status_counts: Dict[str, int] = {}
+        for goal in self.goals:
+            status_counts[goal.status] = status_counts.get(goal.status, 0) + 1
+
+        return {
+            "module_id": self._module_id,
+            "module_type": "ConcreteMotivationalSystemModule (Message Bus Integrated)",
+            "total_goals": len(self.goals),
+            "goals_by_status": status_counts,
+            "message_bus_configured": self._message_bus is not None,
+            "next_goal_id_counter": self.next_goal_id
+        }
+
+
+    def _handle_action_event(self, message: GenericMessage) -> None:
+        is_intrinsic = goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]
+        if is_intrinsic:
+            has_high_priority_extrinsic = False
+            # Check against base priority of other active goals for simplicity in this heuristic
+            for g_other in all_active_goals_for_context:
+                if g_other.id != goal.id and g_other.type == "EXTRINSIC_TASK" and \
+                   g_other.status == "ACTIVE" and g_other.priority > 7.0: # Example threshold for "high base priority extrinsic"
+                    has_high_priority_extrinsic = True
+                    break
+            if not has_high_priority_extrinsic:
+                boost_amount = 0.05 # Small boost (on the 0-1 scale)
+                self._log_message(f"Goal '{goal.id}' ({goal.type}): Applying +{boost_amount:.2f} intrinsic boost (RawP before boost: {dynamic_p_raw:.3f}). No high-prio extrinsic tasks.")
+                dynamic_p_raw += boost_amount
+
+        normalized_priority = max(0.0, min(1.0, dynamic_p_raw)) # Ensure it's capped at 0-1
+
+        self._log_message(
+            f"Goal '{goal.id}' ({goal.type}, InitialPrioField:{goal.priority:.2f}): "
+            f"TypeBase={base_priority_for_type:.2f}(w:{w_base:.2f}), "
+            f"Intensity={intensity:.2f}(w:{w_int:.2f}), "
+            f"Urg={urgency_factor:.2f}(w:{w_urg:.2f}), "
+            f"ValAlign={value_alignment_score:.2f}(w:{w_val:.2f}), "
+        """
+        Handles ActionEvent messages from the message bus.
+        Updates goal status based on action outcomes.
+        """
+        if not isinstance(message.payload, ActionEventPayload):
+            print(f"ERROR ({self._module_id}): Received non-ActionEventPayload: {type(message.payload)}")
+            return
+
+        payload: ActionEventPayload = message.payload
+        print(f"INFO ({self._module_id}): Handling ActionEvent for command '{payload.action_command_id}', Action: '{payload.action_type}', Status: {payload.status}")
+
+        goal_id_from_outcome: Optional[str] = None
+        new_status_from_outcome: Optional[str] = None
+
+        if payload.outcome:
+            goal_id_from_outcome = payload.outcome.get("goal_id")
+            new_status_from_outcome = payload.outcome.get("new_status")
+            related_skill_id = payload.outcome.get("skill_used", payload.action_type) # Infer skill from action_type if not specified
+
+            if goal_id_from_outcome and not new_status_from_outcome:
+                if payload.status == "SUCCESS": new_status_from_outcome = "ACHIEVED"
+                elif payload.status == "FAILURE": new_status_from_outcome = "FAILED"
+
+        if goal_id_from_outcome and new_status_from_outcome:
+            goal = self.get_goal(goal_id_from_outcome)
+            if goal:
+                self._log_message(f"ActionEvent outcome suggests updating goal '{goal_id_from_outcome}' to status '{new_status_from_outcome}'.")
+                self.update_goal_status(goal_id_from_outcome, new_status_from_outcome)
+
+                if new_status_from_outcome == "ACHIEVED":
+                    if goal.type == "INTRINSIC_CURIOSITY":
+                        info_gain = payload.outcome.get("information_gain_details", {"type": "exploration_completed", "item_id": related_skill_id})
+                        self._generate_curiosity_satisfaction_reward(goal, info_gain)
+                    elif goal.type == "INTRINSIC_COMPETENCE":
+                        comp_gain = payload.outcome.get("competence_gain_details", {"type": "skill_proficiency_increased", "skill_id": goal.target_skill_id, "new_proficiency": goal.competence_details.get("target_proficiency",0.8) if goal.competence_details else 0.8})
+                        self._generate_competence_satisfaction_reward(goal, comp_gain)
+            else:
+                self._log_message(f"WARNING: Goal '{goal_id_from_outcome}' from ActionEvent outcome not found.")
+
+        # Competence goal trigger from task performance feedback
+        if payload.status == "FAILURE" or (payload.status == "SUCCESS" and payload.outcome and (payload.outcome.get("efficiency") == "low" or payload.outcome.get("quality") == "poor")):
+            self._log_message(f"ActionEvent indicates suboptimal performance for action '{payload.action_type}'. Assessing for competence goal.")
+            # Check if an active competence goal for this skill already exists
+            existing_competence_goal_for_skill = any(
+                g.type == "INTRINSIC_COMPETENCE" and g.target_skill_id == related_skill_id and g.status in ["PENDING", "ACTIVE"]
+                for g in self.goals
+            )
+            if not existing_competence_goal_for_skill and related_skill_id:
+                # Simulate skill data for intensity calculation - actual proficiency might come from SelfModel or LTM
+                skill_data_for_trigger = {
+                    "proficiency": 0.3, # Assume low proficiency due to failure/suboptimal
+                    "importance": payload.outcome.get("task_importance", 0.6), # Conceptual
+                    "target_proficiency": 0.8 # Aim for higher proficiency
+                }
+                intensity = self._calculate_competence_drive_intensity(related_skill_id, skill_data_for_trigger, self.get_active_goals())
+                if intensity > 0.35: # Threshold for this trigger type
+                    desc = f"Improve skill '{related_skill_id}' due to task performance (Action: {payload.action_type}, Status: {payload.status}, Intensity: {intensity:.2f})"
+                    source_trigger = {
+                        "trigger_type": "TASK_PERFORMANCE_FEEDBACK",
+                        "action_type": payload.action_type,
+                        "status": payload.status,
+                        "related_skill_id": related_skill_id,
+                        "calculated_intensity": intensity
+                    }
+                    competence_details_for_goal = {
+                        "current_proficiency_assumed": skill_data_for_trigger["proficiency"],
+                        "target_proficiency": skill_data_for_trigger["target_proficiency"],
+                        "triggering_action_event_id": message.message_id
+                    }
+                    self.add_goal(desc, "INTRINSIC_COMPETENCE", intensity * 10.0, source_trigger, target_skill_id=related_skill_id, competence_details=competence_details_for_goal)
+        elif not goal_id_from_outcome: # If no specific goal was updated by this action event
+             self._log_message(f"No specific goal ID in ActionEvent outcome for command '{payload.action_command_id}'. Outcome: {payload.outcome}")
+
+
+    def update_motivation_state(self, new_state_info: Dict[str, Any]) -> bool:
         """
         Suggests the highest priority goal based on dynamic calculation.
         Returns the Goal object.
@@ -984,6 +961,35 @@ class ConcreteMotivationalSystemModule(BaseMotivationalSystemModule):
         """
         self._log_message(f"update_motivation_state called with: {new_state_info}. (Placeholder)")
         return True
+
+    def evaluate_and_generate_intrinsic_goals_dynamically(self,
+                                                        knowledge_map_snapshot: Optional[Dict[str, Dict[str, Any]]],
+                                                        capability_inventory_snapshot: Optional[Dict[str, Dict[str, Any]]],
+                                                        current_world_event: Optional[Dict[str,Any]] = None) -> Dict[str, List[str]]:
+        """
+        Evaluates current state (knowledge, capabilities, world events) to dynamically
+        generate intrinsic curiosity and competence goals.
+        This method simulates being called periodically or by significant system events.
+        """
+        self._log_message("Starting dynamic evaluation for intrinsic goals...")
+
+        new_curiosity_goal_ids: List[str] = []
+        if knowledge_map_snapshot is not None or current_world_event is not None:
+            self._log_message("Assessing curiosity triggers...")
+            new_curiosity_goal_ids = self.assess_curiosity_triggers(knowledge_map_snapshot, world_event=current_world_event)
+            if new_curiosity_goal_ids:
+                self._log_message(f"Generated {len(new_curiosity_goal_ids)} new INTRINSIC_CURIOSITY goals: {new_curiosity_goal_ids}")
+
+        new_competence_goal_ids: List[str] = []
+        if capability_inventory_snapshot is not None:
+            self._log_message("Assessing competence opportunities...")
+            active_goals_list = self.get_active_goals() # get_active_goals already returns List[Goal] by default
+            new_competence_goal_ids = self.assess_competence_opportunities(capability_inventory_snapshot, active_goals_list)
+            if new_competence_goal_ids:
+                self._log_message(f"Generated {len(new_competence_goal_ids)} new INTRINSIC_COMPETENCE goals: {new_competence_goal_ids}")
+
+        self._log_message("Dynamic intrinsic goal evaluation complete.")
+        return {"new_curiosity_goals": new_curiosity_goal_ids, "new_competence_goals": new_competence_goal_ids}
 
 
 if __name__ == '__main__':

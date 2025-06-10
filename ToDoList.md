@@ -197,7 +197,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## PiaSE (PiaAGI Simulation Environment) - Enhancements
 - [x] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules). (MVP implementation of PiaAGIAgent class, basic scenarios, unit tests, and refined guide completed by Jules on 2024-08-05).
-- [ ] Define a more robust Environment API for richer perceptions and actions.
+- [x] Define a more robust Environment API for richer perceptions and actions: Enhanced `PerceptionData`, `ActionCommand`, `ActionResult` Pydantic models and added new optional methods to `Environment`/`AgentInterface` ABCs in `core_engine/interfaces.py`. Documentation in `PiaAGI_Simulation_Environment.md` updated.
 - [ ] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World").
 - [ ] Implement one of the newly conceptualized environment types as a prototype.
 - [x] **Dynamic Scenario Engine for Scaffolding:** Enhance PiaSE's scenario manager ... (MVP implementation of core DSE components, integration with BasicSimulationEngine, demo scenario, unit tests, and documentation updates completed by Jules on 2024-08-05).

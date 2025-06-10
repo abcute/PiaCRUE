@@ -140,6 +140,14 @@ The PiaAGI Simulation Environment (PiaSE) is designed to provide a flexible and 
         # def subscribe_to_event(self, agent_id: str, event_type: str, callback_url: str): pass
         # def query_environment_state(self, agent_id: str, query: dict) -> dict: pass
     ```
+    The actual `Environment` Abstract Base Class (ABC) in `PiaAGI_Research_Tools/PiaSE/core_engine/interfaces.py` defines the method signatures for `reset()`, `step(agent_id, action) -> ActionResult`, `get_observation(agent_id) -> PerceptionData`, `get_state()`, `is_done(agent_id)`, `get_action_space(agent_id)`, `get_environment_info()`, and `reconfigure(config)`.
+    Recent enhancements have added the following non-abstract methods to the `Environment` ABC, providing default (often no-op) implementations, encouraging concrete environments to override them if applicable:
+    *   `get_spontaneous_events(self) -> List[PiaSEEvent]`: For environments to generate events not directly tied to an agent's last action.
+    *   `add_entity(self, entity_type: str, entity_id: str, config: Dict[str, Any]) -> bool`: For dynamically adding entities.
+    *   `remove_entity(self, entity_id: str) -> bool`: For dynamically removing entities.
+    *   `update_entity_state(self, entity_id: str, new_state: Dict[str, Any]) -> bool`: For dynamically updating entity states.
+
+    The `AgentInterface` ABC includes core methods like `perceive(observation, event)`, `act() -> ActionCommand`, and `learn(feedback)`. The Q-learning specific methods (`initialize_q_table`, etc.) are now noted as specific to Q-learning agent implementations rather than being mandatory for all agents. An optional `configure(self, config: Dict[str, Any], **kwargs) -> None` method has also been added, allowing agents to be configured dynamically by the simulation engine or DSE.
 
     **Data Structures (Conceptual JSON/Dict):**
 
@@ -147,53 +155,84 @@ The PiaAGI Simulation Environment (PiaSE) is designed to provide a flexible and 
         *   Highly dependent on the environment and agent's sensors.
         *   Example for a simple text-based environment:
             ```json
+            // Updated Conceptual PerceptionData Example
             {
                 "timestamp": 1678886400.5,
-                "visible_text": "You are in a dimly lit study. There is a large desk with a closed drawer and a bookshelf.",
-                "inventory_update": null,
-                "messages": [
-                    {"sender": "system", "content": "The door to the north creaks."}
+                "visual_percepts": [ // List of VisualPercept
+                    {
+                        // Example of a richer DetectedObject structure within VisualPercept
+                        "detected_objects": [
+                            {"label": "cat", "confidence": 0.9, "bounding_box": [0.1, 0.1, 0.3, 0.4], "attributes": {"color": "black"}}
+                        ],
+                        // raw_image_data or image_url might also be present
+                    }
                 ],
-                "self_stats_feedback": {
-                    "energy_level": 0.85
+                "auditory_percepts": [ // List of AuditoryPercept
+                    {"transcribed_text": "Hello there!", "speaker_id": "user_A", "emotion_hint": "happy", "prosody_features": {"pitch_mean": 150.0}}
+                ],
+                "textual_percepts": [ // List of TextualPercept
+                    {"text": "A note on the table reads: 'Meeting at noon.'", "source": "environment_note"}
+                ],
+                "self_state_percept": { // New AgentStatePercept
+                    "position": [10.5, 3.2, 0.0],
+                    "inventory": ["key", "map"],
+                    "internal_stats": {"energy": 85, "task_focus_level": 0.9}
+                },
+                "custom_sensor_data": { // Remains for environment-specific data
+                    "temperature": 22.5,
+                    "pressure": 1012
+                },
+                "messages": [ // For direct inter-agent or system messages
+                    {"sender": "system_alert", "content": "Energy levels critical!"}
+                ],
+                "agent_specific_data": { // For data only relevant to this agent
+                    "current_quest_hint": "The artifact is near the old tree."
                 }
             }
             ```
+            The `PerceptionData` model is now more structured, utilizing specific Pydantic models for different percept types (`VisualPercept`, `AuditoryPercept`, `TextualPercept`). `VisualPercept` can now contain a list of `DetectedObject` models, each with fields like `label`, `confidence`, `bounding_box`, and `attributes`. `AuditoryPercept` can include `emotion_hint` and `prosody_features`. A new optional `self_state_percept` field (using `AgentStatePercept`) standardizes common agent-specific state information like `position`, `inventory`, and `internal_stats`. `custom_sensor_data` remains for other environment-specific data.
 
     *   **Action Command Data (to `submit_action`):**
         *   Defined by the environment's supported actions.
         *   Example for a text-based environment:
             ```json
+            // Updated Conceptual ActionCommand Example
             {
-                "action_type": "go",
-                "parameters": {
-                    "direction": "north"
-                }
+                "action_id": "uuid-action-123", // New field
+                "action_type": "move_to_target", // Could use specific params model
+                "move_params": { // Example of new structured parameter
+                    "target_coordinates": [15.0, 25.0, 0.0],
+                    "speed_profile": "fast"
+                },
+                "generic_parameters": { // For other or custom actions
+                    "detail_for_custom_action": "value"
+                },
+                "timeout_seconds": 10.0 // New field
             }
             ```
-            Another example:
-            ```json
-            {
-                "action_type": "open",
-                "parameters": {
-                    "target": "drawer"
-                }
-            }
-            ```
+            The `ActionCommand` model now includes a unique `action_id` (auto-generated UUID) and an optional `timeout_seconds`. The generic `parameters` field has been renamed to `generic_parameters`. Furthermore, optional structured parameter fields like `move_params: MoveParams` and `interact_params: InteractParams` can be used for common, well-defined actions, improving type safety and clarity, while `generic_parameters` caters to other or custom actions.
 
     *   **Action Result Data (from `submit_action`):**
         *   Provides feedback on the executed action.
         *   Example:
             ```json
+            // Updated Conceptual ActionResult Example
             {
-                "status": "success",
-                "new_perception_snippet": "You moved north. You are now in a dusty hallway.",
-                "message": "You successfully moved north.",
-                "details": {
-                    "energy_consumed": 0.05
+                "timestamp": 1678886401.0,
+                "status": "success", // "success", "failure", "pending"
+                "message": "Successfully moved to target.",
+                "new_perception_snippet": { /* ... PerceptionData ... */ },
+                "reward": 1.0, // Promoted field
+                "is_terminal": false, // Promoted field
+                "achieved_goal_ids": ["goal_reach_waypoint"], // New field
+                "failure_reason_code": null, // New field, e.g., "OBSTACLE_ENCOUNTERED"
+                "custom_details": { // Renamed from 'details'
+                    "energy_consumed": 0.05,
+                    "path_deviation_metric": 0.1
                 }
             }
             ```
+            The `ActionResult` model has been enhanced. `reward` (default 0.0) and `is_terminal` (default `False`) are now first-class fields. New fields include `achieved_goal_ids` (a list of goal IDs achieved by this action) and `failure_reason_code` (an optional string code for specific failure types). The generic `details` field has been renamed to `custom_details`.
     *   **`get_environment_info()` Response Example:**
         ```json
         {
