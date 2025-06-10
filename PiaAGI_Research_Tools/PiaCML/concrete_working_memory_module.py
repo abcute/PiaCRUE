@@ -5,7 +5,7 @@ import asyncio # For __main__
 import time # For __main__ timestamps
 
 try:
-    from .base_working_memory_module import BaseWorkingMemoryModule
+    from .working_memory_module import WorkingMemoryModule # Corrected import
     from .message_bus import MessageBus
     from .core_messages import (
         GenericMessage, PerceptDataPayload, LTMQueryResultPayload, MemoryItem,
@@ -14,7 +14,7 @@ try:
     )
 except ImportError:
     print("Warning: Running ConcreteWorkingMemoryModule with stubbed imports.")
-    class BaseWorkingMemoryModule: pass
+    class WorkingMemoryModule: pass # Corrected stub class name
     MessageBus = None # type: ignore
     GenericMessage = object # type: ignore
     PerceptDataPayload = object # type: ignore
@@ -26,7 +26,7 @@ except ImportError:
     LTMQueryPayload = object # type: ignore
 
 
-class ConcreteWorkingMemoryModule(BaseWorkingMemoryModule):
+class ConcreteWorkingMemoryModule(WorkingMemoryModule): # Corrected base class
     """
     A concrete implementation of the BaseWorkingMemoryModule, integrated with a message bus.
     Manages a workspace of items with salience and capacity, and can interact with LTM.

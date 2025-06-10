@@ -73,7 +73,7 @@ class MessageBus:
             raise e
 
     def publish(self, message: GenericMessage, dispatch_mode: str = "synchronous"):
-        Publishes a message to all relevant subscribed modules.
+        """Publishes a message to all relevant subscribed modules.
         Handles different dispatch modes and error tracking/suspension.
         """
         message_type = message.message_type
@@ -110,57 +110,14 @@ class MessageBus:
                     asyncio.create_task(self._execute_callback(callback, message))
                 else: # Synchronous dispatch
                     if asyncio.iscoroutinefunction(callback):
-                         print(f"WARNING: Coroutine callback {callback.__name__} for module '{module_id}' called in synchronous mode. This will block. Consider using dispatch_mode='asynchronous'.")
-                         # In a strict environment, we might raise an error or use asyncio.run()
-                         # For now, let's just run it using a temporary event loop if needed, or log warning.
-                         # This is a simplification; proper sync execution of async code is complex.
-                         # For this PoC, we'll assume the user manages the event loop if they mix sync publish with async callbacks.
-                         # A simple way, though not ideal for all contexts:
-                         try:
-                             loop = asyncio.get_event_loop()
-                             if loop.is_running():
-                                 # This is tricky. If an event loop is running,
-                                 # we can't easily run another async task synchronously without blocking it.
-                                 # This indicates a potential design issue in usage.
-                                 # For now, we'll log and execute it, which might block or raise an error.
-                                 print(f"  Executing async callback '{callback.__name__}' for '{module_id}' synchronously within an existing loop. This may lead to issues.")
-                                 # A more robust solution for running async code from sync would involve asyncio.run_coroutine_threadsafe
-                                 # if the sync code is in a different thread, or careful use of loop.run_until_complete.
-                                 # Given the context, we'll just call it and let it run/fail.
-                                 # This part is complex because we are in a sync method.
-                                 # A simple call might not work if the callback truly needs an event loop.
-                                 # For the sake of this example, we'll assume it can be called,
-                                 # or it will raise an error that we then catch.
-                                 # The _execute_callback handles the await if it's a coroutine.
-                                 # However, calling an async def from sync code without await is an error.
-                                 # Let's wrap it in a way that it can be awaited if needed,
-                                 # but this is still not true synchronous execution of an async function.
-                                 # The best approach is to use _execute_callback which handles it,
-                                 # but that itself is async.
-                                 # The `publish` method is not async.
-                                 # This highlights the challenge of mixing sync/async calls.
-                                 # For now, the `_execute_callback` is async, so `publish` cannot directly `await` it.
-                                 # The problem is here: an async callback in a sync publish.
-                                 # Simplest (but blocking) way if an event loop isn't running:
-                                 # asyncio.run(self._execute_callback(callback, message))
-                                 # But asyncio.run() cannot be called when another event loop is running.
-                                 # This scenario (sync publish of async callback) is inherently problematic.
-                                 # We will log a strong warning and attempt direct call, which will likely fail if not handled by user.
-                                 print(f"  Attempting direct call for async callback '{callback.__name__}' for '{module_id}' in sync mode. This is likely to fail if not handled by the caller's event loop.")
-                                 self._execute_callback(callback, message) # This will return a coroutine object, not execute it.
-                                 # The above line is incorrect for actually running it.
-                                 # The correct way to handle this would be to run it in an event loop.
-                                 # For simplicity in this PoC, we will assume this means "run it if you can, but it's tricky".
-                                 # The most direct (and potentially problematic) way is to just call it.
-                                 # If it's an async function, this won't run it, it will return a coroutine.
-                                 # This is a known limitation when mixing sync `publish` with async callbacks.
-                                 # The `asynchronous` dispatch_mode is the correct way for async callbacks.
-                                 # Let's assume for sync mode, callbacks should ideally be sync.
-                                 # If an async callback is provided in sync mode, we'll just call it,
-                                 # which means it won't be awaited.
-                                 callback(message) # This will return a coroutine object if callback is async
-                            else:
-                                callback(message) # Regular synchronous call
+                        print(f"WARNING: Coroutine callback {callback.__name__} for module '{module_id}' called in synchronous mode. This will block or not execute as intended. Consider using dispatch_mode='asynchronous'.")
+                        # Directly calling an async function from sync code will return a coroutine object,
+                        # not run it as awaited. This is a simplification to fix syntax errors.
+                        # Proper handling of async callbacks in sync mode is complex and might require
+                        # running an event loop or using threading if true synchronous execution is needed.
+                        callback(message)
+                    else: # This is for regular synchronous callbacks
+                        callback(message) # Regular synchronous call
             except Exception as e:
                 err_type = type(e).__name__
                 tb_str = traceback.format_exc()

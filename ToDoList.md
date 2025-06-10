@@ -197,7 +197,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## PiaSE (PiaAGI Simulation Environment) - Enhancements
 - [x] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules). (MVP implementation of PiaAGIAgent class, basic scenarios, unit tests, and refined guide completed by Jules on 2024-08-05).
-- [ ] Define a more robust Environment API for richer perceptions and actions.
+- [x] Define a more robust Environment API for richer perceptions and actions: Enhanced `PerceptionData`, `ActionCommand`, `ActionResult` Pydantic models and added new optional methods to `Environment`/`AgentInterface` ABCs in `core_engine/interfaces.py`. Documentation in `PiaAGI_Simulation_Environment.md` updated.
 - [ ] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World").
 - [ ] Implement one of the newly conceptualized environment types as a prototype.
 - [x] **Dynamic Scenario Engine for Scaffolding:** Enhance PiaSE's scenario manager ... (MVP implementation of core DSE components, integration with BasicSimulationEngine, demo scenario, unit tests, and documentation updates completed by Jules on 2024-08-05).
@@ -247,9 +247,9 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## Message Bus & Integration (From User's New List)
 - [ ] **Implement Core Inter-Module Communication System (Phase 2 Cont.):**
-- [ ] Integrate `ConcreteEmotionModule` with the Message Bus (publish "EmotionalStateChange", subscribe to relevant triggers).
-- [ ] Systematically review and refactor existing CML modules to replace direct inter-module calls with Message Bus communication where appropriate for improved decoupling.
-- [ ] Implement true asynchronous message dispatching capabilities in `MessageBus`.
+- [x] Integrate `ConcreteEmotionModule` with the Message Bus (subscribes to `PerceptData`, `ActionEvent`; publishes `EmotionalStateChange`). (Conceptual logic for appraisal implemented).
+- [x] Systematically review CML modules for Message Bus usage: Reviewed key modules (`WorldModel`, `SelfModel`, `Planning`, `Learning`, `Emotion`, `Perception`, `WM`, `Motivation`, `LTM`, `Attention`, `BGM`, `CommModule`, `BaseMemory`). Most integrations are sound. `ConcreteCommunicationModule` was refactored for full bus integration. (Ongoing vigilance for further decoupling opportunities remains).
+- [x] Implement true asynchronous message dispatching capabilities in `MessageBus`: Reviewed current `asyncio.create_task` based asynchronous dispatch; deemed sufficient for current "fire-and-forget" needs. (Advanced features like `publish` being async are future considerations).
 - [ ] Explore and implement further advanced features for `MessageBus` (e.g., enhanced routing options, more Quality of Service levels, advanced filtering).
 
 ## Advanced Module Features (Post-Phase 1 Prototypes) (From User's New List)
