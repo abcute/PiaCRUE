@@ -173,7 +173,9 @@ To use `PiaAGIAgent` in a PiaSE scenario, you need to provide configurations for
         }
     }
     ```
-    *Note: The `PiaAGIAgent` currently uses placeholder modules if actual CML module imports fail. The configuration dictionary would still be passed to these placeholders. The parameters shown above are conceptual and assume that the respective concrete CML modules are designed to accept and utilize them in their `__init__` methods or other setup routines.*
+    *Note: The `PiaAGIAgent` currently uses placeholder modules if actual CML module imports fail. The configuration dictionary would still be passed to these placeholders. Many parameters shown above are conceptual examples; the respective concrete CML modules would need to be designed to accept and utilize them in their `__init__` methods or other setup routines for them to have an effect.*
+
+    This more comprehensive configuration, as demonstrated in `comprehensive_info_gathering_scenario.py`, allows for a richer initial setup of the agent's cognitive state and predispositions. Even if the scenario's immediate task is simple, this detailed configuration means the agent is internally prepared for more complex reasoning, learning, and interaction, should the circumstances arise or the scenario evolve.
 
 2.  **Instantiate `PiaAGIAgent`:**
     Create an instance of `PiaAGIAgent`, providing an `agent_id`, the `cml_module_configs`, and optionally, a pre-configured `shared_world_model`. If `shared_world_model` is not provided, the agent instantiates its own `ConcreteWorldModel` using the "world_model" entry from `cml_module_configs`.

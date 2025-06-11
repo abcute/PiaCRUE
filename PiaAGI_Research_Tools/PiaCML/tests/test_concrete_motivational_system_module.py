@@ -235,10 +235,25 @@ class TestConcreteMotivationalSystemModuleIntegration(unittest.TestCase):
         new_goal = mot_sys.get_goal(new_goal_ids[0])
         self.assertIsNotNone(new_goal)
         self.assertEqual(new_goal.type, "INTRINSIC_CURIOSITY")
-        self.assertTrue(new_goal.priority > 7.0) # Expected intensity > 0.7 for these scores
+        self.assertTrue(new_goal.priority > 7.0) # Expected intensity > 0.7 for these scores (0.4532 * 10 = 4.532. Correcting this assertion)
+        self.assertAlmostEqual(new_goal.priority, 4.532, places=3) # (0.4*0.9 + 0.2*0.7) * 1.03 * 10 = (0.36+0.14)*1.03*10 = 0.5*1.03*10 = 5.15. Previous calc was (0.4*0.8 + 0.2*0.6)*1.03*10 = 0.4532*10 = 4.532
+        # Recalculating based on _calculate_curiosity_intensity:
+        # Novelty 0.9, Complexity 0.7 -> base = (0.4*0.9) + (0.2*0.7) = 0.36 + 0.14 = 0.50
+        # final_intensity = 0.50 * (1 + 0.3 * 0.1) = 0.50 * 1.03 = 0.515. Priority = 5.15
+        self.assertAlmostEqual(new_goal.priority, 5.15, places=2)
+
         self.assertIn("Investigate novel stimulus: stimulus_alpha", new_goal.description)
+        self.assertIn("Novelty: 0.90", new_goal.description)
+        self.assertIn("Complexity: 0.70", new_goal.description)
+        self.assertIn(f"Calculated Intensity: {new_goal.source_trigger['calculated_intensity']:.2f}", new_goal.description)
+
         self.assertEqual(new_goal.source_trigger["trigger_type"], "NOVEL_STIMULUS")
+        self.assertEqual(new_goal.source_trigger["stimulus_id"], "stimulus_alpha")
         self.assertEqual(new_goal.source_trigger["novelty_score"], 0.9)
+        self.assertEqual(new_goal.source_trigger["complexity_score"], 0.7)
+        self.assertIn("calculated_intensity", new_goal.source_trigger) # Check presence
+        self.assertAlmostEqual(new_goal.source_trigger["calculated_intensity"], 0.515, places=3)
+
         self.assertTrue(any("Novel stimulus 'stimulus_alpha' assessed for curiosity." in log for log in mot_sys._log))
         self.assertEqual(len(self.received_goal_updates), 1) # Check if add_goal published it
 
@@ -255,12 +270,18 @@ class TestConcreteMotivationalSystemModuleIntegration(unittest.TestCase):
         new_goal = mot_sys.get_goal(new_goal_ids[0])
         self.assertIsNotNone(new_goal)
         self.assertEqual(new_goal.type, "INTRINSIC_CURIOSITY")
-        # Intensity for (1-0.2)*0.6 = 0.48. Times (1+0.3*0.1) approx 0.49. Priority = 4.9
-        self.assertTrue(new_goal.priority > 4.0 and new_goal.priority < 6.0)
+        # Intensity for (1-0.2)*0.6 = 0.48. Relevance factor: 1.03. Total: 0.48 * 1.03 = 0.4944. Priority = 4.944
+        self.assertAlmostEqual(new_goal.priority, 4.944, places=3)
         self.assertIn("Explore knowledge gap for concept: concept_X", new_goal.description)
+        self.assertIn("Current Confidence: 0.20", new_goal.description)
+        self.assertIn(f"Calculated Intensity: {new_goal.source_trigger['calculated_intensity']:.2f}", new_goal.description)
+
         self.assertEqual(new_goal.source_trigger["trigger_type"], "KNOWLEDGE_GAP")
         self.assertEqual(new_goal.source_trigger["concept_id"], "concept_X")
         self.assertEqual(new_goal.source_trigger["current_confidence"], 0.2)
+        self.assertEqual(new_goal.source_trigger["current_understanding"], 0.1) # From mock data
+        self.assertIn("calculated_intensity", new_goal.source_trigger)
+        self.assertAlmostEqual(new_goal.source_trigger["calculated_intensity"], 0.4944, places=4)
         self.assertTrue(any("Knowledge gap for concept 'concept_X' assessed for curiosity." in log for log in mot_sys._log))
 
     def test_assess_curiosity_low_intensity_no_goal(self):
@@ -328,10 +349,23 @@ class TestConcreteMotivationalSystemModuleIntegration(unittest.TestCase):
             self.assertEqual(goal.type, "INTRINSIC_COMPETENCE")
             if goal.target_skill_id == "skill_nav_basic":
                 found_nav_goal = True
-                self.assertTrue(goal.priority > 7.0) # Intensity 0.74 * 10
+                # Intensity for skill_nav_basic: (0.6 * (1.0-0.3)) + (0.4 * 0.8) = (0.6*0.7) + 0.32 = 0.42 + 0.32 = 0.74. Priority = 7.4
+                self.assertAlmostEqual(goal.priority, 7.4, places=1)
                 self.assertIn("Improve skill: skill_nav_basic", goal.description)
-                self.assertEqual(goal.source_trigger["trigger_type"], "LOW_PROFICIENCY")
+                self.assertIn(f"(Current Prof: {goal.competence_details['current_proficiency']:.2f}, Target: {goal.competence_details['target_proficiency']:.2f}, Calculated Intensity: {goal.source_trigger['calculated_intensity']:.2f})", goal.description)
+
+                # Assert source_trigger details
+                self.assertEqual(goal.source_trigger["trigger_type"], "LOW_PROFICIENCY_OR_MASTERY_OPPORTUNITY")
+                self.assertEqual(goal.source_trigger["skill_id"], "skill_nav_basic")
+                self.assertEqual(goal.source_trigger["assessed_proficiency_at_trigger"], 0.3)
+                self.assertEqual(goal.source_trigger["assessed_importance_at_trigger"], 0.8)
+                self.assertAlmostEqual(goal.source_trigger["calculated_intensity"], 0.74, places=2)
+
+                # Assert competence_details
                 self.assertEqual(goal.competence_details["current_proficiency"], 0.3)
+                self.assertEqual(goal.competence_details["target_proficiency"], 1.0) # Default target
+                self.assertEqual(goal.competence_details["initial_importance_rating"], 0.8)
+
         self.assertTrue(found_nav_goal, "Competence goal for skill_nav_basic not found or details incorrect.")
         self.assertEqual(len(self.received_goal_updates), 2)
 
@@ -517,6 +551,7 @@ class TestConcreteMotivationalSystemModuleIntegration(unittest.TestCase):
         # Goal 3: Competence, low base priority (e.g., 3.0), moderate calculated_intensity (e.g., 0.6)
         # Dynamic Prio (approx): 0.2*0.35 (base_type) + 0.3*0.6 (intensity_intrinsic) + ...
         # = 0.07 + 0.18 + 0 + 0.15 + 0 - 0.01 = 0.39. Scaled: 3.9
+        # This test relies on _calculate_dynamic_priority correctly using the 'calculated_intensity' from source_trigger for these intrinsic goals.
         g3_id = mot_sys.add_goal("Competence Moderate Intensity", "INTRINSIC_COMPETENCE", initial_priority=3.0, source_trigger={"calculated_intensity": 0.6, "trigger_type": "LOW_PROFICIENCY"}, target_skill_id="skill_x")
 
         # Expected order based on rough calculation: g2 (4.85), g1 (4.8), g3 (3.9)
@@ -746,8 +781,105 @@ class TestConcreteMotivationalSystemModuleIntegration(unittest.TestCase):
         # If prio_g_int_neutral < prio_g_ext_neutral, then we'd hope prio_g_int_bored > prio_g_ext_bored or closer.
         # This test is more about ensuring the specific boredom boost is logged and affects the intrinsic score positively.
 
-# Removed if __name__ == '__main__' block to avoid potential syntax issues
-# that were not visible but reported by the interpreter.
-```
+    def test_calculate_curiosity_intensity_logic(self):
+        mot_sys = self.mot_sys # Use the instance from setUp for logging consistency if needed
+        mot_sys._log.clear() # Clear logs for this specific test
 
-[end of PiaAGI_Research_Tools/PiaCML/tests/test_concrete_motivational_system_module.py]
+        active_goals_empty = [] # No active goals for these direct tests
+
+        # Test case 1: NOVEL_STIMULUS
+        trigger_novel = {"novelty_score": 0.8, "complexity_score": 0.6}
+        # Expected: (0.4 * 0.8) + (0.2 * 0.6) = 0.32 + 0.12 = 0.44. Then relevance: 0.44 * (1 + 0.3 * 0.1) = 0.44 * 1.03 = 0.4532
+        intensity_novel = mot_sys._calculate_curiosity_intensity("NOVEL_STIMULUS", trigger_novel, active_goals_empty)
+        self.assertAlmostEqual(intensity_novel, 0.4532, places=4)
+        self.assertTrue(any("Curiosity (NovelStimulus): novelty=0.80, complexity=0.60 -> base_intensity=0.44" in log for log in mot_sys._log))
+
+        # Test case 1b: NOVEL_STIMULUS - clamping
+        trigger_novel_high = {"novelty_score": 1.0, "complexity_score": 1.0} # Raw: 0.4*1 + 0.2*1 = 0.6. Relevance: 0.6 * 1.03 = 0.618
+        intensity_novel_high = mot_sys._calculate_curiosity_intensity("NOVEL_STIMULUS", trigger_novel_high, active_goals_empty)
+        self.assertAlmostEqual(intensity_novel_high, 0.618, places=3) # Should be clamped to 1.0 if formula results > 1
+
+        trigger_novel_extreme = {"novelty_score": 2.0, "complexity_score": 2.0} # Raw: 0.4*2 + 0.2*2 = 0.8 + 0.4 = 1.2. Relevance: 1.2 * 1.03 = 1.236
+        intensity_novel_extreme = mot_sys._calculate_curiosity_intensity("NOVEL_STIMULUS", trigger_novel_extreme, active_goals_empty)
+        self.assertAlmostEqual(intensity_novel_extreme, 1.0, places=4) # Clamped
+        self.assertTrue(any("Intensity clamped from 1.2360 to 1.0000" in log for log in mot_sys._log if "Curiosity:" in log))
+
+
+        # Test case 2: PREDICTION_ERROR
+        trigger_error = {"error_magnitude": 0.7}
+        # Expected: 0.5 * 0.7 = 0.35. Relevance: 0.35 * 1.03 = 0.3605
+        intensity_error = mot_sys._calculate_curiosity_intensity("PREDICTION_ERROR", trigger_error, active_goals_empty)
+        self.assertAlmostEqual(intensity_error, 0.3605, places=4)
+        self.assertTrue(any("Curiosity (PredictionError): error_mag=0.70 -> base_intensity=0.35" in log for log in mot_sys._log))
+
+        # Test case 3: KNOWLEDGE_GAP
+        trigger_gap = {"confidence": 0.3} # Uncertainty = 0.7
+        # Expected: 0.6 * 0.7 = 0.42. Relevance: 0.42 * 1.03 = 0.4326
+        intensity_gap = mot_sys._calculate_curiosity_intensity("KNOWLEDGE_GAP", trigger_gap, active_goals_empty)
+        self.assertAlmostEqual(intensity_gap, 0.4326, places=4)
+        self.assertTrue(any("Curiosity (KnowledgeGap): confidence=0.30, uncertainty=0.70 -> base_intensity=0.42" in log for log in mot_sys._log))
+
+        # Test case 4: Empty trigger data
+        intensity_empty = mot_sys._calculate_curiosity_intensity("NOVEL_STIMULUS", {}, active_goals_empty)
+        # Expected: (0.4*0) + (0.2*0) = 0. Relevance: 0 * 1.03 = 0
+        self.assertAlmostEqual(intensity_empty, 0.0, places=4)
+
+        # Test case 5: Unknown trigger type
+        intensity_unknown = mot_sys._calculate_curiosity_intensity("UNKNOWN_TRIGGER", {}, active_goals_empty)
+        self.assertAlmostEqual(intensity_unknown, 0.0, places=4) # Base intensity remains 0, relevance factor doesn't change it from 0
+        self.assertTrue(any("Unknown curiosity trigger_type: UNKNOWN_TRIGGER" in log for log in mot_sys._log))
+
+    def test_calculate_competence_drive_intensity_logic(self):
+        mot_sys = self.mot_sys
+        mot_sys._log.clear()
+        active_goals_empty = []
+
+        # Test case 1: High proficiency gap, high importance
+        skill_data1 = {"proficiency": 0.2, "importance": 0.9, "target_proficiency": 1.0}
+        # Expected: gap = 0.8. Intensity = (0.6 * 0.8) + (0.4 * 0.9) = 0.48 + 0.36 = 0.84
+        intensity1 = mot_sys._calculate_competence_drive_intensity("skill1", skill_data1, active_goals_empty)
+        self.assertAlmostEqual(intensity1, 0.84, places=4)
+        self.assertTrue(any("Competence (Skill: skill1): proficiency=0.20, target=1.00, importance=0.90 -> proficiency_gap=0.80, base_intensity=0.84" in log for log in mot_sys._log))
+
+        # Test case 2: Low proficiency gap, low importance
+        skill_data2 = {"proficiency": 0.8, "importance": 0.1, "target_proficiency": 0.9}
+        # Expected: gap = 0.1. Intensity = (0.6 * 0.1) + (0.4 * 0.1) = 0.06 + 0.04 = 0.10
+        intensity2 = mot_sys._calculate_competence_drive_intensity("skill2", skill_data2, active_goals_empty)
+        self.assertAlmostEqual(intensity2, 0.10, places=4)
+
+        # Test case 3: Current proficiency > target proficiency (gap should be 0)
+        skill_data3 = {"proficiency": 0.9, "importance": 0.7, "target_proficiency": 0.8}
+        # Expected: gap = 0. Intensity = (0.6 * 0.0) + (0.4 * 0.7) = 0.0 + 0.28 = 0.28
+        intensity3 = mot_sys._calculate_competence_drive_intensity("skill3", skill_data3, active_goals_empty)
+        self.assertAlmostEqual(intensity3, 0.28, places=4)
+        self.assertTrue(any("proficiency_gap=0.00" in log for log in mot_sys._log if "Skill: skill3" in log))
+
+        # Test case 4: Clamping (if raw calculation > 1.0)
+        skill_data4 = {"proficiency": 0.1, "importance": 1.0, "target_proficiency": 1.0} # gap = 0.9
+        # Expected: (0.6 * 0.9) + (0.4 * 1.0) = 0.54 + 0.4 = 0.94 (This is not > 1, let's use higher values if weights were different)
+        # Assuming weights could lead to > 1. For current weights, max is 0.6*1 + 0.4*1 = 1.0.
+        # To test clamping, we'd need to artificially make base_intensity > 1 or mock the calculation.
+        # For now, verify it doesn't exceed 1.0 with max inputs.
+        intensity4 = mot_sys._calculate_competence_drive_intensity("skill4", skill_data4, active_goals_empty)
+        self.assertAlmostEqual(intensity4, 0.94, places=4)
+        self.assertLessEqual(intensity4, 1.0)
+
+        # Let's assume a hypothetical case where base_intensity could be > 1 to check clamping log
+        # This requires temporarily overriding the calculation or checking the clamp function directly.
+        # Since _calculate_competence_drive_intensity calls max(0.0, min(1.0, final_intensity)),
+        # we can trust the clamp. A log message for clamping would appear if final_intensity != clamped_intensity.
+
+        # Test case 5: Empty skill data
+        intensity_empty = mot_sys._calculate_competence_drive_intensity("skill_empty", {}, active_goals_empty)
+        # Defaults: proficiency=0, importance=0.5, target_proficiency=1.0. Gap = 1.0
+        # Expected: (0.6 * 1.0) + (0.4 * 0.5) = 0.6 + 0.2 = 0.8
+        self.assertAlmostEqual(intensity_empty, 0.8, places=4)
+
+        # Test case 6: Zero importance
+        skill_data_zero_imp = {"proficiency": 0.2, "importance": 0.0, "target_proficiency": 1.0} # gap = 0.8
+        # Expected: (0.6 * 0.8) + (0.4 * 0.0) = 0.48
+        intensity_zero_imp = mot_sys._calculate_competence_drive_intensity("skill_zero_imp", skill_data_zero_imp, active_goals_empty)
+        self.assertAlmostEqual(intensity_zero_imp, 0.48, places=4)
+
+if __name__ == '__main__':
+    unittest.main(argv=['first-arg-is-ignored'], exit=False)

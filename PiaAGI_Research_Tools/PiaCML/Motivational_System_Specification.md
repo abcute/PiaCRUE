@@ -54,7 +54,7 @@ $P(g) = w_{base} \cdot 	ext{BasePriority}(g) + w_{int} \cdot 	ext{Intensity}(g) 
 
 Where:
 *   $	ext{BasePriority}(g)$: The initial or inherent priority of the goal type (e.g., safety goals > curiosity goals).
-*   $	ext{Intensity}(g)$: For intrinsic goals, the calculated drive intensity (e.g., $I_c$ or $I_m$). For extrinsic goals, this might be user-assigned importance. The `Intensity(g)` term in this formula for intrinsic goals (Curiosity, Competence) is now more concretely derived from the `calculated_intensity` generated during their assessment (see Sections 3.3.1 and 4.3.1). For extrinsic goals, it can be mapped from the `goal.priority` field.
+*   $	ext{Intensity}(g)$: For intrinsic goals (Curiosity, Competence), this is derived from the `calculated_intensity` (a normalized 0-1 value) that was determined when the intrinsic goal was generated (see Sections 3.3.1 and 4.3.1). This `calculated_intensity` is typically stored within the goal's `source_trigger` details. For extrinsic goals, this component can be mapped from the `goal.priority` field (e.g., by normalizing it if it's on a different scale).
 *   $	ext{Urgency}(g)$: Time-sensitivity or deadline associated with the goal.
 *   $	ext{ValueAlignment}(g)$: Score indicating how well the goal aligns with the agent's core values (from Self-Model's `EthicalFramework`).
 *   $	ext{DependencyFactor}(g)$: Increases priority if other important goals depend on this one's completion.
@@ -129,7 +129,19 @@ Activation occurs if the calculated intensity of the curiosity trigger (see belo
 ### 3.3. Intensity Dynamics
 
 #### 3.3.1. Calculation
-The intensity of a curiosity drive (`curiosity_intensity`) for a specific item of interest (stimulus, concept, event) is calculated based on weighted factors such as `novelty_score`, `prediction_error_magnitude`, `uncertainty_metric` (e.g., 1 - confidence), and `complexity_score`. This raw score can be further modulated by `relevance_to_active_goals` and a `recency_factor`. Example conceptual formula: `intensity_raw = w_n*novelty + w_e*error + w_u*uncertainty + w_c*complexity; final_intensity = intensity_raw * (1 + w_r*relevance) * recency_factor` (weights `w_*` are configurable).
+The intensity of a curiosity drive (`curiosity_intensity`) for a specific item of interest (stimulus, concept, event) is calculated based on the type of trigger and its associated data. The final intensity is a normalized value (0.0 to 1.0).
+
+*   **For Novel Stimuli:** `base_intensity = (w_novelty * novelty_score) + (w_complexity * complexity_score)`
+*   **For Prediction Errors:** `base_intensity = w_error_magnitude * error_magnitude`
+*   **For Knowledge Gaps:** `base_intensity = w_uncertainty * (1 - confidence_score)`
+
+The weights (`w_novelty`, `w_complexity`, `w_error_magnitude`, `w_uncertainty`) are conceptual placeholders in the current implementation and would ideally be configurable or learned.
+
+This `base_intensity` can then be conceptually modulated by other factors:
+*   `relevance_to_active_goals`: A score indicating how relevant the curious item is to the agent's current active goals. Higher relevance could amplify intensity. (Currently a placeholder in the code, with a fixed minor amplification effect).
+*   `recency_factor`: A score reflecting how recently the item was encountered or how long it has been since a knowledge gap was last addressed. More recent or unaddressed items might have higher intensity. (Currently a placeholder in the code).
+
+The final `curiosity_intensity` is clamped between 0.0 and 1.0. The Python implementation (`_calculate_curiosity_intensity`) details this, including logging of the components.
 
 #### 3.3.2. Factors Influencing Change
 *   **Habituation/Satiation:** Intensity decreases upon repeated exposure to the same novel stimulus without further information gain, or once an information gap is filled.
@@ -162,23 +174,26 @@ A scalar value (e.g., normalized between 0.0 and 1.0) associated with each poten
         ```
         {
           goal_id: generate_unique_id(),
-          description: "Investigate novel [object_ID_123] (Novelty: 0.8, Calculated Intensity: 0.75)",
+          description: "Investigate novel [object_ID_123] (Novelty: 0.8, Complexity: 0.6, Calculated Intensity: 0.75)", // Description reflects key inputs
           type: "INTRINSIC_CURIOSITY",
-          priority: map_intensity_to_priority_scale(0.75), // Derived from curiosity_intensity
+          priority: 0.75 * 10.0, // Example: intensity scaled to a 0-10 range
           status: "PENDING",
           creation_timestamp: current_time(),
-          source_trigger_details: {
-            type: "NOVELTY_DETECTED", // or "PREDICTION_ERROR", "KNOWLEDGE_GAP"
-            novelty_score: 0.8,
-            complexity_score: 0.6, // Example if available
-            calculated_intensity: 0.75,
-            origin_module: "PerceptionModule" // or "WorldModel", "SelfModel"
+          source_trigger_details: { // Comprehensive capture of trigger inputs
+            trigger_type: "NOVEL_STIMULUS",
+            stimulus_id: "[object_ID_123]",
+            novelty_score: 0.8, // Actual novelty score used
+            complexity_score: 0.6, // Actual complexity score used
+            // error_magnitude: null, // Not applicable for this trigger type
+            // current_confidence: null, // Not applicable for this trigger type
+            calculated_intensity: 0.75, // The final calculated intensity
+            origin_module: "PerceptionModule"
           },
           target_identifier: "[object_ID_123]",
           information_sought: "Determine properties and function of [object_ID_123]" // Optional
         }
         ```
-    d.  Add the newly created goal to the Motivational System's central list of active/pending goals for further processing by the prioritization mechanism (see Section 2.5).
+    d.  Add the newly created goal to the Motivational System's central list of active/pending goals for further processing by the prioritization mechanism (see Section 2.5). The `initial_priority` for the goal (e.g., `intensity * 10.0`) is directly derived from the `calculated_intensity`.
 
 #### 3.4.2. Influence on Planning and Action Selection
 *   Generated curiosity goals are passed to the Planning Module.
@@ -274,7 +289,24 @@ Activation occurs if the calculated intensity (see below) is sufficient and the 
 ### 4.3. Intensity Dynamics
 
 #### 4.3.1. Calculation
-The intensity of a competence drive (`competence_intensity`) for a specific skill or task domain is calculated based on factors like `proficiency_gap` (target_proficiency - current_proficiency) and `skill_importance`. Conceptual formula: `intensity = w_gap * proficiency_gap + w_importance * importance`. Modulators like `success_rate_trend` and `perceived_learnability` are placeholders for future expansion.
+The intensity of a competence drive (`competence_intensity`) for a specific skill or task domain is calculated based on the gap between current and target proficiency, and the importance of the skill. The final intensity is a normalized value (0.0 to 1.0).
+
+The base formula is:
+`base_intensity = (w_gap * proficiency_gap) + (w_importance * importance)`
+
+Where:
+*   `proficiency_gap = max(0.0, target_proficiency - current_proficiency)`
+*   `current_proficiency` is the agent's current skill level (0-1).
+*   `target_proficiency` is the desired skill level (0-1, defaults to 1.0 for mastery).
+*   `importance` is the perceived importance of the skill (0-1).
+
+The weights (`w_gap`, `w_importance`) are conceptual placeholders in the current implementation and would ideally be configurable or learned.
+
+Conceptual modulators (currently placeholders in the code, not directly affecting the final calculation but logged for future extension) include:
+*   `success_rate_trend`: A trend of recent success/failure with the skill. A positive trend might slightly decrease urgency, while a negative trend could increase it.
+*   `perceived_learnability`: The agent's belief about how easy or difficult the skill is to improve. Higher perceived learnability for an important skill might boost the drive.
+
+The final `competence_intensity` is clamped between 0.0 and 1.0. The Python implementation (`_calculate_competence_drive_intensity`) details this, including logging of the components.
 
 #### 4.3.2. Factors Influencing Change
 *   **Skill Improvement:** As proficiency increases, intensity for that specific skill may decrease (unless new, higher mastery levels are set).
@@ -307,27 +339,27 @@ A scalar value (e.g., normalized 0.0-1.0) associated with each relevant skill ID
         ```
         {
           goal_id: generate_unique_id(),
-          description: "Improve skill [WeldingSkill_003] (Current Proficiency: 0.4, Calculated Intensity: 0.65)",
+          description: "Improve skill [WeldingSkill_003] (Current Prof: 0.4, Target: 1.0, Calculated Intensity: 0.65)", // Description reflects key inputs
           type: "INTRINSIC_COMPETENCE",
-          priority: map_intensity_to_priority_scale(0.65), // Derived from competence_intensity
+          priority: 0.65 * 10.0, // Example: intensity scaled to a 0-10 range
           status: "PENDING",
           creation_timestamp: current_time(),
-          source_trigger_details: {
-            type: "LOW_PROFICIENCY", // or "TASK_PERFORMANCE_FEEDBACK"
+          source_trigger_details: { // Comprehensive capture of trigger inputs
+            trigger_type: "LOW_PROFICIENCY_OR_MASTERY_OPPORTUNITY",
             skill_id: "[WeldingSkill_003]",
-            current_proficiency: 0.4,
-            importance_rating: 0.7, // Example
-            calculated_intensity: 0.65
+            assessed_proficiency_at_trigger: 0.4, // The proficiency that triggered this assessment
+            assessed_importance_at_trigger: 0.7, // The importance score used in calculation
+            calculated_intensity: 0.65 // The final calculated intensity
           },
-          target_skill_id: "[WeldingSkill_003]",
-          competence_details: {
-            "current_proficiency": 0.4,
-            "target_proficiency_assumed": 1.0,
-            "initial_importance": 0.7
+          target_skill_id: "[WeldingSkill_003]", // Explicitly stored in Goal object
+          competence_details: { // Specifics of the competence goal itself
+            current_proficiency: 0.4, // Current proficiency at time of goal creation
+            target_proficiency: 1.0, // Target proficiency for this goal
+            initial_importance_rating: 0.7 // Importance at time of goal creation
           }
         }
         ```
-    d.  Add the newly created goal to the Motivational System's central list of active/pending goals for prioritization.
+    d.  Add the newly created goal to the Motivational System's central list of active/pending goals for prioritization. The `initial_priority` for the goal (e.g., `intensity * 10.0`) is directly derived from the `calculated_intensity`.
 
 #### 4.4.2. Influence on Planning and Action Selection
 *   Generated competence goals are fed to the Planning Module.
