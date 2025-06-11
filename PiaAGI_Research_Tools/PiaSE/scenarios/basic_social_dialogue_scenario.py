@@ -44,37 +44,72 @@ def run_basic_social_dialogue_scenario():
     print("--- Starting Basic Social Dialogue Scenario ---")
 
     # 1. Define Agent IDs and Configurations
-    pia_agent_id = "PiaAGI_User"
+    pia_agent_id = "PiaAGI_Inquirer" # Changed for clarity
     sim_agent_id = "HelpBot_Sim"
 
+    # Enhanced PiaAGI CML Configurations for Social Task
     pia_agent_cml_configs = {
-        "communication": {"mode": "basic_chat", "log_level": "info"}, # Conceptual config
-        "planning": {"strategy": "simple_dialogue_response", "default_response": "Hmm, interesting."}, # Conceptual
-        "motivation": {"initial_goals": [{"type": "ENGAGE_IN_DIALOGUE", "topic": "customer_service", "priority": "High"}]},
-        "perception": {"text_processor_type": "basic_keyword"},
-        "working_memory": {"buffer_size": 10, "max_history_turns": 5},
-        "ltm": {"enable_episodic_logging": True},
-        "attention": {"focus_on_last_utterance": True},
-        "learning": {"dialogue_learning_rate": 0.05}, # Conceptual
-        "emotion": {"initial_state": "neutral", "reactivity": 0.3},
-        "behavior_generation": {"verbal_tic_rate": 0.01}, # Conceptual funny one
-        "self_model": {"persona_name": pia_agent_id},
-        "tom": {"max_recursion_depth": 1}, # Conceptual
-        "world_model": {"track_dialogue_state": True}
+        "communication": {"default_language": "en-US", "verbosity_level": "normal", "log_level": "info"},
+        "planning": {"strategy": "goal_driven_dialogue", "max_plan_depth_dialogue": 3}, # Conceptual
+        "motivation": {
+            "initial_goals": [{
+                "type": "INFORMATION_SEEKING",
+                "topic": "understand_npc_capabilities",
+                "target_agent_id": sim_agent_id,
+                "priority": 0.9 # Assuming 0-1 scale for normalized priority
+            }]
+        },
+        "perception": {"text_processor_type": "keyword_and_simple_intent"}, # Conceptual
+        "working_memory": {"capacity": 15, "max_history_turns_short_term": 7},
+        "ltm": {"enable_episodic_logging_dialogue": True, "dialogue_knowledge_domain": "customer_service_interactions"}, # Conceptual
+        "attention": {"default_focus_strategy": "dialogue_partner_utterance", "salience_factor_speaker": 0.8}, # Conceptual
+        "learning": {"dialogue_feedback_learning_rate": 0.02, "learn_from_npc_responses": True}, # Conceptual
+        "emotion": {
+            "initial_vad_state": {"valence": 0.1, "arousal": 0.05, "dominance": 0.0}, # Slightly positive, calm
+            "personality_profile": {"empathy_level": 0.7, "response_style": "curious"} # Conceptual
+            },
+        "behavior_generation": {"response_style": "inquisitive", "allow_clarification_questions": True}, # Conceptual
+        "self_model": {
+            "persona_name": "InquisitiveUser_Alpha",
+            "initial_ethical_rules": [{
+                "rule_id": "DialogueRule01", "principle": "Politeness",
+                "description": "Maintain polite interaction.", "priority_level": "medium", "implication": "encouraged"
+            }]
+            },
+        "tom": {
+            "max_recursion_depth": 1, "default_npc_model_complexity": "basic",
+            "update_npc_model_on_surprising_utterance": True # Conceptual
+            },
+        "world_model": {"track_dialogue_partner_state_conceptual": True} # Conceptual
     }
 
+    # Enhanced NPC Configuration
     sim_interactor_config = {
         "response_rules": {
-            "hello": f"Hello! I am {sim_agent_id}. How can I help you today?",
-            "help": "I can provide information about basic services or assist with account issues.",
-            "services": "We offer account information, technical support, and product inquiries.",
-            "bye": "Goodbye! Have a great day.",
-            "greeting": f"Hi, I'm {sim_agent_id}. What can I do for you?" # For when sim agent starts
+            "hello": f"Hello! I am {sim_agent_id}, your virtual assistant. How may I help you today?",
+            "help": "I can provide information about our services, guide you through troubleshooting, or connect you with a specialist.",
+            "services": "We offer technical support, account management, product information, and billing assistance.",
+            "capabilities": "I can look up information, explain procedures, and try to answer your questions about our services.",
+            "bye": "Goodbye! It was a pleasure assisting you.",
+            "greeting": f"Welcome! I'm {sim_agent_id}. How can I be of service?" # For when sim agent starts
         },
-        "default_response": "I see. Could you please tell me more?"
+        "default_response": "That's an interesting question. Let me see what I can find for you.",
+        # New conceptual attributes for SimulatedInteractorProfile
+        "personality_traits": {"openness": 0.5, "conscientiousness": 0.8, "agreeableness": 0.7, "extroversion": 0.6},
+        "current_simulated_emotion": "neutral_helpful", # Conceptual internal state
+        "npc_goals": ["Provide basic service information", "Answer user queries politely", "Maintain positive interaction"]
     }
 
-    all_agent_ids = [pia_agent_id, sim_agent_id] # PiaAGI_User will start first if not sim
+    print("\n--- NPC Configuration (HelpBot_Sim) ---")
+    print(f"  Personality Traits (Conceptual): {sim_interactor_config.get('personality_traits')}")
+    print(f"  Initial Emotion (Conceptual): {sim_interactor_config.get('current_simulated_emotion')}")
+    print(f"  NPC Goals (Conceptual): {sim_interactor_config.get('npc_goals')}")
+    print("---------------------------------------\n")
+
+
+    all_agent_ids = [pia_agent_id, sim_agent_id]
+    # For this scenario, let PiaAGI start the conversation
+    # To make HelpBot start, put its ID first: [sim_agent_id, pia_agent_id]
     sim_configs_map = {sim_agent_id: sim_interactor_config}
 
     # 2. Setup Environment
@@ -99,26 +134,54 @@ def run_basic_social_dialogue_scenario():
     )
 
     # MVP: Override PiaAGIAgent's 'act' method for predictable dialogue flow
-    pia_agent_responses = [
-        "Hello!",
-        "I need some help with my account.",
-        "What kind of services do you offer?",
-        "Thank you, that's all for now. Goodbye."
+    # This helps ensure the dialogue progresses in a way that can showcase specific interactions
+    # without needing a fully implemented advanced planning/NLG module for PiaAGI yet.
+    pia_agent_scripted_responses = [
+        {"action": "speak", "utterance": "Hello!"},
+        {"action": "speak", "utterance": "Can you tell me about your capabilities?"}, # To elicit NPC's capabilities
+        {"action": "speak", "utterance": "What services do you offer?"},
+        {"action": "speak", "utterance": "Thank you for the information. Goodbye."},
+        {"action": "listen"} # Final listen to catch goodbye
     ]
     pia_agent_response_idx = 0
     original_act_method = pia_agent.act
 
     def mvp_dialogue_act() -> ActionCommand:
         nonlocal pia_agent_response_idx
-        utterance = "..."
-        if pia_agent_response_idx < len(pia_agent_responses):
-            utterance = pia_agent_responses[pia_agent_response_idx]
+
+        # Conceptual: A real agent would use its CMLs here.
+        # 1. PiaAGIAgent.perceive() would have been called by the engine, updating internal models.
+        #    The observation would include `simulated_npc_state_conceptual`.
+        # 2. ToM module would process this to update its model of HelpBot_Sim.
+        # 3. Emotion module might update based on HelpBot_Sim's (conceptual) expressed emotion.
+        # 4. Planning/Communication modules would use ToM, Emotion, Self-Model (e.g. persona),
+        #    dialogue history, and goals to formulate the next utterance or action.
+
+        # For this MVP, we simulate accessing perceived NPC state (as a print for demo).
+        # In a real agent, this info would be in its Working Memory or accessible via WorldModel/ToM.
+        # The engine calls `env.get_observation()` and passes it to `agent.perceive()`.
+        # We can't easily access that processed observation *from within this scenario's act override*
+        # without modifying PiaAGIAgent or the engine.
+        # So, we'll just add a comment and a placeholder print.
+
+        # Conceptual print - this would access data processed by PiaAGIAgent.perceive()
+        # print(f"  ({pia_agent_id} conceptually notes NPC state before acting - actual state would be in agent's WM/ToM)")
+        # Example of what it *might* access:
+        # if hasattr(pia_agent, '_last_received_observation_custom_data'): # Hypothetical attribute
+        #     npc_state = pia_agent._last_received_observation_custom_data.get("simulated_npc_state_conceptual")
+        #     if npc_state:
+        #         print(f"    -> Conceptual NPC State Perceived: P:{npc_state.get('personality')}, E:{npc_state.get('emotion')}, G:{npc_state.get('goals')}")
+
+        if pia_agent_response_idx < len(pia_agent_scripted_responses):
+            action_info = pia_agent_scripted_responses[pia_agent_response_idx]
             pia_agent_response_idx += 1
-        else: # If out of scripted responses, just listen or say something generic
-            utterance = "Okay, thank you."
-            # Or to make it end if script is done:
-            # utterance = "Goodbye."
-        return ActionCommand(action_type="speak", parameters={"utterance": utterance})
+            if action_info["action"] == "speak":
+                return ActionCommand(action_type="speak", parameters={"utterance": action_info["utterance"]})
+            elif action_info["action"] == "listen":
+                return ActionCommand(action_type="listen", parameters={})
+
+        # Fallback if script runs out
+        return ActionCommand(action_type="speak", parameters={"utterance": "I have no further questions at this time. Goodbye."})
 
     pia_agent.act = mvp_dialogue_act
 
