@@ -310,43 +310,94 @@ class ConcreteWorldModel(BaseWorldModel):
             return None
 
         current_state_copy = entity.to_dict() # Work with a copy
+        predicted_state_changes: Dict[str, Any] = {}
+        prediction_confidence = "low" # Default confidence
+        prediction_rule = "no_specific_rule_applied"
 
-        # Basic physics rule: if velocity and no obstacle, predict new position
-        has_velocity = "velocity" in entity.state and isinstance(entity.state["velocity"], (list, tuple)) and len(entity.state["velocity"]) == 3
-        has_position = "position" in entity.state and isinstance(entity.state["position"], (list, tuple)) and len(entity.state["position"]) == 3
+        # Rule 1: Mobile entity with a goal location
+        goal_location_id = entity.state.get("goal_location_id")
+        entity_type = entity.type.lower() # Ensure case-insensitive comparison
+        mobile_types = ["agent", "robot", "vehicle", "drone", "mobile_unit"] # Extend as needed
 
-        # Simplified obstacle check: assumes 'obstacle' is a relationship type
-        # A more robust check might involve querying spatial model or specific obstacle states
-        is_obstructed = "obstacle" in entity.relationships and len(entity.relationships["obstacle"]) > 0
+        if goal_location_id and any(mt in entity_type for mt in mobile_types):
+            self._log_message(f"Rule: Entity '{entity_id}' is mobile and has goal_location_id '{goal_location_id}'.")
+            # Conceptual obstacle check
+            # This is a simplified check. A real implementation might involve pathfinding,
+            # querying a spatial model for obstacles along a path, etc.
+            # For now, we assume 'blocked_by' in relationships indicates obstruction to the goal.
+            # The specific format of "blocked_by" (e.g., just a list of IDs, or dicts with path info)
+            # would need to be defined by how relationship data is populated.
+            # Let's assume if "blocked_by" exists and is not empty, it's an obstruction.
+            # And let's assume it might contain a specific path reference that matches goal_location_id.
+            # For this conceptual step, we'll simplify: if "blocked_by" exists, it's a problem.
 
-        if has_velocity and has_position and not is_obstructed:
-            try:
-                vx, vy, vz = entity.state["velocity"]
-                px, py, pz = entity.state["position"]
+            path_to_goal_is_obstructed = False
+            if "blocked_by" in entity.relationships:
+                # Example: entity.relationships["blocked_by"] = ["obstacle_id_1", {"path_to": "other_loc", "obstacle": "obs2"}]
+                # For this conceptual rule, a simple check is enough.
+                # A more advanced check would verify if any item in "blocked_by" specifically refers to the path to goal_location_id.
+                if entity.relationships["blocked_by"]: # If the list is not empty
+                    path_to_goal_is_obstructed = True # Simplified: any blockage is relevant for now
+                    self._log_message(f"Entity '{entity_id}' path to goal '{goal_location_id}' is conceptually blocked by: {entity.relationships['blocked_by']}.")
 
-                new_position = [
-                    px + vx * time_horizon,
-                    py + vy * time_horizon,
-                    pz + vz * time_horizon
-                ]
+            if path_to_goal_is_obstructed:
+                predicted_state_changes["location_id"] = entity.location_id # Stays at current location
+                prediction_confidence = "low"
+                prediction_rule = "goal_location_obstructed"
+                self._log_message(f"Prediction for '{entity_id}': Stays at current location '{entity.location_id}' due to obstruction. Confidence: {prediction_confidence}.")
+            else:
+                predicted_state_changes["location_id"] = goal_location_id
+                # Conceptual: No complex pathfinding, direct jump after time_horizon
+                prediction_confidence = "medium"
+                prediction_rule = "goal_location_assumed_reachable"
+                self._log_message(f"Prediction for '{entity_id}': Will move to goal_location_id '{goal_location_id}'. Confidence: {prediction_confidence}.")
 
-                predicted_state_changes = {"position": new_position}
-                current_state_copy["state"].update(predicted_state_changes)
-                current_state_copy["prediction_confidence"] = "high"
-                current_state_copy["prediction_rule"] = "simple_physics_velocity_displacement"
+        # Rule 2: Basic physics rule (if no goal-based prediction or if it's low confidence and physics is higher)
+        # Only apply if a goal-based prediction wasn't made or if it was low confidence.
+        # This allows physics to potentially override a blocked goal if the entity is already moving.
+        if not predicted_state_changes or (prediction_confidence == "low" and "location_id" not in predicted_state_changes):
+            has_velocity = "velocity" in entity.state and isinstance(entity.state["velocity"], (list, tuple)) and len(entity.state["velocity"]) == 3
+            has_position = "position" in entity.state and isinstance(entity.state["position"], (list, tuple)) and len(entity.state["position"]) == 3
+            # Simplified obstacle check for physics: assumes 'obstacle' is a relationship type for general obstruction,
+            # not necessarily path-specific like above.
+            is_generally_obstructed = "obstacle" in entity.relationships and len(entity.relationships["obstacle"]) > 0
 
-                self._log_message(f"Predicted new position for '{entity_id}': {new_position} with high confidence.")
-                return current_state_copy
-            except (TypeError, ValueError) as e:
-                self._log_message(f"Error during physics prediction for '{entity_id}': {e}. Returning current state with low confidence.")
-                current_state_copy["prediction_confidence"] = "low"
-                current_state_copy["prediction_error"] = f"Calculation error: {e}"
-                return current_state_copy
-        else:
-            self._log_message(f"No specific prediction rules applicable for '{entity_id}'. Returning current state with low confidence.")
-            current_state_copy["prediction_confidence"] = "low"
-            current_state_copy["prediction_rule"] = "no_specific_rule_applied"
-            return current_state_copy
+            if has_velocity and has_position and not is_generally_obstructed:
+                try:
+                    vx, vy, vz = entity.state["velocity"]
+                    px, py, pz = entity.state["position"]
+
+                    new_position = [
+                        px + vx * time_horizon,
+                        py + vy * time_horizon,
+                        pz + vz * time_horizon
+                    ]
+                    # This rule predicts 'position' (coordinates), not 'location_id' (symbolic location)
+                    predicted_state_changes.update({"position": new_position})
+                    # If a previous rule set confidence, don't override with high unless it's more certain.
+                    # For simplicity, let's assume physics takes precedence if it applies here.
+                    prediction_confidence = "high"
+                    prediction_rule = "simple_physics_velocity_displacement"
+                    self._log_message(f"Predicted new position for '{entity_id}': {new_position} with {prediction_confidence} confidence (physics).")
+                except (TypeError, ValueError) as e:
+                    self._log_message(f"Error during physics prediction for '{entity_id}': {e}. Current state likely, low confidence.")
+                    # Keep existing predicted_state_changes if any, or default to current state
+                    if not predicted_state_changes : # only set if no other rule applied
+                        prediction_confidence = "low"
+                        current_state_copy["prediction_error"] = f"Calculation error: {e}"
+                        prediction_rule = "physics_calculation_error"
+
+        # Apply predictions to the state copy
+        if predicted_state_changes:
+            current_state_copy["state"].update(predicted_state_changes)
+
+        current_state_copy["prediction_confidence"] = prediction_confidence
+        current_state_copy["prediction_rule"] = prediction_rule
+
+        if not predicted_state_changes and prediction_rule == "no_specific_rule_applied":
+             self._log_message(f"No specific prediction rules applicable or conditions met for '{entity_id}'. Returning current state with {prediction_confidence} confidence.")
+
+        return current_state_copy
 
     def get_world_model_status(self) -> Dict[str, Any]: # Renamed from get_status for clarity
         self._log_message("Getting world model status.")

@@ -88,9 +88,18 @@ class CapabilityInventory:
         self.learning_preferences_and_styles = learning_preferences_and_styles or {}
 
 class EthicalRule:
-    def __init__(self, rule_id: str, principle: str, description: str, priority_level: Union[str, int] = "medium", source: str = "system_defined", applicability_contexts: Optional[List[str]] = None):
-        self.rule_id, self.principle, self.description, self.priority_level, self.source = rule_id, principle, description, priority_level, source
+    def __init__(self, rule_id: str, principle: str, description: str,
+                 priority_level: Union[str, int] = "medium",
+                 source: str = "system_defined",
+                 applicability_contexts: Optional[List[str]] = None,
+                 implication: str = "neutral"): # Added new attribute with default
+        self.rule_id = rule_id
+        self.principle = principle
+        self.description = description
+        self.priority_level = priority_level
+        self.source = source
         self.applicability_contexts = applicability_contexts or []
+        self.implication: str = implication # Potential values: "impermissible", "requires_caution", "neutral", "encouraged"
 
 class EthicalFramework:
     def __init__(self, rules: Optional[List[EthicalRule]] = None):
@@ -230,7 +239,7 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
         if not isinstance(message.payload, PerceptDataPayload): return
         payload: PerceptDataPayload = message.payload
         if message.metadata and message.metadata.get("target_component") == "self_model":
-            print(f"SM ({self._module_id}): Received self-relevant PerceptData: {str(payload.content)[:100]}")
+            self._log_message(f"Received self-relevant PerceptData: {str(payload.content)[:100]}")
             self._self_related_percepts.append(payload)
             if len(self._self_related_percepts) > 10: # Keep a small log
                 self._self_related_percepts.pop(0)
@@ -268,8 +277,8 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
             message = GenericMessage(source_module_id=self._module_id, message_type="SelfKnowledgeConfidenceUpdate", payload=payload)
             try:
                 self._message_bus.publish(message)
-                print(f"SM ({self._module_id}): Published SelfKnowledgeConfidenceUpdate for '{item_id}'.")
-            except Exception as e: print(f"SM ({self._module_id}): Error publishing confidence update: {e}")
+                self._log_message(f"Published SelfKnowledgeConfidenceUpdate for '{item_id}'.")
+            except Exception as e: self._log_message(f"Error publishing confidence update for '{item_id}': {e}")
         return updated
 
     def get_confidence(self, item_id: str, item_type: str) -> Optional[float]:
@@ -298,7 +307,7 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
             impact_on_self_model_summary=f"Overall capability confidence adj by {adj:.2f} to {self.attributes.confidence_in_capabilities:.2f}."
         )
         self.autobiography.entries.append(auto_entry)
-        print(f"SM ({self._module_id}): Evaluated performance for task '{task_id}', status: {status_from_event}. Autobiographical entry added.")
+        self._log_message(f"Evaluated performance for task '{task_id}', status: {status_from_event}. Autobiographical entry added (ID: {auto_entry.entry_id}).")
         return {"evaluation_complete": True, "derived_status": status_from_event, "autobiography_entry_id": auto_entry.entry_id}
 
     # Other methods like perform_ethical_evaluation, assess_confidence_in_knowledge etc. would remain,
@@ -346,60 +355,90 @@ class ConcreteSelfModelModule(BaseSelfModelModule):
                         match_details.append(f"Applicability context '{app_context}' matched active context '{context_string}'.")
                         break
 
+            # Also consider rules without specific applicability_contexts as potentially global
+            elif not rule.applicability_contexts:
+                # This rule might be global or matched by other means (e.g. principle keyword)
+                # If principle already matched, this doesn't change rule_matched status.
+                # If principle didn't match, but it's a global rule, it might still be relevant based on its implication.
+                # For now, we assume matching is primarily by principle or explicit context.
+                # A rule with implication "impermissible" and no context could be a global block.
+                pass
+
+
             if rule_matched:
-                self._log_message(f"Rule '{rule.rule_id}' ({rule.principle}, Prio: {rule.priority_level}) matched. Details: {match_details}")
-                relevant_rules_details.append({"rule_id": rule.rule_id, "principle": rule.principle, "priority": rule.priority_level, "description": rule.description, "match_details": match_details})
+                self._log_message(f"Rule '{rule.rule_id}' (Principle: {rule.principle}, Prio: {rule.priority_level}, Implication: {rule.implication}) matched. Details: {match_details}")
+                relevant_rules_details.append({
+                    "rule_id": rule.rule_id, "principle": rule.principle,
+                    "priority": rule.priority_level, "description": rule.description,
+                    "implication": rule.implication, "match_details": match_details
+                })
 
-                # Conceptual interpretation of rule's implication based on description keywords
-                rule_desc_lower = rule.description.lower()
-                is_impermissible_indicator = "forbidden" in rule_desc_lower or "prohibited" in rule_desc_lower or "must not" in rule_desc_lower
-                is_caution_indicator = "caution" in rule_desc_lower or "review required" in rule_desc_lower or "potential harm" in rule_desc_lower
+                # Determine outcome based on rule implication and priority
+                rule_priority_str = str(rule.priority_level).lower() # Normalize priority for comparison
 
-                if rule.priority_level in ["high", "critical", 1, "1"] and is_impermissible_indicator:
-                    outcome = "IMPERMISSIBLE"
-                    reasoning_parts.append(f"High priority rule '{rule.rule_id}' ({rule.principle}) indicates impermissibility: {rule.description}")
-                    impermissible_triggered = True
-                    break # Stop further processing if high-priority impermissible rule is found
-
-                elif rule.priority_level in ["medium", "moderate", 2, "2"]:
-                    if is_impermissible_indicator: # Medium priority can also make it impermissible
-                         outcome = "IMPERMISSIBLE"
-                         reasoning_parts.append(f"Medium priority rule '{rule.rule_id}' ({rule.principle}) indicates strong impermissibility: {rule.description}")
-                         impermissible_triggered = True # Allow override by high prio impermissible later if any
-                    elif is_caution_indicator and not impermissible_triggered:
-                        outcome = "REQUIRES_REVIEW"
-                        reasoning_parts.append(f"Medium priority rule '{rule.rule_id}' ({rule.principle}) suggests review: {rule.description}")
-                        requires_review_triggered = True
-
-                elif rule.priority_level in ["low", 3, "3"] and is_caution_indicator and not impermissible_triggered and not requires_review_triggered:
-                    outcome = "REQUIRES_REVIEW" # Low priority caution can still trigger review if nothing stronger
-                    reasoning_parts.append(f"Low priority rule '{rule.rule_id}' ({rule.principle}) suggests caution/review: {rule.description}")
-                    requires_review_triggered = True
+                if rule.implication == "impermissible":
+                    if rule_priority_str in ["high", "critical", "1"]:
+                        outcome = "IMPERMISSIBLE"
+                        reasoning_parts.append(f"Critical/High priority rule '{rule.rule_id}' ({rule.principle}) has implication 'impermissible'. Action is forbidden. Description: {rule.description}")
+                        impermissible_triggered = True
+                        break # Stop further processing if critical/high-priority impermissible rule is found
+                    elif rule_priority_str in ["medium", "moderate", "2"] and not impermissible_triggered:
+                        outcome = "IMPERMISSIBLE" # Medium priority impermissible rule also makes it impermissible
+                        reasoning_parts.append(f"Medium priority rule '{rule.rule_id}' ({rule.principle}) has implication 'impermissible'. Action is forbidden. Description: {rule.description}")
+                        impermissible_triggered = True # Can be overridden by a critical/high impermissible one later if logic changes, but currently breaks on first critical.
+                    elif not impermissible_triggered: # Low priority impermissible, still makes it impermissible if nothing stronger has.
+                        outcome = "IMPERMISSIBLE"
+                        reasoning_parts.append(f"Low priority rule '{rule.rule_id}' ({rule.principle}) has implication 'impermissible'. Action is forbidden. Description: {rule.description}")
+                        impermissible_triggered = True
 
 
-        if not impermissible_triggered and requires_review_triggered:
-            outcome = "REQUIRES_REVIEW" # Ensure review takes precedence over permissible if triggered
-        elif not impermissible_triggered and not requires_review_triggered:
-            outcome = "PERMISSIBLE" # Explicitly set if no flags
+                elif rule.implication == "requires_caution":
+                    if not impermissible_triggered: # Only consider if not already impermissible
+                        if outcome != "IMPERMISSIBLE": # Don't downgrade from IMPERMISSIBLE
+                            outcome = "REQUIRES_REVIEW"
+                            requires_review_triggered = True
+                            reasoning_parts.append(f"Rule '{rule.rule_id}' ({rule.principle}, Prio: {rule.priority_level}) has implication 'requires_caution'. Action requires review. Description: {rule.description}")
+
+                elif rule.implication == "encouraged":
+                    if not impermissible_triggered and not requires_review_triggered:
+                        # This doesn't change the outcome from PERMISSIBLE but adds positive reasoning
+                        reasoning_parts.append(f"Rule '{rule.rule_id}' ({rule.principle}, Prio: {rule.priority_level}) has implication 'encouraged'. Action is positively supported. Description: {rule.description}")
+
+                # "neutral" implication doesn't change the outcome directly but rule is still logged as relevant.
+
+        # Final outcome determination after checking all rules
+        if impermissible_triggered: # This ensures IMPERMISSIBLE takes ultimate precedence
+            outcome = "IMPERMISSIBLE"
+        elif requires_review_triggered: # Then REQUIRES_REVIEW
+            outcome = "REQUIRES_REVIEW"
+        else: # Default to PERMISSIBLE if no flags raised
+            outcome = "PERMISSIBLE"
+            # Refine reasoning for PERMISSIBLE
             if relevant_rules_details:
-                 reasoning_parts.append("Action aligns with or is not constrained by matched permissive/neutral rules.")
+                encouraging_rules = [r for r in relevant_rules_details if r["implication"] == "encouraged"]
+                neutral_rules = [r for r in relevant_rules_details if r["implication"] == "neutral"]
+                if encouraging_rules:
+                    reasoning_parts.append("Action is permissible and encouraged by specific ethical guidelines.")
+                elif neutral_rules:
+                    reasoning_parts.append("Action is permissible and aligns with neutral ethical guidelines or is not constrained by them.")
+                else: # Only cautionary rules that didn't escalate to REQUIRES_REVIEW (e.g. very low prio caution)
+                    reasoning_parts.append("Action is permissible as no prohibitive or strongly cautionary rules were triggered at a sufficient priority.")
             else:
                  reasoning_parts.append("No specific ethical rules were found to be directly relevant or prohibitive.")
 
-
-        # Consolidate reasoning
-        final_reasoning = " ".join(reasoning_parts)
-        if outcome == "PERMISSIBLE" and len(reasoning_parts) > 1: # Remove initial "Permissible" if other reasons exist
-            final_reasoning = " ".join(reasoning_parts[1:])
-
+        # Consolidate reasoning: remove initial "Permissible." if other reasons exist or if outcome changed.
+        if outcome != "PERMISSIBLE" or len(reasoning_parts) > 1:
+            final_reasoning = " ".join(reasoning_parts[1:]) # Remove the default "Initial assessment: Permissible."
+        else:
+            final_reasoning = reasoning_parts[0] # Keep the initial if it's the only one
 
         result = {
             "outcome": outcome,
             "relevant_rules": [r["rule_id"] for r in relevant_rules_details],
-            "detailed_relevant_rules": relevant_rules_details, # For more detailed inspection
-            "reasoning": final_reasoning
+            "detailed_relevant_rules": relevant_rules_details,
+            "reasoning": final_reasoning.strip()
         }
-        self._log_message(f"Ethical evaluation outcome: {outcome}. Relevant rules: {[r['rule_id'] for r in relevant_rules_details]}. Reasoning: {final_reasoning}")
+        self._log_message(f"Ethical evaluation outcome: {outcome}. Relevant rules: {[r['rule_id'] for r in relevant_rules_details]}. Reasoning: {final_reasoning.strip()}")
         return result
 
     def assess_confidence_in_knowledge(self, concept_id: str, query_context: Optional[Dict[str, Any]] = None) -> Optional[float]:
@@ -498,10 +537,26 @@ if __name__ == '__main__':
 
         print("\n--- Setup for Ethical Evaluation and Knowledge Assessment ---")
         self_model.ethical_framework.rules = [
-            EthicalRule(rule_id="R001", principle="User Privacy", description="Must not share user data without explicit consent. Forbidden to process PII for unapproved purposes.", priority_level="high", applicability_contexts=["user_data", "pii_processing"]),
-            EthicalRule(rule_id="R002", principle="Data Minimization", description="Only collect data that is strictly necessary for the task.", priority_level="medium", applicability_contexts=["data_collection"]),
-            EthicalRule(rule_id="R003", principle="Transparency", description="Operations should be transparent to users when appropriate. Potential harm if hidden.", priority_level="medium", source="system_policy", applicability_contexts=["user_interaction"]),
-            EthicalRule(rule_id="R004", principle="Beneficence", description="Actions should aim to benefit humanity.", priority_level="low")
+            EthicalRule(rule_id="R001", principle="User Privacy",
+                        description="Must not share user data without explicit consent. Forbidden to process PII for unapproved purposes.",
+                        priority_level="high", applicability_contexts=["user_data", "pii_processing"],
+                        implication="impermissible"),
+            EthicalRule(rule_id="R002", principle="Data Minimization",
+                        description="Only collect data that is strictly necessary for the task.",
+                        priority_level="medium", applicability_contexts=["data_collection"],
+                        implication="requires_caution"), # Or "neutral" depending on interpretation, caution seems safer
+            EthicalRule(rule_id="R003", principle="Transparency",
+                        description="Operations should be transparent to users when appropriate. Potential harm if hidden.",
+                        priority_level="medium", source="system_policy", applicability_contexts=["user_interaction"],
+                        implication="requires_caution"),
+            EthicalRule(rule_id="R004", principle="Beneficence",
+                        description="Actions should aim to benefit humanity.",
+                        priority_level="low",
+                        implication="encouraged"),
+            EthicalRule(rule_id="R005", principle="Non-Maleficence",
+                        description="Do not cause harm.",
+                        priority_level="critical", # Example of critical priority
+                        implication="impermissible")
         ]
         self_model._log_message(f"Ethical rules loaded: {len(self_model.ethical_framework.rules)}")
 

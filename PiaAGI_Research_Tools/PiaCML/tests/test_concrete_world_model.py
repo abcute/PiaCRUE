@@ -252,6 +252,55 @@ class TestConcreteWorldModelAdvancedLogic(unittest.TestCase):
         self.assertIsNone(prediction4)
         self.assertIn("Prediction failed: Entity 'non_existent_entity' not found", self.world_model._log[-1])
 
+        # Test case 5: Agent with goal_location_id, no obstacles
+        agent_id = "agent1_with_goal"
+        self.world_model._entity_repository[agent_id] = WorldEntity(
+            id=agent_id, type="agent",  # Mobile type
+            state={"goal_location_id": "loc_B", "some_other_state": "value"}, # Has goal_location_id
+            properties={}, affordances=[], relationships={},
+            location_id="loc_A" # Current location
+        )
+        prediction5 = self.world_model.predict_future_state(agent_id, time_horizon=5.0)
+        self.assertIsNotNone(prediction5)
+        self.assertEqual(prediction5["state"]["location_id"], "loc_B") # Should predict move to goal
+        self.assertEqual(prediction5["prediction_confidence"], "medium")
+        self.assertEqual(prediction5["prediction_rule"], "goal_location_assumed_reachable")
+        self.assertIn(f"Prediction for '{agent_id}': Will move to goal_location_id 'loc_B'. Confidence: medium", self.world_model._log[-1])
+
+        # Test case 6: Robot with goal_location_id, but blocked by obstacle
+        robot_id = "robot1_blocked_goal"
+        self.world_model._entity_repository[robot_id] = WorldEntity(
+            id=robot_id, type="robot", # Mobile type
+            state={"goal_location_id": "loc_C"}, # Has goal_location_id
+            properties={}, affordances=[],
+            relationships={"blocked_by": ["obstacle_near_C"]}, # Path to goal is blocked
+            location_id="loc_A" # Current location
+        )
+        prediction6 = self.world_model.predict_future_state(robot_id, time_horizon=5.0)
+        self.assertIsNotNone(prediction6)
+        self.assertEqual(prediction6["state"]["location_id"], "loc_A") # Should predict staying at current location
+        self.assertEqual(prediction6["prediction_confidence"], "low")
+        self.assertEqual(prediction6["prediction_rule"], "goal_location_obstructed")
+        self.assertIn(f"Prediction for '{robot_id}': Stays at current location 'loc_A' due to obstruction. Confidence: low", self.world_model._log[-1])
+
+        # Test case 7: Robot with goal_location_id, no obstacles, but also has velocity (goal should take precedence)
+        robot_id_goal_and_velocity = "robot2_goal_vel"
+        self.world_model._entity_repository[robot_id_goal_and_velocity] = WorldEntity(
+            id=robot_id_goal_and_velocity, type="robot",
+            state={"position": [0,0,0], "velocity": [1,0,0], "goal_location_id": "loc_D"},
+            properties={}, affordances=[], relationships={},
+            location_id="loc_A"
+        )
+        prediction7 = self.world_model.predict_future_state(robot_id_goal_and_velocity, time_horizon=2.0)
+        self.assertIsNotNone(prediction7)
+        self.assertEqual(prediction7["state"]["location_id"], "loc_D") # Goal location predicted
+        self.assertEqual(prediction7["prediction_confidence"], "medium") # Goal rule confidence
+        self.assertEqual(prediction7["prediction_rule"], "goal_location_assumed_reachable")
+         # Position might also be updated if physics rule runs after goal rule and updates other state aspects.
+         # For current logic, goal rule for location_id is primary. If physics also runs and updates 'position', that's fine.
+        self.assertTrue("position" not in prediction7["state"] or prediction7["state"]["position"] == [2,0,0], "Position should either not be predicted by goal rule, or updated by physics if it runs")
+
+
     def test_query_world_state_advanced_queries(self):
         # Populate entities
         self.world_model._entity_repository = {
