@@ -101,39 +101,79 @@ To use `PiaAGIAgent` in a PiaSE scenario, you need to provide configurations for
 1.  **Define `cml_module_configs`:** This Python dictionary specifies parameters for each CML module. The exact parameters depend on the concrete implementation of each module.
 
     ```python
-    # Example from 'basic_info_gathering_pia_agent_scenario.py'
+    # Example from 'comprehensive_info_gathering_scenario.py'
     cml_module_configs: Dict[str, Dict[str, Any]] = {
-        "perception": {"config_detail": "basic_text_processing"},
-        "working_memory": {"capacity": 7},
+        "perception": {
+            "supported_modalities_override": ["text", "simple_visual_cue"]
+        },
+        "working_memory": {
+            "capacity": 15
+        },
         "ltm": {
+            "knowledge_domains": ["general_knowledge", "agent_domain", "scenario_specific_lore"],
             "initial_knowledge": [
                 {"fact_type": "item_property", "item_name": "journal", "property": "is_readable", "value": True},
                 {"fact_type": "action_knowledge", "action": "read", "requires_item_held": True},
-            ]
+            ],
+            "enable_episodic_memory_decay": False
         },
-        "planning": {
-            "goal_decomposition_rules": { # Conceptual for advanced planner
-                "FIND_AND_READ": ["NAVIGATE_TO_ITEM_LOCATION", "TAKE_ITEM", "READ_ITEM"]
-            },
-            "default_item_locations_belief": {"journal": "study"}
+        "attention": {
+            "default_focus_strategy": "goal_oriented_then_novelty",
+            "salience_update_rate": 0.1
         },
-        "behavior_generation": {"config_detail": "maps_primitives_to_text_actions"},
-        "world_model": {"config_detail": "represents_rooms_objects_inventory"}, # Config for the default ConcreteWorldModel if shared_world_model is None
+        "learning": {
+            "default_learning_rate": 0.01,
+            "enable_emotional_influence_on_learning": True,
+            "ethical_guardrail_sensitivity": 0.8
+        },
         "motivation": {
             "initial_goals": [
-                {"goal_id": "read_journal_main", "type": "FIND_AND_READ", "item_name": "journal", "priority": 10.0}
-            ]
+                {"description": "Successfully find and read the journal.", "type": "EXTRINSIC_TASK", "initial_priority": 9.0, "initial_status": "ACTIVE", "item_name": "journal"},
+                {"description": "Explore the study environment.", "type": "INTRINSIC_CURIOSITY", "initial_priority": 3.0, "initial_status": "PENDING"}
+            ],
+            "curiosity_settings": {"novelty_weight": 0.6, "relevance_to_active_goals_weight": 0.2}
         },
-        # Minimal configs for other modules for this scenario
-        "attention": {"default_focus_on_task": True},
-        "learning": {"learning_rate": 0.01},
-        "emotion": {"default_mood": "neutral"},
-        "self_model": {"confidence_threshold": 0.5},
-        "tom": {},
-        "communication": {},
+        "emotion": {
+            "initial_vad_state": {"valence": 0.05, "arousal": 0.1, "dominance": 0.0},
+            "personality_profile": {"reactivity_modifier_arousal": 0.9, "default_mood_valence": 0.05}
+        },
+        "planning": {
+            "goal_decomposition_rules": {
+                "FIND_AND_READ": ["NAVIGATE_TO_ITEM_LOCATION", "TAKE_ITEM", "READ_ITEM"],
+                "EXPLORE_ROOM": ["LOOK_AROUND", "INTERACT_WITH_INTERESTING_OBJECTS"]
+            },
+            "default_item_locations_belief": {"journal": "study"},
+            "max_plan_depth": 5,
+            "enable_re_planning_on_failure": True
+        },
+        "behavior_generation": {
+            "behavior_mapping_accuracy": 0.98,
+            "allow_improvisation_level": 0.1
+        },
+        "self_model": {
+            "initial_ethical_rules": [
+                {"rule_id": "ScenarioRule001", "principle": "InformationIntegrity", "description": "Do not alter information in the journal.", "priority_level": "high", "implication": "impermissible"},
+            ],
+            "initial_self_attributes": {"agent_id": "PiaPrime_InfoSeeker", "current_developmental_stage": "scenario_test_mode"}
+        },
+        "tom": {
+            "default_inference_confidence_level": 0.35,
+            "max_other_agents_to_model": 3
+        },
+        "communication": {
+            "default_communication_language": "en-US",
+            "enable_contextual_strategy_switching": True,
+            "max_dialogue_history_turns": 15
+        },
+        "world_model": {
+            "initial_entities": [
+                {"id": "study_desk_wm", "type": "desk", "state": {"description": "The main desk in the study."}, "location_id": "study"},
+            ],
+            "prediction_time_horizon_default_s": 5.0
+        }
     }
     ```
-    *Note: The `PiaAGIAgent` currently uses placeholder modules if actual CML module imports fail. The configuration dictionary would still be passed to these placeholders.*
+    *Note: The `PiaAGIAgent` currently uses placeholder modules if actual CML module imports fail. The configuration dictionary would still be passed to these placeholders. The parameters shown above are conceptual and assume that the respective concrete CML modules are designed to accept and utilize them in their `__init__` methods or other setup routines.*
 
 2.  **Instantiate `PiaAGIAgent`:**
     Create an instance of `PiaAGIAgent`, providing an `agent_id`, the `cml_module_configs`, and optionally, a pre-configured `shared_world_model`. If `shared_world_model` is not provided, the agent instantiates its own `ConcreteWorldModel` using the "world_model" entry from `cml_module_configs`.
@@ -171,10 +211,10 @@ To use `PiaAGIAgent` in a PiaSE scenario, you need to provide configurations for
 
 ## Example Data Flow for a Simple Task: "Agent in hallway, goal to read journal in study"
 
-This example is a simplified version of the `basic_info_gathering_pia_agent_scenario.py`.
+This example is a simplified version of the `comprehensive_info_gathering_scenario.py`. While the scenario's observable actions (navigate, take, read) might appear simple, the agent performing them can be configured with a fuller suite of cognitive modules as shown in the `cml_module_configs` example above. This means that even for a basic task, the agent internally processes information through its perception, updates its world model, consults its self-model for ethical considerations (if relevant to the actions), experiences emotional shifts, and manages its goals via the motivational system. The `PiaAGIAgent` class itself orchestrates these internal interactions (as detailed in the "Mapping AgentInterface Methods" section), and the richness of interaction and emergent behavior depends significantly on the concrete CML module implementations and their specific configurations.
 
 1.  **Initialization:**
-    *   `PiaAGIAgent` is initialized. `MotivationalSystemModule` has the goal: `{"type": "FIND_AND_READ", "item_name": "journal"}`. Agent starts in "hallway". Journal is on "desk" in "study".
+    *   `PiaAGIAgent` is initialized with a comprehensive set of configurations. `MotivationalSystemModule` might receive an initial goal like: `{"description": "Successfully find and read the journal.", "type": "EXTRINSIC_TASK", ...}`. Agent starts in "hallway". Journal is on "desk" in "study".
 
 2.  **First `act()` call:**
     *   `PiaAGIAgent.act()`:
@@ -221,5 +261,5 @@ This example is a simplified version of the `basic_info_gathering_pia_agent_scen
         *   `BehaviorGenerationModule.translate_to_env_action((READ, "journal"))`: Returns `ActionCommand(action_type="read", parameters={"item_name": "journal"})`.
     *   Agent executes "read journal". Scenario goal achieved (conceptually).
 
-This simplified flow illustrates how the `PiaAGIAgent` uses its modules to progress through a multi-step task, driven by a high-level goal from its motivational system. The actual sophistication depends on the concrete implementations of the CML modules, especially Planning and LTM.
+This simplified flow illustrates how the `PiaAGIAgent` uses its modules to progress through a multi-step task, driven by a high-level goal from its motivational system. The actual sophistication depends on the concrete implementations of the CML modules, especially Planning and LTM, and how they leverage their respective configurations.
 ```
