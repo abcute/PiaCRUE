@@ -30,8 +30,40 @@ except ImportError:
 
 class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModule):
     """
-    A concrete implementation of the PDM module, integrated with the message bus
-    to receive various types of information and dispatch action commands.
+    A concrete implementation of the Planning and Decision-Making (PDM) module,
+    integrated with a message bus to receive various types of information (goals,
+    percepts, LTM results, emotional state, attention focus) and dispatch
+    ActionCommandPayloads.
+
+    The core logic resides in the `develop_and_dispatch_plan` method, which follows
+    a conceptual planning flow:
+    1.  **LTM Plan Retrieval:** Attempts to retrieve a pre-existing plan from LTM relevant
+        to the current high-priority goal.
+    2.  **Conceptual Internal Plan Generation:** If no suitable LTM plan is found (or if an
+        LTM plan is later deemed unsuitable), the module generates a few conceptual
+        candidate plans. These might include:
+        *   A direct, default sequence of actions.
+        *   A "cautious" plan involving preliminary observation.
+        *   An "exploratory" plan that might first query LTM for more context.
+    3.  **Conceptual Plan Evaluation:** Each candidate plan (whether from LTM or internally
+        generated) is subjected to a conceptual evaluation. This involves logging:
+        *   Simulated World Model checks (e.g., predicted success, estimated resources).
+        *   Simulated Self-Model checks (e.g., ethical considerations based on keywords,
+            capability assessment based on plan complexity).
+        *   Conceptual influence of the current emotional state.
+        *   Conceptual outcomes of similar past plans (from LTM).
+        A conceptual `evaluation_score` is assigned to each plan based on these checks.
+    4.  **Conceptual Plan Selection:** The plan with the best `evaluation_score` is chosen.
+        Reasons for rejecting other plans (especially LTM plans) are logged. If all plans
+        are rejected, a minimal fallback action is generated.
+    5.  **Ethical Review Trigger:** Before dispatching the selected plan, a formal
+        `EthicalReviewRequest` may be published if the plan's nature or the conceptual
+        ethical check during evaluation indicates a need for more thorough review.
+    6.  **Dispatch:** ActionCommandPayloads for the selected plan are published to the message bus.
+
+    Note: Many aspects of plan generation and evaluation are currently conceptual and
+    primarily manifest as detailed logging statements. This structure is intended to
+    outline how a more advanced planner would integrate diverse cognitive inputs.
     """
     MAX_PERCEPTS_HISTORY = 10 # Max number of recent percepts to store
     MAX_LTM_RESULTS_TO_STORE = 20 # Max number of LTM query results to store
@@ -185,129 +217,241 @@ class ConcretePlanningAndDecisionMakingModule(BasePlanningAndDecisionMakingModul
 
         self._log_message(f"Developing plan for goal '{goal_payload.goal_id}': {goal_payload.goal_description}")
 
-        action_payloads: List[ActionCommandPayload] = []
-        plan_source = "default_generation" # Default source
+        candidate_plans: List[Dict[str, Any]] = [] # Stores dicts like {"id": str, "source": str, "actions": List[ActionCommandPayload], "eval_score": float}
 
-        # 1. Plan Retrieval/Generation
-        # Try to find a relevant LTM query ID that might contain a plan
+        # --- Step 1: Attempt to Retrieve Plan from LTM ---
+        self._log_message("Attempting to retrieve plan from LTM...")
+        ltm_action_payloads: List[ActionCommandPayload] = []
+        ltm_plan_source = None
         relevant_ltm_query_id_for_plan = None
+
         for q_id, result_payload in self._ltm_query_results.items():
             if result_payload.query_metadata and result_payload.query_metadata.get("query_type") == "get_action_plan_for_goal":
-                # This is a conceptual match based on goal description; real matching would be more complex
-                if goal_payload.goal_description in result_payload.query_metadata.get("original_query_content", ""):
+                if goal_payload.goal_description in result_payload.query_metadata.get("original_query_content", ""): # Conceptual match
                     relevant_ltm_query_id_for_plan = q_id
                     self._log_message(f"Found potentially relevant LTM query result '{q_id}' for plan for goal '{goal_payload.goal_id}'.")
                     break
 
         if relevant_ltm_query_id_for_plan and self._ltm_query_results[relevant_ltm_query_id_for_plan].success_status:
             ltm_result = self._ltm_query_results[relevant_ltm_query_id_for_plan]
-            if ltm_result.results:
-                # Assuming the first result item's content is the plan (a list of action dicts)
-                # MemoryItem.content = List[Dict[str,Any]] where each dict is an action step
-                # e.g., {"action_type": "do_this", "parameters": {"param1": "value1"}}
+            if ltm_result.results and isinstance(ltm_result.results[0].content, list):
                 potential_plan_steps = ltm_result.results[0].content
-                if isinstance(potential_plan_steps, list) and all(isinstance(step, dict) for step in potential_plan_steps):
+                if all(isinstance(step, dict) for step in potential_plan_steps):
                     self._log_message(f"Retrieved plan from LTM (QueryID: {relevant_ltm_query_id_for_plan}) with {len(potential_plan_steps)} steps.")
-                    plan_source = f"ltm_retrieved (QueryID: {relevant_ltm_query_id_for_plan})"
+                    ltm_plan_source = f"ltm_retrieved (QueryID: {relevant_ltm_query_id_for_plan})"
                     for i, step_dict in enumerate(potential_plan_steps):
-                        action_payloads.append(ActionCommandPayload(
+                        ltm_action_payloads.append(ActionCommandPayload(
                             action_type=step_dict.get("action_type", f"ltm_plan_step_{i+1}"),
                             parameters=step_dict.get("parameters", {"goal_id": goal_payload.goal_id}),
-                            priority=goal_payload.priority - (i * 0.01), # Slightly decrease priority for subsequent steps
+                            priority=goal_payload.priority - (i * 0.01),
                             expected_outcome_summary=step_dict.get("expected_outcome_summary", f"Complete LTM plan step {i+1} for {goal_payload.goal_description}")
                         ))
+                    candidate_plans.append({
+                        "id": f"ltm_plan_{relevant_ltm_query_id_for_plan}",
+                        "source": ltm_plan_source,
+                        "actions": ltm_action_payloads,
+                        "eval_score": 0.0 # To be filled by evaluation
+                    })
                 else:
-                    self._log_message(f"LTM result for plan (QueryID: {relevant_ltm_query_id_for_plan}) content is not a list of action dicts. Falling back to default. Content: {str(potential_plan_steps)[:100]}")
-
-        if not action_payloads: # No plan from LTM or LTM result was not usable
-            if goal_payload.priority > 0.8 and goal_payload.goal_id not in self._awaiting_plan_for_goal:
-                self._log_message(f"Goal '{goal_payload.goal_id}' is high priority and no plan found in LTM results. Querying LTM for a plan.")
-                query_id = self.request_ltm_data(
-                    query_content=goal_payload.goal_description,
-                    query_type="get_action_plan_for_goal",
-                    target_memory_type="procedural",
-                    parameters={"goal_id": goal_payload.goal_id, "priority": goal_payload.priority}
-                )
-                if query_id:
-                    self._awaiting_plan_for_goal[goal_payload.goal_id] = query_id
-                    self._log_message(f"Awaiting LTM plan for goal '{goal_payload.goal_id}' (LTM Query ID: {query_id}). Proceeding with default actions for now.")
-                plan_source += " (LTM query initiated)"
+                    self._log_message(f"LTM result for plan (QueryID: {relevant_ltm_query_id_for_plan}) content is not a list of action dicts. Content: {str(potential_plan_steps)[:100]}")
+            else:
+                self._log_message(f"LTM query result for plan (QueryID: {relevant_ltm_query_id_for_plan}) had no results or results content was not a list.")
+        else:
+            self._log_message(f"No successful LTM plan found for goal '{goal_payload.goal_id}'.")
 
 
-            # Default action generation if no LTM plan was used
-            if not action_payloads:
-                self._log_message(f"No plan from LTM for goal '{goal_payload.goal_id}'. Generating default plan.")
-                plan_source = "default_generation_fallback"
-                action_prefix = "default_action"
-                action_params = {"goal_id": goal_payload.goal_id, "description": goal_payload.goal_description, "plan_source": plan_source}
+        # --- Step 2: Conceptual Internal Plan Generation (if no LTM plan or LTM plan is poor) ---
+        # This phase is triggered if candidate_plans is empty (no LTM plan) or if LTM plan is later evaluated poorly.
+        # For now, we'll generate internal candidates if no LTM plan was found.
+        if not candidate_plans:
+            self._log_message("No LTM plan retrieved. Starting conceptual internal plan generation.")
+            plan_source = "internal_generation"
 
-                # (Existing logic for emotional/perceptual influence on default actions can be kept here)
-                if self._current_emotional_state and self._current_emotional_state.current_emotion_profile.get("valence", 0) < -0.3:
-                    action_prefix = "cautious_action" # ...
-                if self._current_percepts: # ... (urgent check)
+            # Candidate Plan 1: Direct (similar to original default)
+            candidate_1_actions = []
+            action_params_direct = {"goal_id": goal_payload.goal_id, "description": goal_payload.goal_description, "strategy": "direct"}
+            candidate_1_actions.append(ActionCommandPayload(action_type=f"direct_action_step1", parameters=action_params_direct.copy(), priority=goal_payload.priority))
+            if goal_payload.priority > 0.6: # Add a second step for higher priority goals
+                 candidate_1_actions.append(ActionCommandPayload(action_type=f"direct_action_step2", parameters=action_params_direct.copy(), priority=goal_payload.priority - 0.1))
+            candidate_plans.append({"id": "internal_direct_plan", "source": plan_source, "actions": candidate_1_actions, "eval_score": 0.0})
+            self._log_message(f"Generated internal candidate 'direct_plan' with {len(candidate_1_actions)} steps.")
 
-                action_payloads.append(ActionCommandPayload(
-                    action_type=f"{action_prefix}_step1", parameters=action_params.copy(), priority=goal_payload.priority,
-                    expected_outcome_summary=f"Complete step 1 for {goal_payload.goal_description}"
-                ))
-                if goal_payload.priority > 0.7:
-                    action_payloads.append(ActionCommandPayload(
-                        action_type=f"{action_prefix}_step2", parameters=action_params.copy(), priority=goal_payload.priority - 0.1,
-                        expected_outcome_summary=f"Complete step 2 for {goal_payload.goal_description}"
-                    ))
+            # Candidate Plan 2: Cautious
+            candidate_2_actions = []
+            action_params_cautious = {"goal_id": goal_payload.goal_id, "description": goal_payload.goal_description, "strategy": "cautious"}
+            candidate_2_actions.append(ActionCommandPayload(action_type="observe_surroundings", parameters=action_params_cautious.copy(), priority=goal_payload.priority))
+            candidate_2_actions.append(ActionCommandPayload(action_type="cautious_action_step1", parameters=action_params_cautious.copy(), priority=goal_payload.priority - 0.05))
+            candidate_plans.append({"id": "internal_cautious_plan", "source": plan_source, "actions": candidate_2_actions, "eval_score": 0.0})
+            self._log_message(f"Generated internal candidate 'cautious_plan' with {len(candidate_2_actions)} steps.")
 
-        if not action_payloads:
-            self._log_message(f"No actions generated for goal '{goal_payload.goal_id}'. This should not happen if default generation is robust.")
-            return False
+            # Candidate Plan 3: Exploratory (Query LTM for more context - if not already done for plan retrieval)
+            if not relevant_ltm_query_id_for_plan and goal_payload.goal_id not in self._awaiting_plan_for_goal:
+                candidate_3_actions = []
+                action_params_exploratory = {"goal_id": goal_payload.goal_id, "description": goal_payload.goal_description, "strategy": "exploratory_ltm_query"}
+                # This action would ideally trigger an LTMQuery via BGM or directly if PDM can do that
+                candidate_3_actions.append(ActionCommandPayload(action_type="query_ltm_for_context", parameters={"query_topic": goal_payload.goal_description, "goal_id": goal_payload.goal_id}, priority=goal_payload.priority))
+                candidate_3_actions.append(ActionCommandPayload(action_type="exploratory_action_step1", parameters=action_params_exploratory.copy(), priority=goal_payload.priority - 0.05))
+                candidate_plans.append({"id": "internal_exploratory_plan", "source": plan_source, "actions": candidate_3_actions, "eval_score": 0.0})
+                self._log_message(f"Generated internal candidate 'exploratory_plan' with {len(candidate_3_actions)} steps.")
 
-        # 2. Ethical Review (Conceptual)
-        sensitive_keywords = ["delete", "share", "modify_user_data", "privacy", "sensitive_info"]
-        perform_ethical_review = any(keyword in goal_payload.goal_description.lower() for keyword in sensitive_keywords)
+        # Fallback: If LTM was queried for a plan and we are awaiting results, generate minimal default actions
+        if goal_payload.goal_id in self._awaiting_plan_for_goal and not ltm_action_payloads:
+            self._log_message(f"Awaiting LTM plan for goal '{goal_payload.goal_id}'. Generating minimal default actions for now.")
+            plan_source = "default_pending_ltm"
+            default_actions = [ActionCommandPayload(action_type="wait_for_ltm_plan", parameters={"goal_id": goal_payload.goal_id}, priority=goal_payload.priority)]
+            # Add to candidate_plans or handle separately if this is the only option
+            candidate_plans.append({"id": "internal_wait_plan", "source": plan_source, "actions": default_actions, "eval_score": 0.0})
 
-        if not perform_ethical_review and self._current_emotional_state:
-            # High arousal and strong negative valence might also warrant review
-            emo_profile = self._current_emotional_state.current_emotion_profile
-            if emo_profile.get("arousal", 0) > 0.7 and emo_profile.get("valence", 0) < -0.5:
-                perform_ethical_review = True
-                self._log_message(f"High arousal/negative valence triggered ethical review for goal '{goal_payload.goal_id}'.")
 
-        if perform_ethical_review:
-            # Summarize plan for ethical review (conceptual)
-            action_summary_for_review = [{"action": ac.action_type, "params": str(ac.parameters)[:100]} for ac in action_payloads[:2]] # review first few steps
+        # --- Step 3: Conceptual Plan Evaluation ---
+        self._log_message(f"Starting conceptual evaluation for {len(candidate_plans)} candidate plans.")
+        if not candidate_plans: # Should not happen if default generation is a fallback
+            self._log_message("No candidate plans (not even default) generated. This is unexpected.")
+            # Fallback to a single "wait" action if truly no candidates
+            action_payloads = [ActionCommandPayload(action_type="wait_error_no_plan", parameters={"goal_id": goal_payload.goal_id}, priority=0.1)]
+            plan_source = "critical_fallback_no_plan"
+        else:
+            for i, plan_candidate in enumerate(candidate_plans):
+                plan_id_for_eval = plan_candidate["id"]
+                self._log_message(f"--- Evaluating Candidate Plan {i+1}: '{plan_id_for_eval}' (Source: {plan_candidate['source']}) ---")
+
+                # Conceptual World Model Evaluation
+                # TODO: Replace random with more deterministic conceptual checks
+                wm_success_options = ["High", "Medium", "Low"]
+                wm_resource_options = ["Low", "Medium", "High"]
+                predicted_success = wm_success_options[uuid.uuid4().int % len(wm_success_options)] # Random pick for now
+                estimated_resources = wm_resource_options[uuid.uuid4().int % len(wm_resource_options)] # Random pick
+                self._log_message(f"  Conceptual WM Eval: Predicted success: {predicted_success}. Estimated resources: {estimated_resources}.")
+
+                # Conceptual Self-Model Evaluation
+                self._log_message(f"  Conceptual Self-Model Eval:")
+                ethical_check_result = "PASS"
+                plan_desc_for_ethics = goal_payload.goal_description + " " + " ".join([ac.action_type for ac in plan_candidate["actions"]])
+                if any(kw in plan_desc_for_ethics.lower() for kw in ["delete_user_data", "harm_user", "illegal_activity"]):
+                    ethical_check_result = "FAIL"
+                elif any(kw in plan_desc_for_ethics.lower() for kw in ["share_anonymized_summary", "access_sensitive_log"]):
+                    ethical_check_result = "REQUIRES_REVIEW"
+                self._log_message(f"    Ethical Check: {ethical_check_result} (based on keywords in goal/actions).")
+
+                capability_check_result = "ADEQUATE"
+                if "complex_skill_action" in plan_desc_for_ethics: # Example keyword
+                    # Conceptual: Check SelfModel for skill proficiency (mocked)
+                    # if self_model_ref.get_skill_proficiency("complex_skill") < 0.5: capability_check_result = "INADEQUATE"
+                    capability_check_result = "INADEQUATE" # Assume for this example
+                self._log_message(f"    Capability Check: {capability_check_result} (based on plan actions).")
+
+                # Conceptual Emotion Module Influence
+                emo_influence_desc = "neutral"
+                if self._current_emotional_state:
+                    valence = self._current_emotional_state.current_emotion_profile.get("valence", 0)
+                    arousal = self._current_emotional_state.current_emotion_profile.get("arousal", 0)
+                    if valence > 0.3: emo_influence_desc = "positive valence slightly favors exploration/engagement"
+                    elif valence < -0.3: emo_influence_desc = "negative valence suggests caution/avoidance"
+                    if arousal > 0.7: emo_influence_desc += " (high arousal suggests focus/potential reactivity)"
+                self._log_message(f"  Conceptual Emotion Influence: {emo_influence_desc} (V:{valence:.2f} A:{arousal:.2f}).")
+
+                # Conceptual LTM Past Experience
+                # TODO: Conceptual query to LTM - for now, random
+                ltm_experience_options = ["similar plans often succeed", "mixed results for similar plans", "no relevant past experience", "similar plans often failed"]
+                ltm_past_experience = ltm_experience_options[uuid.uuid4().int % len(ltm_experience_options)]
+                self._log_message(f"  Conceptual LTM Past Experience: {ltm_past_experience}.")
+
+                # Assign conceptual evaluation_score
+                score = 0.5 # Start neutral
+                if predicted_success == "High": score += 0.2
+                elif predicted_success == "Medium": score += 0.05
+                elif predicted_success == "Low": score -= 0.2
+                if ethical_check_result == "FAIL": score = -1.0 # Hard fail
+                elif ethical_check_result == "REQUIRES_REVIEW": score -= 0.15
+                if capability_check_result == "INADEQUATE": score -= 0.3
+                if "often succeed" in ltm_past_experience: score += 0.15
+                elif "often failed" in ltm_past_experience: score -= 0.15
+
+                plan_candidate["eval_score"] = round(score, 3)
+                self._log_message(f"  Conceptual Evaluation Score for '{plan_id_for_eval}': {plan_candidate['eval_score']:.3f}")
+                self._log_message(f"--- End Evaluation for Candidate Plan '{plan_id_for_eval}' ---")
+
+
+            # --- Step 4: Conceptual Plan Selection ---
+            self._log_message("Selecting plan based on conceptual evaluations...")
+            # Filter out hard failures (e.g., ethical FAIL)
+            valid_candidate_plans = [p for p in candidate_plans if p["eval_score"] > -0.5] # -1.0 was hard fail
+
+            if not valid_candidate_plans:
+                self._log_message("All candidate plans were conceptually rejected or scored too low. Generating critical fallback action.")
+                action_payloads = [ActionCommandPayload(action_type="request_assistance_no_valid_plan", parameters={"goal_id": goal_payload.goal_id, "reason": "All plans failed conceptual evaluation"}, priority=goal_payload.priority)]
+                plan_source = "critical_fallback_evaluation_reject"
+            else:
+                # Sort by evaluation score, highest first
+                valid_candidate_plans.sort(key=lambda p: p["eval_score"], reverse=True)
+                selected_plan_candidate = valid_candidate_plans[0]
+                action_payloads = selected_plan_candidate["actions"]
+                plan_source = selected_plan_candidate["source"]
+                self._log_message(f"Selected plan '{selected_plan_candidate['id']}' with score {selected_plan_candidate['eval_score']:.3f}. Source: {plan_source}.")
+
+                # If an LTM plan was evaluated but not selected
+                if ltm_action_payloads and selected_plan_candidate["actions"] != ltm_action_payloads:
+                    ltm_plan_eval = next((p for p in candidate_plans if p["actions"] == ltm_action_payloads), None)
+                    if ltm_plan_eval: # Should exist if ltm_action_payloads is not empty
+                         self._log_message(f"LTM plan '{ltm_plan_eval['id']}' was not selected (score: {ltm_plan_eval['eval_score']:.3f}).")
+
+
+        # --- Step 5: Ethical Review Trigger Integration (Post-selection) ---
+        # The initial, more basic ethical check was done during evaluation.
+        # This is for the formal EthicalReviewRequest if the selected plan still warrants it.
+        # For this refactor, we use the conceptual ethical_check_result from the selected plan if available,
+        # or re-evaluate based on keywords for the selected plan.
+
+        final_selected_plan_desc_for_ethics = goal_payload.goal_description + " " + " ".join([ac.action_type for ac in action_payloads])
+        final_ethical_check_result_conceptual = "PASS" # Default
+        # Re-check selected plan or use stored eval
+        selected_plan_candidate_for_final_review = next((p for p in candidate_plans if p["actions"] == action_payloads), None)
+        if selected_plan_candidate_for_final_review and "eval_score" in selected_plan_candidate_for_final_review: # Check if it went through new eval
+            # A bit convoluted, ideally the ethical_check_result string is stored on the candidate plan object
+            # For now, re-derive based on keywords for simplicity if not directly stored.
+            if any(kw in final_selected_plan_desc_for_ethics.lower() for kw in ["delete_user_data", "harm_user", "illegal_activity"]):
+                 final_ethical_check_result_conceptual = "FAIL" # Should have been filtered, but as safety
+            elif any(kw in final_selected_plan_desc_for_ethics.lower() for kw in ["share_anonymized_summary", "access_sensitive_log", "privacy"]): # Added privacy
+                 final_ethical_check_result_conceptual = "REQUIRES_REVIEW"
+
+        perform_formal_ethical_review = (final_ethical_check_result_conceptual == "REQUIRES_REVIEW") or \
+                                        any(keyword in final_selected_plan_desc_for_ethics.lower() for keyword in ["share", "modify_user_data", "sensitive_info"]) # Original keywords
+
+        if not perform_formal_ethical_review and self._current_emotional_state and self._current_emotional_state.current_emotion_profile.get("arousal",0) > 0.7 and self._current_emotional_state.current_emotion_profile.get("valence",0) < -0.5:
+            perform_formal_ethical_review = True
+            self._log_message(f"High arousal/negative valence triggered formal ethical review for selected plan for goal '{goal_payload.goal_id}'.")
+
+
+        if perform_formal_ethical_review:
+            self._log_message(f"Selected plan for goal '{goal_payload.goal_id}' requires formal ethical review (Conceptual Check: {final_ethical_check_result_conceptual}). Publishing EthicalReviewRequest.")
+            action_summary_for_review = [{"action": ac.action_type, "params": str(ac.parameters)[:100]} for ac in action_payloads[:3]] # Review first few steps
             proposal = {
-                "action_type": "execute_plan", # Or more specific if possible
+                "action_type": "execute_selected_plan",
                 "plan_summary": action_summary_for_review,
                 "reason": f"Executing plan for goal: {goal_payload.goal_description} (ID: {goal_payload.goal_id})"
             }
             context_for_review = {
-                "goal_id": goal_payload.goal_id,
-                "goal_priority": goal_payload.priority,
+                "goal_id": goal_payload.goal_id, "goal_priority": goal_payload.priority,
                 "emotional_state_summary": self._current_emotional_state.current_emotion_profile if self._current_emotional_state else None,
-                "plan_source": plan_source
+                "plan_source": plan_source,
+                "conceptual_evaluation_score": selected_plan_candidate_for_final_review["eval_score"] if selected_plan_candidate_for_final_review else "N/A"
             }
             request_id = str(uuid.uuid4())
-
-            ethical_review_payload_dict = {
-                "request_id": request_id,
-                "action_proposal": proposal,
-                "context": context_for_review
-            }
-
-            review_request_message = GenericMessage(
-                source_module_id=self._module_id,
-                message_type="EthicalReviewRequest", # Custom message type
-                payload=ethical_review_payload_dict
-            )
+            ethical_review_payload_dict = {"request_id": request_id, "action_proposal": proposal, "context": context_for_review}
+            review_request_message = GenericMessage(self._module_id, "EthicalReviewRequest", ethical_review_payload_dict)
             self._message_bus.publish(review_request_message)
-            self._log_message(f"Published EthicalReviewRequest (ID: {request_id}) for goal '{goal_payload.goal_id}'. Plan source: {plan_source}. Proceeding without waiting for response (conceptual).")
+            self._log_message(f"Published EthicalReviewRequest (ID: {request_id}). Plan source: {plan_source}. Conceptual evaluation score: {context_for_review['conceptual_evaluation_score']}.")
+            # Note: In a real system, might wait for response or proceed with caution. Here, we proceed.
 
+        # --- Step 6: Dispatch selected actions ---
+        if not action_payloads: # Should ideally not happen if fallback exists
+            self._log_message(f"CRITICAL: No actions selected or generated for goal '{goal_payload.goal_id}'. Dispatching nothing.")
+            return False
 
-        # Dispatch actions
+        self._log_message(f"Dispatching {len(action_payloads)} actions from plan '{plan_source}' for goal '{goal_payload.goal_id}'.")
         for ac_payload in action_payloads:
-            # Ensure plan_source is part of parameters if not already there
-            if "plan_source" not in ac_payload.parameters:
+            if "plan_source" not in ac_payload.parameters: # Ensure plan_source is in parameters
                  ac_payload.parameters["plan_source"] = plan_source
-
             action_message = GenericMessage(source_module_id=self._module_id, message_type="ActionCommand", payload=ac_payload)
             self._message_bus.publish(action_message)
             self._log_message(f"Published ActionCommand '{ac_payload.action_type}' (ID: {ac_payload.command_id}, PlanSource: {plan_source}) for goal '{goal_payload.goal_id}'.")

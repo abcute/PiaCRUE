@@ -32,6 +32,20 @@ CML provides abstract base classes (ABCs) and concrete MVP (Minimal Viable Produ
 *   **Emotion Module:** (`EmotionModule`, `ConcreteEmotionModule`)
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.4](../../PiaAGI.md#34-computational-models-of-emotion), [4.1.7](../../PiaAGI.md#41-core-modules-and-their-interactions)
 *   **Planning and Decision Making Module:** (`PlanningAndDecisionMakingModule`, `ConcretePlanningAndDecisionMakingModule`)
+    *   *Role:* Formulates plans to achieve active goals from the Motivational System, considering the current world state, agent capabilities (from Self-Model), available knowledge (LTM), and contextual information (WM). It selects appropriate actions or sub-goals and dispatches them.
+    *   *Conceptual Operational Flow (in `ConcretePlanningAndDecisionMakingModule`):*
+        1.  **LTM Plan Retrieval:** Attempts to retrieve relevant pre-existing plans from LTM.
+        2.  **Internal Plan Generation (Conceptual):** If no suitable LTM plan is found, it generates a few conceptual candidate plans (e.g., direct, cautious, exploratory).
+        3.  **Plan Evaluation (Conceptual):** Each candidate plan undergoes a conceptual evaluation, logging simulated checks against:
+            *   World Model (e.g., predicted success, resource estimation).
+            *   Self-Model (e.g., ethical alignment, capability adequacy).
+            *   Emotion Module (e.g., influence of current emotional state).
+            *   LTM (e.g., outcomes of similar past plans).
+            A conceptual evaluation score is assigned to each plan.
+        4.  **Plan Selection:** The plan with the best conceptual evaluation score is selected.
+        5.  **Ethical Review Trigger:** If the selected plan warrants it (based on conceptual checks or keywords), a formal `EthicalReviewRequest` is published.
+        6.  **Dispatch:** Action commands for the selected plan are published.
+    *   *Emphasis:* While many evaluation aspects in the current concrete implementation are conceptual (primarily logged to outline the process), this structured flow is designed to integrate more sophisticated, data-driven evaluations from other CMLs as they mature.
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [4.1.8](../../PiaAGI.md#41-core-modules-and-their-interactions), [4.4](../../PiaAGI.md#44-action-selection-and-execution)
 *   **Behavior Generation Module:** (`BaseBehaviorGenerationModule`, `ConcreteBehaviorGenerationModule`)
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [4.1.9](../../PiaAGI.md#41-core-modules-and-their-interactions)
