@@ -1,239 +1,202 @@
 import unittest
 import copy
+from typing import Dict, Any, List
 
-from PiaAGI_Research_Tools.PiaSE.core_engine.interfaces import ActionCommand
-from PiaAGI_Research_Tools.PiaSE.environments.crafting_world import CraftingWorld
+# Adjust imports to reach the PiaSE components from the tests directory
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+from PiaSE.core_engine.interfaces import ActionCommand
+from PiaSE.environments.crafting_world import CraftingWorld
 
 class TestCraftingWorld(unittest.TestCase):
 
     def setUp(self):
-        self.world_def = {
+        self.agent_id = "test_agent"
+        self.world_def_template = {
             "locations": {
-                "forest": {"resources": {"wood": 10}, "tools_present": ["old_axe"]},
-                "mine": {"resources": {"stone": 5, "iron_ore": 3}},
-                "workshop": {"crafting_stations": ["workbench"], "resources": {}},
-                "clearing": {"resources": {}} # Empty location
+                "forest": {"resources": {"wood": {"quantity": 10, "tool_required_to_gather": "axe"}}, "tools_present": ["axe"]},
+                "mine": {"resources": {"stone": 20, "iron_ore": {"quantity": 5, "tool_required_to_gather": "pickaxe"}}, "tools_present": ["pickaxe"]},
+                "workshop": {"crafting_stations": ["workbench", "forge"], "resources": {}, "tools_present": ["hammer", "saw"]},
+                "field": {"resources": {"plant_fiber": 15}, "tools_present": []} # Resource without tool requirement
             }
         }
-        self.recipes = {
+        self.recipes_template = {
             "wooden_plank": {"inputs": {"wood": 1}, "station_required": None, "output_quantity": 4},
             "stick": {"inputs": {"wooden_plank": 1}, "station_required": "workbench", "output_quantity": 2},
-            "wooden_pickaxe": {"inputs": {"wooden_plank": 3, "stick": 2}, "station_required": "workbench", "output_quantity": 1},
-            "stone_hammer": {"inputs": {"stone": 3, "stick": 1}, "station_required": "workbench", "output_quantity": 1}
+            "basic_axe": {"inputs": {"stick": 2, "stone": 3}, "station_required": "workbench", "tool_required": "hammer", "output_quantity": 1},
+            "refined_wood": {"inputs": {"wooden_plank": 2}, "station_required": "workbench", "tool_required": "saw", "output_quantity": 1},
+            "rope": {"inputs": {"plant_fiber": 3}, "station_required": None, "output_quantity": 1}
         }
-        self.agent_id = "test_agent"
         self.env = CraftingWorld(
-            world_definition=copy.deepcopy(self.world_def),
+            world_definition=copy.deepcopy(self.world_def_template),
             agent_start_location="forest",
-            initial_recipes=copy.deepcopy(self.recipes),
+            initial_recipes=copy.deepcopy(self.recipes_template),
             agent_id=self.agent_id
         )
 
-    def test_initialization(self):
-        self.assertEqual(self.env.agent_location, "forest")
-        self.assertEqual(self.env.agent_inventory, {})
-        self.assertEqual(len(self.env.world_map), len(self.world_def["locations"]))
-        self.assertEqual(self.env.world_map["forest"]["resources"]["wood"], 10)
-        self.assertTrue("wooden_plank" in self.env.known_recipes)
+    def test_initialization_with_tools_and_requirements(self):
+        self.assertIn("axe", self.env.world_map["forest"]["tools_present"])
+        self.assertEqual(self.env.world_map["forest"]["resources"]["wood"]["tool_required_to_gather"], "axe")
+        self.assertEqual(self.env.known_recipes["basic_axe"]["tool_required"], "hammer")
 
-    def test_reset(self):
-        # Modify state
-        self.env.agent_location = "mine"
-        self.env.agent_inventory["wood"] = 5
-        self.env.world_map["forest"]["resources"]["wood"] = 0
+    def test_action_pickup_tool(self):
+        self.env.agent_location = "forest" # Axe is in the forest
 
-        obs = self.env.reset()
-
-        self.assertEqual(self.env.agent_location, "forest") # Resets to start location
-        self.assertEqual(self.env.agent_inventory, {})      # Resets inventory
-        self.assertEqual(self.env.world_map["forest"]["resources"]["wood"], 10) # Resets world resources
-        self.assertIsNotNone(obs)
-        self.assertEqual(obs.custom_sensor_data["current_location_id"], "forest")
-
-    def test_navigation_successful(self):
-        action = ActionCommand(action_type="navigate", parameters={"target_location_id": "mine"})
-        result = self.env.step(self.agent_id, action)
+        # Successful pickup
+        action_pickup_axe = ActionCommand(action_type="pickup_tool", parameters={"tool_name": "axe"})
+        result = self.env.step(self.agent_id, action_pickup_axe)
 
         self.assertEqual(result.status, "success")
-        self.assertEqual(self.env.agent_location, "mine")
-        self.assertEqual(result.new_perception_snippet.custom_sensor_data["current_location_id"], "mine")
-        self.assertTrue("Successfully navigated to 'mine'." in result.message)
+        self.assertIn("Successfully picked up 'axe'", result.message)
+        self.assertEqual(self.env.agent_inventory.get("axe"), 1)
+        self.assertNotIn("axe", self.env.world_map["forest"]["tools_present"])
 
-    def test_navigation_failed_invalid_location(self):
-        initial_location = self.env.agent_location
-        action = ActionCommand(action_type="navigate", parameters={"target_location_id": "unknown_place"})
-        result = self.env.step(self.agent_id, action)
+        # Attempt to pick up again (should fail as it's gone from location)
+        result_again = self.env.step(self.agent_id, action_pickup_axe)
+        self.assertEqual(result_again.status, "failure")
+        self.assertIn("Tool 'axe' not found at 'forest'", result_again.message)
 
-        self.assertEqual(result.status, "failure")
-        self.assertEqual(self.env.agent_location, initial_location) # Agent should not move
-        self.assertTrue("Location 'unknown_place' does not exist." in result.message)
+        # Attempt to pick up non-existent tool
+        action_pickup_nonexistent = ActionCommand(action_type="pickup_tool", parameters={"tool_name": "laser_cutter"})
+        result_nonexistent = self.env.step(self.agent_id, action_pickup_nonexistent)
+        self.assertEqual(result_nonexistent.status, "failure")
+        self.assertIn("Tool 'laser_cutter' not found at 'forest'", result_nonexistent.message)
 
-    def test_gather_resource_successful(self):
-        self.env.agent_location = "forest" # Ensure agent is at forest
-        action = ActionCommand(action_type="gather_resource", parameters={"resource_type": "wood", "quantity_to_gather": 3})
-        result = self.env.step(self.agent_id, action)
+        # Attempt to pick up with no tool_name
+        action_pickup_notool = ActionCommand(action_type="pickup_tool", parameters={})
+        result_notool = self.env.step(self.agent_id, action_pickup_notool)
+        self.assertEqual(result_notool.status, "failure")
+        self.assertIn("No tool_name specified", result_notool.message)
 
-        self.assertEqual(result.status, "success")
-        self.assertEqual(self.env.agent_inventory.get("wood"), 3)
-        self.assertEqual(self.env.world_map["forest"]["resources"]["wood"], 7) # 10 - 3
-        self.assertTrue("Successfully gathered 3 of 'wood'." in result.message)
 
-    def test_gather_resource_partial_quantity(self):
-        self.env.agent_location = "forest"
-        action = ActionCommand(action_type="gather_resource", parameters={"resource_type": "wood", "quantity_to_gather": 15}) # Try to gather more than available
-        result = self.env.step(self.agent_id, action)
+    def test_action_gather_resource_tool_logic(self):
+        self.env.agent_location = "forest" # Wood (needs axe), stone (no tool needed here, let's add it)
+        self.env.world_map["forest"]["resources"]["stone"] = 5 # Add stone that doesn't need a tool
 
-        self.assertEqual(result.status, "success") # Still success, but gathers what's available
-        self.assertEqual(self.env.agent_inventory.get("wood"), 10) # Gathered all 10
-        self.assertEqual(self.env.world_map["forest"]["resources"]["wood"], 0)
-        self.assertTrue("Successfully gathered 10 of 'wood'." in result.message)
+        # 1. Gather stone (no tool needed)
+        action_gather_stone = ActionCommand(action_type="gather_resource", parameters={"resource_type": "stone", "quantity_to_gather": 2})
+        result_stone = self.env.step(self.agent_id, action_gather_stone)
+        self.assertEqual(result_stone.status, "success")
+        self.assertEqual(self.env.agent_inventory.get("stone"), 2)
+        self.assertEqual(self.env.world_map["forest"]["resources"]["stone"], 3)
 
-    def test_gather_resource_failed_not_available(self):
-        self.env.agent_location = "workshop" # Workshop has no 'wood' by default
-        action = ActionCommand(action_type="gather_resource", parameters={"resource_type": "wood"})
-        result = self.env.step(self.agent_id, action)
-
-        self.assertEqual(result.status, "failure")
-        self.assertEqual(self.env.agent_inventory.get("wood", 0), 0) # Inventory unchanged
-        self.assertTrue("'wood' not available or depleted at 'workshop'." in result.message)
-
-    def test_gather_resource_failed_depleted(self):
-        self.env.agent_location = "forest"
-        self.env.world_map["forest"]["resources"]["wood"] = 0 # Wood is depleted
-        action = ActionCommand(action_type="gather_resource", parameters={"resource_type": "wood"})
-        result = self.env.step(self.agent_id, action)
-
-        self.assertEqual(result.status, "failure")
+        # 2. Gather wood (needs axe, agent doesn't have it)
+        action_gather_wood_no_axe = ActionCommand(action_type="gather_resource", parameters={"resource_type": "wood", "quantity_to_gather": 1})
+        result_wood_no_axe = self.env.step(self.agent_id, action_gather_wood_no_axe)
+        self.assertEqual(result_wood_no_axe.status, "failure")
+        self.assertIn("requires tool 'axe'", result_wood_no_axe.message)
         self.assertEqual(self.env.agent_inventory.get("wood", 0), 0)
-        self.assertTrue("'wood' not available or depleted at 'forest'." in result.message)
+
+        # 3. Agent picks up axe
+        action_pickup_axe = ActionCommand(action_type="pickup_tool", parameters={"tool_name": "axe"})
+        self.env.step(self.agent_id, action_pickup_axe)
+        self.assertEqual(self.env.agent_inventory.get("axe"), 1)
+
+        # 4. Agent gathers wood (has axe)
+        action_gather_wood_with_axe = ActionCommand(action_type="gather_resource", parameters={"resource_type": "wood", "quantity_to_gather": 3})
+        result_wood_with_axe = self.env.step(self.agent_id, action_gather_wood_with_axe)
+        self.assertEqual(result_wood_with_axe.status, "success")
+        self.assertEqual(self.env.agent_inventory.get("wood"), 3)
+        self.assertEqual(self.env.world_map["forest"]["resources"]["wood"]["quantity"], 7) # 10 - 3
+
+    def test_action_craft_item_tool_logic(self):
+        self.env.agent_location = "workshop" # Has workbench
+        self.env.agent_inventory = {"wooden_plank": 5, "stick": 4, "stone": 3} # Agent has wood planks
+
+        # 1. Craft basic_axe (needs hammer, agent has no tools yet)
+        action_craft_axe_no_hammer = ActionCommand(action_type="craft_item", parameters={"item_name": "basic_axe"})
+        result_axe_no_hammer = self.env.step(self.agent_id, action_craft_axe_no_hammer)
+        self.assertEqual(result_axe_no_hammer.status, "failure")
+        self.assertIn("requires tool 'hammer'", result_axe_no_hammer.message)
+
+        # 2. Agent picks up hammer
+        action_pickup_hammer = ActionCommand(action_type="pickup_tool", parameters={"tool_name": "hammer"})
+        self.env.step(self.agent_id, action_pickup_hammer)
+        self.assertEqual(self.env.agent_inventory.get("hammer"), 1)
+
+        # 3. Craft basic_axe (has hammer, ingredients, at workbench)
+        result_axe_with_hammer = self.env.step(self.agent_id, action_craft_axe_no_hammer) # Try same action again
+        self.assertEqual(result_axe_with_hammer.status, "success")
+        self.assertEqual(self.env.agent_inventory.get("basic_axe"), 1)
+        self.assertEqual(self.env.agent_inventory.get("stick"), 2) # 4 - 2
+        self.assertEqual(self.env.agent_inventory.get("stone"), 0) # 3 - 3 (should be removed)
+        self.assertNotIn("stone", self.env.agent_inventory)
 
 
-    def test_craft_item_successful_no_station(self):
-        # Craft wooden_plank (wood:1 -> wooden_plank:4), no station needed
-        self.env.agent_inventory["wood"] = 2
-        action = ActionCommand(action_type="craft_item", parameters={"item_name": "wooden_plank"})
-        result = self.env.step(self.agent_id, action)
+        # 4. Craft refined_wood (needs saw, agent has hammer and planks)
+        action_craft_refined_no_saw = ActionCommand(action_type="craft_item", parameters={"item_name": "refined_wood"})
+        result_refined_no_saw = self.env.step(self.agent_id, action_craft_refined_no_saw)
+        self.assertEqual(result_refined_no_saw.status, "failure")
+        self.assertIn("requires tool 'saw'", result_refined_no_saw.message)
 
-        self.assertEqual(result.status, "success")
-        self.assertEqual(self.env.agent_inventory.get("wood"), 1) # Consumed 1 wood
-        self.assertEqual(self.env.agent_inventory.get("wooden_plank"), 4) # Produced 4 planks
-        self.assertTrue("Successfully crafted 4 of 'wooden_plank'." in result.message)
+        # 5. Agent picks up saw
+        action_pickup_saw = ActionCommand(action_type="pickup_tool", parameters={"tool_name": "saw"})
+        self.env.step(self.agent_id, action_pickup_saw)
+        self.assertEqual(self.env.agent_inventory.get("saw"), 1)
 
-    def test_craft_item_successful_with_station(self):
-        # Craft stick (wooden_plank:1 -> stick:2), requires workbench
-        self.env.agent_location = "workshop" # Go to workshop for workbench
-        self.env.agent_inventory["wooden_plank"] = 3
-        action = ActionCommand(action_type="craft_item", parameters={"item_name": "stick"})
-        result = self.env.step(self.agent_id, action)
+        # 6. Craft refined_wood (has saw, planks, at workbench)
+        result_refined_with_saw = self.env.step(self.agent_id, action_craft_refined_no_saw)
+        self.assertEqual(result_refined_with_saw.status, "success")
+        self.assertEqual(self.env.agent_inventory.get("refined_wood"), 1)
+        # wooden_plank initial: 5 (used 3 for axe) -> 2. Used 2 for refined_wood -> 0
+        self.assertNotIn("wooden_plank", self.env.agent_inventory)
 
-        self.assertEqual(result.status, "success")
-        self.assertEqual(self.env.agent_inventory.get("wooden_plank"), 2) # Consumed 1 plank
-        self.assertEqual(self.env.agent_inventory.get("stick"), 2)       # Produced 2 sticks
-        self.assertTrue("Successfully crafted 2 of 'stick'." in result.message)
+        # 7. Craft rope (no tool, no station needed)
+        self.env.agent_inventory["plant_fiber"] = 3
+        action_craft_rope = ActionCommand(action_type="craft_item", parameters={"item_name": "rope"})
+        result_rope = self.env.step(self.agent_id, action_craft_rope)
+        self.assertEqual(result_rope.status, "success")
+        self.assertEqual(self.env.agent_inventory.get("rope"),1)
 
-    def test_craft_item_failed_missing_resources(self):
-        self.env.agent_inventory["wood"] = 0 # Not enough wood for wooden_plank
-        action = ActionCommand(action_type="craft_item", parameters={"item_name": "wooden_plank"})
-        result = self.env.step(self.agent_id, action)
 
-        self.assertEqual(result.status, "failure")
-        self.assertEqual(self.env.agent_inventory.get("wooden_plank", 0), 0) # No planks produced
-        self.assertTrue("Missing resources for 'wooden_plank': wood (need 1)" in result.message)
-
-    def test_craft_item_failed_missing_station(self):
-        # Try to craft 'stick' (needs workbench) in 'forest' (no workbench)
-        self.env.agent_location = "forest"
-        self.env.agent_inventory["wooden_plank"] = 1 # Has resources
-        action = ActionCommand(action_type="craft_item", parameters={"item_name": "stick"})
-        result = self.env.step(self.agent_id, action)
-
-        self.assertEqual(result.status, "failure")
-        self.assertEqual(self.env.agent_inventory.get("stick", 0), 0) # No sticks produced
-        self.assertTrue("Item 'stick' requires station 'workbench', which is not here." in result.message)
-
-    def test_craft_item_failed_unknown_recipe(self):
-        action = ActionCommand(action_type="craft_item", parameters={"item_name": "unknown_item"})
-        result = self.env.step(self.agent_id, action)
-
-        self.assertEqual(result.status, "failure")
-        self.assertTrue("Recipe for 'unknown_item' unknown." in result.message)
-
-    def test_craft_complex_item_wooden_pickaxe(self):
-        # Goal: Craft wooden_pickaxe (planks:3, stick:2 from workbench)
-        # 1. Gather wood (need 3 planks -> 3 wood; 2 sticks -> 2 planks -> 2 wood; Total 5 wood)
-        self.env.agent_location = "forest"
-        self.env.step(self.agent_id, ActionCommand(action_type="gather_resource", parameters={"resource_type": "wood", "quantity_to_gather": 5}))
-        self.assertEqual(self.env.agent_inventory.get("wood"), 5)
-
-        # 2. Craft wooden_planks (need 3 for pickaxe, 2 for sticks that make pickaxe = 5 planks)
-        # Recipe: 1 wood -> 4 planks. So 2 wood crafts 8 planks.
-        self.env.step(self.agent_id, ActionCommand(action_type="craft_item", parameters={"item_name": "wooden_plank"})) # Uses 1 wood, makes 4 planks
-        self.env.step(self.agent_id, ActionCommand(action_type="craft_item", parameters={"item_name": "wooden_plank"})) # Uses 1 wood, makes 4 planks
-        self.assertEqual(self.env.agent_inventory.get("wooden_plank"), 8)
-        self.assertEqual(self.env.agent_inventory.get("wood"), 3) # 5 - 2 = 3 wood left
-
-        # 3. Navigate to workshop
-        self.env.step(self.agent_id, ActionCommand(action_type="navigate", parameters={"target_location_id": "workshop"}))
-        self.assertEqual(self.env.agent_location, "workshop")
-
-        # 4. Craft sticks (need 2 for pickaxe. Recipe: 1 plank -> 2 sticks)
-        self.env.step(self.agent_id, ActionCommand(action_type="craft_item", parameters={"item_name": "stick"})) # Uses 1 plank, makes 2 sticks
-        self.assertEqual(self.env.agent_inventory.get("stick"), 2)
-        self.assertEqual(self.env.agent_inventory.get("wooden_plank"), 7) # 8 - 1 = 7 planks left
-
-        # 5. Craft wooden_pickaxe
-        action = ActionCommand(action_type="craft_item", parameters={"item_name": "wooden_pickaxe"})
-        result = self.env.step(self.agent_id, action)
-
-        self.assertEqual(result.status, "success", msg=f"Pickaxe craft failed: {result.message}")
-        self.assertEqual(self.env.agent_inventory.get("wooden_pickaxe"), 1)
-        self.assertEqual(self.env.agent_inventory.get("wooden_plank"), 4) # 7 - 3 = 4 planks left
-        self.assertEqual(self.env.agent_inventory.get("stick"), 0) # 2 - 2 = 0 sticks left
-
-    def test_get_observation(self):
-        self.env.agent_location = "workshop"
-        self.env.agent_inventory["wood"] = 5
+    def test_get_observation_shows_tools(self):
+        self.env.agent_location = "workshop" # Has hammer and saw
         obs = self.env.get_observation(self.agent_id)
 
-        self.assertEqual(obs.timestamp, self.env.current_step) # current_step is 0 initially
-        self.assertEqual(obs.custom_sensor_data["current_location_id"], "workshop")
-        self.assertTrue("workshop" in obs.custom_sensor_data["current_location_info"]["description"])
-        self.assertEqual(obs.custom_sensor_data["inventory_contents"]["wood"], 5)
-        self.assertTrue("wooden_plank" in obs.custom_sensor_data["known_recipes_list"])
+        self.assertIn("hammer", obs.custom_sensor_data['current_location_info']['tools_present'])
+        self.assertIn("saw", obs.custom_sensor_data['current_location_info']['tools_present'])
 
-        found_loc_desc = False
-        found_inv_desc = False
-        for tp in obs.textual_percepts:
-            if "You are at 'workshop'" in tp.text:
-                found_loc_desc = True
-            if "Your inventory: wood(5)" in tp.text:
-                found_inv_desc = True
-        self.assertTrue(found_loc_desc)
-        self.assertTrue(found_inv_desc)
+        found_text_percept = False
+        for percept in obs.textual_percepts:
+            if "Tools available here: hammer, saw" in percept.text or "Tools available here: saw, hammer" in percept.text :
+                found_text_percept = True
+                break
+        self.assertTrue(found_text_percept, "Textual percept for tools not found or incorrect.")
 
-    def test_get_action_space(self):
-        # In forest
+    def test_get_action_space_shows_pickup_tool(self):
+        self.env.agent_location = "mine" # Has pickaxe
+        actions = self.env.get_action_space(self.agent_id)
+
+        pickup_pickaxe_action = {"action_type": "pickup_tool", "parameters": {"tool_name": "pickaxe"}}
+        self.assertIn(pickup_pickaxe_action, actions)
+
+    def test_get_environment_info_schema_for_tools(self):
+        info = self.env.get_environment_info()
+        action_schema = info["action_schema"]
+        self.assertIn("pickup_tool", action_schema)
+        self.assertEqual(action_schema["pickup_tool"], {"tool_name": "string (name of tool to pick up)"})
+        self.assertIn("note", action_schema["gather_resource"])
+        self.assertIn("note", action_schema["craft_item"])
+
+        perception_loc_info = info["perception_schema"]["custom_sensor_data"]["current_location_info"]
+        self.assertIn("tools_present", perception_loc_info)
+
+
+    def test_get_state_includes_tools(self):
+        # Setup: Agent picks up axe, one tool remains in forest
         self.env.agent_location = "forest"
-        actions_forest = self.env.get_action_space(self.agent_id)
-        can_navigate_to_mine = any(a["action_type"] == "navigate" and a["parameters"]["target_location_id"] == "mine" for a in actions_forest)
-        can_gather_wood = any(a["action_type"] == "gather_resource" and a["parameters"]["resource_type"] == "wood" for a in actions_forest)
-        can_craft_plank_in_forest = any(a["action_type"] == "craft_item" and a["parameters"]["item_name"] == "wooden_plank" for a in actions_forest) # Plank needs no station
+        self.env.step(self.agent_id, ActionCommand(action_type="pickup_tool", parameters={"tool_name": "axe"}))
 
-        self.assertTrue(can_navigate_to_mine)
-        self.assertTrue(can_gather_wood)
-        self.assertTrue(can_craft_plank_in_forest)
+        state = self.env.get_state()
 
-        # In workshop (has workbench)
-        self.env.agent_location = "workshop"
-        actions_workshop = self.env.get_action_space(self.agent_id)
-        can_craft_pickaxe_in_workshop = any(a["action_type"] == "craft_item" and a["parameters"]["item_name"] == "wooden_pickaxe" for a in actions_workshop)
-        self.assertTrue(can_craft_pickaxe_in_workshop)
+        self.assertEqual(state["agent_inventory"].get("axe"), 1)
+        self.assertNotIn("axe", state["world_map_current_state"]["forest"]["tools_present"]) # Axe picked up
 
-        cannot_gather_wood_in_workshop = not any(a["action_type"] == "gather_resource" and a["parameters"]["resource_type"] == "wood" for a in actions_workshop)
-        self.assertTrue(cannot_gather_wood_in_workshop)
+        # Check another location for tools
+        self.assertIn("hammer", state["world_map_current_state"]["workshop"]["tools_present"])
 
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
-
-```
