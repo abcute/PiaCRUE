@@ -298,15 +298,23 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
             intensity = self._calculate_curiosity_intensity("NOVEL_STIMULUS", trigger_data, active_goals)
             self._log_message(f"Novel stimulus '{trigger_data.get('id')}' assessed for curiosity. Calculated intensity: {intensity:.2f}")
             if intensity > curiosity_threshold:
-                desc = f"Investigate novel stimulus: {trigger_data.get('id', 'N/A')} (Novelty: {trigger_data.get('novelty_score',0):.2f}, Complexity: {trigger_data.get('complexity_score',0):.2f}, Intensity: {intensity:.2f})"
+                desc = f"Investigate novel stimulus: {trigger_data.get('id', 'N/A')} (Novelty: {trigger_data.get('novelty_score',0):.2f}, Complexity: {trigger_data.get('complexity_score',0):.2f}, Calculated Intensity: {intensity:.2f})"
                 source_trigger_details = {
                     "trigger_type": "NOVEL_STIMULUS",
-                    "stimulus_id": trigger_data.get('id'),
-                    "novelty_score": trigger_data.get('novelty_score'),
-                    "complexity_score": trigger_data.get('complexity_score'),
-                    "calculated_intensity": intensity
+                    "stimulus_id": trigger_data.get('id'), # Original stimulus ID
+                    "novelty_score": trigger_data.get("novelty_score", 0.0), # Store actual value used
+                    "complexity_score": trigger_data.get("complexity_score", 0.0), # Store actual value used
+                    "calculated_intensity": intensity # Store the final calculated intensity for this trigger
                 }
-                goal_id = self.add_goal(desc, "INTRINSIC_CURIOSITY", intensity * 10.0, source_trigger_details)
+                # The initial_priority of the goal is derived from the calculated intensity.
+                # Multiplying by 10.0 is a conceptual scaling to fit a 0-10 priority range if other goals use that,
+                # but the normalized intensity (0-1) itself is the core driver.
+                goal_id = self.add_goal(
+                    description=desc,
+                    goal_type="INTRINSIC_CURIOSITY",
+                    initial_priority=intensity * 10.0, # Scale intensity to a broader priority range
+                    source_trigger=source_trigger_details
+                )
                 new_curiosity_goal_ids.append(goal_id)
 
         # Trigger 2: Prediction Error from world_event (conceptual)
@@ -317,15 +325,20 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
             intensity = self._calculate_curiosity_intensity("PREDICTION_ERROR", trigger_data, active_goals)
             self._log_message(f"Prediction error from '{trigger_data.get('source_model')}' assessed for curiosity. Calculated intensity: {intensity:.2f}")
             if intensity > curiosity_threshold:
-                desc = f"Investigate prediction error from {trigger_data.get('source_model')} (ErrorMag: {trigger_data.get('error_magnitude',0):.2f}, Intensity: {intensity:.2f})"
+                desc = f"Investigate prediction error from {trigger_data.get('source_model')} (ErrorMag: {trigger_data.get('error_magnitude',0):.2f}, Calculated Intensity: {intensity:.2f})"
                 source_trigger_details = {
                     "trigger_type": "PREDICTION_ERROR",
                     "source_model": trigger_data.get('source_model'),
-                    "error_magnitude": trigger_data.get('error_magnitude'),
-                    "details": trigger_data.get('details'),
-                    "calculated_intensity": intensity
+                    "error_magnitude": trigger_data.get("error_magnitude", 0.0), # Store actual value used
+                    "details": trigger_data.get('details'), # Any additional details about the error
+                    "calculated_intensity": intensity # Store the final calculated intensity
                 }
-                goal_id = self.add_goal(desc, "INTRINSIC_CURIOSITY", intensity * 10.0, source_trigger_details)
+                goal_id = self.add_goal(
+                    description=desc,
+                    goal_type="INTRINSIC_CURIOSITY",
+                    initial_priority=intensity * 10.0, # Scale intensity
+                    source_trigger=source_trigger_details
+                )
                 new_curiosity_goal_ids.append(goal_id)
 
         # Trigger 3: Knowledge Gap from knowledge_map_snapshot
@@ -351,87 +364,169 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
                 intensity = self._calculate_curiosity_intensity("KNOWLEDGE_GAP", trigger_data, active_goals)
                 self._log_message(f"Knowledge gap for concept '{concept_id}' assessed for curiosity. Confidence: {data.get('confidence', 1.0):.2f}. Calculated intensity: {intensity:.2f}")
                 if intensity > curiosity_threshold:
-                    desc = f"Explore knowledge gap for concept: {concept_id} (Confidence: {data.get('confidence',0):.2f}, Intensity: {intensity:.2f})"
+                desc = f"Explore knowledge gap for concept: {concept_id} (Current Confidence: {data.get('confidence',0):.2f}, Calculated Intensity: {intensity:.2f})"
                     source_trigger_details = {
                         "trigger_type": "KNOWLEDGE_GAP",
                         "concept_id": concept_id,
-                        "current_confidence": data.get('confidence'),
-                        "current_understanding": data.get('understanding_level'),
-                        "calculated_intensity": intensity
+                    "current_confidence": data.get('confidence', 1.0), # Store actual confidence value used
+                    "current_understanding": data.get('understanding_level', 0.0), # Store actual understanding if available
+                    "calculated_intensity": intensity # Store the final calculated intensity
                     }
-                    goal_id = self.add_goal(desc, "INTRINSIC_CURIOSITY", intensity * 10.0, source_trigger_details)
+                goal_id = self.add_goal(
+                    description=desc,
+                    goal_type="INTRINSIC_CURIOSITY",
+                    initial_priority=intensity * 10.0, # Scale intensity
+                    source_trigger=source_trigger_details
+                )
                     new_curiosity_goal_ids.append(goal_id)
 
         return new_curiosity_goal_ids
 
     def _calculate_curiosity_intensity(self, trigger_type: str, trigger_data: Dict, active_goals: List[Goal]) -> float:
-        """Helper method to calculate curiosity intensity based on various factors."""
-        # Placeholder weights (these should be configurable or learned)
-        w_novelty = 0.4
-        w_complexity = 0.2
-        w_error_magnitude = 0.5
-        w_uncertainty = 0.6 # For knowledge gaps (1 - confidence)
-        w_relevance_to_goals = 0.3
+        """
+        Calculates the intensity of a curiosity drive based on the trigger type and its data.
+        The intensity is a normalized value between 0.0 and 1.0.
 
-        intensity = 0.0
+        Args:
+            trigger_type: The type of event that triggered curiosity (e.g., "NOVEL_STIMULUS", "PREDICTION_ERROR", "KNOWLEDGE_GAP").
+            trigger_data: A dictionary containing specific details about the trigger.
+                          - For "NOVEL_STIMULUS": expects "novelty_score" (0-1), "complexity_score" (0-1).
+                          - For "PREDICTION_ERROR": expects "error_magnitude" (0-1).
+                          - For "KNOWLEDGE_GAP": expects "confidence" (0-1, where low confidence means high uncertainty).
+            active_goals: A list of currently active goals, used for assessing relevance (conceptual).
+
+        Returns:
+            A float representing the calculated curiosity intensity (0.0 to 1.0).
+        """
+        # Conceptual weights: These are placeholders and in a full implementation,
+        # they should be configurable, learned, or derived from a more complex cognitive model.
+        w_novelty = 0.4             # Weight for the novelty of a stimulus.
+        w_complexity = 0.2          # Weight for the complexity of a stimulus.
+        w_error_magnitude = 0.5     # Weight for the magnitude of a prediction error.
+        w_uncertainty = 0.6         # Weight for uncertainty (1 - confidence) in a knowledge gap.
+        w_relevance_to_goals = 0.3  # Weight for how relevant the trigger is to active goals.
+
+        base_intensity = 0.0
 
         if trigger_type == "NOVEL_STIMULUS":
             novelty = trigger_data.get("novelty_score", 0.0)
             complexity = trigger_data.get("complexity_score", 0.0)
-            intensity = (w_novelty * novelty) + (w_complexity * complexity)
+            # Formula: Weighted sum of novelty and complexity.
+            base_intensity = (w_novelty * novelty) + (w_complexity * complexity)
+            self._log_message(f"Curiosity (NovelStimulus): novelty={novelty:.2f}, complexity={complexity:.2f} -> base_intensity={base_intensity:.2f}")
         elif trigger_type == "PREDICTION_ERROR":
             error_mag = trigger_data.get("error_magnitude", 0.0)
-            intensity = w_error_magnitude * error_mag
+            # Formula: Intensity is proportional to the error magnitude.
+            base_intensity = w_error_magnitude * error_mag
+            self._log_message(f"Curiosity (PredictionError): error_mag={error_mag:.2f} -> base_intensity={base_intensity:.2f}")
         elif trigger_type == "KNOWLEDGE_GAP":
-            confidence = trigger_data.get("confidence", 1.0) # Default to high confidence if not specified
+            confidence = trigger_data.get("confidence", 1.0)  # Default to high confidence (low uncertainty) if not specified.
             uncertainty = 1.0 - confidence
-            intensity = w_uncertainty * uncertainty
+            # Formula: Intensity is proportional to the uncertainty.
+            base_intensity = w_uncertainty * uncertainty
+            self._log_message(f"Curiosity (KnowledgeGap): confidence={confidence:.2f}, uncertainty={uncertainty:.2f} -> base_intensity={base_intensity:.2f}")
+        else:
+            self._log_message(f"Warning: Unknown curiosity trigger_type: {trigger_type}. Base intensity remains 0.")
 
-        # Conceptual: Calculate relevance to active goals
-        # For now, a simple placeholder. A real implementation would analyze trigger_data content
-        # and compare with active_goals descriptions/properties.
-        relevance_score = 0.1 # Default low relevance
-        # def calculate_relevance_to_goals(trigger_data, active_goals) -> float: ...
-        intensity *= (1 + w_relevance_to_goals * relevance_score)
 
-        # Conceptual: Calculate recency factor (e.g., older events are less curiosity-inducing)
-        # For now, a simple placeholder.
-        recency_factor = 1.0
-        # def calculate_recency_factor(last_ts: Optional[float]) -> float: ...
-        # last_ts = trigger_data.get("last_encountered_ts") or trigger_data.get("last_explored_ts")
-        # if last_ts: intensity *= calculate_recency_factor(last_ts)
+        # Conceptual Modulators (currently placeholders):
+        # 1. Relevance to Active Goals:
+        #    If the curious item is relevant to current tasks, curiosity might be amplified.
+        #    This would require a function to calculate `relevance_score` based on `trigger_data` and `active_goals`.
+        relevance_score = 0.1  # Placeholder: Assume low default relevance.
+        # Example: intensity = base_intensity * (1 + w_relevance_to_goals * relevance_score)
+        # For now, this is a conceptual step and not directly applied to keep the current calculation simple.
+        # self._log_message(f"Curiosity: relevance_score={relevance_score:.2f} (conceptual).")
 
-        return max(0.0, min(1.0, intensity)) # Normalize to 0-1
+        # 2. Recency Factor:
+        #    More recent triggers or less recently explored items might be more curiosity-inducing.
+        #    This would require tracking exploration history and timestamps.
+        recency_factor = 1.0  # Placeholder: Assume neutral recency.
+        # Example: intensity = intensity * recency_factor
+        # For now, this is a conceptual step.
+        # self._log_message(f"Curiosity: recency_factor={recency_factor:.2f} (conceptual).")
+
+        # Apply conceptual modulators if they were fully implemented:
+        # For now, we use the base_intensity and a simplified relevance application as in the original.
+        # The original code had: intensity *= (1 + w_relevance_to_goals * relevance_score)
+        # Let's keep that specific line for consistency with the previous version's direct effect.
+        final_intensity = base_intensity * (1 + w_relevance_to_goals * relevance_score)
+        self._log_message(f"Curiosity: base_intensity={base_intensity:.2f}, relevance_factor={(1 + w_relevance_to_goals * relevance_score):.2f} -> final_intensity_before_clamp={final_intensity:.2f}")
+
+        # Ensure final intensity is clamped between 0.0 and 1.0.
+        clamped_intensity = max(0.0, min(1.0, final_intensity))
+        if final_intensity != clamped_intensity:
+            self._log_message(f"Curiosity: Intensity clamped from {final_intensity:.2f} to {clamped_intensity:.2f}.")
+
+        return clamped_intensity
 
     def _calculate_competence_drive_intensity(self, skill_id: str, skill_data: Dict, active_goals: List[Goal]) -> float:
         """
         Calculates the intensity of the competence drive for a given skill.
-        skill_data: {"proficiency": 0.0-1.0, "importance": 0.0-1.0, "target_proficiency": 0.0-1.0 (optional)}
+        The intensity is a normalized value between 0.0 and 1.0.
+
+        Args:
+            skill_id: The ID of the skill being assessed.
+            skill_data: A dictionary containing details about the skill.
+                        Expected keys:
+                        - "proficiency": Current proficiency level (0.0 to 1.0).
+                        - "importance": Importance of the skill (0.0 to 1.0), potentially goal-related.
+                        - "target_proficiency": Desired proficiency level (0.0 to 1.0, optional, defaults to 1.0).
+                        - "success_rate_trend": (Conceptual) Trend of success rate (-1 to 1, optional).
+                        - "perceived_learnability": (Conceptual) Agent's belief about ease of learning (0-1, optional).
+            active_goals: A list of currently active goals (conceptual, for future use in importance calculation).
+
+        Returns:
+            A float representing the calculated competence drive intensity (0.0 to 1.0).
         """
-        w_gap = 0.6
-        w_importance = 0.4
-        # Conceptual modulators (can be expanded)
-        w_success_trend = 0.1 # Positive trend might slightly reduce urgency if already improving
-        w_learnability = 0.2  # Higher perceived learnability might boost drive
+        # Conceptual weights: These are placeholders and in a full implementation,
+        # they should be configurable, learned, or derived from a more complex cognitive model.
+        w_gap = 0.6                 # Weight for the proficiency gap.
+        w_importance = 0.4          # Weight for the skill's importance.
+        # Conceptual modulator weights (currently not directly applied in the final calculation below but kept for clarity):
+        w_success_trend = 0.1       # Weight for the trend of success rate with the skill.
+        w_learnability = 0.2        # Weight for the perceived learnability of the skill.
 
         current_proficiency = skill_data.get("proficiency", 0.0)
-        target_proficiency = skill_data.get("target_proficiency", 1.0) # Default target is mastery
-        importance = skill_data.get("importance", 0.5) # Default importance if not specified
+        target_proficiency = skill_data.get("target_proficiency", 1.0)  # Default target is mastery.
+        importance = skill_data.get("importance", 0.5)  # Default importance if not specified.
 
-        proficiency_gap = max(0, target_proficiency - current_proficiency)
+        # Calculate the gap between target and current proficiency.
+        proficiency_gap = max(0.0, target_proficiency - current_proficiency)
 
-        intensity = (w_gap * proficiency_gap) + (w_importance * importance)
+        # Base formula: Weighted sum of proficiency gap and importance.
+        base_intensity = (w_gap * proficiency_gap) + (w_importance * importance)
+        self._log_message(f"Competence (Skill: {skill_id}): proficiency={current_proficiency:.2f}, target={target_proficiency:.2f}, importance={importance:.2f} -> proficiency_gap={proficiency_gap:.2f}, base_intensity={base_intensity:.2f}")
 
-        # Conceptual: Modulate by success rate trend (e.g., from LTM or skill model)
-        # success_rate_trend = skill_data.get("success_rate_trend", 0.0) # e.g., -1 (declining) to 1 (improving)
-        # intensity -= (w_success_trend * success_rate_trend) # If improving, slightly less urgent
+        # Conceptual Modulators (currently placeholders, not directly altering `base_intensity`):
+        # 1. Success Rate Trend:
+        #    If the agent is already improving (positive trend), the urgency might be slightly lower.
+        #    If declining (negative trend), urgency might be higher.
+        #    This would require data from a skill model or LTM.
+        success_rate_trend = skill_data.get("success_rate_trend", 0.0) # Placeholder value.
+        # Example conceptual application: intensity_modifier_trend = - (w_success_trend * success_rate_trend)
+        # self._log_message(f"Competence: success_rate_trend={success_rate_trend:.2f} (conceptual).")
 
-        # Conceptual: Modulate by perceived learnability (e.g., from Self-Model)
-        # perceived_learnability = skill_data.get("perceived_learnability", 0.5) # 0 (hard) to 1 (easy)
-        # intensity += (w_learnability * (perceived_learnability - 0.5)) # Boost if perceived easy, reduce if hard
 
-        self._log_message(f"Competence intensity for skill '{skill_id}': Gap={proficiency_gap:.2f}, Importance={importance:.2f}, RawIntensity={intensity:.2f}")
-        return max(0.0, min(1.0, intensity)) # Normalize
+        # 2. Perceived Learnability:
+        #    If a skill is perceived as easier to learn, the drive to engage might be higher (or lower if too trivial).
+        #    If perceived very hard, it might reduce motivation if not coupled with high importance/reward.
+        #    This would require input from a self-model or learning module.
+        perceived_learnability = skill_data.get("perceived_learnability", 0.5) # Placeholder: neutral learnability.
+        # Example conceptual application: intensity_modifier_learnability = w_learnability * (perceived_learnability - 0.5)
+        # self._log_message(f"Competence: perceived_learnability={perceived_learnability:.2f} (conceptual).")
+
+        # For now, the final intensity is the base_intensity.
+        # In a more complex model, these conceptual modulators would be integrated.
+        final_intensity = base_intensity
+        self._log_message(f"Competence (Skill: {skill_id}): final_intensity_before_clamp={final_intensity:.2f} (modulators are conceptual).")
+
+        # Ensure final intensity is clamped between 0.0 and 1.0.
+        clamped_intensity = max(0.0, min(1.0, final_intensity))
+        if final_intensity != clamped_intensity:
+            self._log_message(f"Competence: Intensity clamped from {final_intensity:.2f} to {clamped_intensity:.2f}.")
+
+        return clamped_intensity
 
     def assess_competence_opportunities(self, capability_inventory_snapshot: Dict[str, Dict[str, Any]], active_goals: List[Goal]) -> List[str]:
         """
@@ -466,25 +561,28 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
                     continue
 
                 target_prof = skill_data_for_calc.get("target_proficiency", 1.0)
-                desc = f"Improve skill: {skill_id} (Current Prof: {skill_data_for_calc['proficiency']:.2f}, Target: {target_prof:.2f}, Intensity: {intensity:.2f})"
-                source_trigger_details = {
-                    "trigger_type": "LOW_PROFICIENCY", # Or "OPPORTUNITY_FOR_MASTERY"
-                    "skill_id": skill_id,
-                    "current_proficiency": skill_data_for_calc['proficiency'],
-                    "importance_rating": skill_data_for_calc['importance'],
-                    "calculated_intensity": intensity
+                desc = f"Improve skill: {skill_id} (Current Prof: {skill_data_for_calc['proficiency']:.2f}, Target: {target_prof:.2f}, Calculated Intensity: {intensity:.2f})"
+                source_trigger_details = { # Information about why this competence goal was triggered
+                    "trigger_type": "LOW_PROFICIENCY_OR_MASTERY_OPPORTUNITY", # More descriptive
+                    "skill_id": skill_id, # The skill in question
+                    "assessed_proficiency_at_trigger": skill_data_for_calc['proficiency'], # Proficiency level that triggered assessment
+                    "assessed_importance_at_trigger": skill_data_for_calc['importance'], # Importance that triggered assessment
+                    "calculated_intensity": intensity # The final calculated intensity for this drive
                 }
+                # Specific details about the competence goal itself (current state, target state)
                 competence_details_for_goal = {
-                    "current_proficiency": skill_data_for_calc['proficiency'],
-                    "target_proficiency": target_prof,
-                    "initial_importance": skill_data_for_calc['importance']
+                    "current_proficiency": skill_data_for_calc['proficiency'], # Current proficiency of the skill
+                    "target_proficiency": target_prof, # The proficiency level the agent aims for
+                    "initial_importance_rating": skill_data_for_calc['importance'] # Importance rating at time of goal creation
                 }
+                # The initial_priority of the goal is derived from the calculated intensity.
                 goal_id = self.add_goal(
                     description=desc,
                     goal_type="INTRINSIC_COMPETENCE",
-                    initial_priority=intensity * 10.0,
+                    initial_priority=intensity * 10.0, # Scale intensity to a broader priority range
                     source_trigger=source_trigger_details,
-                    target_skill_id=skill_id, # Store the skill ID with the goal
+                    # Storing target_skill_id and competence_details directly in the Goal object:
+                    target_skill_id=skill_id,
                     competence_details=competence_details_for_goal
                 )
                 new_competence_goal_ids.append(goal_id)
@@ -590,14 +688,28 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
         base_priority_for_type = ConcreteMotivationalSystemModule._get_base_priority(goal.type)
 
         intensity = 0.0
+        # For intrinsic goals (Curiosity, Competence), the 'intensity' component of dynamic priority
+        # is derived from their calculated drive intensity, which is stored in `goal.source_trigger.calculated_intensity`.
+        # This `calculated_intensity` is already a normalized value (0-1).
         if goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]:
-            # Intensity for intrinsic goals is pre-calculated and stored in source_trigger
-            intensity = goal.source_trigger.get("calculated_intensity", 0.0) if goal.source_trigger else 0.0
+            if goal.source_trigger and "calculated_intensity" in goal.source_trigger:
+                intensity = goal.source_trigger["calculated_intensity"]
+                self._log_message(f"DynamicPrio for Intrinsic Goal '{goal.id}': Using calculated_intensity {intensity:.2f} from source_trigger.")
+            else:
+                intensity = 0.1 # Default low intensity if not found, though it should be there.
+                self._log_message(f"Warning: Intrinsic Goal '{goal.id}' missing 'calculated_intensity' in source_trigger. Defaulting intensity to {intensity:.2f}.")
         elif goal.type == "EXTRINSIC_TASK":
-            # For EXTRINSIC_TASK, goal.priority is the externally set importance (e.g., 0-10).
-            # We map this to a 0-1 intensity scale for the formula.
-            intensity = goal.priority / 10.0
-        # Add other goal types if necessary, or assign a default intensity based on goal.priority
+            # For EXTRINSIC_TASK, `goal.priority` is the externally set importance (e.g., on a 0-10 scale).
+            # We normalize this to a 0-1 scale to serve as the 'intensity' component in the dynamic priority formula.
+            # A higher `goal.priority` value for an extrinsic task means it contributes more to its dynamic priority.
+            intensity = goal.priority / 10.0 # Assuming goal.priority is on a 0-10 scale. Adjust if scale is different.
+            self._log_message(f"DynamicPrio for Extrinsic Goal '{goal.id}': Using normalized goal.priority {intensity:.2f} (original: {goal.priority}).")
+        else:
+            # For other goal types, or if a more nuanced intensity calculation is needed.
+            # Fallback to using the goal's `priority` field, normalized, if it makes sense for that type.
+            intensity = goal.priority / 10.0 # Default assumption for unhandled types
+            self._log_message(f"DynamicPrio for Goal '{goal.id}' (Type: {goal.type}): Defaulting intensity to normalized goal.priority {intensity:.2f}.")
+
 
         # These would ideally take more specific context snapshots (e.g., from WM, SM, Planner)
         urgency_factor = ConcreteMotivationalSystemModule._get_urgency_factor(goal, None)
@@ -674,28 +786,10 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
         )
         return normalized_priority
 
-    # The _generate_competence_satisfaction_reward method and the duplicated
-    # dynamic priority helper functions and _calculate_dynamic_priority method
-    # were here. Removing them. The correct versions are earlier in the file.
+    # The _generate_competence_satisfaction_reward method was here.
+    # It has been moved earlier in the file to avoid duplication.
 
     def suggest_highest_priority_goal(self) -> Optional[Goal]:
-
-        intensity = 0.0
-        if goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]:
-            # Intensity for intrinsic goals is pre-calculated and stored in source_trigger
-            intensity = goal.source_trigger.get("calculated_intensity", 0.0) if goal.source_trigger else 0.0
-        elif goal.type == "EXTRINSIC_TASK":
-            # For EXTRINSIC_TASK, goal.priority is the externally set importance (e.g., 0-10).
-            # We map this to a 0-1 intensity scale for the formula.
-            intensity = goal.priority / 10.0
-        # Add other goal types if necessary, or assign a default intensity based on goal.priority
-
-        # These would ideally take more specific context snapshots (e.g., from WM, SM, Planner)
-        urgency_factor = ConcreteMotivationalSystemModule._get_urgency_factor(goal, None)
-        value_alignment_score = ConcreteMotivationalSystemModule._get_value_alignment_score(goal, None)
-        dependency_factor = ConcreteMotivationalSystemModule._get_dependency_factor(goal, all_active_goals_for_context)
-        estimated_cost = ConcreteMotivationalSystemModule._get_estimated_cost(goal, None)
-
         """
         Suggests the highest priority goal based on dynamic calculation.
         Returns the Goal object.
@@ -723,63 +817,29 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
         self._log_message(f"Suggested highest priority goal: {highest_goal.id} with dynamic priority {highest_priority_score:.3f} (BasePrioField: {highest_goal.priority:.2f}, Type: {highest_goal.type})")
         return highest_goal
 
-    def get_module_status(self) -> Dict[str, Any]:
-        """Returns the current status of the Motivational System Module."""
-        status_counts: Dict[str, int] = {}
-        for goal in self.goals:
-            status_counts[goal.status] = status_counts.get(goal.status, 0) + 1
-
-        return {
-            "module_id": self._module_id,
-            "module_type": "ConcreteMotivationalSystemModule (Message Bus Integrated)",
-            "total_goals": len(self.goals),
-            "goals_by_status": status_counts,
-            "message_bus_configured": self._message_bus is not None,
-            "next_goal_id_counter": self.next_goal_id
-        }
-
-
     def _handle_action_event(self, message: GenericMessage) -> None:
-        is_intrinsic = goal.type in ["INTRINSIC_CURIOSITY", "INTRINSIC_COMPETENCE"]
-        if is_intrinsic:
-            has_high_priority_extrinsic = False
-            # Check against base priority of other active goals for simplicity in this heuristic
-            for g_other in all_active_goals_for_context:
-                if g_other.id != goal.id and g_other.type == "EXTRINSIC_TASK" and \
-                   g_other.status == "ACTIVE" and g_other.priority > 7.0: # Example threshold for "high base priority extrinsic"
-                    has_high_priority_extrinsic = True
-                    break
-            if not has_high_priority_extrinsic:
-                boost_amount = 0.05 # Small boost (on the 0-1 scale)
-                self._log_message(f"Goal '{goal.id}' ({goal.type}): Applying +{boost_amount:.2f} intrinsic boost (RawP before boost: {dynamic_p_raw:.3f}). No high-prio extrinsic tasks.")
-                dynamic_p_raw += boost_amount
-
-        normalized_priority = max(0.0, min(1.0, dynamic_p_raw)) # Ensure it's capped at 0-1
-
-        self._log_message(
-            f"Goal '{goal.id}' ({goal.type}, InitialPrioField:{goal.priority:.2f}): "
-            f"TypeBase={base_priority_for_type:.2f}(w:{w_base:.2f}), "
-            f"Intensity={intensity:.2f}(w:{w_int:.2f}), "
-            f"Urg={urgency_factor:.2f}(w:{w_urg:.2f}), "
-            f"ValAlign={value_alignment_score:.2f}(w:{w_val:.2f}), "
         """
         Handles ActionEvent messages from the message bus.
         Updates goal status based on action outcomes.
+        Also, assesses if suboptimal performance should trigger competence goals.
         """
         if not isinstance(message.payload, ActionEventPayload):
-            print(f"ERROR ({self._module_id}): Received non-ActionEventPayload: {type(message.payload)}")
+            self._log_message(f"ERROR ({self._module_id}): Received non-ActionEventPayload: {type(message.payload)}") # Corrected print to log
             return
 
         payload: ActionEventPayload = message.payload
-        print(f"INFO ({self._module_id}): Handling ActionEvent for command '{payload.action_command_id}', Action: '{payload.action_type}', Status: {payload.status}")
+        self._log_message(f"Handling ActionEvent for command '{payload.action_command_id}', Action: '{payload.action_type}', Status: {payload.status}") # Corrected print to log
 
         goal_id_from_outcome: Optional[str] = None
         new_status_from_outcome: Optional[str] = None
+        related_skill_id = payload.action_type # Default to action_type as skill_id
 
         if payload.outcome:
             goal_id_from_outcome = payload.outcome.get("goal_id")
             new_status_from_outcome = payload.outcome.get("new_status")
-            related_skill_id = payload.outcome.get("skill_used", payload.action_type) # Infer skill from action_type if not specified
+            # If outcome explicitly mentions skill_used, prefer that.
+            related_skill_id = payload.outcome.get("skill_used", payload.action_type)
+
 
             if goal_id_from_outcome and not new_status_from_outcome:
                 if payload.status == "SUCCESS": new_status_from_outcome = "ACHIEVED"
@@ -789,39 +849,63 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
             goal = self.get_goal(goal_id_from_outcome)
             if goal:
                 self._log_message(f"ActionEvent outcome suggests updating goal '{goal_id_from_outcome}' to status '{new_status_from_outcome}'.")
-                self.update_goal_status(goal_id_from_outcome, new_status_from_outcome)
+                self.update_goal_status(goal_id_from_outcome, new_status_from_outcome) # This will publish GoalUpdate
 
                 if new_status_from_outcome == "ACHIEVED":
                     if goal.type == "INTRINSIC_CURIOSITY":
-                        info_gain = payload.outcome.get("information_gain_details", {"type": "exploration_completed", "item_id": related_skill_id})
+                        # Use skill_id if available in outcome, else default.
+                        info_gain_item_id = payload.outcome.get("explored_item_id", related_skill_id)
+                        info_gain = payload.outcome.get("information_gain_details", {"type": "exploration_completed", "item_id": info_gain_item_id})
                         self._generate_curiosity_satisfaction_reward(goal, info_gain)
                     elif goal.type == "INTRINSIC_COMPETENCE":
-                        comp_gain = payload.outcome.get("competence_gain_details", {"type": "skill_proficiency_increased", "skill_id": goal.target_skill_id, "new_proficiency": goal.competence_details.get("target_proficiency",0.8) if goal.competence_details else 0.8})
+                        # Competence gain details might specify the skill and new proficiency.
+                        comp_gain_skill_id = payload.outcome.get("competence_skill_id", goal.target_skill_id)
+                        new_prof = payload.outcome.get("new_proficiency_level", goal.competence_details.get("target_proficiency",0.8) if goal.competence_details else 0.8)
+                        comp_gain = payload.outcome.get("competence_gain_details", {"type": "skill_proficiency_increased", "skill_id": comp_gain_skill_id, "new_proficiency": new_prof})
                         self._generate_competence_satisfaction_reward(goal, comp_gain)
             else:
                 self._log_message(f"WARNING: Goal '{goal_id_from_outcome}' from ActionEvent outcome not found.")
+        elif not goal_id_from_outcome:
+             self._log_message(f"No specific goal ID in ActionEvent outcome for command '{payload.action_command_id}'. Outcome: {payload.outcome}")
+
 
         # Competence goal trigger from task performance feedback
-        if payload.status == "FAILURE" or (payload.status == "SUCCESS" and payload.outcome and (payload.outcome.get("efficiency") == "low" or payload.outcome.get("quality") == "poor")):
-            self._log_message(f"ActionEvent indicates suboptimal performance for action '{payload.action_type}'. Assessing for competence goal.")
-            # Check if an active competence goal for this skill already exists
+        is_suboptimal_performance = payload.status == "FAILURE" or \
+                                  (payload.status == "SUCCESS" and payload.outcome and \
+                                   (payload.outcome.get("efficiency") == "low" or payload.outcome.get("quality") == "poor"))
+
+        if is_suboptimal_performance:
+            self._log_message(f"ActionEvent indicates suboptimal performance for action/skill '{related_skill_id}'. Assessing for competence goal.")
+
             existing_competence_goal_for_skill = any(
                 g.type == "INTRINSIC_COMPETENCE" and g.target_skill_id == related_skill_id and g.status in ["PENDING", "ACTIVE"]
                 for g in self.goals
             )
-            if not existing_competence_goal_for_skill and related_skill_id:
-                # Simulate skill data for intensity calculation - actual proficiency might come from SelfModel or LTM
+
+            if not existing_competence_goal_for_skill:
+                # Simulate skill data for intensity calculation. In a full system, this might come from SelfModel or LTM.
+                # Importance could be related to the priority of the goal associated with the failed action, if available.
+                task_importance = 0.6 # Default importance
+                if goal_id_from_outcome: # If the failed action was tied to a known goal
+                    failed_goal = self.get_goal(goal_id_from_outcome)
+                    if failed_goal:
+                        task_importance = failed_goal.priority / 10.0 # Normalize if priority is 0-10
+                elif payload.priority: # Use action command priority if available
+                    task_importance = payload.priority # Assuming it's already 0-1
+
                 skill_data_for_trigger = {
-                    "proficiency": 0.3, # Assume low proficiency due to failure/suboptimal
-                    "importance": payload.outcome.get("task_importance", 0.6), # Conceptual
-                    "target_proficiency": 0.8 # Aim for higher proficiency
+                    "proficiency": 0.3, # Assume low proficiency due to failure/suboptimal performance
+                    "importance": task_importance,
+                    "target_proficiency": 0.8 # Default target for improvement
                 }
                 intensity = self._calculate_competence_drive_intensity(related_skill_id, skill_data_for_trigger, self.get_active_goals())
+
                 if intensity > 0.35: # Threshold for this trigger type
                     desc = f"Improve skill '{related_skill_id}' due to task performance (Action: {payload.action_type}, Status: {payload.status}, Intensity: {intensity:.2f})"
                     source_trigger = {
                         "trigger_type": "TASK_PERFORMANCE_FEEDBACK",
                         "action_type": payload.action_type,
+                        "action_command_id": payload.action_command_id,
                         "status": payload.status,
                         "related_skill_id": related_skill_id,
                         "calculated_intensity": intensity
@@ -831,38 +915,17 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
                         "target_proficiency": skill_data_for_trigger["target_proficiency"],
                         "triggering_action_event_id": message.message_id
                     }
-                    self.add_goal(desc, "INTRINSIC_COMPETENCE", intensity * 10.0, source_trigger, target_skill_id=related_skill_id, competence_details=competence_details_for_goal)
-        elif not goal_id_from_outcome: # If no specific goal was updated by this action event
-             self._log_message(f"No specific goal ID in ActionEvent outcome for command '{payload.action_command_id}'. Outcome: {payload.outcome}")
+                    self.add_goal(
+                        description=desc,
+                        goal_type="INTRINSIC_COMPETENCE",
+                        initial_priority=intensity * 10.0, # Scale intensity
+                        source_trigger=source_trigger,
+                        target_skill_id=related_skill_id,
+                        competence_details=competence_details_for_goal
+                    )
+            else:
+                self._log_message(f"Skipping competence goal for skill '{related_skill_id}' as an active one already exists.")
 
-
-    def update_motivation_state(self, new_state_info: Dict[str, Any]) -> bool:
-        """
-        Suggests the highest priority goal based on dynamic calculation.
-        Returns the Goal object.
-        """
-        active_goals_with_dyn_prio = self.get_active_goals(return_with_priority_scores=True)
-
-        if not active_goals_with_dyn_prio: # This list now contains (dynamic_priority_score, Goal)
-            self._log_message("No active goals to suggest.")
-            return None
-
-        highest_priority_score, highest_goal = active_goals_with_dyn_prio[0]
-
-        if len(active_goals_with_dyn_prio) > 1:
-            second_highest_priority_score, _ = active_goals_with_dyn_prio[1]
-            if (highest_priority_score - second_highest_priority_score) < 0.05: # Using 0-1 scale for comparison
-                top_goals_log = [
-                    f"{g.id} (DynP:{p_score:.3f}, BaseP:{g.priority:.2f})" for p_score, g in active_goals_with_dyn_prio[:3]
-                ]
-                self._log_message(
-                    f"Potential goal conflict or similar high dynamic priority for goals: {', '.join(top_goals_log)}. "
-                    f"Highest suggested: {highest_goal.id} (DynP:{highest_priority_score:.3f}). "
-                    "Further resolution might be needed."
-                )
-
-        self._log_message(f"Suggested highest priority goal: {highest_goal.id} with dynamic priority {highest_priority_score:.3f} (BasePrioField: {highest_goal.priority:.2f}, Type: {highest_goal.type})")
-        return highest_goal
 
     def get_module_status(self) -> Dict[str, Any]:
         """Returns the current status of the Motivational System Module."""
@@ -870,90 +933,23 @@ class ConcreteMotivationalSystemModule(MotivationalSystemModule): # Corrected ba
         for goal in self.goals:
             status_counts[goal.status] = status_counts.get(goal.status, 0) + 1
 
+        # Active goals sorted by current dynamic priority for status reporting
+        active_goals_sorted = self.get_active_goals(return_with_priority_scores=True)
+        top_active_goals_summary = [
+            {"id": g.id, "type": g.type, "dynamic_priority": round(dp, 3), "base_priority_field": g.priority, "status": g.status}
+            for dp, g in active_goals_sorted[:3] # Report top 3
+        ]
+
         return {
             "module_id": self._module_id,
             "module_type": "ConcreteMotivationalSystemModule (Message Bus Integrated)",
             "total_goals": len(self.goals),
             "goals_by_status": status_counts,
+            "top_active_goals_summary": top_active_goals_summary,
             "message_bus_configured": self._message_bus is not None,
-            "next_goal_id_counter": self.next_goal_id
+            "next_goal_id_counter": self.next_goal_id,
+            "log_entries": len(self._log)
         }
-
-
-    def _handle_action_event(self, message: GenericMessage) -> None:
-        """
-        Handles ActionEvent messages from the message bus.
-        Updates goal status based on action outcomes.
-        """
-        if not isinstance(message.payload, ActionEventPayload):
-            print(f"ERROR ({self._module_id}): Received non-ActionEventPayload: {type(message.payload)}")
-            return
-
-        payload: ActionEventPayload = message.payload
-        print(f"INFO ({self._module_id}): Handling ActionEvent for command '{payload.action_command_id}', Action: '{payload.action_type}', Status: {payload.status}")
-
-        goal_id_from_outcome: Optional[str] = None
-        new_status_from_outcome: Optional[str] = None
-
-        if payload.outcome:
-            goal_id_from_outcome = payload.outcome.get("goal_id")
-            new_status_from_outcome = payload.outcome.get("new_status")
-            related_skill_id = payload.outcome.get("skill_used", payload.action_type) # Infer skill from action_type if not specified
-
-            if goal_id_from_outcome and not new_status_from_outcome:
-                if payload.status == "SUCCESS": new_status_from_outcome = "ACHIEVED"
-                elif payload.status == "FAILURE": new_status_from_outcome = "FAILED"
-
-        if goal_id_from_outcome and new_status_from_outcome:
-            goal = self.get_goal(goal_id_from_outcome)
-            if goal:
-                self._log_message(f"ActionEvent outcome suggests updating goal '{goal_id_from_outcome}' to status '{new_status_from_outcome}'.")
-                self.update_goal_status(goal_id_from_outcome, new_status_from_outcome)
-
-                if new_status_from_outcome == "ACHIEVED":
-                    if goal.type == "INTRINSIC_CURIOSITY":
-                        info_gain = payload.outcome.get("information_gain_details", {"type": "exploration_completed", "item_id": related_skill_id})
-                        self._generate_curiosity_satisfaction_reward(goal, info_gain)
-                    elif goal.type == "INTRINSIC_COMPETENCE":
-                        comp_gain = payload.outcome.get("competence_gain_details", {"type": "skill_proficiency_increased", "skill_id": goal.target_skill_id, "new_proficiency": goal.competence_details.get("target_proficiency",0.8) if goal.competence_details else 0.8})
-                        self._generate_competence_satisfaction_reward(goal, comp_gain)
-            else:
-                self._log_message(f"WARNING: Goal '{goal_id_from_outcome}' from ActionEvent outcome not found.")
-
-        # Competence goal trigger from task performance feedback
-        if payload.status == "FAILURE" or (payload.status == "SUCCESS" and payload.outcome and (payload.outcome.get("efficiency") == "low" or payload.outcome.get("quality") == "poor")):
-            self._log_message(f"ActionEvent indicates suboptimal performance for action '{payload.action_type}'. Assessing for competence goal.")
-            # Check if an active competence goal for this skill already exists
-            existing_competence_goal_for_skill = any(
-                g.type == "INTRINSIC_COMPETENCE" and g.target_skill_id == related_skill_id and g.status in ["PENDING", "ACTIVE"]
-                for g in self.goals
-            )
-            if not existing_competence_goal_for_skill and related_skill_id:
-                # Simulate skill data for intensity calculation - actual proficiency might come from SelfModel or LTM
-                skill_data_for_trigger = {
-                    "proficiency": 0.3, # Assume low proficiency due to failure/suboptimal
-                    "importance": payload.outcome.get("task_importance", 0.6), # Conceptual
-                    "target_proficiency": 0.8 # Aim for higher proficiency
-                }
-                intensity = self._calculate_competence_drive_intensity(related_skill_id, skill_data_for_trigger, self.get_active_goals())
-                if intensity > 0.35: # Threshold for this trigger type
-                    desc = f"Improve skill '{related_skill_id}' due to task performance (Action: {payload.action_type}, Status: {payload.status}, Intensity: {intensity:.2f})"
-                    source_trigger = {
-                        "trigger_type": "TASK_PERFORMANCE_FEEDBACK",
-                        "action_type": payload.action_type,
-                        "status": payload.status,
-                        "related_skill_id": related_skill_id,
-                        "calculated_intensity": intensity
-                    }
-                    competence_details_for_goal = {
-                        "current_proficiency_assumed": skill_data_for_trigger["proficiency"],
-                        "target_proficiency": skill_data_for_trigger["target_proficiency"],
-                        "triggering_action_event_id": message.message_id
-                    }
-                    self.add_goal(desc, "INTRINSIC_COMPETENCE", intensity * 10.0, source_trigger, target_skill_id=related_skill_id, competence_details=competence_details_for_goal)
-        elif not goal_id_from_outcome: # If no specific goal was updated by this action event
-             self._log_message(f"No specific goal ID in ActionEvent outcome for command '{payload.action_command_id}'. Outcome: {payload.outcome}")
-
 
     def update_motivation_state(self, new_state_info: Dict[str, Any]) -> bool:
         """
