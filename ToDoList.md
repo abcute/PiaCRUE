@@ -119,7 +119,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [x] Task: Described high-level algorithmic concepts for these motivational models (added to `PiaAGI_Research_Tools/PiaAVT/Conceptual_Motivation_Models.md`).
 - [x] Task: Prototyped a basic logger component for PiaAVT (created `PiaAGI_Research_Tools/PiaAVT/prototype_logger.py`).
 - [x] Task: Conceptually implemented Goal Dynamics analysis for PiaAVT (created `PiaAGI_Research_Tools/PiaAVT/Analysis_Implementations/Goal_Dynamics_Analysis.py`).
-- [x] Implement the conceptualized basic analyses (Goal Lifecycle, Emotional Trajectory, Task Performance) in PiaAVT. (Note: This is a more general task, Goal Dynamics is one of these)
+- [x] Implement the conceptualized basic analyses (Goal Lifecycle, Emotional Trajectory, Task Performance) in PiaAVT. (Core Python scripts for Goal Dynamics, Emotional Trajectory, and Task Performance analysis implemented; further integration/advanced features are future work.)
 - [x] Design and implement a prototype Python logger in PiaCML/PiaSE that adheres to Logging_Specification.md. (Note: prototype_logger.py from PiaAVT was used for conceptual log generation for PiaAVT's needs. Deeper integration of logging within PiaCML/PiaSE is a separate, larger task.)
 - [x] Task: Integrate `prototype_logger.py` with the conceptual PiaSE scenarios to generate sample log files.
 - [x] Task: Refine `Goal_Dynamics_Analysis.py` to parse actual log files generated from PiaSE/logger integration.

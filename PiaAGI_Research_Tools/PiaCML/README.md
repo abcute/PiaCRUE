@@ -30,6 +30,15 @@ CML provides abstract base classes (ABCs) and concrete MVP (Minimal Viable Produ
 *   **Motivational System Module:** (`MotivationalSystemModule`, `ConcreteMotivationalSystemModule`)
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.3](../../PiaAGI.md#33-motivational-systems-and-intrinsic-goals), [4.1.6](../../PiaAGI.md#41-core-modules-and-their-interactions)
 *   **Emotion Module:** (`EmotionModule`, `ConcreteEmotionModule`)
+    *   *Role:* Manages the agent's emotional state, primarily using a VAD (Valence, Arousal, Dominance) model. It appraises incoming events from various sources (goals, percepts, actions) to update this VAD state and derive conceptual discrete emotions.
+    *   *Conceptual Operational Flow (in `ConcreteEmotionModule`):*
+        1.  Receives `GoalUpdatePayload`, `PerceptDataPayload`, and `ActionEventPayload` messages via the Message Bus.
+        2.  Message handlers (`_handle_goal_update_for_appraisal`, etc.) extract relevant information and transform it into conceptual appraisal dimensions (e.g., event intensity, novelty, expectedness, goal_congruence, agency, norm_alignment, controllability).
+        3.  The core `appraise_event` method takes these dimensions and calculates changes to the VAD state. This calculation considers the derived appraisal variables and can be (conceptually) influenced by the agent's personality profile (e.g., neuroticism affecting valence response, extraversion, arousal reactivity).
+        4.  A helper method, `_map_vad_to_discrete_emotion`, provides a simplified mapping from the current VAD state to a discrete emotion label (e.g., "Joyful," "Sad," "Calm").
+        5.  The VAD state undergoes a decay process, gradually returning towards neutral over time.
+        6.  An `EmotionalStateChangePayload`, containing the updated VAD profile, the derived discrete emotion label, and an intensity value (typically current arousal), is published on the Message Bus.
+    *   *Emphasis:* The current appraisal logic in `ConcreteEmotionModule` is a conceptual framework. While it processes various inputs and logs its internal calculations (derived appraisal variables, VAD changes), the specific weights and the precise impact of personality traits (beyond arousal reactivity) are placeholders designed for future empirical grounding and more sophisticated modeling.
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.4](../../PiaAGI.md#34-computational-models-of-emotion), [4.1.7](../../PiaAGI.md#41-core-modules-and-their-interactions)
 *   **Planning and Decision Making Module:** (`PlanningAndDecisionMakingModule`, `ConcretePlanningAndDecisionMakingModule`)
     *   *Role:* Formulates plans to achieve active goals from the Motivational System, considering the current world state, agent capabilities (from Self-Model), available knowledge (LTM), and contextual information (WM). It selects appropriate actions or sub-goals and dispatches them.
