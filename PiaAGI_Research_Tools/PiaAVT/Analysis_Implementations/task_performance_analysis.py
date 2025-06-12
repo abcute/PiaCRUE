@@ -1,37 +1,29 @@
 # task_performance_analysis.py
 
 import json
-import os # Keep os for path operations if needed
-import statistics
-import argparse # Added for command-line arguments
+import argparse
 from collections import defaultdict
+from typing import List, Dict, Any, Optional
+import statistics # For mean, median if needed later
 
 def load_and_parse_log_data_jsonl(log_file_path: str) -> list:
     """
     Reads a JSONL file, parses each line into a dictionary, and returns a list of these dictionaries.
     Handles potential FileNotFoundError and json.JSONDecodeError.
     Skips empty lines. Sorts entries by timestamp.
-
-    Args:
-        log_file_path (str): The path to the JSONL log file.
-
-    Returns:
-        list: A list of log entry dictionaries, sorted by 'timestamp'.
-              Returns an empty list if the file is not found, parsing fails, or the file is empty.
     """
     parsed_logs = []
     try:
         with open(log_file_path, 'r') as f:
             for line_number, line in enumerate(f, 1):
                 stripped_line = line.strip()
-                if not stripped_line:  # Skip empty lines
+                if not stripped_line:
                     continue
                 try:
                     parsed_logs.append(json.loads(stripped_line))
                 except json.JSONDecodeError as e:
                     print(f"Error decoding JSON from line {line_number} in {log_file_path}: {stripped_line} - {e}")
-        # Sort by timestamp to ensure chronological processing
-        parsed_logs.sort(key=lambda x: x.get("timestamp", float('inf'))) # float('inf') for entries missing timestamp
+        parsed_logs.sort(key=lambda x: x.get("timestamp", float('inf')))
     except FileNotFoundError:
         print(f"Error: Log file not found at {log_file_path}")
         return []
@@ -40,262 +32,216 @@ def load_and_parse_log_data_jsonl(log_file_path: str) -> list:
         return []
     return parsed_logs
 
-def analyze_task_performance(parsed_logs: list, target_agent_id: str = None, target_simulation_run_id: str = None) -> dict:
+def analyze_task_performance(parsed_logs: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     """
-    Analyzes task performance from parsed log data.
-    Filters for TASK_STATUS_UPDATE and AGENT_ACTION_EXECUTED_IN_ENV events.
-    Optionally filters by agent_id and simulation_run_id.
+    Analyzes parsed log data to reconstruct task performance metrics.
+    Tasks are primarily identified via GOAL_CREATED and GOAL_STATUS_CHANGED events.
+
+    Args:
+        parsed_logs: A list of log entry dictionaries, sorted by timestamp.
+
+    Returns:
+        A dictionary where keys are task_ids (goal_ids) and values are dictionaries
+        containing performance information for each task.
     """
-    # Filter logs by simulation_run_id first if provided
-    if target_simulation_run_id:
-        logs_to_process = [log for log in parsed_logs if log.get("simulation_run_id") == target_simulation_run_id]
-        # When a specific sim_id is targeted, all tasks and actions will inherently be from this sim
-    else:
-        logs_to_process = list(parsed_logs) # Work on a copy
+    tasks_data = defaultdict(lambda: {
+        "resources_consumed_conceptual": 0.0, # Initialize conceptual resource consumption
+        "event_history": [] # To store relevant events for a task
+    })
 
-    # Global list of all action events, will be filtered per task's simulation_run_id later if no global sim target
-    all_action_events = sorted(
-        [log for log in logs_to_process if log.get("event_type") == "AGENT_ACTION_EXECUTED_IN_ENV" and "agent_id_acting" in log.get("event_data", {})],
-        key=lambda x: x.get("timestamp")
-    )
+    for entry in parsed_logs:
+        event_type = entry.get("event_type")
+        event_data = entry.get("event_data", {})
+        timestamp = entry.get("timestamp")
+        task_id = event_data.get("goal_id") # Assuming goal_id serves as task_id
 
-    # Task events should also be from the initially filtered logs_to_process
-    task_events = sorted(
-        [log for log in logs_to_process if log.get("event_type") == "TASK_STATUS_UPDATE" and "task_id" in log.get("event_data", {})],
-        key=lambda x: x.get("timestamp")
-    )
-    
-    tasks_data = {} # Using dict to store task progression by task_id
-
-    for event in task_events:
-        event_data = event.get("event_data", {})
-        task_id = event_data.get("task_id")
-        status = event_data.get("status")
-        timestamp = event.get("timestamp")
-        # Crucially, get the simulation_run_id from the task event itself.
-        sim_id = event.get("simulation_run_id") 
-
-        if not task_id or not status or timestamp is None or sim_id is None: # Ensure sim_id is present for the task event
-            print(f"Skipping task event due to missing critical data: task_id={task_id}, status={status}, ts={timestamp}, sim_id={sim_id}")
+        if not task_id or timestamp is None:
             continue
 
-        if task_id not in tasks_data:
-            tasks_data[task_id] = {
-                "task_id": task_id,
-                "simulation_run_id": sim_id, # Store simulation_id for each task
-                "start_time": None,
-                "end_time": None,
-                "duration_seconds": None,
-                "status": "UNKNOWN", # Initial status
-                "action_count": 0,
-                "involved_agent_ids": set(), # Use a set to store unique agent IDs
-                "log_timestamps": {"start": None, "end": None} # Store actual log timestamps for action filtering
-            }
+        task = tasks_data[task_id]
+        task["event_history"].append(entry) # Keep a log of all events for this task_id
 
-        current_task = tasks_data[task_id]
+        if event_type == "GOAL_CREATED":
+            # Considering only EXTRINSIC_TASK or similar as primary tasks for this analysis.
+            # This can be expanded based on how tasks are defined in your system.
+            if event_data.get("type", "").upper().endswith("_TASK") or "TASK" in event_data.get("type", ""):
+                task["task_id"] = task_id
+                task["description"] = event_data.get("description", "N/A")
+                task["task_type"] = event_data.get("type", "UNKNOWN_TASK_TYPE")
+                task["creation_time"] = timestamp
+                task["initial_priority"] = event_data.get("initial_priority")
+                # Ensure 'start_time' is not set here, only upon 'ACTIVE' state
+                if "start_time" not in task: # Only set if not already set by an earlier ACTIVE state
+                    if event_data.get("initial_status") == "ACTIVE": # If goal is created and immediately active
+                         task["start_time"] = timestamp
 
-        if status == "STARTED" and current_task["start_time"] is None:
-            current_task["start_time"] = timestamp
-            current_task["log_timestamps"]["start"] = timestamp
-            current_task["status"] = "STARTED"
-        elif status in ["COMPLETED_SUCCESS", "COMPLETED_FAILURE", "ABORTED", "TIMED_OUT"]:
-            if current_task["start_time"] is not None and current_task["end_time"] is None : # Only update if started and not already ended
-                current_task["end_time"] = timestamp
-                current_task["log_timestamps"]["end"] = timestamp
-                current_task["status"] = status
-                current_task["duration_seconds"] = round(timestamp - current_task["start_time"], 3)
-        # Potentially handle other statuses or updates to an ongoing task if necessary
 
-    # Correlate actions with tasks
-    for task_id, task_info in tasks_data.items():
-        if task_info["start_time"] is None: # Skip tasks that never officially started
-            continue
-        
-        task_start_time = task_info["log_timestamps"]["start"]
-        # If task is ongoing, count actions up to the latest log entry, otherwise up to its end time
-        task_end_time = task_info["log_timestamps"]["end"] if task_info["log_timestamps"]["end"] is not None else float('inf')
-        task_sim_id = task_info["simulation_run_id"] # Get the sim_id associated with THIS task
-
-        # Filter actions for the current task's simulation_run_id
-        # This is crucial when target_simulation_run_id is None (analyzing across all sims)
-        # If target_simulation_run_id IS specified, all_action_events is already pre-filtered.
-        relevant_action_events_for_task = all_action_events
-        if not target_simulation_run_id: 
-            relevant_action_events_for_task = [
-                act for act in all_action_events if act.get("simulation_run_id") == task_sim_id
-            ]
+        elif event_type == "GOAL_STATUS_CHANGED":
+            new_state = event_data.get("new_state")
+            if new_state == "ACTIVE" and "start_time" not in task:
+                task["start_time"] = timestamp
             
-        for action in relevant_action_events_for_task:
-            action_data = action.get("event_data", {})
-            action_ts = action.get("timestamp")
-            acting_agent = action_data.get("agent_id_acting")
-            # action_sim_id = action.get("simulation_run_id") # Already filtered above
+            if new_state in ["ACHIEVED", "FAILED", "ABANDONED", "INVALIDATED"]: # Terminal states
+                task["end_time"] = timestamp
+                task["final_status"] = new_state
+                if new_state == "FAILED" and event_data.get("reason"):
+                    task["failure_reason"] = event_data.get("reason")
 
-            if action_ts is None or acting_agent is None:
-                continue
-
-            # Action must be within the task's timeframe
-            if task_start_time <= action_ts <= task_end_time:
-                # If a target_agent_id is specified, only count their actions towards task_info["action_count"]
-                if target_agent_id:
-                    if acting_agent == target_agent_id:
-                        task_info["action_count"] += 1
-                    # Regardless of who the target_agent is, if any agent acts during task time, add them to involved_agent_ids
-                    task_info["involved_agent_ids"].add(acting_agent)
-                else: # No target agent, count all actions and list all involved agents
-                    task_info["action_count"] += 1
-                    task_info["involved_agent_ids"].add(acting_agent)
-        
-        # If target_agent_id was specified but they performed no actions for this task,
-        # but the task itself is relevant (e.g. we are filtering for this agent's tasks),
-        # we might still want to include the task but with 0 actions for that agent.
-        # The current logic correctly sets action_count to 0 if target_agent didn't act.
-        # However, if we only want tasks where target_agent was involved, we might filter tasks_list later.
+                # Calculate completion_time if start and end times are available
+                if task.get("start_time") and task.get("end_time"):
+                    task["completion_time_seconds"] = round(task["end_time"] - task["start_time"], 2)
+                elif task.get("creation_time") and task.get("end_time"): # Fallback if no explicit start_time
+                    task["completion_time_seconds_from_creation"] = round(task["end_time"] - task["creation_time"], 2)
 
 
-    # Prepare final list of tasks and convert sets to lists
-    tasks_list = []
-    for task_id, task_info in tasks_data.items():
-        if task_info["start_time"] is None: # Skip tasks that effectively didn't start
-            continue
-        
-        # Filter tasks by target_agent_id's involvement if specified
-        if target_agent_id and target_agent_id not in task_info["involved_agent_ids"] and task_info["action_count"] == 0:
-            # If we are targeting an agent, and they were not involved in this task at all (no actions)
-            # we might choose to exclude this task. For now, we include it but action_count for them is 0.
-            # A stricter interpretation could be to filter here: `if target_agent_id and target_agent_id not in task_info["involved_agent_ids"]: continue`
-            pass # Keeping task for now, action_count for target_agent will be 0.
-
-        task_info["involved_agent_ids"] = sorted(list(task_info["involved_agent_ids"]))
-        del task_info["log_timestamps"] # Remove temporary field
-        tasks_list.append(task_info)
+        elif event_type == "AGENT_ACTION_EXECUTED_IN_ENV": # Conceptual resource tracking
+            action_details = event_data.get("action_details", {})
+            # Check if this action is associated with the current task_id
+            # This requires action logs to include the goal_id they are serving.
+            if action_details.get("parameters", {}).get("goal_id") == task_id:
+                cost = action_details.get("cost", 0.0) # Example field
+                resources_consumed = action_details.get("resources_consumed", 0.0) # Example field
+                task["resources_consumed_conceptual"] += cost + resources_consumed
     
-    tasks_list = sorted(tasks_list, key=lambda x: x["start_time"])
+    # Post-processing to determine outcome string
+    for task_id, data in tasks_data.items():
+        if "final_status" in data:
+            if data["final_status"] == "ACHIEVED":
+                data["outcome"] = "SUCCESS"
+            else:
+                data["outcome"] = "FAILURE" # Includes FAILED, ABANDONED, INVALIDATED etc.
+        elif data.get("start_time") and "end_time" not in data : # Started but not finished
+             data["outcome"] = "IN_PROGRESS_OR_UNKNOWN" # Task might still be active or logging ended
+        else: # Not started or no terminal status
+            data["outcome"] = "UNKNOWN_OR_NOT_STARTED"
+
+        # Ensure essential fields exist for all tasks that had at least one event
+        data.setdefault("task_id", task_id)
+        data.setdefault("description", "N/A - No GOAL_CREATED event or description missing")
+        data.setdefault("task_type", "UNKNOWN")
 
 
-    # Calculate summary statistics
-    total_tasks_analyzed = len([t for t in tasks_list if t["status"] not in ["UNKNOWN", "STARTED"]]) # Tasks with a terminal status
-    completed_success = [t for t in tasks_list if t["status"] == "COMPLETED_SUCCESS"]
-    completed_failure = [t for t in tasks_list if t["status"] in ["COMPLETED_FAILURE", "ABORTED", "TIMED_OUT"]] # Consider these as failures for rate
-
-    success_rate = len(completed_success) / total_tasks_analyzed if total_tasks_analyzed > 0 else 0.0
-    failure_rate = len(completed_failure) / total_tasks_analyzed if total_tasks_analyzed > 0 else 0.0
-    
-    avg_duration_success_seconds = None
-    if completed_success:
-        valid_durations = [t["duration_seconds"] for t in completed_success if t["duration_seconds"] is not None]
-        if valid_durations:
-            avg_duration_success_seconds = round(statistics.mean(valid_durations),3)
-
-    avg_action_count_success = None
-    if completed_success:
-        action_counts = [t["action_count"] for t in completed_success]
-        if action_counts:
-             avg_action_count_success = round(statistics.mean(action_counts),1)
+    return dict(tasks_data)
 
 
-    # Determine overall agent_id and sim_id for the report header
-    report_agent_id_header = target_agent_id if target_agent_id else "ALL_AGENTS"
-    report_sim_id_header = target_simulation_run_id # This will be None if not specified
-
-    if not target_simulation_run_id: # If we analyzed all simulations
-        if tasks_list: # Try to infer from tasks analyzed
-            unique_sim_ids_in_tasks = set(t["simulation_run_id"] for t in tasks_list)
-            if len(unique_sim_ids_in_tasks) == 1:
-                report_sim_id_header = unique_sim_ids_in_tasks.pop()
-            else: # Multiple simulations were involved in the tasks
-                report_sim_id_header = "ALL_SIMULATIONS (Multiple)"
-        elif logs_to_process: # No tasks, but logs were there, try to infer from logs
-            unique_sim_ids_in_logs = set(log.get("simulation_run_id") for log in logs_to_process if log.get("simulation_run_id"))
-            if len(unique_sim_ids_in_logs) == 1:
-                 report_sim_id_header = unique_sim_ids_in_logs.pop()
-            elif not unique_sim_ids_in_logs:
-                 report_sim_id_header = "N/A (No sim_id in logs)"
-            else: # Multiple simulations in logs, but no tasks found from them
-                report_sim_id_header = "ALL_SIMULATIONS (Multiple in logs, no tasks)"
-        else: # No logs processed at all
-            report_sim_id_header = "ALL_SIMULATIONS (No logs)"
-    # If target_simulation_run_id was set, report_sim_id_header is already correctly that specific sim_id
-
-
-    return {
-        "agent_id": report_agent_id_header, # This is for the general report scope
-        "simulation_run_id": report_sim_id_header, # This is for the general report scope
-        "tasks": tasks_list, # Each task in this list has its own specific simulation_run_id
-        "summary_stats": {
-            "total_tasks_analyzed": total_tasks_analyzed, # Tasks that reached a terminal state
-            "total_tasks_recorded": len(tasks_data), # All tasks that appeared in logs
-            "tasks_started_not_completed": len([t for t in tasks_list if t["status"] == "STARTED"]),
-            "success_rate": round(success_rate, 3),
-            "failure_rate": round(failure_rate, 3),
-            "avg_duration_success_seconds": avg_duration_success_seconds,
-            "avg_action_count_success": avg_action_count_success,
-            "count_completed_success": len(completed_success),
-            "count_completed_failure": len(completed_failure), # Includes aborted, timed_out
-        }
-    }
-
-def generate_summary_report_task_performance(analysis_results: dict):
+def generate_task_performance_report(tasks_data: Dict[str, Dict[str, Any]]):
     """
-    Prints a textual summary of the task performance analysis results.
+    Generates and prints a summary report for task performance.
     """
+    if not tasks_data:
+        print("No task data to analyze.")
+        return
+
     print("\n--- Task Performance Analysis Report ---")
-    agent_id = analysis_results.get("agent_id", "N/A")
-    sim_id = analysis_results.get("simulation_run_id", "N/A")
     
-    print(f"Scope: Agent ID: {agent_id}, Simulation Run ID: {sim_id}")
+    total_tasks = len(tasks_data)
+    successful_tasks = 0
+    failed_tasks = 0
+    total_completion_time_success = 0.0
+    total_completion_time_failure = 0.0
+    num_success_with_time = 0
+    num_failure_with_time = 0
 
-    stats = analysis_results["summary_stats"]
-    print("\nOverall Summary:")
-    print(f"  Total Tasks Recorded (with any status update): {stats['total_tasks_recorded']}")
-    print(f"  Total Tasks Analyzed (reached terminal status): {stats['total_tasks_analyzed']}")
-    print(f"  Tasks Started but Not Completed: {stats['tasks_started_not_completed']}")
-    print(f"  Successfully Completed: {stats['count_completed_success']} (Rate: {stats['success_rate']:.2%})")
-    print(f"  Failed/Aborted/Timed Out: {stats['count_completed_failure']} (Rate: {stats['failure_rate']:.2%})")
-    if stats['avg_duration_success_seconds'] is not None:
-        print(f"  Avg. Duration (Successful Tasks): {stats['avg_duration_success_seconds']:.2f} seconds")
-    else:
-        print(f"  Avg. Duration (Successful Tasks): N/A")
-    if stats['avg_action_count_success'] is not None:
-        print(f"  Avg. Action Count (Successful Tasks, by {agent_id if agent_id != 'ALL_AGENTS' else 'any agent'}): {stats['avg_action_count_success']:.1f}")
-    else:
-        print(f"  Avg. Action Count (Successful Tasks): N/A")
+    tasks_by_type = defaultdict(lambda: {"total": 0, "successful": 0, "failed": 0,
+                                         "sum_completion_time_success": 0.0, "count_completion_time_success": 0,
+                                         "sum_completion_time_failure": 0.0, "count_completion_time_failure": 0})
+    failure_reasons_summary = defaultdict(int)
+    total_resources_consumed_success = 0.0
+    count_resources_success = 0
+
+    for task_id, data in tasks_data.items():
+        if "outcome" not in data or data["outcome"] == "UNKNOWN_OR_NOT_STARTED": # Skip tasks that didn't properly start/end
+            if data.get("creation_time"): # Only count if it was at least created
+                 tasks_by_type[data.get("task_type", "UNKNOWN")]["total"] +=1
+            continue # Skip further processing for this task
+
+        task_type = data.get("task_type", "UNKNOWN")
+        tasks_by_type[task_type]["total"] += 1
+
+        if data["outcome"] == "SUCCESS":
+            successful_tasks += 1
+            tasks_by_type[task_type]["successful"] += 1
+            if "completion_time_seconds" in data:
+                total_completion_time_success += data["completion_time_seconds"]
+                num_success_with_time += 1
+                tasks_by_type[task_type]["sum_completion_time_success"] += data["completion_time_seconds"]
+                tasks_by_type[task_type]["count_completion_time_success"] += 1
+            if data.get("resources_consumed_conceptual", 0.0) > 0:
+                total_resources_consumed_success += data["resources_consumed_conceptual"]
+                count_resources_success +=1
+
+        elif data["outcome"] == "FAILURE":
+            failed_tasks += 1
+            tasks_by_type[task_type]["failed"] += 1
+            if "completion_time_seconds" in data: # Time until failure
+                total_completion_time_failure += data["completion_time_seconds"]
+                num_failure_with_time += 1
+                tasks_by_type[task_type]["sum_completion_time_failure"] += data["completion_time_seconds"]
+                tasks_by_type[task_type]["count_completion_time_failure"] += 1
+            if data.get("failure_reason"):
+                failure_reasons_summary[data["failure_reason"]] += 1
+
+    print(f"Total tasks identified (with start/end states or created as TASK type): {total_tasks}") # This might be slightly different from sum if some tasks never started
+    print(f"  Successfully completed: {successful_tasks}")
+    print(f"  Failed: {failed_tasks}")
+
+    overall_success_rate = (successful_tasks / (successful_tasks + failed_tasks)) * 100 if (successful_tasks + failed_tasks) > 0 else 0
+    print(f"  Overall Success Rate (completed tasks): {overall_success_rate:.2f}%")
+
+    if num_success_with_time > 0:
+        avg_comp_time_success = round(total_completion_time_success / num_success_with_time, 2)
+        print(f"  Average Completion Time (Successful): {avg_comp_time_success}s")
+    if num_failure_with_time > 0:
+        avg_comp_time_failure = round(total_completion_time_failure / num_failure_with_time, 2)
+        print(f"  Average Time to Failure (Failed): {avg_comp_time_failure}s")
+
+    print("\n--- Performance by Task Type ---")
+    for task_type, data in tasks_by_type.items():
+        if data["total"] == 0 and data["successful"] == 0 and data["failed"] == 0 : continue # Skip if type was only from non-started tasks
+        print(f"  Task Type: {task_type}")
+        print(f"    Total Attempted/Tracked: {data['total']}")
+        print(f"    Successful: {data['successful']}, Failed: {data['failed']}")
+        type_success_rate = (data['successful'] / (data['successful'] + data['failed'])) * 100 if (data['successful'] + data['failed']) > 0 else 0
+        print(f"    Success Rate: {type_success_rate:.2f}%")
+        if data['count_completion_time_success'] > 0:
+            avg_type_success_time = round(data['sum_completion_time_success'] / data['count_completion_time_success'], 2)
+            print(f"    Avg. Success Time: {avg_type_success_time}s")
+        if data['count_completion_time_failure'] > 0:
+            avg_type_failure_time = round(data['sum_completion_time_failure'] / data['count_completion_time_failure'], 2)
+            print(f"    Avg. Failure Time: {avg_type_failure_time}s")
 
 
-    print("\nIndividual Task Details (first 10 tasks):")
-    if not analysis_results["tasks"]:
-        print("  No tasks found matching criteria.")
+    print("\n--- Resource Consumption (Conceptual) ---")
+    if count_resources_success > 0:
+        avg_resources = round(total_resources_consumed_success / count_resources_success, 2)
+        print(f"  Average resources consumed for successful tasks: {avg_resources} units (conceptual)")
     else:
-        for i, task in enumerate(analysis_results["tasks"][:10]):
-            duration_str = f"{task['duration_seconds']:.2f}s" if task['duration_seconds'] is not None else "N/A (Ongoing or No End)"
-            print(f"  Task {i+1}: {task['task_id']}")
-            print(f"    Status: {task['status']}")
-            print(f"    Start Time: {task['start_time']}, End Time: {task['end_time'] if task['end_time'] else 'N/A'}")
-            print(f"    Duration: {duration_str}")
-            print(f"    Action Count: {task['action_count']} (Involved Agents: {', '.join(task['involved_agent_ids']) if task['involved_agent_ids'] else 'None'}, Sim ID: {task['simulation_run_id']})")
-        if len(analysis_results["tasks"]) > 10:
-            print(f"  ... and {len(analysis_results['tasks']) - 10} more tasks.")
-    print("--- End of Report ---")
+        print("  No resource consumption data logged for successful tasks.")
+
+    print("\n--- Failure Analysis (Conceptual) ---")
+    if failure_reasons_summary:
+        print("  Common reasons for task failure:")
+        for reason, count in sorted(failure_reasons_summary.items(), key=lambda item: item[1], reverse=True):
+            print(f"    - \"{reason}\": {count} times")
+    else:
+        print("  No specific failure reasons recorded or no tasks failed with reasons.")
+
+    print("\n--- Conceptual Correlation Insights (Future Work) ---")
+    print("  Further analysis could correlate task performance with agent's emotional state during the task,")
+    print("  concurrent goal load, or specific cognitive strategies employed.")
+    print("  This requires aligning timestamps across different event types and more detailed contextual logging.")
+
+    print("\n--- End of Report ---")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Analyzes task performance from PiaAVT JSONL log files.",
-        epilog="Example: python task_performance_analysis.py /path/to/your/logfile.jsonl --agent_id agent_A --sim_id sim_01"
+        epilog="Example: python task_performance_analysis.py /path/to/your/logfile.jsonl"
     )
     parser.add_argument(
         "log_file",
         help="Path to the JSONL log file to analyze."
-    )
-    parser.add_argument(
-        "--agent_id",
-        help="Optional: Target agent ID to filter results for.",
-        default=None
-    )
-    parser.add_argument(
-        "--sim_id",
-        help="Optional: Target simulation run ID to filter results for.",
-        default=None
     )
     args = parser.parse_args()
 
@@ -305,27 +251,21 @@ if __name__ == "__main__":
         exit(1)
 
     print(f"Starting Task Performance Analysis for log file: {args.log_file}...")
-    if args.agent_id:
-        print(f"Filtering for Agent ID: {args.agent_id}")
-    if args.sim_id:
-        print(f"Filtering for Simulation Run ID: {args.sim_id}")
-
     parsed_logs = load_and_parse_log_data_jsonl(args.log_file)
 
     if parsed_logs:
         print(f"\nSuccessfully parsed {len(parsed_logs)} log entries from {args.log_file}.")
-        
-        analysis_results = analyze_task_performance(
-            parsed_logs,
-            target_agent_id=args.agent_id,
-            target_simulation_run_id=args.sim_id
-        )
-        
-        generate_summary_report_task_performance(analysis_results)
+        task_performance_data = analyze_task_performance(parsed_logs)
 
-        # Example: analyze all tasks in all simulations for comparison if desired
-        # print("\n--- Analyzing all tasks in all simulations (for comparison) ---")
-        # all_tasks_analysis_comparison = analyze_task_performance(parsed_logs)
-        # generate_summary_report_task_performance(all_tasks_analysis_comparison)
+        if task_performance_data:
+            # Filter out tasks that were not really processed (e.g., only ID, no other data)
+            processed_tasks_data = {tid: tdata for tid, tdata in task_performance_data.items() if tdata.get("task_type") != "UNKNOWN" or "outcome" in tdata}
+            if processed_tasks_data:
+                 print(f"Successfully analyzed {len(processed_tasks_data)} tasks with relevant lifecycle events.")
+                 generate_task_performance_report(processed_tasks_data)
+            else:
+                print("No tasks with sufficient lifecycle events (e.g., GOAL_CREATED as TASK type, or terminal status) found for detailed analysis.")
+        else:
+            print("Analysis returned no data for tasks.")
     else:
         print(f"Log parsing returned no data from {args.log_file}. Ensure the file exists, is not empty, and contains valid JSONL.")

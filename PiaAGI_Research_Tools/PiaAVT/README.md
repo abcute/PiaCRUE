@@ -52,6 +52,22 @@ Features:
 *   **Task Performance Analysis tab:** Review task success/failure rates, durations, and other performance metrics.
 *   Raw Logs tab for viewing raw JSON log entries.
 
+## Available Analysis Scripts
+
+The `Analysis_Implementations/` directory contains standalone Python scripts for specific analyses. These can be run from the command line and often provide more detailed or focused output than the current WebApp tabs.
+
+*   **`Analysis_Implementations/Goal_Dynamics_Analysis.py`**:
+    *   **Purpose:** Analyzes goal lifecycles, priority changes, success/failure rates, common failure reasons, and durations from PiaAGI log files. Provides insights into the agent's goal management and motivational patterns.
+    *   **Usage:** `python Analysis_Implementations/Goal_Dynamics_Analysis.py <path_to_logfile.jsonl>`
+*   **`Analysis_Implementations/emotional_trajectory_analysis.py`**:
+    *   **Purpose:** Tracks and summarizes the agent's emotional states (Valence, Arousal, Dominance, discrete emotions, intensity) over time from log files. Helps visualize emotional responses to events.
+    *   **Usage:** `python Analysis_Implementations/emotional_trajectory_analysis.py <path_to_logfile.jsonl>`
+*   **`Analysis_Implementations/task_performance_analysis.py`**:
+    *   **Purpose:** Analyzes task completion metrics, treating goals (especially extrinsic tasks) as tasks. Calculates success rates, completion times, and conceptual resource consumption.
+    *   **Usage:** `python Analysis_Implementations/task_performance_analysis.py <path_to_logfile.jsonl>`
+
+For more conceptual details on the design of some of these analyses, particularly those related to motivation, refer to the [Basic Analyses for Motivational System Understanding](Basic_Analyses.md) document.
+
 ## Future Development & Enhancements
 
 PiaAVT is planned to evolve into a powerful toolkit for deep AGI analysis. Key future directions include:

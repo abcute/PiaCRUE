@@ -45,6 +45,11 @@ The following analyses leverage data logged according to the `Logging_Specificat
     *   Identification of common obstacles or failure modes in goal pursuit.
     *   Balance between intrinsic and extrinsic motivations driving the agent.
     *   How often and why priorities shift (e.g., due to new urgent goals, emotional state changes, or unmet dependencies).
+    *   Calculation of success rates by goal type and initial priority bands.
+    *   Aggregation of common reasons for goal failure or blockage.
+    *   Statistics on the frequency and average magnitude of priority changes per goal.
+
+An implementation of this analysis is available in `Analysis_Implementations/Goal_Dynamics_Analysis.py`.
 
 ### 2.2. Intrinsic Motivation Trigger & Impact Analysis
 
@@ -98,3 +103,17 @@ The following analyses leverage data logged according to the `Logging_Specificat
     *   Effectiveness of the Planning module in translating goals into actions.
 
 These initial analyses provide a starting point for leveraging PiaAVT to understand and refine the Motivational System of PiaAGI agents. Further analyses can be developed as the framework matures.
+
+## 3. Other Implemented General Agent Analyses
+
+This section details other implemented analysis scripts that provide insights into general agent state and performance beyond the specific focus of the motivational system.
+
+### 3.1. Emotional State Trajectory Analysis
+
+*   **Description:** This analysis tracks and summarizes the evolution of an agent's emotional state over time. It processes `EMOTION_STATE_UPDATED` log events to extract Valence, Arousal, and Dominance (VAD) values, any reported discrete emotions, and their intensity. The primary output is a chronological sequence of these emotional snapshots. This is useful for understanding the agent's emotional responses to various stimuli and events, identifying overall affective trends, and correlating emotional states with behavior or cognitive performance.
+*   **Implementation Note:** An implementation of this analysis is available in `Analysis_Implementations/emotional_trajectory_analysis.py`.
+
+### 3.2. Task Performance Metrics Analysis
+
+*   **Description:** This analysis focuses on evaluating an agent's performance on defined tasks, which are often represented by goals (particularly `EXTRINSIC_TASK` types). It calculates key metrics such as task completion times (for successful and failed tasks), success/failure rates (overall and per task type), and can conceptually track resource consumption if logged appropriately. It also aggregates reasons for task failures. This helps in assessing the agent's effectiveness, efficiency, and robustness in achieving its objectives.
+*   **Implementation Note:** An implementation of this analysis is available in `Analysis_Implementations/task_performance_analysis.py`.
