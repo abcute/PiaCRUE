@@ -1,6 +1,7 @@
 import unittest
 import asyncio
 import uuid
+import time # For self.learning_module._learned_items_log population
 from typing import List, Any, Dict
 from datetime import datetime, timezone # For payloads
 
@@ -33,19 +34,27 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
         self.learning_module = ConcreteLearningModule(message_bus=self.bus, module_id=self.module_id)
 
         self.received_learning_outcomes: List[GenericMessage] = []
-        self.received_ltm_store_requests: List[GenericMessage] = [] # New
+        self.received_ltm_store_requests: List[GenericMessage] = []
+
+        # Clear logs for each test
+        if hasattr(self.learning_module, '_log'):
+            self.learning_module._log.clear()
 
         # Subscribe listeners
         self.bus.subscribe(self.module_id, "LearningOutcome", self._learning_outcome_listener)
-        self.bus.subscribe(self.module_id, "LTMStoreRequest", self._ltm_store_request_listener) # New
+        self.bus.subscribe(self.module_id, "LTMStoreRequest", self._ltm_store_request_listener)
 
     def _learning_outcome_listener(self, message: GenericMessage):
         if isinstance(message.payload, LearningOutcomePayload):
             self.received_learning_outcomes.append(message)
 
-    def _ltm_store_request_listener(self, message: GenericMessage): # New
+    def _ltm_store_request_listener(self, message: GenericMessage):
         if message.message_type == "LTMStoreRequest" and isinstance(message.payload, dict):
             self.received_ltm_store_requests.append(message)
+
+    def assert_log_contains(self, expected_substring):
+        self.assertTrue(any(expected_substring in log_msg for log_msg in self.learning_module._log),
+                        f"Log did not contain: '{expected_substring}'. Log content: {self.learning_module._log}")
 
     def tearDown(self):
         self.received_learning_outcomes.clear()
@@ -89,6 +98,9 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
             self.assertEqual(outcome_payload.learned_item_type, "skill_adjustment")
             self.assertEqual(outcome_payload.item_id, "explore")
             self.assertEqual(outcome_payload.metadata.get("reinforcement_direction"), "positive")
+
+            # Assert Meta-Learning Hook log
+            self.assert_log_contains("Conceptual Meta-Learning Hook: Evaluating effectiveness of paradigm 'reinforcement_from_action'")
         asyncio.run(run_test_logic())
 
     def test_handle_action_event_failure_triggers_learning(self):
@@ -276,6 +288,10 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
 
     def test_consolidate_knowledge_publishes_ltm_request(self):
         async def run_test_logic():
+            # Clear logs specifically for this test logic part to check initial log message
+            if hasattr(self.learning_module, '_log'):
+                self.learning_module._log.clear()
+
             # Populate _learned_items_log with some items
             self.learning_module._learned_items_log = [
                 {"task_id": "t1", "item_id": "skill_A", "item_type": "skill_adjustment", "status": "LEARNED", "final_confidence": 0.8, "timestamp": time.time()},
@@ -295,6 +311,9 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
             self.assertIn("skill_A", ltm_req_payload.get("content",{}).get("source_item_ids",[]))
             self.assertIn("concept_B", ltm_req_payload.get("content",{}).get("source_item_ids",[]))
             self.assertNotIn("skill_C", ltm_req_payload.get("content",{}).get("source_item_ids",[])) # Rejected item
+
+            # Assert Lifelong Learning Hook log (should be one of the first)
+            self.assert_log_contains("Conceptual Lifelong Learning: Initiating consolidation for 'summary'")
         asyncio.run(run_test_logic())
 
     def test_no_change_learning_path(self):
@@ -308,6 +327,116 @@ class TestConcreteLearningModuleIntegration(unittest.TestCase):
             self.assertEqual(outcome.status, "OBSERVED_NO_CHANGE")
             self.assertAlmostEqual(outcome.confidence, 0.1, places=2)
         asyncio.run(run_test_logic())
+
+    # --- Tests for New Learning Paradigm Placeholders and Logging Hooks ---
+
+    def test_learn_paradigm_supervised(self):
+        async def run_test_logic():
+            self.learning_module._log.clear()
+            context = {"source_message_id": "sl_test_msg", "model_id_to_update": "test_model_01"}
+            self.learning_module.learn(
+                data=[("input_feature_vector1", "label_A"), ("input_feature_vector2", "label_B")],
+                learning_paradigm="supervised_from_labeled_data",
+                context=context
+            )
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome.status, "LEARNED")
+            self.assertEqual(outcome.learned_item_type, "model_update_supervised")
+            self.assertEqual(outcome.item_id, "test_model_01")
+            self.assert_log_contains("Conceptual SL: Expects data as list of (input, label) pairs.")
+            self.assert_log_contains("Conceptual SL: Would train/fine-tune an internal model")
+            self.assert_log_contains("Conceptual Meta-Learning Hook: Evaluating effectiveness of paradigm 'supervised_from_labeled_data'")
+        asyncio.run(run_test_logic())
+
+    def test_learn_paradigm_observational(self):
+        async def run_test_logic():
+            self.learning_module._log.clear()
+            context = {"source_message_id": "ol_test_msg", "demonstrator_id": "expert_agent_007"}
+            observed_behavior_trace = [
+                {"state": "start_loc", "action": "pickup_tool_X"},
+                {"state": "has_tool_X", "action": "use_tool_X_on_object_Y"}
+            ]
+            self.learning_module.learn(
+                data=observed_behavior_trace,
+                learning_paradigm="observational_learning",
+                context=context
+            )
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome.status, "LEARNED")
+            self.assertEqual(outcome.learned_item_type, "learned_behavior_from_observation")
+            self.assertTrue(outcome.item_id.startswith("obs_learn_expert_agent_007"))
+            self.assert_log_contains("Conceptual OL: Expects data as observed behavior trace")
+            self.assert_log_contains("Conceptual OL: Would attempt to replicate behavior, infer underlying policy/skill")
+            self.assert_log_contains("Conceptual Meta-Learning Hook: Evaluating effectiveness of paradigm 'observational_learning'")
+        asyncio.run(run_test_logic())
+
+    def test_learn_paradigm_transfer(self):
+        async def run_test_logic():
+            self.learning_module._log.clear()
+            context = {
+                "source_message_id": "tl_test_msg",
+                "source_domain_knowledge_id": "chess_grandmaster_model",
+                "target_domain_task_id": "checkers_novice_game"
+            }
+            new_problem_context = {"board_state": "checkers_initial_setup", "available_moves": 3}
+            self.learning_module.learn(
+                data=new_problem_context,
+                learning_paradigm="transfer_learning_application",
+                context=context
+            )
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome.status, "LEARNED")
+            self.assertEqual(outcome.learned_item_type, "knowledge_transfer_adaptation")
+            self.assertEqual(outcome.item_id, "transfer_chess_grandmaster_model_to_checkers_novice_game")
+            self.assert_log_contains("Conceptual TL: Expects data as new problem context.")
+            self.assert_log_contains("Conceptual TL: Would adapt knowledge/skill from source domain for the target task")
+            self.assert_log_contains("Conceptual Meta-Learning Hook: Evaluating effectiveness of paradigm 'transfer_learning_application'")
+        asyncio.run(run_test_logic())
+
+    def test_learn_paradigm_meta_learning_adjustment(self): # Renamed to avoid conflict if a "meta_learning" paradigm exists
+        async def run_test_logic():
+            self.learning_module._log.clear()
+            context = {
+                "source_message_id": "ml_adjust_test_msg",
+                "evaluated_paradigm": "reinforcement_from_action",
+                "performance_score": 0.3, # Low performance
+                "old_lr_factor": 0.1,
+                "new_lr_factor": 0.05 # Adjusting learning rate down
+            }
+            performance_metrics = {"accuracy_history": [0.5, 0.4, 0.3], "convergence_epochs": 50}
+            self.learning_module.learn(
+                data=performance_metrics,
+                learning_paradigm="meta_learning_strategy_adjustment",
+                context=context
+            )
+            await asyncio.sleep(0.01)
+            self.assertEqual(len(self.received_learning_outcomes), 1)
+            outcome: LearningOutcomePayload = self.received_learning_outcomes[0].payload
+            self.assertEqual(outcome.status, "LEARNED")
+            self.assertEqual(outcome.learned_item_type, "learning_strategy_meta_update")
+            self.assertEqual(outcome.item_id, "meta_update_for_reinforcement_from_action")
+            self.assert_log_contains("Conceptual MetaL: Expects data as performance metrics.")
+            self.assert_log_contains("Conceptual MetaL: Would adjust internal learning parameters or strategy selection heuristics")
+            # The meta-learning hook itself is part of all learn calls, so not specifically tested for *absence* here,
+            # but its presence for this specific paradigm is implicitly part of the flow.
+        asyncio.run(run_test_logic())
+
+    def test_process_feedback_conceptual_log(self):
+        self.learning_module._log.clear()
+        self.learning_module.process_feedback(
+            feedback_data={"type": "direct_critique", "critique_content": "The previous plan was inefficient."},
+            learning_context_id="ctx_plan_alpha"
+        )
+        self.assert_log_contains("Conceptual: `process_feedback` received. Would parse feedback type")
+        # Also check that it logged the feedback data itself
+        self.assert_log_contains("Processing feedback for context 'ctx_plan_alpha': {'type': 'direct_critique'")
+
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)

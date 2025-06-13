@@ -26,6 +26,16 @@ CML provides abstract base classes (ABCs) and concrete MVP (Minimal Viable Produ
 *   **Attention Module:** (`BaseAttentionModule`, `ConcreteAttentionModule`)
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.1.2](../../PiaAGI.md#312-attention-and-cognitive-control-central-executive-functions), [4.1.4](../../PiaAGI.md#41-core-modules-and-their-interactions)
 *   **Learning Module:** (`BaseLearningModule`, `ConcreteLearningModule`)
+    *   *Role:* Enables the agent to learn from experience, adapt knowledge and behaviors, and improve performance. It processes various inputs (percepts, action outcomes, goal statuses, feedback) through different conceptual learning paradigms.
+    *   *Conceptual Learning Paradigms (in `ConcreteLearningModule`):*
+        *   **Unsupervised Feature Extraction:** Identifies patterns in raw `PerceptData` (e.g., from visual or textual modalities) to form new feature representations or concept clusters, conceptually updating LTM-Semantic.
+        *   **Reinforcement from Action:** Adjusts skill policies (conceptually in LTM-Procedural) based on the success or failure status of `ActionEventPayloads`. Reward signals are implicitly derived from action outcomes.
+        *   **Goal Outcome Evaluation:** Evaluates strategies related to goal achievement or failure (from `GoalUpdatePayloads`), conceptually updating LTM-Procedural (strategy effectiveness) or LTM-Episodic (memory of the outcome).
+        *   **Supervised Learning (Conceptual):** Designed to train/fine-tune internal models using labeled data, if provided. Updates models conceptually stored in LTM-Semantic or specialized model stores.
+        *   **Observational Learning (Conceptual):** Allows learning new behaviors or skills by observing traces of another agent's actions and outcomes. Conceptually updates LTM-Procedural or LTM-Semantic (affordances, social norms).
+        *   **Transfer Learning (Conceptual):** Adapts existing knowledge or skills from a source domain/task to a new target domain/task. Conceptually updates LTM for the target context.
+        *   **Meta-Learning (Conceptual):** Adjusts internal learning parameters (e.g., learning rates) or strategy selection heuristics based on performance feedback. Conceptually updates Learning Module parameters or Self-Model learning preferences.
+    *   *Operational Notes:* The `ConcreteLearningModule` is integrated with the message bus, receiving various events that trigger learning. It applies conceptual ethical guardrails to potential learning outcomes before publishing them as `LearningOutcomePayload` messages. It also includes conceptual logic for knowledge consolidation and is influenced by the agent's emotional state.
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.1.3](../../PiaAGI.md#313-learning-theories-and-mechanisms-for-agi), [4.1.5](../../PiaAGI.md#41-core-modules-and-their-interactions)
 *   **Motivational System Module:** (`MotivationalSystemModule`, `ConcreteMotivationalSystemModule`)
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.3](../../PiaAGI.md#33-motivational-systems-and-intrinsic-goals), [4.1.6](../../PiaAGI.md#41-core-modules-and-their-interactions)

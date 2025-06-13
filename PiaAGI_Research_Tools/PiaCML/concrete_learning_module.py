@@ -26,6 +26,21 @@ class ConcreteLearningModule(BaseLearningModule):
     """
     A concrete implementation of the BaseLearningModule, integrated with a message bus
     to learn from various system events and publish learning outcomes.
+
+    The module supports various conceptual learning paradigms:
+    - Reinforcement Learning: Adjusts strategies based on rewards/penalties from ActionEvents.
+    - Unsupervised Learning: Extracts features from PerceptData.
+    - Goal-Outcome Evaluation: Learns from the success/failure of Goals.
+    - Supervised Learning (Conceptual): Learns from explicitly labeled data (if provided).
+    - Observational Learning (Conceptual): Learns by observing actions and outcomes of others (if such data is available).
+    - Transfer Learning (Conceptual): Applies knowledge from one domain/task to another (if relevant knowledge and context are provided).
+    - Meta-Learning (Conceptual): Adjusts its own learning strategies and parameters based on performance.
+
+    It interacts with a message bus for receiving various types of system events
+    (PerceptData, ActionEvent, GoalUpdate, EmotionalStateChange) which serve as triggers
+    or data for learning. It publishes LearningOutcome messages.
+    Ethical guardrails are applied before publishing learning outcomes.
+    Knowledge consolidation is supported conceptually to summarize and integrate learned items.
     """
 
     def __init__(self,
@@ -145,49 +160,159 @@ class ConcreteLearningModule(BaseLearningModule):
         confidence: float = 0.5 # Default confidence
         learned_metadata: Dict[str, Any] = {}
 
+        # --- Conceptual Logic for Different Learning Paradigms ---
+        self._log_message(f"  Applying paradigm: {learning_paradigm}")
+
         if learning_paradigm == "unsupervised_feature_extraction":
-            item_type = "knowledge_concept_features"
-            item_id = f"features_from_{context.get('percept_id', task_id)}"
-            item_desc = f"Extracted features from {context.get('modality', 'unknown')} percept."
-            confidence = 0.6
+            # Expected Inputs: data is raw percept content (e.g., image features, text). Context provides modality.
+            self._log_message(f"    Conceptual UL: Expects data (e.g., from {context.get('modality')} percept '{context.get('percept_id')}').")
+            # Conceptual Process: e.g., clustering, dimensionality reduction, autoencoding.
+            self._log_message(f"    Conceptual UL: Would identify patterns/features in data. E.g., if text, identify n-grams or topics.")
+            item_type = "knowledge_concept_features" # Type of learned item
+            item_id = f"features_from_{context.get('percept_id', task_id)}" # ID of learned item
+            item_desc = f"Extracted features from {context.get('modality', 'unknown')} percept: {str(data)[:60]}..." # Description
+            confidence = 0.6 # Confidence in the learned item
             learned_metadata["extracted_features_count"] = len(data) if isinstance(data, list) else 1
+            learned_metadata["modality"] = context.get('modality')
+            # Conceptual Outputs/Updates: Updates LTM-Semantic with new feature representations or cluster definitions.
+            self._log_message(f"    Conceptual UL: Would update LTM-Semantic with new feature patterns or concept clusters (ID: {item_id}).")
+            # Conceptual Module Interactions: Primarily LTM.
+            self._log_message(f"    Conceptual UL: Key interaction with LTM for storage/retrieval of learned features.")
+
         elif learning_paradigm == "reinforcement_from_action":
+            # Expected Inputs: data is ActionEventPayload. Context provides action_command_id.
+            self._log_message(f"    Conceptual RL: Expects data as ActionEventPayload (Action: {getattr(data, 'action_type', 'N/A')}, Status: {getattr(data, 'status', 'N/A')}).")
+            # Conceptual Process: Update Q-values, policy, or value functions based on state, action, and reward (derived from ActionEvent.status).
+            self._log_message(f"    Conceptual RL: Would update Q-values/policy for state-action pair. Reward implicitly from status ({getattr(data, 'status', 'N/A')}).")
             item_type = "skill_adjustment"
             if isinstance(data, ActionEventPayload):
-                item_id = data.action_type
-                item_desc = f"Outcome for action '{data.action_type}' (status: {data.status})."
+                item_id = data.action_type # Could be more specific, e.g., action_type + key_parameters
+                item_desc = f"Adjusted skill/policy for action '{data.action_type}' based on outcome (status: {data.status})."
+                learned_metadata["action_type"] = data.action_type
+                learned_metadata["action_status"] = data.status
                 if data.status == "SUCCESS":
                     confidence = 0.75
                     learned_metadata["reinforcement_direction"] = "positive"
+                    learned_metadata["reward_signal_conceptual"] = 1.0
                 elif data.status == "FAILURE":
-                    status = "UPDATED"
+                    status = "UPDATED" # Status of the learning outcome itself
                     confidence = 0.65
                     learned_metadata["reinforcement_direction"] = "negative"
-                elif data.status in ["IN_PROGRESS", "CANCELLED"]: # Learning from NO_CHANGE
-                    status = "OBSERVED_NO_CHANGE" # New status for this case
-                    item_desc = f"Observed action '{data.action_type}' with status '{data.status}', no direct reinforcement."
-                    confidence = 0.1 # Very low confidence for mere observation
+                    learned_metadata["reward_signal_conceptual"] = -1.0
+                elif data.status in ["IN_PROGRESS", "CANCELLED"]:
+                    status = "OBSERVED_NO_CHANGE"
+                    item_desc = f"Observed action '{data.action_type}' status '{data.status}', no direct reinforcement/update."
+                    confidence = 0.1
                     learned_metadata["observation_details"] = f"Action status was {data.status}."
-                else: # Other statuses
+                else:
                     status = "NO_CHANGE"
                     item_desc = f"No direct learning from action '{data.action_type}' status '{data.status}'."
-                    confidence = 0.3 # Slightly higher than IN_PROGRESS/CANCELLED if it's some other neutral outcome
+                    confidence = 0.3
+            else:
+                status = "FAILED_TO_LEARN"
+                item_desc = "Invalid data type for reinforcement_from_action."
+                confidence = 0.0
+            # Conceptual Outputs/Updates: Updates LTM-Procedural (skill/policy representations).
+            self._log_message(f"    Conceptual RL: Would update LTM-Procedural for skill '{item_id}'.")
+            # Conceptual Module Interactions: MotivationalSystem (for intrinsic rewards), LTM, WM (current state).
+            self._log_message(f"    Conceptual RL: Interacts with MotivationalSystem (rewards), LTM (policy storage), WM (state).")
+
         elif learning_paradigm == "goal_outcome_evaluation":
+            # Expected Inputs: data is GoalUpdatePayload (terminal state). Context provides source_message_id.
+            self._log_message(f"    Conceptual GoalEval: Expects data as GoalUpdatePayload (Goal: {getattr(data, 'goal_id', 'N/A')}, Status: {getattr(data, 'status', 'N/A')}).")
+            # Conceptual Process: Evaluate strategy/plan used for the goal based on outcome.
+            self._log_message(f"    Conceptual GoalEval: Would analyze plan/actions leading to goal outcome '{getattr(data, 'status', 'N/A')}'.")
             item_type = "strategy_evaluation"
             if isinstance(data, GoalUpdatePayload):
                 item_id = f"strategy_for_goal_{data.goal_id}"
                 item_desc = f"Evaluated strategies related to goal '{data.goal_id}' (status: {data.status})."
                 confidence = 0.7 if data.status == "achieved" else 0.4
+                learned_metadata["goal_id"] = data.goal_id
                 learned_metadata["goal_status"] = data.status
-                learned_metadata["goal_priority"] = data.priority
+                learned_metadata["goal_priority_at_outcome"] = data.priority
             else:
                 status = "FAILED_TO_LEARN"
                 item_desc = "Invalid data type for goal_outcome_evaluation."
                 confidence = 0.0
+            # Conceptual Outputs/Updates: Updates LTM-Procedural (strategy effectiveness) or LTM-Episodic (outcome of this goal pursuit).
+            self._log_message(f"    Conceptual GoalEval: Would update LTM-Procedural (strategy heuristics) or LTM-Episodic (goal success/failure memory).")
+            # Conceptual Module Interactions: Planning (plan trace), LTM, Self-Model (capability assessment for strategy).
+            self._log_message(f"    Conceptual GoalEval: Interacts with Planning, LTM, Self-Model.")
+
+        elif learning_paradigm == "supervised_from_labeled_data":
+            # Expected Inputs: data is list of (input_features, correct_label) pairs. Context might include model_id_to_update, loss_function.
+            self._log_message(f"    Conceptual SL: Expects data as list of (input, label) pairs. Context: {context.get('model_id_to_update', 'general_model')}.")
+            # Conceptual Process: Iterate data, predict, calculate error, adjust model parameters.
+            self._log_message(f"    Conceptual SL: Would train/fine-tune an internal model (e.g., in LTM-Semantic or a dedicated model store).")
+            item_type = "model_update_supervised"
+            item_id = context.get('model_id_to_update', f"supervised_model_{str(uuid.uuid4())[:4]}")
+            item_desc = f"Supervised learning update for model '{item_id}' using {len(data) if isinstance(data, list) else 'N/A'} samples."
+            confidence = 0.7 # Confidence in the update process/resulting model change
+            learned_metadata["dataset_size"] = len(data) if isinstance(data, list) else 0
+            learned_metadata["model_trained"] = item_id
+            # Conceptual Outputs/Updates: Updates a predictive model (e.g., concept classifier in LTM-Semantic, or a specialized model).
+            self._log_message(f"    Conceptual SL: Model parameters for '{item_id}' in LTM or specialized store would be adjusted.")
+            # Conceptual Module Interactions: LTM (model storage), WM (for current data batch).
+            self._log_message(f"    Conceptual SL: Interacts with LTM (model storage/retrieval).")
+
+        elif learning_paradigm == "observational_learning":
+            # Expected Inputs: data is observed behavior trace (e.g., sequence of state-action pairs from another agent). Context may include inferred demonstrator goal.
+            self._log_message(f"    Conceptual OL: Expects data as observed behavior trace (e.g., for action '{str(data)[:60]}...'). Context: demonstrator_goal='{context.get('demonstrator_goal', 'N/A')}'")
+            # Conceptual Process: Imitate, infer policy/goal, or learn affordances from observed actions.
+            self._log_message(f"    Conceptual OL: Would attempt to replicate behavior, infer underlying policy/skill, or learn new action affordances.")
+            item_type = "learned_behavior_from_observation"
+            item_id = f"obs_learn_{context.get('demonstrator_id', 'unknown_agent')}_{str(uuid.uuid4())[:4]}"
+            item_desc = f"Learned new behavior/skill by observing '{context.get('demonstrator_id', 'unknown_agent')}' perform '{str(data)[:60]}...'."
+            confidence = 0.45 # Observational learning might start with lower confidence
+            learned_metadata["demonstrator_id"] = context.get('demonstrator_id')
+            learned_metadata["observed_action_sequence_preview"] = str(data)[:100] # Store a preview
+            # Conceptual Outputs/Updates: Updates LTM-Procedural (new skills/action sequences) or LTM-Semantic (object affordances, social norms).
+            self._log_message(f"    Conceptual OL: Would update LTM-Procedural with new skills or LTM-Semantic with affordances/social norms.")
+            # Conceptual Module Interactions: ToM (demonstrator's goal/intent), Perception (observing), Self-Model (can I do that?), Planning (simulating).
+            self._log_message(f"    Conceptual OL: Interacts with ToM, Perception, Self-Model, Planning.")
+
+        elif learning_paradigm == "transfer_learning_application":
+            # Expected Inputs: data is the new problem/context. Context includes source_domain_knowledge_id and target_domain_task_id.
+            self._log_message(f"    Conceptual TL: Expects data as new problem context. Context: source_knowledge='{context.get('source_domain_knowledge_id')}', target_task='{context.get('target_domain_task_id')}'")
+            # Conceptual Process: Identify adaptable knowledge/skill from source, transform/apply to target.
+            self._log_message(f"    Conceptual TL: Would adapt knowledge/skill from source domain for the target task, potentially fine-tuning.")
+            item_type = "knowledge_transfer_adaptation"
+            item_id = f"transfer_{context.get('source_domain_knowledge_id')}_to_{context.get('target_domain_task_id')}"
+            item_desc = f"Applied/adapted knowledge from '{context.get('source_domain_knowledge_id')}' to task '{context.get('target_domain_task_id')}'."
+            confidence = 0.55 # Confidence depends on perceived similarity and success of adaptation
+            learned_metadata["source_knowledge"] = context.get('source_domain_knowledge_id')
+            learned_metadata["target_task"] = context.get('target_domain_task_id')
+            learned_metadata["adaptation_details_conceptual"] = "heuristic_mapping_and_parameter_adjustment"
+            # Conceptual Outputs/Updates: Updates LTM-Procedural (new/adapted skill for target task) or LTM-Semantic (new conceptual mappings).
+            self._log_message(f"    Conceptual TL: Would create/update skills/knowledge in LTM for the target task.")
+            # Conceptual Module Interactions: LTM (retrieving source, storing adapted), WM (current problem state), Planning (testing adaptation).
+            self._log_message(f"    Conceptual TL: Interacts with LTM, WM, Planning.")
+
+        elif learning_paradigm == "meta_learning_strategy_adjustment":
+            # Expected Inputs: data is performance metrics or feedback on a learning process itself. Context includes the learning_paradigm_evaluated and its performance.
+            self._log_message(f"    Conceptual MetaL: Expects data as performance metrics. Context: evaluated_paradigm='{context.get('evaluated_paradigm')}', perf_score='{context.get('performance_score')}'")
+            # Conceptual Process: Adjust learning rates, exploration/exploitation balance, or heuristics for selecting learning paradigms.
+            self._log_message(f"    Conceptual MetaL: Would adjust internal learning parameters or strategy selection heuristics based on performance feedback.")
+            item_type = "learning_strategy_meta_update"
+            item_id = f"meta_update_for_{context.get('evaluated_paradigm', 'general_learning')}"
+            item_desc = f"Adjusted meta-parameters for learning strategy based on evaluation of '{context.get('evaluated_paradigm')}'."
+            confidence = 0.6 # Meta-updates are often heuristic
+            learned_metadata["evaluated_paradigm"] = context.get('evaluated_paradigm')
+            learned_metadata["previous_parameters_conceptual"] = {"learning_rate_factor": context.get("old_lr_factor", 1.0)}
+            learned_metadata["new_parameters_conceptual"] = {"learning_rate_factor": context.get("new_lr_factor", 1.0)}
+            # Conceptual Outputs/Updates: Updates parameters within the Learning Module itself, or in the Self-Model (learning preferences).
+            self._log_message(f"    Conceptual MetaL: Would update internal learning metaparameters or Self-Model's learning preferences.")
+            # Conceptual Module Interactions: Self-Model (learning history, preferences), LTM-Episodic (past learning outcomes).
+            self._log_message(f"    Conceptual MetaL: Interacts with Self-Model, LTM-Episodic.")
+
         else:
             status = "FAILED_TO_LEARN"
-            item_desc = f"Unknown learning paradigm '{learning_paradigm}'."
+            item_desc = f"Unknown or unsupported learning paradigm '{learning_paradigm}'."
             confidence = 0.0
+            self._log_message(f"    Error: Paradigm '{learning_paradigm}' not recognized.")
+
+        # Conceptual Meta-Learning Hook (after specific paradigm logic)
+        self._log_message(f"  Conceptual Meta-Learning Hook: Evaluating effectiveness of paradigm '{learning_paradigm}' for task '{task_id}'. Could trigger adjustment of learning rates, strategy selection heuristics, or exploration/exploitation balance based on performance history (Self-Model, LTM-Episodic).")
 
         # Modulate Learning by Emotion
         emotional_adjustment = 0.0
@@ -272,10 +397,30 @@ class ConcreteLearningModule(BaseLearningModule):
     def process_feedback(self, feedback_data: Dict[str, Any], learning_context_id: Optional[str] = None) -> bool:
         self._log_message(f"Processing feedback for context '{learning_context_id}': {str(feedback_data)[:100]}")
         self._feedback_log.append({'feedback': feedback_data, 'context_id': learning_context_id, 'timestamp': time.time()})
-        # Conceptual: This feedback could trigger a new `learn` call or adjust existing learned items.
+
+        # Conceptual: In a fuller implementation, this method would parse `feedback_data`
+        # (e.g., from an ActionResult or a direct critique) and could trigger specific
+        # learning paradigms.
+        # For example, if feedback is a reward/penalty, it might trigger reinforcement learning.
+        # If feedback is a correction (e.g., "the correct label was Y"), it might trigger supervised learning.
+        # If feedback is a critique of a strategy, it might trigger meta-learning.
+        self._log_message(f"  Conceptual: `process_feedback` received. Would parse feedback type (e.g., reward, correction, critique) and potentially trigger a targeted `self.learn()` call with an appropriate paradigm and data derived from feedback.")
+
+        # Example conceptual trigger:
+        # if feedback_data.get("type") == "explicit_correction" and "correct_label" in feedback_data:
+        #     self.learn(data=[(feedback_data.get("original_input"), feedback_data.get("correct_label"))],
+        #                learning_paradigm="supervised_from_labeled_data",
+        #                context={"source": "feedback_correction", "task_id": learning_context_id})
+        # elif feedback_data.get("type") == "reward_signal":
+        #     # This assumes the reward is tied to a previous action, state needs to be retrieved or passed in context
+        #     self.learn(data={"state": ..., "action": ..., "reward": feedback_data.get("value")},
+        #                learning_paradigm="reinforcement_from_action",
+        #                context={"source": "direct_reward_feedback", "task_id": learning_context_id})
+
         return True
 
     def consolidate_knowledge(self, learned_item_ids: List[str], consolidation_type: str = "summary") -> Optional[str]:
+        self._log_message(f"Conceptual Lifelong Learning: Initiating consolidation for '{consolidation_type}'. This process helps integrate new knowledge with existing LTM structures, manage memory resources, and mitigate catastrophic forgetting.")
         self._log_message(f"Attempting '{consolidation_type}' consolidation for {len(learned_item_ids)} learned items: {learned_item_ids}")
         if not learned_item_ids:
             self._log_message("No item IDs provided for consolidation.")
