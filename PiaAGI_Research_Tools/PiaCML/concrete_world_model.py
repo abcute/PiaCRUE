@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Optional, Union, Tuple
 import time
 import uuid
 import asyncio # For __main__
+import math
+import copy
 
 try:
     from .base_world_model import BaseWorldModel
@@ -301,103 +303,181 @@ class ConcreteWorldModel(BaseWorldModel):
         self._log_message(f"Query: Unsupported query type '{query_type}' or missing params.")
         return {"success": False, "error": f"Unsupported query_type '{query_type}' or missing parameters"}
 
-    def predict_future_state(self, entity_id: str, time_horizon: float) -> Optional[Dict[str, Any]]:
-        self._log_message(f"Attempting to predict future state for entity '{entity_id}' with time horizon {time_horizon}s.")
+    # --- Helper methods for prediction ---
+    def _calculate_distance(self, pos1: List[float], pos2: List[float]) -> float:
+        if len(pos1) != 3 or len(pos2) != 3:
+            # self._log_message("Warning: _calculate_distance received invalid position format.") # Too noisy for common use
+            return float('inf')
+        return math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2 + (pos1[2] - pos2[2])**2)
+
+    def _linear_interpolate(self, pos1: List[float], pos2: List[float], fraction: float) -> List[float]:
+        if len(pos1) != 3 or len(pos2) != 3:
+            # self._log_message("Warning: _linear_interpolate received invalid position format.") # Too noisy
+            return pos1 # Return start position if inputs are bad
+        return [
+            pos1[0] + (pos2[0] - pos1[0]) * fraction,
+            pos1[1] + (pos2[1] - pos1[1]) * fraction,
+            pos1[2] + (pos2[2] - pos1[2]) * fraction,
+        ]
+
+    def _vector_magnitude(self, vec: List[float]) -> float:
+        if len(vec) != 3:
+            # self._log_message("Warning: _vector_magnitude received invalid vector format.") # Too noisy
+            return 0.0
+        return math.sqrt(vec[0]**2 + vec[1]**2 + vec[2]**2)
+
+    def predict_future_state(self, entity_id: str, time_horizon: float) -> Dict[str, Any]:
+        self._log_message(f"Predicting future state for entity '{entity_id}' (Horizon: {time_horizon}s).")
         entity = self.get_entity_representation(entity_id)
 
         if not entity:
             self._log_message(f"Prediction failed: Entity '{entity_id}' not found.")
-            return None
+            # Adhere to the return type specification even for failure
+            return {
+                "predicted_entity_state_dict": {},
+                "prediction_confidence": 0.0,
+                "prediction_rule_applied": "entity_not_found"
+            }
 
-        current_state_copy = entity.to_dict() # Work with a copy
-        predicted_state_changes: Dict[str, Any] = {}
-        prediction_confidence = "low" # Default confidence
-        prediction_rule = "no_specific_rule_applied"
+        # Use deepcopy to ensure original entity is not modified
+        predicted_entity_dict = copy.deepcopy(entity.to_dict())
+        # Ensure 'state' and 'properties' are dicts, even if empty in original
+        if not isinstance(predicted_entity_dict.get("state"), dict):
+            predicted_entity_dict["state"] = {}
+        if not isinstance(predicted_entity_dict.get("properties"), dict):
+            predicted_entity_dict["properties"] = {}
 
-        # Rule 1: Mobile entity with a goal location
-        goal_location_id = entity.state.get("goal_location_id")
-        entity_type = entity.type.lower() # Ensure case-insensitive comparison
-        mobile_types = ["agent", "robot", "vehicle", "drone", "mobile_unit"] # Extend as needed
+        current_confidence: float = 0.1 # Default: very_low
+        current_rule_applied: str = "no_specific_rule_applied_current_state_assumed"
 
-        if goal_location_id and any(mt in entity_type for mt in mobile_types):
-            self._log_message(f"Rule: Entity '{entity_id}' is mobile and has goal_location_id '{goal_location_id}'.")
-            # Conceptual obstacle check
-            # This is a simplified check. A real implementation might involve pathfinding,
-            # querying a spatial model for obstacles along a path, etc.
-            # For now, we assume 'blocked_by' in relationships indicates obstruction to the goal.
-            # The specific format of "blocked_by" (e.g., just a list of IDs, or dicts with path info)
-            # would need to be defined by how relationship data is populated.
-            # Let's assume if "blocked_by" exists and is not empty, it's an obstruction.
-            # And let's assume it might contain a specific path reference that matches goal_location_id.
-            # For this conceptual step, we'll simplify: if "blocked_by" exists, it's a problem.
+        # Rule 3: Static Entities (checked first as it's often a quick exit)
+        self._log_message(f"[{entity_id}] Evaluating Rule 3 (Static Entities)...")
+        STATIC_ENTITY_TYPES = ["building", "terrain_feature", "fixed_equipment", "location_marker"]
+        is_static_prop = predicted_entity_dict.get("properties", {}).get("is_static") is True
+        is_static_type = predicted_entity_dict.get("type") in STATIC_ENTITY_TYPES
 
-            path_to_goal_is_obstructed = False
-            if "blocked_by" in entity.relationships:
-                # Example: entity.relationships["blocked_by"] = ["obstacle_id_1", {"path_to": "other_loc", "obstacle": "obs2"}]
-                # For this conceptual rule, a simple check is enough.
-                # A more advanced check would verify if any item in "blocked_by" specifically refers to the path to goal_location_id.
-                if entity.relationships["blocked_by"]: # If the list is not empty
-                    path_to_goal_is_obstructed = True # Simplified: any blockage is relevant for now
-                    self._log_message(f"Entity '{entity_id}' path to goal '{goal_location_id}' is conceptually blocked by: {entity.relationships['blocked_by']}.")
+        if is_static_prop or is_static_type:
+            rule_reason = "is_static_prop" if is_static_prop else "is_static_type"
+            self._log_message(f"[{entity_id}] Rule 3 applies ({rule_reason}). Entity type: {predicted_entity_dict.get('type')}.")
+            current_rule_applied = "static_entity_no_change"
+            current_confidence = 0.9 # High confidence in no change
 
-            if path_to_goal_is_obstructed:
-                predicted_state_changes["location_id"] = entity.location_id # Stays at current location
-                prediction_confidence = "low"
-                prediction_rule = "goal_location_obstructed"
-                self._log_message(f"Prediction for '{entity_id}': Stays at current location '{entity.location_id}' due to obstruction. Confidence: {prediction_confidence}.")
-            else:
-                predicted_state_changes["location_id"] = goal_location_id
-                # Conceptual: No complex pathfinding, direct jump after time_horizon
-                prediction_confidence = "medium"
-                prediction_rule = "goal_location_assumed_reachable"
-                self._log_message(f"Prediction for '{entity_id}': Will move to goal_location_id '{goal_location_id}'. Confidence: {prediction_confidence}.")
+            # Conceptual: check for instability
+            damage_level = predicted_entity_dict.get("state", {}).get("damage_level", 0.0)
+            if damage_level > 0.8:
+                current_confidence = 0.3 # Low confidence (unstable)
+                current_rule_applied = "static_entity_unstable"
+                self._log_message(f"[{entity_id}] Static entity has high damage ({damage_level}), reducing confidence.")
+            # No changes to predicted_entity_dict['state'] needed for position/location_id
 
-        # Rule 2: Basic physics rule (if no goal-based prediction or if it's low confidence and physics is higher)
-        # Only apply if a goal-based prediction wasn't made or if it was low confidence.
-        # This allows physics to potentially override a blocked goal if the entity is already moving.
-        if not predicted_state_changes or (prediction_confidence == "low" and "location_id" not in predicted_state_changes):
-            has_velocity = "velocity" in entity.state and isinstance(entity.state["velocity"], (list, tuple)) and len(entity.state["velocity"]) == 3
-            has_position = "position" in entity.state and isinstance(entity.state["position"], (list, tuple)) and len(entity.state["position"]) == 3
-            # Simplified obstacle check for physics: assumes 'obstacle' is a relationship type for general obstruction,
-            # not necessarily path-specific like above.
-            is_generally_obstructed = "obstacle" in entity.relationships and len(entity.relationships["obstacle"]) > 0
+        else: # Not static, proceed to other rules
+            self._log_message(f"[{entity_id}] Rule 3 does not apply (Type: {predicted_entity_dict.get('type')}, is_static: {predicted_entity_dict.get('properties', {}).get('is_static')}).")
 
-            if has_velocity and has_position and not is_generally_obstructed:
-                try:
-                    vx, vy, vz = entity.state["velocity"]
-                    px, py, pz = entity.state["position"]
+            # Rule 1: Mobile entity with a goal
+            self._log_message(f"[{entity_id}] Evaluating Rule 1 (Mobile Entity with Goal)...")
+            entity_state = predicted_entity_dict.get("state", {})
+            current_action = entity_state.get("current_action")
+            movement_speed = entity_state.get("movement_speed") # e.g., units per second
+            goal_location_id = entity_state.get("goal_location_id")
+            current_position = entity_state.get("position") # Assume [x,y,z]
 
-                    new_position = [
-                        px + vx * time_horizon,
-                        py + vy * time_horizon,
-                        pz + vz * time_horizon
-                    ]
-                    # This rule predicts 'position' (coordinates), not 'location_id' (symbolic location)
-                    predicted_state_changes.update({"position": new_position})
-                    # If a previous rule set confidence, don't override with high unless it's more certain.
-                    # For simplicity, let's assume physics takes precedence if it applies here.
-                    prediction_confidence = "high"
-                    prediction_rule = "simple_physics_velocity_displacement"
-                    self._log_message(f"Predicted new position for '{entity_id}': {new_position} with {prediction_confidence} confidence (physics).")
-                except (TypeError, ValueError) as e:
-                    self._log_message(f"Error during physics prediction for '{entity_id}': {e}. Current state likely, low confidence.")
-                    # Keep existing predicted_state_changes if any, or default to current state
-                    if not predicted_state_changes : # only set if no other rule applied
-                        prediction_confidence = "low"
-                        current_state_copy["prediction_error"] = f"Calculation error: {e}"
-                        prediction_rule = "physics_calculation_error"
+            if current_action == "moving_to_goal" and movement_speed is not None and goal_location_id and isinstance(current_position, list) and len(current_position) == 3:
+                self._log_message(f"[{entity_id}] Rule 1 conditions met: action='moving_to_goal', speed={movement_speed}, goal='{goal_location_id}', pos={current_position}.")
 
-        # Apply predictions to the state copy
-        if predicted_state_changes:
-            current_state_copy["state"].update(predicted_state_changes)
+                goal_pos: Optional[List[float]] = None
+                goal_entity = self._entity_repository.get(goal_location_id)
+                if goal_entity and isinstance(goal_entity.state.get("position"), list) and len(goal_entity.state.get("position")) == 3:
+                    goal_pos = goal_entity.state.get("position")
+                    self._log_message(f"[{entity_id}] Goal '{goal_location_id}' is an entity, using its position: {goal_pos}.")
+                elif goal_location_id in self._spatial_model and self._spatial_model[goal_location_id].coordinates:
+                    goal_pos = list(self._spatial_model[goal_location_id].coordinates) # Ensure it's a list of floats
+                    self._log_message(f"[{entity_id}] Goal '{goal_location_id}' is a spatial location, using its coords: {goal_pos}.")
+                else:
+                    self._log_message(f"[{entity_id}] Goal position for '{goal_location_id}' not found or invalid.")
 
-        current_state_copy["prediction_confidence"] = prediction_confidence
-        current_state_copy["prediction_rule"] = prediction_rule
+                if goal_pos:
+                    # Check for obstacles in relationships
+                    is_blocked = False
+                    if isinstance(predicted_entity_dict.get("relationships"), dict):
+                        for rel_type, targets in predicted_entity_dict["relationships"].items():
+                            if rel_type == "obstructs_path_to" and isinstance(targets, list): # Assuming specific format
+                                for target_info in targets:
+                                    if isinstance(target_info, dict) and target_info.get("target_id") == goal_location_id:
+                                        obstacle_id = target_info.get("obstacle_id", "unknown_obstacle")
+                                        self._log_message(f"[{entity_id}] Path to '{goal_location_id}' is blocked by '{obstacle_id}'.")
+                                        is_blocked = True
+                                        break
+                            if is_blocked: break
 
-        if not predicted_state_changes and prediction_rule == "no_specific_rule_applied":
-             self._log_message(f"No specific prediction rules applicable or conditions met for '{entity_id}'. Returning current state with {prediction_confidence} confidence.")
+                    if is_blocked:
+                        predicted_entity_dict["state"]["current_action"] = "blocked"
+                        # Position might change slightly if already moving, but for simplicity, assume no significant change here.
+                        current_confidence = 0.7 # Confident about blockage
+                        current_rule_applied = "mobile_entity_goal_blocked"
+                        self._log_message(f"[{entity_id}] Prediction: Blocked. Action set to 'blocked'. Confidence: {current_confidence}.")
+                    else:
+                        distance_to_goal = self._calculate_distance(current_position, goal_pos)
+                        travelable_distance = float(movement_speed) * time_horizon
+                        self._log_message(f"[{entity_id}] Dist to goal: {distance_to_goal:.2f}, Travelable: {travelable_distance:.2f}.")
 
-        return current_state_copy
+                        if travelable_distance >= distance_to_goal:
+                            predicted_entity_dict["state"]["position"] = goal_pos
+                            predicted_entity_dict["location_id"] = goal_location_id # Update symbolic location too
+                            predicted_entity_dict["state"]["current_action"] = "at_goal" # Or "idle"
+                            current_confidence = 0.6 # Medium-high confidence
+                            current_rule_applied = "mobile_entity_reaches_goal"
+                            self._log_message(f"[{entity_id}] Prediction: Reaches goal '{goal_location_id}'. Pos: {goal_pos}. Action: 'at_goal'. Confidence: {current_confidence}.")
+                        else:
+                            fraction_moved = travelable_distance / distance_to_goal if distance_to_goal > 0 else 0
+                            new_pos = self._linear_interpolate(current_position, goal_pos, fraction_moved)
+                            predicted_entity_dict["state"]["position"] = new_pos
+                            # current_action remains "moving_to_goal"
+                            current_confidence = 0.4 # Low-medium confidence
+                            current_rule_applied = "mobile_entity_moves_towards_goal"
+                            self._log_message(f"[{entity_id}] Prediction: Moves towards goal. New Pos: {new_pos}. Action remains 'moving_to_goal'. Confidence: {current_confidence}.")
+                else: # No valid goal_pos
+                    self._log_message(f"[{entity_id}] Rule 1 cannot apply: goal_pos for '{goal_location_id}' not determined.")
+            else: # Rule 1 conditions not met
+                self._log_message(f"[{entity_id}] Rule 1 conditions not met (Action: {current_action}, Speed: {movement_speed}, GoalID: {goal_location_id}, Pos: {current_position}).")
+
+
+            # Rule 2: Basic physics (constant velocity) - apply if Rule 1 didn't apply or had low confidence
+            rule1_low_confidence = current_rule_applied.startswith("mobile_entity_moves_towards_goal") # 0.4
+            if current_rule_applied == "no_specific_rule_applied_current_state_assumed" or rule1_low_confidence:
+                self._log_message(f"[{entity_id}] Evaluating Rule 2 (Constant Velocity Physics)... Current rule: {current_rule_applied}, Current Conf: {current_confidence}")
+                velocity = entity_state.get("velocity") # [vx,vy,vz]
+                # current_position is already fetched
+
+                if isinstance(velocity, list) and len(velocity) == 3 and \
+                   isinstance(current_position, list) and len(current_position) == 3:
+                    self._log_message(f"[{entity_id}] Rule 2 conditions met: velocity={velocity}, position={current_position}.")
+
+                    new_px = current_position[0] + velocity[0] * time_horizon
+                    new_py = current_position[1] + velocity[1] * time_horizon
+                    new_pz = current_position[2] + velocity[2] * time_horizon
+                    predicted_entity_dict["state"]["position"] = [new_px, new_py, new_pz]
+
+                    current_confidence = 0.5 # Medium confidence default for this rule
+                    current_rule_applied = "physics_constant_velocity"
+
+                    max_speed = predicted_entity_dict.get("properties", {}).get("max_speed")
+                    if max_speed is not None:
+                        speed_magnitude = self._vector_magnitude(velocity)
+                        if speed_magnitude > float(max_speed):
+                            self._log_message(f"[{entity_id}] Warning: Entity velocity magnitude {speed_magnitude:.2f} exceeds max_speed {max_speed:.2f}.")
+                            current_confidence = 0.3 # Lower confidence due to exceeding max_speed
+                            current_rule_applied = "physics_exceeds_max_speed"
+
+                    self._log_message(f"[{entity_id}] Prediction: New position by velocity {predicted_entity_dict['state']['position']}. Confidence: {current_confidence}.")
+                else: # Rule 2 conditions not met
+                    self._log_message(f"[{entity_id}] Rule 2 conditions not met (Velocity: {velocity}, Position: {current_position}).")
+
+        # Final packaging of the result
+        return {
+            "predicted_entity_state_dict": predicted_entity_dict,
+            "prediction_confidence": current_confidence,
+            "prediction_rule_applied": current_rule_applied
+        }
 
     def get_world_model_status(self) -> Dict[str, Any]: # Renamed from get_status for clarity
         self._log_message("Getting world model status.")
@@ -512,22 +592,93 @@ if __name__ == '__main__':
         # Add position and velocity to RedApple for prediction
         world_model.update_entity_state("RedApple", {"state": {"position": [10, 5, 0], "velocity": [1, 0, 0]}})
         predicted_state_apple = world_model.predict_future_state("RedApple", time_horizon=5.0)
+        # Expected: Rule 2 (physics_constant_velocity), Confidence 0.5
         assert predicted_state_apple is not None
-        assert predicted_state_apple["prediction_confidence"] == "high"
-        assert predicted_state_apple["state"]["position"] == [15, 5, 0] # 10 + 1*5
-        print(f"  Predicted state for RedApple (with velocity): {predicted_state_apple['state']['position']}, Confidence: {predicted_state_apple['prediction_confidence']}")
+        assert predicted_state_apple["prediction_rule_applied"] == "physics_constant_velocity", f"Apple rule: {predicted_state_apple['prediction_rule_applied']}"
+        assert predicted_state_apple["prediction_confidence"] == 0.5, f"Apple confidence: {predicted_state_apple['prediction_confidence']}"
+        assert predicted_state_apple["predicted_entity_state_dict"]["state"]["position"] == [15, 5, 0]
+        print(f"  Predicted state for RedApple (with velocity): {predicted_state_apple['predicted_entity_state_dict']['state']['position']}, Rule: {predicted_state_apple['prediction_rule_applied']}, Confidence: {predicted_state_apple['prediction_confidence']}")
 
-        # Predict for an entity without velocity (should return current with low confidence)
+        # Predict for an entity without velocity (should return current with default low confidence)
         predicted_state_box = world_model.predict_future_state("box01", time_horizon=5.0)
         assert predicted_state_box is not None
-        assert predicted_state_box["prediction_confidence"] == "low"
-        assert predicted_state_box["state"].get("position") is None # No position initially
-        print(f"  Predicted state for box01 (no velocity): Confidence: {predicted_state_box['prediction_confidence']}")
+        assert predicted_state_box["prediction_rule_applied"] == "no_specific_rule_applied_current_state_assumed"
+        assert predicted_state_box["prediction_confidence"] == 0.1 # Default very_low
+        assert predicted_state_box["predicted_entity_state_dict"]["state"].get("position") is None # No position initially
+        print(f"  Predicted state for box01 (no vel/goal): Rule: {predicted_state_box['prediction_rule_applied']}, Confidence: {predicted_state_box['prediction_confidence']}")
 
         # Predict for non-existent entity
         predicted_non_existent = world_model.predict_future_state("ghost02", time_horizon=5.0)
-        assert predicted_non_existent is None
-        print(f"  Attempted prediction for non-existent 'ghost02': Result is None.")
+        assert predicted_non_existent is not None # Now returns a dict
+        assert predicted_non_existent["prediction_rule_applied"] == "entity_not_found"
+        assert predicted_non_existent["prediction_confidence"] == 0.0
+        assert not predicted_non_existent["predicted_entity_state_dict"] # Empty dict
+        print(f"  Attempted prediction for non-existent 'ghost02': Rule: {predicted_non_existent['prediction_rule_applied']}.")
+
+        # Test Static Entity Rule
+        world_model.update_entity_state("TableTop", {"properties": {"is_static": True}})
+        predicted_table = world_model.predict_future_state("TableTop", time_horizon=10.0)
+        assert predicted_table["prediction_rule_applied"] == "static_entity_no_change"
+        assert predicted_table["prediction_confidence"] == 0.9
+        print(f"  Predicted state for TableTop (static): Rule: {predicted_table['prediction_rule_applied']}, Confidence: {predicted_table['prediction_confidence']}")
+
+        world_model.update_entity_state("TableTop", {"state": {"damage_level": 0.9}})
+        predicted_table_damaged = world_model.predict_future_state("TableTop", time_horizon=10.0)
+        assert predicted_table_damaged["prediction_rule_applied"] == "static_entity_unstable"
+        assert predicted_table_damaged["prediction_confidence"] == 0.3
+        print(f"  Predicted state for TableTop (static, damaged): Rule: {predicted_table_damaged['prediction_rule_applied']}, Confidence: {predicted_table_damaged['prediction_confidence']}")
+        # Reset damage for other tests
+        world_model.update_entity_state("TableTop", {"state": {"damage_level": 0.0}})
+
+
+        # Test Mobile Entity with Goal Rule
+        # Create a goal location entity
+        goal_loc_entity_id = "GoalSpot"
+        world_model._entity_repository[goal_loc_entity_id] = WorldEntity(
+            id=goal_loc_entity_id, type="location_marker",
+            state={"position": [100, 100, 0]}, properties={}, affordances=[], relationships={}
+        )
+
+        # Update RedApple to move to goal
+        world_model.update_entity_state("RedApple", {
+            "state": {
+                "current_action": "moving_to_goal",
+                "goal_location_id": goal_loc_entity_id,
+                "movement_speed": 10.0, # units/sec
+                "position": [15, 5, 0] # Current position after previous prediction
+            }
+        })
+        # Predict RedApple reaches goal
+        dist_apple_to_goal = math.sqrt((100-15)**2 + (100-5)**2 + (0-0)**2) # approx 127.7
+        time_to_reach = dist_apple_to_goal / 10.0 # approx 12.77s
+
+        predicted_apple_reaches_goal = world_model.predict_future_state("RedApple", time_horizon=15.0) # Should reach
+        assert predicted_apple_reaches_goal["prediction_rule_applied"] == "mobile_entity_reaches_goal", f"Apple goal rule: {predicted_apple_reaches_goal['prediction_rule_applied']}"
+        assert predicted_apple_reaches_goal["prediction_confidence"] == 0.6
+        assert predicted_apple_reaches_goal["predicted_entity_state_dict"]["state"]["position"] == [100,100,0]
+        assert predicted_apple_reaches_goal["predicted_entity_state_dict"]["state"]["current_action"] == "at_goal"
+        print(f"  Predicted RedApple reaches goal: Pos={predicted_apple_reaches_goal['predicted_entity_state_dict']['state']['position']}, Rule: {predicted_apple_reaches_goal['prediction_rule_applied']}")
+
+        # Predict RedApple moves towards goal
+        predicted_apple_towards_goal = world_model.predict_future_state("RedApple", time_horizon=5.0) # Should move towards
+        assert predicted_apple_towards_goal["prediction_rule_applied"] == "mobile_entity_moves_towards_goal", f"Apple towards rule: {predicted_apple_towards_goal['prediction_rule_applied']}"
+        assert predicted_apple_towards_goal["prediction_confidence"] == 0.4
+        # Check if position changed from [15,5,0] towards [100,100,0]
+        assert predicted_apple_towards_goal["predicted_entity_state_dict"]["state"]["position"] != [15,5,0]
+        print(f"  Predicted RedApple moves towards goal: NewPos={predicted_apple_towards_goal['predicted_entity_state_dict']['state']['position']}, Rule: {predicted_apple_towards_goal['prediction_rule_applied']}")
+
+        # Test blocked path
+        # Add an obstacle relationship for RedApple
+        world_model._entity_repository["RedApple"].relationships["obstructs_path_to"] = [
+            {"type": "obstructs_path_to", "target_id": goal_loc_entity_id, "obstacle_id": "some_rock"}
+        ]
+        predicted_apple_blocked = world_model.predict_future_state("RedApple", time_horizon=5.0)
+        assert predicted_apple_blocked["prediction_rule_applied"] == "mobile_entity_goal_blocked"
+        assert predicted_apple_blocked["prediction_confidence"] == 0.7
+        assert predicted_apple_blocked["predicted_entity_state_dict"]["state"]["current_action"] == "blocked"
+        print(f"  Predicted RedApple blocked: Action={predicted_apple_blocked['predicted_entity_state_dict']['state']['current_action']}, Rule: {predicted_apple_blocked['prediction_rule_applied']}")
+        # Clear relationship for next tests
+        world_model._entity_repository["RedApple"].relationships = {}
 
 
         print("\n--- Final World Model Status ---")
