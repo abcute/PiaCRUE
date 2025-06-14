@@ -26,12 +26,45 @@ CML provides abstract base classes (ABCs) and concrete MVP (Minimal Viable Produ
 *   **Attention Module:** (`BaseAttentionModule`, `ConcreteAttentionModule`)
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.1.2](../../PiaAGI.md#312-attention-and-cognitive-control-central-executive-functions), [4.1.4](../../PiaAGI.md#41-core-modules-and-their-interactions)
 *   **Learning Module:** (`BaseLearningModule`, `ConcreteLearningModule`)
+    *   *Role:* Enables the agent to learn from experience, adapt knowledge and behaviors, and improve performance. It processes various inputs (percepts, action outcomes, goal statuses, feedback) through different conceptual learning paradigms.
+    *   *Conceptual Learning Paradigms (in `ConcreteLearningModule`):*
+        *   **Unsupervised Feature Extraction:** Identifies patterns in raw `PerceptData` (e.g., from visual or textual modalities) to form new feature representations or concept clusters, conceptually updating LTM-Semantic.
+        *   **Reinforcement from Action:** Adjusts skill policies (conceptually in LTM-Procedural) based on the success or failure status of `ActionEventPayloads`. Reward signals are implicitly derived from action outcomes.
+        *   **Goal Outcome Evaluation:** Evaluates strategies related to goal achievement or failure (from `GoalUpdatePayloads`), conceptually updating LTM-Procedural (strategy effectiveness) or LTM-Episodic (memory of the outcome).
+        *   **Supervised Learning (Conceptual):** Designed to train/fine-tune internal models using labeled data, if provided. Updates models conceptually stored in LTM-Semantic or specialized model stores.
+        *   **Observational Learning (Conceptual):** Allows learning new behaviors or skills by observing traces of another agent's actions and outcomes. Conceptually updates LTM-Procedural or LTM-Semantic (affordances, social norms).
+        *   **Transfer Learning (Conceptual):** Adapts existing knowledge or skills from a source domain/task to a new target domain/task. Conceptually updates LTM for the target context.
+        *   **Meta-Learning (Conceptual):** Adjusts internal learning parameters (e.g., learning rates) or strategy selection heuristics based on performance feedback. Conceptually updates Learning Module parameters or Self-Model learning preferences.
+    *   *Operational Notes:* The `ConcreteLearningModule` is integrated with the message bus, receiving various events that trigger learning. It applies conceptual ethical guardrails to potential learning outcomes before publishing them as `LearningOutcomePayload` messages. It also includes conceptual logic for knowledge consolidation and is influenced by the agent's emotional state.
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.1.3](../../PiaAGI.md#313-learning-theories-and-mechanisms-for-agi), [4.1.5](../../PiaAGI.md#41-core-modules-and-their-interactions)
 *   **Motivational System Module:** (`MotivationalSystemModule`, `ConcreteMotivationalSystemModule`)
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.3](../../PiaAGI.md#33-motivational-systems-and-intrinsic-goals), [4.1.6](../../PiaAGI.md#41-core-modules-and-their-interactions)
 *   **Emotion Module:** (`EmotionModule`, `ConcreteEmotionModule`)
+    *   *Role:* Manages the agent's emotional state, primarily using a VAD (Valence, Arousal, Dominance) model. It appraises incoming events from various sources (goals, percepts, actions) to update this VAD state and derive conceptual discrete emotions.
+    *   *Conceptual Operational Flow (in `ConcreteEmotionModule`):*
+        1.  Receives `GoalUpdatePayload`, `PerceptDataPayload`, and `ActionEventPayload` messages via the Message Bus.
+        2.  Message handlers (`_handle_goal_update_for_appraisal`, etc.) extract relevant information and transform it into conceptual appraisal dimensions (e.g., event intensity, novelty, expectedness, goal_congruence, agency, norm_alignment, controllability).
+        3.  The core `appraise_event` method takes these dimensions and calculates changes to the VAD state. This calculation considers the derived appraisal variables and can be (conceptually) influenced by the agent's personality profile (e.g., neuroticism affecting valence response, extraversion, arousal reactivity).
+        4.  A helper method, `_map_vad_to_discrete_emotion`, provides a simplified mapping from the current VAD state to a discrete emotion label (e.g., "Joyful," "Sad," "Calm").
+        5.  The VAD state undergoes a decay process, gradually returning towards neutral over time.
+        6.  An `EmotionalStateChangePayload`, containing the updated VAD profile, the derived discrete emotion label, and an intensity value (typically current arousal), is published on the Message Bus.
+    *   *Emphasis:* The current appraisal logic in `ConcreteEmotionModule` is a conceptual framework. While it processes various inputs and logs its internal calculations (derived appraisal variables, VAD changes), the specific weights and the precise impact of personality traits (beyond arousal reactivity) are placeholders designed for future empirical grounding and more sophisticated modeling.
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [3.4](../../PiaAGI.md#34-computational-models-of-emotion), [4.1.7](../../PiaAGI.md#41-core-modules-and-their-interactions)
 *   **Planning and Decision Making Module:** (`PlanningAndDecisionMakingModule`, `ConcretePlanningAndDecisionMakingModule`)
+    *   *Role:* Formulates plans to achieve active goals from the Motivational System, considering the current world state, agent capabilities (from Self-Model), available knowledge (LTM), and contextual information (WM). It selects appropriate actions or sub-goals and dispatches them.
+    *   *Conceptual Operational Flow (in `ConcretePlanningAndDecisionMakingModule`):*
+        1.  **LTM Plan Retrieval:** Attempts to retrieve relevant pre-existing plans from LTM.
+        2.  **Internal Plan Generation (Conceptual):** If no suitable LTM plan is found, it generates a few conceptual candidate plans (e.g., direct, cautious, exploratory).
+        3.  **Plan Evaluation (Conceptual):** Each candidate plan undergoes a conceptual evaluation, logging simulated checks against:
+            *   World Model (e.g., predicted success, resource estimation).
+            *   Self-Model (e.g., ethical alignment, capability adequacy).
+            *   Emotion Module (e.g., influence of current emotional state).
+            *   LTM (e.g., outcomes of similar past plans).
+            A conceptual evaluation score is assigned to each plan.
+        4.  **Plan Selection:** The plan with the best conceptual evaluation score is selected.
+        5.  **Ethical Review Trigger:** If the selected plan warrants it (based on conceptual checks or keywords), a formal `EthicalReviewRequest` is published.
+        6.  **Dispatch:** Action commands for the selected plan are published.
+    *   *Emphasis:* While many evaluation aspects in the current concrete implementation are conceptual (primarily logged to outline the process), this structured flow is designed to integrate more sophisticated, data-driven evaluations from other CMLs as they mature.
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [4.1.8](../../PiaAGI.md#41-core-modules-and-their-interactions), [4.4](../../PiaAGI.md#44-action-selection-and-execution)
 *   **Behavior Generation Module:** (`BaseBehaviorGenerationModule`, `ConcreteBehaviorGenerationModule`)
     *   *[`PiaAGI.md`](../../PiaAGI.md) Sections:* [4.1.9](../../PiaAGI.md#41-core-modules-and-their-interactions)

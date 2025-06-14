@@ -378,6 +378,248 @@ class TestConcretePlanningDecisionMakingModuleIntegration(unittest.TestCase):
 
         asyncio.run(run_test_logic())
 
+    def test_internal_conceptual_plan_generation_and_selection(self):
+        pdm_module = self.pdm_module
+        async def run_test_logic():
+            self.received_action_commands.clear()
+            self.received_ltm_queries.clear()
+            self.received_ethical_review_requests.clear()
+            pdm_module._log.clear()
+            pdm_module._ltm_query_results.clear()
+            pdm_module._awaiting_plan_for_goal.clear()
+
+            goal_desc = "investigate_strange_signal"
+            goal = GoalUpdatePayload("g_internal_plan", goal_desc, 0.75, "ACTIVE", "ScienceTeam")
+
+            # Publish goal to PDM
+            self.bus.publish(GenericMessage(pdm_module.get_module_status()["module_id"], "GoalUpdate", goal))
+            await asyncio.sleep(0.01) # Allow PDM to process goal update
+
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01) # Allow PDM to process and dispatch
+
+            # Assertions
+            # 1. Check logs for internal plan generation
+            self.assertTrue(any("No LTM plan retrieved. Starting conceptual internal plan generation." in log for log in pdm_module._log))
+            self.assertTrue(any("Generated internal candidate 'internal_direct_plan'" in log for log in pdm_module._log))
+            self.assertTrue(any("Generated internal candidate 'internal_cautious_plan'" in log for log in pdm_module._log))
+            # Exploratory plan might not be generated if LTM query was already attempted or not deemed necessary by simple heuristic
+
+            # 2. Check logs for conceptual evaluation of candidates
+            self.assertTrue(any("Evaluating Candidate Plan" in log and "'internal_direct_plan'" in log for log in pdm_module._log))
+            self.assertTrue(any("Conceptual WM Eval:" in log for log in pdm_module._log if "'internal_direct_plan'" in log)) # Check one detail for one plan
+            self.assertTrue(any("Conceptual Self-Model Eval:" in log for log in pdm_module._log if "'internal_direct_plan'" in log))
+            self.assertTrue(any("Conceptual Emotion Influence:" in log for log in pdm_module._log if "'internal_direct_plan'" in log))
+            self.assertTrue(any("Conceptual LTM Past Experience:" in log for log in pdm_module._log if "'internal_direct_plan'" in log))
+            self.assertTrue(any("Conceptual Evaluation Score for 'internal_direct_plan'" in log for log in pdm_module._log))
+
+            self.assertTrue(any("Evaluating Candidate Plan" in log and "'internal_cautious_plan'" in log for log in pdm_module._log))
+
+            # 3. Check logs for selection of an internal plan
+            # The exact selected plan depends on random elements in conceptual eval, so check for general selection log
+            selected_log_found = False
+            selected_plan_id = None
+            for log_entry in pdm_module._log:
+                if "Selected plan '" in log_entry and "internal_" in log_entry: # Check if an internal plan was selected
+                    selected_log_found = True
+                    # Extract selected plan id for verifying dispatched actions (conceptual)
+                    try:
+                        selected_plan_id = log_entry.split("'")[1] # e.g., "Selected plan 'internal_direct_plan'..."
+                    except IndexError:
+                        pass # Should not happen if log format is consistent
+                    break
+            self.assertTrue(selected_log_found, "Log message for selecting an internal plan not found.")
+
+            # 4. Verify dispatched actions correspond to a known internal plan's structure
+            self.assertTrue(len(self.received_action_commands) >= 1, "No action commands received for selected internal plan.")
+
+            if selected_plan_id: # If we successfully extracted the selected plan's ID from logs
+                first_action_payload = self.received_action_commands[0].payload
+                self.assertIn(selected_plan_id.replace("internal_", "").replace("_plan",""), first_action_payload.action_type,
+                              f"Dispatched action type '{first_action_payload.action_type}' does not seem to match selected plan ID '{selected_plan_id}'")
+                self.assertIn("internal_generation", first_action_payload.parameters.get("plan_source", ""),
+                              "Plan source for dispatched action should indicate internal generation.")
+
+        asyncio.run(run_test_logic())
+
+    def test_ltm_plan_fails_conceptual_ethics_falls_back_to_internal(self):
+        pdm_module = self.pdm_module
+        async def run_test_logic():
+            self.received_action_commands.clear()
+            pdm_module._log.clear()
+            pdm_module._ltm_query_results.clear()
+            pdm_module._awaiting_plan_for_goal.clear()
+
+            goal_desc = "achieve_goal_with_sensitive_ltm_plan"
+            goal = GoalUpdatePayload("g_ltm_ethical_fail", goal_desc, 0.9, "ACTIVE", "TestSystem")
+
+            # Setup LTM plan with a sensitive keyword
+            ltm_plan_query_id = "q_sensitive_plan"
+            sensitive_ltm_plan_steps = [
+                {"action_type": "access_all_user_data", "parameters": {"reason": "analysis"}}, # Sensitive part
+                {"action_type": "delete_user_data_for_compliance", "parameters": {"user_id": "user123"}} # Sensitive
+            ]
+            pdm_module._ltm_query_results[ltm_plan_query_id] = LTMQueryResultPayload(
+                query_id=ltm_plan_query_id,
+                results=[MemoryItem(item_id="plan_sensitive_001", content=sensitive_ltm_plan_steps)],
+                success_status=True,
+                query_metadata={"query_type": "get_action_plan_for_goal", "original_query_content": goal_desc}
+            )
+
+            self.bus.publish(GenericMessage(pdm_module.get_module_status()["module_id"], "GoalUpdate", goal))
+            await asyncio.sleep(0.01)
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01)
+
+            # Assertions
+            self.assertTrue(any(f"Retrieved plan from LTM (QueryID: {ltm_plan_query_id})" in log for log in pdm_module._log))
+            self.assertTrue(any("Conceptual Self-Model Eval:" in log and f"ltm_plan_{ltm_plan_query_id}" in log for log in pdm_module._log))
+            self.assertTrue(any("Ethical Check: FAIL" in log for log in pdm_module._log if f"ltm_plan_{ltm_plan_query_id}" in log))
+            self.assertTrue(any(f"LTM plan 'ltm_plan_{ltm_plan_query_id}' was not selected" in log for log in pdm_module._log)) # This implies rejection
+            self.assertTrue(any("No LTM plan retrieved. Starting conceptual internal plan generation." in log for log in pdm_module._log)
+                            or any(f"Selected plan 'internal_" in log for log in pdm_module._log), # Check if it fell back to internal
+                            "Should log fallback to internal plan generation or selection of internal plan.")
+
+            self.assertTrue(len(self.received_action_commands) >= 1, "Fallback internal plan should have dispatched actions.")
+            first_action_payload = self.received_action_commands[0].payload
+            self.assertIn("internal_generation", first_action_payload.parameters.get("plan_source", ""),
+                          "Plan source should indicate internal generation after LTM plan ethical fail.")
+            # Ensure the dispatched action is NOT from the sensitive LTM plan
+            self.assertNotIn("delete_user_data", first_action_payload.action_type.lower())
+            self.assertNotIn("access_all_user_data", first_action_payload.action_type.lower())
+
+        asyncio.run(run_test_logic())
+
+    def test_all_plans_fail_conceptual_evaluation_fallback_safe_action(self):
+        pdm_module = self.pdm_module
+        async def run_test_logic():
+            self.received_action_commands.clear()
+            pdm_module._log.clear()
+            pdm_module._ltm_query_results.clear()
+            pdm_module._awaiting_plan_for_goal.clear()
+
+            # Goal description designed to make all conceptual plans fail ethical checks
+            goal_desc = "critically_delete_all_user_data_and_share_sensitive_info_for_harmful_purpose"
+            goal = GoalUpdatePayload("g_all_fail", goal_desc, 0.95, "ACTIVE", "MaliciousActor")
+
+            self.bus.publish(GenericMessage(pdm_module.get_module_status()["module_id"], "GoalUpdate", goal))
+            await asyncio.sleep(0.01)
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01)
+
+            # Assertions
+            self.assertTrue(any("Starting conceptual internal plan generation." in log for log in pdm_module._log))
+            # Check that conceptual plans were generated and evaluated as FAIL (due to keywords)
+            self.assertTrue(any("Ethical Check: FAIL" in log for log in pdm_module._log if "'internal_direct_plan'" in log), "Direct plan should fail ethics.")
+            self.assertTrue(any("Ethical Check: FAIL" in log for log in pdm_module._log if "'internal_cautious_plan'" in log), "Cautious plan should fail ethics.")
+            # Exploratory plan might also be generated and fail
+            if any("internal_exploratory_plan" in log for log in pdm_module._log):
+                 self.assertTrue(any("Ethical Check: FAIL" in log for log in pdm_module._log if "'internal_exploratory_plan'" in log), "Exploratory plan should fail ethics if generated.")
+
+            self.assertTrue(any("All candidate plans were conceptually rejected or scored too low. Generating critical fallback action." in log for log in pdm_module._log))
+
+            self.assertEqual(len(self.received_action_commands), 1, "Expected one fallback action.")
+            fallback_action_payload = self.received_action_commands[0].payload
+            self.assertEqual(fallback_action_payload.action_type, "request_assistance_no_valid_plan")
+            self.assertIn("All plans failed conceptual evaluation", fallback_action_payload.parameters.get("reason", ""))
+            self.assertEqual(fallback_action_payload.parameters.get("plan_source"), "critical_fallback_evaluation_reject")
+
+        asyncio.run(run_test_logic())
+
+    def test_conceptual_evaluation_prefers_higher_scoring_internal_plan(self):
+        pdm_module = self.pdm_module
+        async def run_test_logic():
+            self.received_action_commands.clear()
+            pdm_module._log.clear()
+            pdm_module._ltm_query_results.clear()
+            pdm_module._awaiting_plan_for_goal.clear()
+
+            # Neutral goal description
+            goal_desc = "achieve_neutral_goal_x"
+            goal = GoalUpdatePayload("g_neutral_eval", goal_desc, 0.7, "ACTIVE", "TestSystem")
+
+            # Set a slightly positive emotional state if it influences conceptual scoring
+            pdm_module._current_emotional_state = EmotionalStateChangePayload(
+                current_emotion_profile={"valence": 0.2, "arousal": 0.3, "dominance": 0.1},
+                intensity=0.3
+            )
+
+            self.bus.publish(GenericMessage(pdm_module.get_module_status()["module_id"], "GoalUpdate", goal))
+            await asyncio.sleep(0.01)
+
+            # To make this test more deterministic without altering PDM code for testing:
+            # We will rely on the fact that multiple conceptual plans are generated
+            # and each gets a conceptual evaluation_score logged.
+            # We will then check that a plan with a higher logged score is selected.
+            # The randomness in evaluation means we can't predetermine *which* plan,
+            # but we can check the principle.
+
+            # For more robust testing of specific scoring, one might need to mock parts of the
+            # conceptual evaluation within PDM, or make the evaluation scoring more deterministic.
+            # Current PDM code uses uuid.uuid4().int % len(options) for some conceptual checks,
+            # making it hard to guarantee one plan will score higher without many iterations or mocks.
+
+            # The goal here is to see the selection process based on *some* logged difference.
+            # We'll look for logs of multiple evaluations and then a selection log.
+
+            pdm_module.process_highest_priority_goal()
+            await asyncio.sleep(0.01)
+
+            # Assertions
+            self.assertTrue(any("Starting conceptual internal plan generation." in log for log in pdm_module._log))
+
+            evaluated_plan_scores = {} # Store plan_id -> score
+            for log_entry in pdm_module._log:
+                if "Conceptual Evaluation Score for '" in log_entry:
+                    try:
+                        parts = log_entry.split("'")
+                        plan_id = parts[1]
+                        score_str = parts[2].split(": ")[1]
+                        evaluated_plan_scores[plan_id] = float(score_str)
+                    except (IndexError, ValueError):
+                        continue # Ignore malformed log lines for this check
+
+            self.assertTrue(len(evaluated_plan_scores) >= 2,
+                            f"Expected at least 2 internal plans to be evaluated and have scores logged. Found: {evaluated_plan_scores}")
+
+            selected_plan_id_from_log = None
+            selected_plan_score_from_log = -float('inf')
+            for log_entry in pdm_module._log:
+                if "Selected plan '" in log_entry and "with score" in log_entry:
+                    try:
+                        parts = log_entry.split("'")
+                        selected_plan_id_from_log = parts[1]
+                        score_str = log_entry.split("with score ")[1].split(".")[0] # Get the number part
+                        selected_plan_score_from_log = float(score_str + "." + log_entry.split("with score ")[1].split(".")[1][:3]) # Reconstruct float
+                        break
+                    except (IndexError, ValueError):
+                        continue
+
+            self.assertIsNotNone(selected_plan_id_from_log, "Could not find log entry for selected plan with score.")
+
+            # Verify that the selected plan's score matches one of the evaluated scores
+            # And that it is indeed the highest among the valid (score > -0.5) candidates.
+            self.assertIn(selected_plan_id_from_log, evaluated_plan_scores, "Selected plan ID was not found in evaluated plan scores.")
+            self.assertAlmostEqual(evaluated_plan_scores[selected_plan_id_from_log], selected_plan_score_from_log, places=3,
+                                   msg="Score of selected plan in log does not match its evaluation score.")
+
+            highest_valid_score = -float('inf')
+            for plan_id, score in evaluated_plan_scores.items():
+                if score > -0.5: # Considering valid plans
+                    if score > highest_valid_score:
+                        highest_valid_score = score
+
+            self.assertAlmostEqual(selected_plan_score_from_log, highest_valid_score, places=3,
+                                   msg=f"Selected plan score {selected_plan_score_from_log} is not the highest valid score {highest_valid_score} among conceptual evaluations. Scores: {evaluated_plan_scores}")
+
+            self.assertTrue(len(self.received_action_commands) >= 1, "No actions dispatched for the selected plan.")
+            # Further check if dispatched actions match 'selected_plan_id_from_log' if needed.
+            first_action_of_selected = self.received_action_commands[0].payload
+            self.assertIn(selected_plan_id_from_log.replace("internal_", "").replace("_plan",""), first_action_of_selected.action_type,
+                          "Dispatched action doesn't seem to correspond to the logged selected plan.")
+
+        asyncio.run(run_test_logic())
+
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
 ```

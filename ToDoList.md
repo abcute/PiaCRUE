@@ -52,7 +52,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [x] Developed detailed specification document for the Self-Model Module (`PiaAGI_Research_Tools/PiaCML/Self_Model_Module_Specification.md`), outlining data structures, conceptual algorithms (metacognition, ethical framework application, self-improvement), interactions, and developmental aspects.
 - [x] Outline a research plan for developing and testing the **Developmental Scaffolding methodology (Section 5.4, 6.1)** specifically for **Theory of Mind (ToM) acquisition (Section 3.2.2)** from PiaSeedling to PiaSapling stages. This plan should include potential simulation environments, interaction protocols, and evaluation metrics.
 - [x] Conduct a survey and report on existing Python libraries and frameworks that could be suitable for implementing key aspects of the PiaAGI cognitive architecture (e.g., for probabilistic reasoning, knowledge representation, symbolic AI, agent simulation, multi-agent systems).
-- [ ] Begin drafting specific computational models for the **Motivational System (Section 3.3 and 4.1.6)**, focusing on how intrinsic goals (e.g., curiosity, competence) could be mathematically formulated and algorithmically implemented to drive agent behavior.
+- [x] Begin drafting specific computational models for the **Motivational System (Section 3.3 and 4.1.6)**, focusing on how intrinsic goals (e.g., curiosity, competence) could be mathematically formulated and algorithmically implemented to drive agent behavior. (Refined in concrete module, spec, and tests)
 - [ ] Design a conceptual framework for the **Architectural Maturation (Section 3.2.1)** process, detailing how specific learning experiences or developmental milestones might trigger changes in module capacities or inter-module connectivity.
 - [x] Create `PiaAGI_Research_Tools/cognitive_module_library/` directory. (Path updated from PiaAGI_Hub)
 - [x] Define Abstract Base Class `BaseMemoryModule` in `PiaAGI_Research_Tools/cognitive_module_library/base_memory_module.py`. (Path updated)
@@ -119,7 +119,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [x] Task: Described high-level algorithmic concepts for these motivational models (added to `PiaAGI_Research_Tools/PiaAVT/Conceptual_Motivation_Models.md`).
 - [x] Task: Prototyped a basic logger component for PiaAVT (created `PiaAGI_Research_Tools/PiaAVT/prototype_logger.py`).
 - [x] Task: Conceptually implemented Goal Dynamics analysis for PiaAVT (created `PiaAGI_Research_Tools/PiaAVT/Analysis_Implementations/Goal_Dynamics_Analysis.py`).
-- [x] Implement the conceptualized basic analyses (Goal Lifecycle, Emotional Trajectory, Task Performance) in PiaAVT. (Note: This is a more general task, Goal Dynamics is one of these)
+- [x] Implement the conceptualized basic analyses (Goal Lifecycle, Emotional Trajectory, Task Performance) in PiaAVT. (Core Python scripts for Goal Dynamics, Emotional Trajectory, and Task Performance analysis implemented; further integration/advanced features are future work.)
 - [x] Design and implement a prototype Python logger in PiaCML/PiaSE that adheres to Logging_Specification.md. (Note: prototype_logger.py from PiaAVT was used for conceptual log generation for PiaAVT's needs. Deeper integration of logging within PiaCML/PiaSE is a separate, larger task.)
 - [x] Task: Integrate `prototype_logger.py` with the conceptual PiaSE scenarios to generate sample log files.
 - [x] Task: Refine `Goal_Dynamics_Analysis.py` to parse actual log files generated from PiaSE/logger integration.
@@ -198,8 +198,8 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 ## PiaSE (PiaAGI Simulation Environment) - Enhancements
 - [x] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules). (MVP implementation of PiaAGIAgent class, basic scenarios, unit tests, and refined guide completed by Jules on 2024-08-05).
 - [x] Define a more robust Environment API for richer perceptions and actions: Enhanced `PerceptionData`, `ActionCommand`, `ActionResult` Pydantic models and added new optional methods to `Environment`/`AgentInterface` ABCs in `core_engine/interfaces.py`. Documentation in `PiaAGI_Simulation_Environment.md` updated.
-- [ ] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World").
-- [ ] Implement one of the newly conceptualized environment types as a prototype.
+- [x] Conceptually design 1-2 new environment types (e.g., "Social Dialogue Sandbox," "Crafting & Problem-Solving World"). (Design docs created for Social Dialogue Sandbox and Crafting World).
+- [x] Implement one of the newly conceptualized environment types as a prototype. (Prototypes for Social Dialogue Sandbox and Crafting World enhanced with core mechanics and example scenarios).
 - [x] **Dynamic Scenario Engine for Scaffolding:** Enhance PiaSE's scenario manager ... (MVP implementation of core DSE components, integration with BasicSimulationEngine, demo scenario, unit tests, and documentation updates completed by Jules on 2024-08-05).
 - [x] **Human-in-the-Loop (HITL) Interface:** Conceptualize how a human user could interact with a PiaSE simulation in real-time (e.g., as a tutor, evaluator, or another agent). (Conceptual design completed by Jules on 2024-08-05).
 

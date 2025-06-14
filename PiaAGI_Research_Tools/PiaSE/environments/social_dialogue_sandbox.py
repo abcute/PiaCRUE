@@ -4,14 +4,36 @@ from typing import Dict, Any, List, Optional, Tuple
 from ..core_engine.interfaces import Environment, PerceptionData, ActionCommand, ActionResult, TextualPercept
 
 class SimulatedInteractorProfile:
-    def __init__(self, interactor_id: str, response_rules: Optional[Dict[str, str]] = None, default_response: Optional[str] = None):
+    # See social_dialogue_sandbox_design.md Section 2.2 for details on these attributes.
+    def __init__(self,
+                 interactor_id: str,
+                 response_rules: Optional[Dict[str, str]] = None,
+                 default_response: Optional[str] = None,
+                 personality_traits: Optional[Dict[str, Any]] = None, # New
+                 current_simulated_emotion: Optional[str] = "neutral", # New
+                 npc_goals: Optional[List[str]] = None # New
+                ):
         self.interactor_id = interactor_id
         # Simple rule: if keyword in last utterance, respond with value.
         self.response_rules = response_rules if response_rules else {"hello": "Hello to you too!", "name": f"My name is {interactor_id}."}
         self.default_response = default_response if default_response else "Interesting."
 
+        # New attributes based on design document
+        self.personality_traits = personality_traits # Conceptual: e.g., {"openness": 0.7, "conscientiousness": 0.4}
+        self.current_simulated_emotion = current_simulated_emotion # Conceptual: e.g., "happy", "annoyed"
+        self.npc_goals = npc_goals or [] # Conceptual: e.g., ["elicit_info_about_X", "build_rapport"]
+
     def generate_response(self, last_utterance: str) -> str:
+        # Current logic is simple keyword matching.
+        # Future: This method would be significantly more complex, using:
+        # - self.personality_traits to influence response style (e.g., formal, casual, agreeable).
+        # - self.current_simulated_emotion to affect tone and content (e.g., an "annoyed" NPC might be terse).
+        # - self.npc_goals to steer the conversation or select specific information to share/withhold.
+        # - Potentially an internal knowledge base or LLM call for more dynamic responses.
+        # See social_dialogue_sandbox_design.md Section 5.2.
+
         if not last_utterance: # Handle initial greeting or if no prior context
+            # Conceptual: Could use personality/emotion to vary initial greeting.
             return self.response_rules.get("greeting", f"Hello, I'm {self.interactor_id}.")
 
         for keyword, response in self.response_rules.items():
@@ -20,26 +42,31 @@ class SimulatedInteractorProfile:
         return self.default_response
 
 class SocialDialogueSandbox(Environment):
+    # See social_dialogue_sandbox_design.md for overall design.
     def __init__(self,
                  dialogue_config: Dict[str, Any], # e.g., {"topic": "general_chat", "max_turns": 20}
                  agent_ids: List[str], # IDs of all participants (PiaAGI and simulated)
                  simulated_interactor_configs: Optional[Dict[str, Dict]] = None # Configs for simulated ones
                 ):
         super().__init__()
-        self.dialogue_config = dialogue_config
+        self.dialogue_config = dialogue_config # See design doc Section 2.1
         self.all_agent_ids = list(agent_ids) # Ensure it's a list copy
 
         self.simulated_interactors: Dict[str, SimulatedInteractorProfile] = {}
         if simulated_interactor_configs:
             for agent_id_key, config_val in simulated_interactor_configs.items():
-                # Ensure the key from simulated_interactor_configs is actually in all_agent_ids
                 if agent_id_key in self.all_agent_ids:
+                    # Pass new conceptual NPC profile parameters
                     self.simulated_interactors[agent_id_key] = SimulatedInteractorProfile(
                         interactor_id=agent_id_key,
                         response_rules=config_val.get("response_rules"),
-                        default_response=config_val.get("default_response")
+                        default_response=config_val.get("default_response"),
+                        personality_traits=config_val.get("personality_traits"),
+                        current_simulated_emotion=config_val.get("current_simulated_emotion", "neutral"),
+                        npc_goals=config_val.get("npc_goals")
                     )
                 else:
+                    # Consider using self._log_message if available and appropriate, or standard logging
                     print(f"Warning: Config provided for simulated interactor '{agent_id_key}' but this ID is not in the main agent_ids list.")
 
 
@@ -92,24 +119,36 @@ class SocialDialogueSandbox(Environment):
                 TextualPercept(text=last_entry["utterance"], source=last_entry["speaker_id"])
             )
 
-        # Add more context to observation if needed, e.g., a few turns of history
-        # for entry in self.dialogue_history[-3:]: # Last 3 entries
-        #     text_percepts.append(TextualPercept(text=entry["utterance"], source=entry["speaker_id"]))
+        # See social_dialogue_sandbox_design.md Section 3 for perception details.
+        custom_data = {
+            "dialogue_topic": self.dialogue_config.get("topic", "general"),
+            "participants": list(self.all_agent_ids),
+            "current_turn_holder": self.current_turn_holder,
+            "is_my_turn": agent_id == self.current_turn_holder,
+            "dialogue_history_preview": self.dialogue_history[-5:], # last 5 utterances
+            "simulated_npc_state_conceptual": None # New field
+        }
+
+        # If the last speaker was an NPC, populate conceptual state
+        if self.dialogue_history:
+            last_speaker_id = self.dialogue_history[-1]["speaker_id"]
+            if last_speaker_id in self.simulated_interactors:
+                npc = self.simulated_interactors[last_speaker_id]
+                custom_data["simulated_npc_state_conceptual"] = {
+                    "personality": npc.personality_traits,
+                    "emotion": npc.current_simulated_emotion,
+                    "goals": npc.npc_goals
+                }
 
         return PerceptionData(
             timestamp=time.time(),
             textual_percepts=text_percepts,
-            custom_sensor_data={
-                "dialogue_topic": self.dialogue_config.get("topic", "general"),
-                "participants": list(self.all_agent_ids),
-                "current_turn_holder": self.current_turn_holder,
-                "is_my_turn": agent_id == self.current_turn_holder,
-                "dialogue_history_preview": self.dialogue_history[-5:] # last 5 utterances
-            },
+            custom_sensor_data=custom_data,
             messages=[]
         )
 
     def _advance_turn(self):
+        # See social_dialogue_sandbox_design.md Section 5.1
         if not self.all_agent_ids:
             self.current_turn_holder = None
             return
@@ -177,10 +216,11 @@ class SocialDialogueSandbox(Environment):
         )
 
     def get_environment_info(self) -> Dict[str, Any]:
+        # See social_dialogue_sandbox_design.md Section 3 & 4 for schema details.
         return {
             "environment_name": "SocialDialogueSandbox_v0.1",
-            "description": "A simple environment for turn-based dialogue interactions.",
-            "action_schema": self.action_schema,
+            "description": "A simple environment for turn-based dialogue interactions. Supports NPCs with configurable (though currently simply expressed) internal states like personality, emotion, and goals.",
+            "action_schema": self.action_schema, # Defined in __init__
             "perception_schema": {
                 "textual_percepts": [{"text": "string", "source": "string (speaker_id or system)"}],
                 "custom_sensor_data": {
@@ -188,12 +228,14 @@ class SocialDialogueSandbox(Environment):
                     "participants": "List[str]",
                     "current_turn_holder": "str",
                     "is_my_turn": "bool",
-                    "dialogue_history_preview": "List[Dict[str,str]] (last 5 entries)"
+                    "dialogue_history_preview": "List[Dict[str,str]] (last 5 entries)",
+                    "simulated_npc_state_conceptual": "Optional[Dict[str, Any]] (personality, emotion, goals)" # Added
                 }
             }
         }
 
     def get_action_space(self, agent_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        # See social_dialogue_sandbox_design.md Section 4
         if agent_id == self.current_turn_holder:
             return [
                 {"action_type": "speak", "parameters": {"utterance": "Your response here"}},
@@ -235,7 +277,11 @@ if __name__ == '__main__':
                 "hello": "Hi there Alice!",
                 "greeting": "Hello! I'm Bob." # For initial response
             },
-            "default_response": "That's an interesting point."
+            "default_response": "That's an interesting point.",
+            # New conceptual fields for Bob's profile
+            "personality_traits": {"openness": 0.6, "agreeableness": 0.8},
+            "current_simulated_emotion": "pleasant",
+            "npc_goals": ["be_helpful", "learn_about_Alice"]
         }
     }
 

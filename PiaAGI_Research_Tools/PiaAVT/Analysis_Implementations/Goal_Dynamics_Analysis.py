@@ -87,21 +87,24 @@ def analyze_goal_lifecycles(parsed_logs: list) -> dict:
         current_goal["events_processed"] += 1
 
 
-        if event_type == "GOAL_CREATED": # Updated event type
-            current_goal["goal_id"] = goal_id # Store it explicitly
+        if event_type == "GOAL_CREATED":
+            current_goal["goal_id"] = goal_id
             current_goal["description"] = event_data.get("description", "N/A")
             current_goal["type"] = event_data.get("type", "UNKNOWN")
             current_goal["creation_time"] = timestamp
-            # Align with prototype_logger.py and conceptual_piase_log_generation.md
             initial_priority = event_data.get("initial_priority", 0.0) 
+            current_goal["initial_priority_value"] = initial_priority # Store initial priority
             current_goal["current_priority"] = initial_priority
             current_goal["priority_history"].append({"timestamp": timestamp, "priority": initial_priority})
-            # Initial state is implicitly PENDING or as per agent's internal logic upon creation
             current_goal["state_history"].append({"timestamp": timestamp, "state": "CREATED/PENDING"})
             current_goal["source_trigger_event_id"] = event_data.get("source_trigger_event_id")
-            # Store other relevant fields from GOAL_CREATED if needed for analysis
             current_goal["urgency"] = event_data.get("urgency") 
             current_goal["deadline"] = event_data.get("deadline")
+            # Initialize new fields
+            current_goal["priority_change_count"] = 0
+            current_goal["total_priority_change_magnitude"] = 0.0 # Sum of absolute changes
+            current_goal["final_failure_reason"] = None
+
 
         elif event_type == "GOAL_ACTIVATED":
             # This event signifies a more explicit transition to an active, pursued state.
@@ -138,26 +141,47 @@ def analyze_goal_lifecycles(parsed_logs: list) -> dict:
             if new_state in ["ACHIEVED", "FAILED", "ABANDONED", "INVALIDATED"]: # Terminal states
                 current_goal["outcome"] = new_state
                 current_goal["end_time"] = timestamp
-                if "creation_time" in current_goal: # Ensure goal was created
+            if "creation_time" in current_goal:
                     current_goal["duration_seconds"] = round(timestamp - current_goal["creation_time"], 2)
                     if "first_activation_time" in current_goal and current_goal["first_activation_time"] <= timestamp :
                         current_goal["active_duration_seconds"] = round(timestamp - current_goal["first_activation_time"], 2)
+            if new_state in ["FAILED", "BLOCKED"] and reason: # Store failure/blockage reason
+                current_goal["final_failure_reason"] = reason
 
 
         elif event_type == "GOAL_PRIORITY_UPDATED":
             new_priority = event_data.get("new_priority")
+            old_priority = event_data.get("old_priority", current_goal.get("current_priority")) # Use last known if old_priority not in event
+
             current_goal["current_priority"] = new_priority
             current_goal["priority_history"].append({
                 "timestamp": timestamp,
                 "priority": new_priority,
-                "old_priority": event_data.get("old_priority"),
+                "old_priority": old_priority,
                 "reason": event_data.get("reason")
             })
+            # Update priority change stats
+            if old_priority is not None and new_priority is not None: # Ensure both exist
+                current_goal["priority_change_count"] = current_goal.get("priority_change_count", 0) + 1
+                current_goal["total_priority_change_magnitude"] = current_goal.get("total_priority_change_magnitude", 0.0) + abs(new_priority - old_priority)
 
-        # Ensure state_history and priority_history are sorted if logs weren't perfectly ordered for a given goal_id (though initial sort helps)
-        # For this conceptual implementation, we assume chronological processing is sufficient after initial sort.
 
-    return dict(goals_data) # Convert back to regular dict for output
+    # After processing all logs, calculate average priority change magnitude for each goal
+    for goal_id, data in goals_data.items():
+        if data.get("priority_change_count", 0) > 0:
+            data["avg_priority_change_magnitude"] = round(
+                data["total_priority_change_magnitude"] / data["priority_change_count"],
+                3 # Round to 3 decimal places
+            )
+        else:
+            data["avg_priority_change_magnitude"] = 0.0
+        # Ensure all goals have these fields, even if no priority updates occurred
+        data.setdefault("priority_change_count", 0)
+        data.setdefault("final_failure_reason", None)
+        data.setdefault("initial_priority_value", data.get("current_priority")) # Fallback if GOAL_CREATED was missed
+
+
+    return dict(goals_data)
 
 def generate_summary_report(analyzed_goals_data: dict):
     """
@@ -179,51 +203,133 @@ def generate_summary_report(analyzed_goals_data: dict):
     total_duration_completed = 0
     num_completed_goals_for_duration_avg = 0
 
-    goals_by_type = defaultdict(int)
+    goals_by_type = defaultdict(lambda: {"count": 0, "achieved": 0, "failed": 0, "total_duration": 0, "num_for_duration": 0})
+    failure_reasons_summary = defaultdict(int)
+    priority_changes_total_count = 0
+    goals_with_priority_changes = 0
+
+    # For success rates by initial priority
+    # Define priority bands (example, assuming priorities are 0-10 from GoalUpdatePayload, or 0-1 for intrinsic intensity based)
+    # For this example, let's assume initial_priority_value is on a 0-10 scale for extrinsic,
+    # and intrinsic (intensity*10) also falls in this.
+    priority_bands = {
+        "Low (0-3.5)": {"total": 0, "achieved": 0},
+        "Medium (3.5-7.5)": {"total": 0, "achieved": 0},
+        "High (7.5-10+)": {"total": 0, "achieved": 0}
+    }
 
     print("\n--- Goal Dynamics Summary Report ---")
     print(f"Total unique goals identified: {total_goals}")
 
     for goal_id, data in analyzed_goals_data.items():
-        if not data.get("events_processed"): # Skip if no events were processed for this goal_id
+        if not data.get("events_processed"):
             print(f"Warning: Goal ID {goal_id} found but no relevant events processed. Initial data: {data}")
             continue
 
-        goals_by_type[data.get("type", "UNKNOWN")] += 1
+        goal_type = data.get("type", "UNKNOWN")
+        goals_by_type[goal_type]["count"] += 1
 
         outcome = data.get("outcome")
         if outcome == "ACHIEVED":
             achieved_count += 1
+            goals_by_type[goal_type]["achieved"] += 1
         elif outcome == "FAILED":
             failed_count += 1
-        elif data.get("current_state") == "SUSPENDED": # Check current state if no terminal outcome
+            goals_by_type[goal_type]["failed"] += 1
+            if data.get("final_failure_reason"):
+                failure_reasons_summary[data["final_failure_reason"]] += 1
+        elif data.get("current_state") == "SUSPENDED":
             suspended_count +=1
-        elif data.get("current_state") == "ACTIVE": # Check current state
+        elif data.get("current_state") == "ACTIVE":
             active_count += 1
-        # (Add more states as needed)
 
-        if "duration_seconds" in data:
+        if "duration_seconds" in data: # For all terminal goals
             total_duration_completed += data["duration_seconds"]
             num_completed_goals_for_duration_avg +=1
+            goals_by_type[goal_type]["total_duration"] += data["duration_seconds"]
+            goals_by_type[goal_type]["num_for_duration"] +=1
+
+        if data.get("priority_change_count", 0) > 0:
+            priority_changes_total_count += data["priority_change_count"]
+            goals_with_priority_changes += 1
+
+        # Success rate by initial priority
+        initial_prio = data.get("initial_priority_value")
+        if initial_prio is not None:
+            band = None
+            if initial_prio <= 3.5: band = "Low (0-3.5)"
+            elif initial_prio <= 7.5: band = "Medium (3.5-7.5)"
+            else: band = "High (7.5-10+)"
+
+            if band:
+                priority_bands[band]["total"] += 1
+                if outcome == "ACHIEVED":
+                    priority_bands[band]["achieved"] += 1
+
 
     print(f"\nOutcomes:")
     print(f"  - Achieved: {achieved_count}")
     print(f"  - Failed:   {failed_count}")
-    print(f"  - Suspended (currently): {suspended_count}") # Based on last known state if not terminal
-    print(f"  - Active (currently):    {active_count}") # Based on last known state if not terminal
+    print(f"  - Suspended (currently): {suspended_count}")
+    print(f"  - Active (currently):    {active_count}")
 
 
     if num_completed_goals_for_duration_avg > 0:
         avg_duration = round(total_duration_completed / num_completed_goals_for_duration_avg, 2)
-        print(f"\nAverage duration for completed (achieved/failed) goals: {avg_duration} seconds")
+        print(f"\nOverall average duration for completed (achieved/failed) goals: {avg_duration} seconds")
     else:
-        print("\nNo goals completed to calculate average duration.")
+        print("\nNo goals completed to calculate overall average duration.")
 
-    print("\nGoals by Type:")
-    for goal_type, count in goals_by_type.items():
-        print(f"  - {goal_type}: {count}")
+    print("\n--- Goal Statistics by Type ---")
+    for goal_type, type_data in goals_by_type.items():
+        print(f"  Type: {goal_type}")
+        print(f"    Total Count: {type_data['count']}")
+        print(f"    Achieved: {type_data['achieved']}")
+        print(f"    Failed: {type_data['failed']}")
+        success_rate = (type_data['achieved'] / (type_data['achieved'] + type_data['failed'])) * 100 if (type_data['achieved'] + type_data['failed']) > 0 else 0
+        print(f"    Success Rate: {success_rate:.2f}%")
+        if type_data['num_for_duration'] > 0:
+            avg_type_duration = round(type_data['total_duration'] / type_data['num_for_duration'], 2)
+            print(f"    Avg Duration (completed): {avg_type_duration}s")
+        else:
+            print(f"    Avg Duration (completed): N/A (no completed goals of this type)")
 
-    print("\nExample Goal Lifecycles (Conceptual):")
+
+    print("\n--- Priority Change Statistics ---")
+    if goals_with_priority_changes > 0:
+        avg_prio_changes = round(priority_changes_total_count / goals_with_priority_changes, 2)
+        print(f"  Average priority changes per goal (for goals with changes): {avg_prio_changes}")
+    else:
+        print("  No priority changes recorded for any goal.")
+    # Optionally, list goals with most changes (e.g., top 3)
+    sorted_goals_by_prio_change = sorted(
+        [data for data in analyzed_goals_data.values() if data.get("events_processed") and data.get("priority_change_count", 0) > 0],
+        key=lambda x: x["priority_change_count"],
+        reverse=True
+    )
+    if sorted_goals_by_prio_change:
+        print("  Top goals by number of priority changes:")
+        for goal_data in sorted_goals_by_prio_change[:3]: # Top 3
+            print(f"    - ID: {goal_data['goal_id']}, Changes: {goal_data['priority_change_count']}, Avg Mag: {goal_data.get('avg_priority_change_magnitude', 'N/A'):.2f}")
+
+
+    print("\n--- Common Failure/Blockage Reasons ---")
+    if failure_reasons_summary:
+        for reason, count in sorted(failure_reasons_summary.items(), key=lambda item: item[1], reverse=True):
+            print(f"  - \"{reason}\": {count} times")
+    else:
+        print("  No specific failure/blockage reasons recorded or no failures.")
+
+    print("\n--- Success Rates by Initial Priority Band ---")
+    for band_name, data in priority_bands.items():
+        if data["total"] > 0:
+            rate = (data["achieved"] / data["total"]) * 100
+            print(f"  {band_name}: {rate:.2f}% success rate ({data['achieved']}/{data['total']})")
+        else:
+            print(f"  {band_name}: N/A (0 goals in this band)")
+
+
+    print("\n--- Example Goal Lifecycles ---") # Renamed for clarity
     # Print details for a couple of goals as examples
     example_goal_ids = list(analyzed_goals_data.keys())[:2] # Take first two goals
     for goal_id in example_goal_ids:
