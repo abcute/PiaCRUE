@@ -3,7 +3,7 @@
 
 ## Purpose
 
-The Cognitive Module Library (CML) is a core component of the PiaAGI project. Its primary purpose is to define abstract interfaces and provide foundational Python implementations for the various cognitive modules outlined in the [PiaAGI Cognitive Architecture](../../PiaAGI.md#4-the-piaagi-cognitive-architecture).
+The Cognitive Module Library (CML) is a core component of the PiaAGI project. Its primary purpose is to define abstract interfaces and provide foundational Python implementations for the various cognitive modules outlined in the [PiaAGI Cognitive Architecture](../../PiaAGI.md#4-the-piaagi-cognitive-architecture). The design of PiaCML modules, particularly the Self-Model Module, draws conceptual inspiration from philosophical discussions on consciousness, self-awareness, and agency. Furthermore, principles from cognitive neuroscience regarding brain function and modularity inform the overall approach to defining distinct yet interconnected cognitive functions.
 
 This library aims to:
 1.  **Standardize Interfaces:** Provide common Python Abstract Base Classes (ABCs) for each cognitive module.
