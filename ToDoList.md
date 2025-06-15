@@ -53,7 +53,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [x] Outline a research plan for developing and testing the **Developmental Scaffolding methodology (Section 5.4, 6.1)** specifically for **Theory of Mind (ToM) acquisition (Section 3.2.2)** from PiaSeedling to PiaSapling stages. This plan should include potential simulation environments, interaction protocols, and evaluation metrics.
 - [x] Conduct a survey and report on existing Python libraries and frameworks that could be suitable for implementing key aspects of the PiaAGI cognitive architecture (e.g., for probabilistic reasoning, knowledge representation, symbolic AI, agent simulation, multi-agent systems).
 - [x] Begin drafting specific computational models for the **Motivational System (Section 3.3 and 4.1.6)**, focusing on how intrinsic goals (e.g., curiosity, competence) could be mathematically formulated and algorithmically implemented to drive agent behavior. (Refined in concrete module, spec, and tests)
-- [P1] [ ] Design a conceptual framework for the **Architectural Maturation (Section 3.2.1)** process, detailing how specific learning experiences or developmental milestones might trigger changes in module capacities or inter-module connectivity.
+- [P1] [x] Design a conceptual framework for the **Architectural Maturation (Section 3.2.1)** process, detailing how specific learning experiences or developmental milestones might trigger changes in module capacities or inter-module connectivity.
 - [x] Create `PiaAGI_Research_Tools/cognitive_module_library/` directory. (Path updated from PiaAGI_Hub)
 - [x] Define Abstract Base Class `BaseMemoryModule` in `PiaAGI_Research_Tools/cognitive_module_library/base_memory_module.py`. (Path updated)
 - [x] Define Interface `LongTermMemoryModule` in `PiaAGI_Research_Tools/cognitive_module_library/long_term_memory_module.py`. (Path updated)
@@ -242,7 +242,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## I. PiaAGI Framework & Core Document (`PiaAGI.md`)
 - [P1] [ ] **[USER_TASK] Diagram Integration in `PiaAGI.md`:** Manually integrate textual descriptions for Diagrams 8 (Planning/Decision-Making), 9 (Self-Model Components), and 10 (Motivational System Components) into the `PiaAGI.md` document where the `DIAGRAM DESCRIPTION START/END` placeholders exist. (From IMPROVEMENT_TODOLIST #13)
-- [P1] [ ] Define a conceptual framework for Architectural Maturation (beyond CML hooks, possibly as a paper or core `PiaAGI.md` section). (Derived from old ToDoList - potentially superseded by CML Advanced Roadmap's hooks, but keeping if a broader framework doc is intended).
+- [P1] [x] Define a conceptual framework for Architectural Maturation (beyond CML hooks, possibly as a paper or core `PiaAGI.md` section). (Derived from old ToDoList - potentially superseded by CML Advanced Roadmap's hooks, but keeping if a broader framework doc is intended).
 - [P3] [ ] Further explore Chain-of-Thought prompting principles and their deeper integration into PiaAGI's cognitive cycle or specific module operations. (Derived from old ToDoList)
 
 ## Message Bus & Integration (From User's New List)
