@@ -51,6 +51,7 @@ class ConcreteLearningModule(BaseLearningModule):
         self._learned_items_log: List[Dict[str, Any]] = [] # To store learning outcomes or summaries
         self._feedback_log: List[Dict[str, Any]] = [] # Not used by new handlers yet
         self._learning_tasks_status: Dict[str, str] = {} # task_id -> status
+        self._action_policy_values: Dict[str, float] = {} # Stores conceptual policy values for action types
 
         self._handled_message_counts: Dict[str, int] = {
             "GoalUpdate": 0, "PerceptData": 0, "ActionEvent": 0, "EmotionalStateChange": 0
@@ -166,55 +167,82 @@ class ConcreteLearningModule(BaseLearningModule):
         if learning_paradigm == "unsupervised_feature_extraction":
             # Expected Inputs: data is raw percept content (e.g., image features, text). Context provides modality.
             self._log_message(f"    Conceptual UL: Expects data (e.g., from {context.get('modality')} percept '{context.get('percept_id')}').")
-            # Conceptual Process: e.g., clustering, dimensionality reduction, autoencoding.
-            self._log_message(f"    Conceptual UL: Would identify patterns/features in data. E.g., if text, identify n-grams or topics.")
-            item_type = "knowledge_concept_features" # Type of learned item
-            item_id = f"features_from_{context.get('percept_id', task_id)}" # ID of learned item
-            item_desc = f"Extracted features from {context.get('modality', 'unknown')} percept: {str(data)[:60]}..." # Description
-            confidence = 0.6 # Confidence in the learned item
-            learned_metadata["extracted_features_count"] = len(data) if isinstance(data, list) else 1
-            learned_metadata["modality"] = context.get('modality')
-            # Conceptual Outputs/Updates: Updates LTM-Semantic with new feature representations or cluster definitions.
+
+            INTERESTING_KEYWORDS = ["critical", "urgent", "anomaly", "pattern", "report", "user_feedback", "error", "success"]
+            data_str = str(data).lower()
+            found_keywords = [kw for kw in INTERESTING_KEYWORDS if kw in data_str]
+            keyword_count = len(found_keywords)
+
+            modality = context.get('modality', 'unknown')
+            if modality in ["text", "visual", "log"]: # Assuming 'log' could be a modality
+                item_type = f"{modality}_features"
+            else:
+                item_type = "general_features"
+
+            item_id = f"features_from_{context.get('percept_id', task_id)}"
+            item_desc = f"Extracted features from {modality} percept. Found {keyword_count} interesting keyword(s)."
+
+            confidence = 0.3 + (keyword_count * 0.1)
+            confidence = max(0.0, min(0.8, confidence)) # Clamp, with a max of 0.8 for this type
+
+            learned_metadata["interesting_keyword_count"] = keyword_count
+            learned_metadata["identified_keywords"] = found_keywords
+            learned_metadata["original_data_preview"] = str(data)[:100] # Store a preview
+            learned_metadata["modality"] = modality
+
+            self._log_message(f"    UL: Type: {item_type}, ID: {item_id}, Keywords: {keyword_count} ({', '.join(found_keywords)}). Confidence: {confidence:.2f}")
             self._log_message(f"    Conceptual UL: Would update LTM-Semantic with new feature patterns or concept clusters (ID: {item_id}).")
-            # Conceptual Module Interactions: Primarily LTM.
             self._log_message(f"    Conceptual UL: Key interaction with LTM for storage/retrieval of learned features.")
 
         elif learning_paradigm == "reinforcement_from_action":
             # Expected Inputs: data is ActionEventPayload. Context provides action_command_id.
             self._log_message(f"    Conceptual RL: Expects data as ActionEventPayload (Action: {getattr(data, 'action_type', 'N/A')}, Status: {getattr(data, 'status', 'N/A')}).")
-            # Conceptual Process: Update Q-values, policy, or value functions based on state, action, and reward (derived from ActionEvent.status).
-            self._log_message(f"    Conceptual RL: Would update Q-values/policy for state-action pair. Reward implicitly from status ({getattr(data, 'status', 'N/A')}).")
-            item_type = "skill_adjustment"
+            item_type = "action_policy_adjustment"
             if isinstance(data, ActionEventPayload):
-                item_id = data.action_type # Could be more specific, e.g., action_type + key_parameters
-                item_desc = f"Adjusted skill/policy for action '{data.action_type}' based on outcome (status: {data.status})."
-                learned_metadata["action_type"] = data.action_type
-                learned_metadata["action_status"] = data.status
+                action_type = data.action_type
+                # Ensure action_type is initialized in the policy values
+                if action_type not in self._action_policy_values:
+                    self._action_policy_values[action_type] = 0.0
+
+                current_value = self._action_policy_values[action_type]
+                adjustment = 0.05
+
                 if data.status == "SUCCESS":
-                    confidence = 0.75
+                    new_value = current_value + adjustment
+                    self._action_policy_values[action_type] = new_value
+                    item_id = f"policy_for_{action_type}"
+                    item_desc = f"Policy value for action '{action_type}' increased to {new_value:.3f} due to SUCCESS."
+                    confidence = 0.6 + (new_value * 0.2) # Confidence increases with positive value
                     learned_metadata["reinforcement_direction"] = "positive"
                     learned_metadata["reward_signal_conceptual"] = 1.0
                 elif data.status == "FAILURE":
-                    status = "UPDATED" # Status of the learning outcome itself
-                    confidence = 0.65
+                    new_value = current_value - adjustment
+                    self._action_policy_values[action_type] = new_value
+                    item_id = f"policy_for_{action_type}"
+                    item_desc = f"Policy value for action '{action_type}' decreased to {new_value:.3f} due to FAILURE."
+                    confidence = 0.4 - (abs(new_value) * 0.1) # Confidence higher if value is closer to 0 after failure
+                    status = "UPDATED"
                     learned_metadata["reinforcement_direction"] = "negative"
                     learned_metadata["reward_signal_conceptual"] = -1.0
-                elif data.status in ["IN_PROGRESS", "CANCELLED"]:
-                    status = "OBSERVED_NO_CHANGE"
-                    item_desc = f"Observed action '{data.action_type}' status '{data.status}', no direct reinforcement/update."
-                    confidence = 0.1
+                else: # IN_PROGRESS, CANCELLED, or other statuses
+                    item_id = f"observation_of_{action_type}"
+                    item_desc = f"Observed action '{action_type}' status '{data.status}', no direct policy value change."
+                    confidence = 0.1 # Low confidence as it's an observation without clear outcome for policy
+                    status = "OBSERVED_NO_CHANGE" # Status of the learning outcome itself
                     learned_metadata["observation_details"] = f"Action status was {data.status}."
-                else:
-                    status = "NO_CHANGE"
-                    item_desc = f"No direct learning from action '{data.action_type}' status '{data.status}'."
-                    confidence = 0.3
+
+                learned_metadata["action_type"] = action_type
+                learned_metadata["action_status"] = data.status
+                learned_metadata["updated_policy_value"] = self._action_policy_values[action_type]
+                confidence = max(0.0, min(1.0, confidence)) # Clamp confidence
             else:
                 status = "FAILED_TO_LEARN"
+                item_id = "unknown_action_event"
                 item_desc = "Invalid data type for reinforcement_from_action."
                 confidence = 0.0
-            # Conceptual Outputs/Updates: Updates LTM-Procedural (skill/policy representations).
-            self._log_message(f"    Conceptual RL: Would update LTM-Procedural for skill '{item_id}'.")
-            # Conceptual Module Interactions: MotivationalSystem (for intrinsic rewards), LTM, WM (current state).
+
+            self._log_message(f"    RL: Item: {item_id}, Desc: {item_desc}, Confidence: {confidence:.2f}")
+            self._log_message(f"    Conceptual RL: Would update LTM-Procedural for skill/policy '{item_id}'.")
             self._log_message(f"    Conceptual RL: Interacts with MotivationalSystem (rewards), LTM (policy storage), WM (state).")
 
         elif learning_paradigm == "goal_outcome_evaluation":
