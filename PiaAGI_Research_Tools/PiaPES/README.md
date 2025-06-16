@@ -3,7 +3,7 @@
 
 ## Introduction
 
-Welcome to the PiaAGI Prompt Engineering Suite (PiaPES). PiaPES is a collection of tools and conceptual designs aimed at supporting the structured creation, management, and application of "Guiding Prompts" and "Developmental Curricula" for the PiaAGI (Progressive Intelligence Architecture for Artificial General Intelligence) framework.
+Welcome to the PiaAGI Prompt Engineering Suite (PiaPES). PiaPES is a collection of tools and conceptual designs aimed at supporting the structured creation, management, and application of "Guiding Prompts" and "Developmental Curricula" for the PiaAGI (Progressive Intelligence Architecture for Artificial General Intelligence) framework. The methodologies within PiaPES for designing developmental curricula and scaffolding agent learning are explicitly guided by educational principles. This includes leveraging learning theories, understanding cognitive load, and structuring experiences to foster optimal knowledge acquisition and skill development, as emphasized in interdisciplinary AGI research connecting AI to education (see `Papers/AGI_Interdisciplinary_Memorandum.md`).
 
 This suite is crucial for configuring PiaAGI agents, guiding their learning and development through defined stages, and evaluating the impact of different prompting strategies.
 

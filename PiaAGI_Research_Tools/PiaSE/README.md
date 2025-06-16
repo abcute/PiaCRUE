@@ -190,7 +190,7 @@ A practical example demonstrating the DSE can be found in `scenarios/dynamic_sca
 
 For more detailed information on the DSE's design, refer to the [Full DSE Design document (`docs/specifications/Dynamic_Scenario_Engine.md`)](./docs/specifications/Dynamic_Scenario_Engine.md).
 
-PiaSE aims to be a critical testbed for empirically validating the PiaAGI framework and fostering the development of increasingly sophisticated and autonomous agents.
+PiaSE aims to be a critical testbed for empirically validating the PiaAGI framework and fostering the development of increasingly sophisticated and autonomous agents. Future development of PiaSE scenarios will explore more complex multi-agent interactions and societal simulations, drawing inspiration from sociological concepts like social norms and group dynamics, as well as principles from game theory for modeling strategic interactions (as noted in `Papers/AGI_Interdisciplinary_Memorandum.md`).
 ---
 Return to [PiaAGI Core Document](../../PiaAGI.md) | [Project README](../../README.md)
 ```

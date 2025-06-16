@@ -1,7 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Union # Added Union
 import uuid
 import datetime
+
+# --- Forward declaration for Union type hint if needed, or define specific outcomes first ---
+# Not strictly needed if specific outcomes are defined before ActionEventPayload
 
 @dataclass
 class MemoryItem:
@@ -149,9 +152,39 @@ class ActionEventPayload:
     action_command_id: str # Links back to the ActionCommand that initiated this event
     action_type: str # The type of action that was executed
     status: str # E.g., "SUCCESS", "FAILURE", "IN_PROGRESS", "CANCELLED"
-    outcome: Optional[Dict[str, Any]] = field(default_factory=dict) # Results or details
+    outcome: Optional[Union['EntityMovementOutcome', 'EntityCreationOutcome', 'EntityStateChangeOutcome', 'GeneralActionOutcome', Dict[str, Any]]] = field(default_factory=dict) # Results or details
     timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
     metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+
+# --- Specific Action Outcome Dataclasses ---
+@dataclass
+class EntityMovementOutcome:
+    entity_id: str
+    new_location_id: str
+    old_location_id: Optional[str] = None
+    method: Optional[str] = None # e.g., 'teleport', 'walk'
+
+@dataclass
+class EntityCreationOutcome:
+    entity_id: str
+    entity_type: str
+    location_id: Optional[str] = None
+    state: Dict[str, Any] = field(default_factory=dict)
+    properties: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class EntityStateChangeOutcome:
+    entity_id: str
+    changed_state: Dict[str, Any]
+    old_state_summary: Optional[Dict[str, Any]] = None
+    reason: Optional[str] = None
+
+@dataclass
+class GeneralActionOutcome:
+    description: str
+    details: Dict[str, Any] = field(default_factory=dict)
+
 
 @dataclass
 class LearningOutcomePayload:

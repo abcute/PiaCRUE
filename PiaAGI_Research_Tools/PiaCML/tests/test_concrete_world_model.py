@@ -4,6 +4,8 @@ import uuid
 import time
 from typing import List, Any, Dict
 from datetime import datetime, timezone
+import math # Added for math.isclose and sqrt
+import copy # Added for deepcopy in tests
 
 # Adjust path for consistent imports
 import os
@@ -207,99 +209,148 @@ class TestConcreteWorldModelAdvancedLogic(unittest.TestCase):
         self.world_model._log = [] # Clear logs too
 
     def test_predict_future_state(self):
-        # Test case 1: Entity with velocity and position, no obstacle
-        entity1_id = "car1"
-        self.world_model._entity_repository[entity1_id] = WorldEntity(
-            id=entity1_id, type="vehicle",
-            state={"position": [0, 0, 0], "velocity": [10, 5, 0]},
-            properties={}, affordances=[], relationships={}
-        )
-        prediction1 = self.world_model.predict_future_state(entity1_id, time_horizon=2.0)
-        self.assertIsNotNone(prediction1)
-        self.assertEqual(prediction1["state"]["position"], [20, 10, 0])
-        self.assertEqual(prediction1["prediction_confidence"], "high")
-        self.assertIn(f"Predicted new position for '{entity1_id}'", self.world_model._log[-1])
-
-        # Test case 2: Entity without velocity
-        entity2_id = "rock1"
-        self.world_model._entity_repository[entity2_id] = WorldEntity(
-            id=entity2_id, type="static_object",
-            state={"position": [10, 10, 10]},
-            properties={}, affordances=[], relationships={}
-        )
-        prediction2 = self.world_model.predict_future_state(entity2_id, time_horizon=2.0)
-        self.assertIsNotNone(prediction2)
-        self.assertEqual(prediction2["state"]["position"], [10, 10, 10]) # Position unchanged
-        self.assertEqual(prediction2["prediction_confidence"], "low")
-        self.assertIn(f"No specific prediction rules applicable for '{entity2_id}'", self.world_model._log[-1])
-
-        # Test case 3: Entity with velocity but an obstacle
-        entity3_id = "car2_blocked"
-        self.world_model._entity_repository[entity3_id] = WorldEntity(
-            id=entity3_id, type="vehicle",
-            state={"position": [0, 0, 0], "velocity": [10, 0, 0]},
-            properties={}, affordances=[], relationships={"obstacle": ["wall1"]}
-        )
-        prediction3 = self.world_model.predict_future_state(entity3_id, time_horizon=2.0)
-        self.assertIsNotNone(prediction3)
-        self.assertEqual(prediction3["state"]["position"], [0, 0, 0]) # Position unchanged
-        self.assertEqual(prediction3["prediction_confidence"], "low") # Or "medium_uncertain" if logic changes
-        self.assertIn(f"No specific prediction rules applicable for '{entity3_id}'", self.world_model._log[-1])
-
-
-        # Test case 4: Non-existent entity
-        prediction4 = self.world_model.predict_future_state("non_existent_entity", time_horizon=2.0)
-        self.assertIsNone(prediction4)
+        # Test case 0: Non-existent entity
+        prediction_non_existent = self.world_model.predict_future_state("non_existent_entity", time_horizon=2.0)
+        self.assertIsNotNone(prediction_non_existent)
+        self.assertEqual(prediction_non_existent["prediction_confidence"], 0.0)
+        self.assertEqual(prediction_non_existent["prediction_rule_applied"], "entity_not_found")
+        self.assertEqual(prediction_non_existent["predicted_entity_state_dict"], {})
         self.assertIn("Prediction failed: Entity 'non_existent_entity' not found", self.world_model._log[-1])
 
-        # Test case 5: Agent with goal_location_id, no obstacles
-        agent_id = "agent1_with_goal"
-        self.world_model._entity_repository[agent_id] = WorldEntity(
-            id=agent_id, type="agent",  # Mobile type
-            state={"goal_location_id": "loc_B", "some_other_state": "value"}, # Has goal_location_id
-            properties={}, affordances=[], relationships={},
-            location_id="loc_A" # Current location
+        # Test case 1: Static entity (stable)
+        static_entity_id = "building1"
+        self.world_model._entity_repository[static_entity_id] = WorldEntity(
+            id=static_entity_id, type="building", # type is in STATIC_ENTITY_TYPES
+            state={"position": [50, 50, 0]}, properties={}, affordances=[], relationships={}
         )
-        prediction5 = self.world_model.predict_future_state(agent_id, time_horizon=5.0)
-        self.assertIsNotNone(prediction5)
-        self.assertEqual(prediction5["state"]["location_id"], "loc_B") # Should predict move to goal
-        self.assertEqual(prediction5["prediction_confidence"], "medium")
-        self.assertEqual(prediction5["prediction_rule"], "goal_location_assumed_reachable")
-        self.assertIn(f"Prediction for '{agent_id}': Will move to goal_location_id 'loc_B'. Confidence: medium", self.world_model._log[-1])
+        original_static_entity_dict = copy.deepcopy(self.world_model._entity_repository[static_entity_id].to_dict())
 
-        # Test case 6: Robot with goal_location_id, but blocked by obstacle
-        robot_id = "robot1_blocked_goal"
-        self.world_model._entity_repository[robot_id] = WorldEntity(
-            id=robot_id, type="robot", # Mobile type
-            state={"goal_location_id": "loc_C"}, # Has goal_location_id
-            properties={}, affordances=[],
-            relationships={"blocked_by": ["obstacle_near_C"]}, # Path to goal is blocked
-            location_id="loc_A" # Current location
+        prediction_static = self.world_model.predict_future_state(static_entity_id, time_horizon=10.0)
+        self.assertIsNotNone(prediction_static)
+        self.assertEqual(prediction_static["prediction_confidence"], 0.9)
+        self.assertEqual(prediction_static["prediction_rule_applied"], "static_entity_no_change")
+        self.assertEqual(prediction_static["predicted_entity_state_dict"]["state"]["position"], [50, 50, 0])
+        # Check original entity in repository is unchanged
+        self.assertEqual(self.world_model._entity_repository[static_entity_id].to_dict(), original_static_entity_dict)
+
+
+        # Test case 2: Static entity (unstable due to damage)
+        static_damaged_id = "tower1"
+        self.world_model._entity_repository[static_damaged_id] = WorldEntity(
+            id=static_damaged_id, type="fixed_equipment", # type is in STATIC_ENTITY_TYPES
+            state={"position": [10, 20, 0], "damage_level": 0.9},
+            properties={}, affordances=[], relationships={}
         )
-        prediction6 = self.world_model.predict_future_state(robot_id, time_horizon=5.0)
-        self.assertIsNotNone(prediction6)
-        self.assertEqual(prediction6["state"]["location_id"], "loc_A") # Should predict staying at current location
-        self.assertEqual(prediction6["prediction_confidence"], "low")
-        self.assertEqual(prediction6["prediction_rule"], "goal_location_obstructed")
-        self.assertIn(f"Prediction for '{robot_id}': Stays at current location 'loc_A' due to obstruction. Confidence: low", self.world_model._log[-1])
+        prediction_static_dmg = self.world_model.predict_future_state(static_damaged_id, time_horizon=5.0)
+        self.assertIsNotNone(prediction_static_dmg)
+        self.assertEqual(prediction_static_dmg["prediction_confidence"], 0.3)
+        self.assertEqual(prediction_static_dmg["prediction_rule_applied"], "static_entity_unstable")
 
-        # Test case 7: Robot with goal_location_id, no obstacles, but also has velocity (goal should take precedence)
-        robot_id_goal_and_velocity = "robot2_goal_vel"
-        self.world_model._entity_repository[robot_id_goal_and_velocity] = WorldEntity(
-            id=robot_id_goal_and_velocity, type="robot",
-            state={"position": [0,0,0], "velocity": [1,0,0], "goal_location_id": "loc_D"},
-            properties={}, affordances=[], relationships={},
-            location_id="loc_A"
+        # Test case 3: Physics-based movement (constant velocity)
+        entity_physics_id = "car_physics"
+        initial_car_state = {"position": [0, 0, 0], "velocity": [10, 5, 0]}
+        self.world_model._entity_repository[entity_physics_id] = WorldEntity(
+            id=entity_physics_id, type="vehicle",
+            state=copy.deepcopy(initial_car_state), # Store a copy for later comparison
+            properties={"max_speed": 20.0}, affordances=[], relationships={}
         )
-        prediction7 = self.world_model.predict_future_state(robot_id_goal_and_velocity, time_horizon=2.0)
-        self.assertIsNotNone(prediction7)
-        self.assertEqual(prediction7["state"]["location_id"], "loc_D") # Goal location predicted
-        self.assertEqual(prediction7["prediction_confidence"], "medium") # Goal rule confidence
-        self.assertEqual(prediction7["prediction_rule"], "goal_location_assumed_reachable")
-         # Position might also be updated if physics rule runs after goal rule and updates other state aspects.
-         # For current logic, goal rule for location_id is primary. If physics also runs and updates 'position', that's fine.
-        self.assertTrue("position" not in prediction7["state"] or prediction7["state"]["position"] == [2,0,0], "Position should either not be predicted by goal rule, or updated by physics if it runs")
+        original_car_entity_dict = copy.deepcopy(self.world_model._entity_repository[entity_physics_id].to_dict())
 
+        prediction_physics = self.world_model.predict_future_state(entity_physics_id, time_horizon=2.0)
+        self.assertIsNotNone(prediction_physics)
+        self.assertEqual(prediction_physics["predicted_entity_state_dict"]["state"]["position"], [20, 10, 0])
+        self.assertEqual(prediction_physics["prediction_confidence"], 0.5)
+        self.assertEqual(prediction_physics["prediction_rule_applied"], "physics_constant_velocity")
+        # Verify original entity in repo is unchanged
+        self.assertEqual(self.world_model._entity_repository[entity_physics_id].to_dict(), original_car_entity_dict)
+
+
+        # Test case 4: Physics-based movement (exceeds max_speed)
+        entity_fast_car_id = "fast_car"
+        self.world_model._entity_repository[entity_fast_car_id] = WorldEntity(
+            id=entity_fast_car_id, type="vehicle",
+            state={"position": [0, 0, 0], "velocity": [30, 0, 0]}, # Speed 30
+            properties={"max_speed": 20.0}, affordances=[], relationships={}
+        )
+        prediction_fast_car = self.world_model.predict_future_state(entity_fast_car_id, time_horizon=1.0)
+        self.assertIsNotNone(prediction_fast_car)
+        self.assertEqual(prediction_fast_car["predicted_entity_state_dict"]["state"]["position"], [30, 0, 0])
+        self.assertEqual(prediction_fast_car["prediction_confidence"], 0.3)
+        self.assertEqual(prediction_fast_car["prediction_rule_applied"], "physics_exceeds_max_speed")
+
+        # Test case 5: Mobile entity reaches goal (goal is another entity)
+        agent_reaches_id = "agent_reach"
+        goal_entity_id = "goal_obj1"
+        self.world_model._entity_repository[goal_entity_id] = WorldEntity(id=goal_entity_id, type="target", state={"position": [100, 0, 0]})
+        self.world_model._entity_repository[agent_reaches_id] = WorldEntity(
+            id=agent_reaches_id, type="agent",
+            state={"current_action": "moving_to_goal", "goal_location_id": goal_entity_id, "movement_speed": 50.0, "position": [0,0,0]},
+            properties={}, affordances=[], relationships={}, location_id="start_zone"
+        )
+        prediction_reach = self.world_model.predict_future_state(agent_reaches_id, time_horizon=2.0) # 50*2 = 100 units
+        self.assertIsNotNone(prediction_reach)
+        self.assertEqual(prediction_reach["predicted_entity_state_dict"]["state"]["position"], [100,0,0])
+        self.assertEqual(prediction_reach["predicted_entity_state_dict"]["location_id"], goal_entity_id)
+        self.assertEqual(prediction_reach["predicted_entity_state_dict"]["state"]["current_action"], "at_goal")
+        self.assertEqual(prediction_reach["prediction_confidence"], 0.6)
+        self.assertEqual(prediction_reach["prediction_rule_applied"], "mobile_entity_reaches_goal")
+
+        # Test case 6: Mobile entity moves towards goal (goal is spatial_model location)
+        agent_towards_id = "agent_towards"
+        goal_spatial_id = "finish_line_coords"
+        self.world_model._spatial_model[goal_spatial_id] = {"id": goal_spatial_id, "type": "location", "coordinates": (200.0, 0.0, 0.0)} # Using dict for mock
+
+        # Re-initialize agent for this specific test to avoid state conflicts from previous goal test
+        self.world_model._entity_repository[agent_towards_id] = WorldEntity(
+            id=agent_towards_id, type="agent",
+            state={"current_action": "moving_to_goal", "goal_location_id": goal_spatial_id, "movement_speed": 20.0, "position": [0,0,0]},
+            properties={}, affordances=[], relationships={}, location_id="start_zone_2"
+        )
+        prediction_towards = self.world_model.predict_future_state(agent_towards_id, time_horizon=3.0) # 20*3 = 60 units, goal is 200 away
+        self.assertIsNotNone(prediction_towards)
+        expected_pos_towards = [60.0, 0.0, 0.0] # 0 + (200-0)*(60/200) = 60
+        for i in range(3):
+            self.assertTrue(math.isclose(prediction_towards["predicted_entity_state_dict"]["state"]["position"][i], expected_pos_towards[i], rel_tol=1e-9))
+        self.assertEqual(prediction_towards["predicted_entity_state_dict"]["state"]["current_action"], "moving_to_goal")
+        self.assertEqual(prediction_towards["prediction_confidence"], 0.4)
+        self.assertEqual(prediction_towards["prediction_rule_applied"], "mobile_entity_moves_towards_goal")
+
+
+        # Test case 7: Mobile entity goal path blocked
+        agent_blocked_id = "agent_blocked"
+        goal_blocked_id = "target_behind_wall"
+        self.world_model._entity_repository[goal_blocked_id] = WorldEntity(id=goal_blocked_id, type="target", state={"position": [50,0,0]})
+        self.world_model._entity_repository[agent_blocked_id] = WorldEntity(
+            id=agent_blocked_id, type="agent",
+            state={"current_action": "moving_to_goal", "goal_location_id": goal_blocked_id, "movement_speed": 10.0, "position": [0,0,0]},
+            properties={},
+            relationships={"obstructs_path_to": [{"target_id": goal_blocked_id, "obstacle_id": "wall_obstacle"}]},
+            location_id="start_zone_3"
+        )
+        prediction_blocked = self.world_model.predict_future_state(agent_blocked_id, time_horizon=1.0)
+        self.assertIsNotNone(prediction_blocked)
+        # Position might be slightly changed if already moving, or not at all. For simplicity, we check action and confidence.
+        self.assertEqual(prediction_blocked["predicted_entity_state_dict"]["state"]["current_action"], "blocked")
+        self.assertEqual(prediction_blocked["prediction_confidence"], 0.7)
+        self.assertEqual(prediction_blocked["prediction_rule_applied"], "mobile_entity_goal_blocked")
+
+
+        # Test case 8: No specific rule applies (e.g. mobile entity not moving_to_goal, no velocity)
+        agent_idle_id = "agent_idle"
+        self.world_model._entity_repository[agent_idle_id] = WorldEntity(
+            id=agent_idle_id, type="agent",
+            state={"current_action": "idle", "position": [10,10,0]}, # No velocity, not moving_to_goal
+            properties={}, affordances=[], relationships={}, location_id="zone_common"
+        )
+        original_idle_entity_dict = copy.deepcopy(self.world_model._entity_repository[agent_idle_id].to_dict())
+
+        prediction_idle = self.world_model.predict_future_state(agent_idle_id, time_horizon=5.0)
+        self.assertIsNotNone(prediction_idle)
+        self.assertEqual(prediction_idle["predicted_entity_state_dict"]["state"]["position"], [10,10,0]) # Unchanged
+        self.assertEqual(prediction_idle["prediction_confidence"], 0.1)
+        self.assertEqual(prediction_idle["prediction_rule_applied"], "no_specific_rule_applied_current_state_assumed")
+        # Verify original entity in repo is unchanged
+        self.assertEqual(self.world_model._entity_repository[agent_idle_id].to_dict(), original_idle_entity_dict)
 
     def test_query_world_state_advanced_queries(self):
         # Populate entities

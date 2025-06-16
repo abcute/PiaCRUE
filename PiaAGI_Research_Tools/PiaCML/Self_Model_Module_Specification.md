@@ -10,7 +10,7 @@
 
 ## 1. Introduction and Purpose
 
-The Self-Model Module is a cornerstone of the PiaAGI cognitive architecture. Its primary purpose is to maintain and utilize a dynamic, multifaceted representation of the PiaAGI agent itself. This includes its knowledge, capabilities, limitations, internal states (goals, emotions, cognitive load), personality, interaction history, and, crucially, its learned and evolving ethical framework and values.
+The Self-Model Module is a cornerstone of the PiaAGI cognitive architecture. Its primary purpose is to maintain and utilize a dynamic, multifaceted representation of the PiaAGI agent itself. This includes its knowledge, capabilities, limitations, internal states (goals, emotions, cognitive load), personality, interaction history, and, crucially, its learned and evolving ethical framework and values. Philosophical considerations of consciousness, selfhood, and intentionality, as explored in interdisciplinary AGI research (see `Papers/AGI_Interdisciplinary_Memorandum.md`), provide a rich conceptual background for the long-term development goals of this module, particularly in how the agent represents and reasons about its own existence and agency.
 
 The Self-Model is not merely a passive data repository but an active processing unit essential for:
 *   **Metacognition:** Monitoring and reflecting on the agent's own cognitive processes.
