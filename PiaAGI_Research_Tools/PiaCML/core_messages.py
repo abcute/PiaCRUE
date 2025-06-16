@@ -152,7 +152,10 @@ class ActionEventPayload:
     action_command_id: str # Links back to the ActionCommand that initiated this event
     action_type: str # The type of action that was executed
     status: str # E.g., "SUCCESS", "FAILURE", "IN_PROGRESS", "CANCELLED"
-    outcome: Optional[Union['EntityMovementOutcome', 'EntityCreationOutcome', 'EntityStateChangeOutcome', 'GeneralActionOutcome', Dict[str, Any]]] = field(default_factory=dict) # Results or details
+    outcome: Optional[Union['EntityMovementOutcome', 'EntityCreationOutcome', 'EntityStateChangeOutcome', 'GeneralActionOutcome', Dict[str, Any]]] = field(default_factory=dict)
+    # Results or details. While Dict[str, Any] is a fallback, developers are encouraged to define
+    # specific outcome dataclasses (like EntityMovementOutcome) and add them to the Union
+    # for better type safety and clarity when new, distinct outcome types are needed.
     timestamp: datetime.datetime = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
     metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
 

@@ -139,7 +139,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 ## Framework Philosophy and Consistency
 - [x] Reviewed core documents; foundational viewpoint of 'agent as developing entity' is consistently articulated. To be maintained in future work.
 - [x] Further explore the implications of Chain-of-Thought (CoT) prompting, as discussed in `Papers/Chain_of_Thought_Alignment.md`, for PiaAGI's cognitive architecture (e.g., Planning, Self-Model) and developmental scaffolding strategies, reinforcing the "agent as human-like thinker" interaction paradigm.
-- [P2] [ ] Expand upon the concepts outlined in `Papers/Human_Inspired_Agent_Blueprint.md` by conducting further research into each multidisciplinary area, identifying specific theories, models, and empirical findings that can concretely inform the design and development of PiaAGI's cognitive modules and overall architecture.
+- [P2] [x] Expand upon the concepts outlined in `Papers/Human_Inspired_Agent_Blueprint.md` by conducting further research into each multidisciplinary area, identifying specific theories, models, and empirical findings that can concretely inform the design and development of PiaAGI's cognitive modules and overall architecture. (Completed by Jules by creating Papers/Blueprint_PiaAGI_Integration.md)
 
 ## Unified WebApp Development
 - [x] **PiaAGI_Research_Tools/WebApp Integration:** Developed the unified WebApp in `PiaAGI_Research_Tools/WebApp/` providing frontend interfaces (React) and backend APIs (Flask) for PiaCML, PiaSE (simulation run and result viewing), PiaPES (prompt/curriculum management), and basic PiaAVT (log upload and simple analysis). Includes LLM configuration guidance and a detailed README for setup and deployment. (Completed 2024-07-31)
@@ -235,9 +235,9 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 ## Cross-Cutting Future Enhancements (From User's New List)
 - [x] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
 - [x] **PiaCML Self-Model for MCPs:** Conceptualize how the `SelfModelModule` in PiaCML would represent and manage self-generated MCPs and meta-cognitive skills.
-- [P2] [ ] **Refine CML Module Interactions & Message Payloads:** Continuously review and refine the specific data passed in message payloads between CML modules and the direct API calls that remain, to optimize information flow and module decoupling for advanced scenarios.
+- [P2] [x] **Refine CML Module Interactions & Message Payloads:** Continuously review and refine the specific data passed in message payloads between CML modules and the direct API calls that remain, to optimize information flow and module decoupling for advanced scenarios. (Completed by Jules: Added clarification to ActionEventPayload; updated PiaCML_InterModule_Communication.md to reflect current bus capabilities and message structures.)
 - [P2] [ ] **Tooling for AGI's Internalization of Developer Tools & Meta-Cognitive Patterns (MCPs):**
-- [P2] [ ] **PiaAVT Logging for Meta-Cognition:** Formally propose and document new event types in `Logging_Specification.md` related to AGI self-analysis, internal simulation, MCP generation, and cognitive reconfiguration. (Covers "Extend Logging Spec" from AVT new list)
+- [P2] [x] **PiaAVT Logging for Meta-Cognition:** Formally propose and document new event types in `Logging_Specification.md` related to AGI self-analysis, internal simulation, MCP generation, and cognitive reconfiguration. (Completed by Jules: Verified that required meta-cognitive event types are already formally defined and documented in Logging_Specification.md, Section 4.)
 - [P2] [ ] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles.
 
 ## I. PiaAGI Framework & Core Document (`PiaAGI.md`)
@@ -294,7 +294,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [P2] [ ] Outline a research plan for Theory of Mind (ToM) acquisition and scaffolding in early-stage PiaAGI agents, detailing experimental setups in PiaSE. (Derived from old ToDoList)
 - [P2] [ ] Conduct a survey and review of existing Python libraries relevant to implementing advanced aspects of the PiaAGI cognitive architecture (e.g., probabilistic reasoning, knowledge graphs, advanced ML models for CML components). (Derived from old ToDoList)
 - [P1] [x] Integrate insights from `Papers/AGI_Interdisciplinary_Memorandum.md` into various tool designs and the core `PiaAGI.md` framework where applicable. (Derived from old ToDoList)
-- [P2] [ ] Expand upon the concepts in `Papers/Human_Inspired_Agent_Blueprint.md` to create more detailed specifications or design documents for agent construction. (Derived from old ToDoList)
+- [P2] [x] Expand upon the concepts in `Papers/Human_Inspired_Agent_Blueprint.md` to create more detailed specifications or design documents for agent construction. (Completed by Jules by creating Papers/Blueprint_PiaAGI_Integration.md)
 
 ## IX. Recently Completed (Nov 2024 Review & Fix Cycle)
 - [x] **[BUG] PiaAVT Log Format Mismatch:** Modified `PiaAVTAPI` and its underlying `LoggingSystem` (in `PiaAGI_Research_Tools/PiaAVT/core/logging_system.py`, `api.py`, `webapp/app.py`, `cli.py` and `PiaAGI_Research_Tools/WebApp/backend/app.py`) to correctly parse JSONL files (line-by-line), aligning with `prototype_logger.py` and `Logging_Specification.md`. This also addresses schema alignment for core fields. (Corresponds to IMPROVEMENT_TODOLIST #1 and #6).
