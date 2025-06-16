@@ -214,78 +214,94 @@ class TestConcreteSelfModelAdvancedLogic(unittest.TestCase):
         self.self_model._log = [] # Clear logs
 
     def test_perform_ethical_evaluation(self):
+        # PRIORITY_ORDER = {"critical": 4, "high": 3, "medium": 2, "moderate": 2, "low": 1, "1":3, "2":2, "3":1}
+        # Note: The actual PRIORITY_ORDER in the module is: {"critical": 5, "high": 4, "medium": 3, "low": 2, "neutral": 1}
+        # For tests, we'll use the string versions and trust the module's internal mapping.
         self.self_model.ethical_framework.rules = [
-            EthicalRule(rule_id="R001", principle="User Privacy",
-                        description="Must not share user data. Forbidden.", priority_level="high",
-                        applicability_contexts=["user_data"], implication="impermissible"),
-            EthicalRule(rule_id="R002", principle="Data Minimization",
-                        description="Collect only necessary data. Caution advised.", priority_level="medium",
-                        applicability_contexts=["data_collection"], implication="requires_caution"),
-            EthicalRule(rule_id="R003", principle="Transparency",
-                        description="Be transparent. Potential harm if hidden.", priority_level="medium",
-                        implication="requires_caution"), # No specific context, more global caution
-            EthicalRule(rule_id="R004", principle="Beneficence",
-                        description="Aim for good.", priority_level="low",
+            EthicalRule(rule_id="R001_Privacy", principle="User Privacy",
+                        description="Must not share user data without explicit consent.", priority_level="critical", # Was high
+                        applicability_contexts=["user_data_sharing", "pii_access"], implication="impermissible"),
+            EthicalRule(rule_id="R002_Minimization", principle="Data Minimization",
+                        description="Collect only strictly necessary data.", priority_level="medium",
+                        applicability_contexts=["data_collection_design"], implication="requires_caution"),
+            EthicalRule(rule_id="R003_Transparency", principle="Transparency",
+                        description="Operations should be transparent to users when appropriate.", priority_level="medium",
+                        implication="requires_caution"), # Global caution
+            EthicalRule(rule_id="R004_Beneficence", principle="Beneficence",
+                        description="Aim to benefit humanity and users.", priority_level="low",
                         implication="encouraged"),
-            EthicalRule(rule_id="R005", principle="Neutral Operations",
-                        description="Standard operations without direct ethical valence.", priority_level="low",
-                        implication="neutral")
+            EthicalRule(rule_id="R005_NeutralOps", principle="Neutral Operations",
+                        description="Standard ops without direct ethical valence.", priority_level="low",
+                        implication="neutral"),
+            EthicalRule(rule_id="R006_Harm", principle="Non-Maleficence",
+                        description="Do not cause harm.", priority_level="critical",
+                        implication="impermissible") # Global critical rule
         ]
+        self.self_model._log_message(f"Ethical rules for test: {[r.rule_id for r in self.self_model.ethical_framework.rules]}")
 
-        # Case 1: Permissible and Encouraged (low priority "encouraged" rule)
-        action1 = {"action_type": "analyze_system_performance", "reason": "internal optimization for beneficence", "description": "This action promotes Beneficence."}
+        # Case 1: Permissible and Encouraged
+        action1 = {"action_type": "generate_public_good_report", "intent": "To promote beneficence by sharing insights.", "description": "Report on beneficence."}
         eval1 = self.self_model.perform_ethical_evaluation(action1)
         self.assertEqual(eval1["outcome"], "PERMISSIBLE")
-        self.assertIn("R004", eval1["relevant_rules"])
-        self.assertIn("Action is permissible and encouraged by specific ethical guidelines.", eval1["reasoning"],
-                      f"Unexpected reasoning: {eval1['reasoning']}")
+        self.assertIsInstance(eval1["reasoning"], list)
+        self.assertTrue(any("R004_Beneficence" in step for step in eval1["reasoning"]))
+        self.assertTrue(any("ENCOURAGED by rule(s): R004_Beneficence" in step for step in eval1["reasoning"]))
+        self.assertIn("R004_Beneficence", [r["rule_id"] for r in eval1["detailed_relevant_rules"]])
 
-        # Case 2: Impermissible (High priority "impermissible" rule)
-        action2 = {"action_type": "share_all_user_data", "reason": "marketing campaign", "description": "This involves User Privacy."}
-        eval2 = self.self_model.perform_ethical_evaluation(action2, context={"context_string": "user_data"})
+        # Case 2: Impermissible (Critical priority rule R001 matched by context keyword)
+        action2 = {"action_type": "share_user_emails", "intent": "targeted_marketing_user_privacy", "description": "Share user emails for marketing."}
+        # context_string for broader match, keywords for specific context matching.
+        eval2 = self.self_model.perform_ethical_evaluation(action2, context={"keywords": ["user_data_sharing"], "context_string": "external_pii_access"})
         self.assertEqual(eval2["outcome"], "IMPERMISSIBLE")
-        self.assertIn("R001", eval2["relevant_rules"])
-        self.assertIn(f"Critical/High priority rule 'R001' ({self.self_model.ethical_framework.rules[0].principle}) has implication 'impermissible'. Action is forbidden.", eval2["reasoning"],
-                      f"Unexpected reasoning: {eval2['reasoning']}")
+        self.assertIsInstance(eval2["reasoning"], list)
+        self.assertTrue(any("R001_Privacy" in step and "IMPERMISSIBLE" in step for step in eval2["reasoning"]))
+        self.assertTrue(any(r["rule_id"] == "R001_Privacy" and r["implication"] == "impermissible" for r in eval1["detailed_relevant_rules"]), "R001 should be in detailed_relevant_rules if it was the decisive rule")
 
-        # Case 3: Requires Review (Medium priority "requires_caution" rule for data_collection)
-        action3 = {"action_type": "collect_extra_data", "reason": "enhance_user_profile", "description": "Data Minimization principle applies here."}
-        eval3 = self.self_model.perform_ethical_evaluation(action3, context={"context_string": "data_collection"})
+
+        # Case 3: Requires Review (Medium priority "requires_caution" matched by keyword in applicability_contexts)
+        action3 = {"action_type": "design_new_data_collection_feature", "intent": "To gather more user interaction data for Data Minimization analysis.", "description": "Designing a feature to log user clicks."}
+        eval3 = self.self_model.perform_ethical_evaluation(action3, context={"keywords": ["data_collection_design"]})
         self.assertEqual(eval3["outcome"], "REQUIRES_REVIEW")
-        self.assertIn("R002", eval3["relevant_rules"])
-        self.assertIn(f"Rule 'R002' ({self.self_model.ethical_framework.rules[1].principle}, Prio: medium) has implication 'requires_caution'. Action requires review.", eval3["reasoning"],
-                      f"Unexpected reasoning: {eval3['reasoning']}")
+        self.assertIsInstance(eval3["reasoning"], list)
+        self.assertTrue(any("R002_Minimization" in step and "REQUIRES_REVIEW" in step for step in eval3["reasoning"]))
 
-        # Case 4: No specific rules matched by principle/context, should be permissible by default
-        action4 = {"action_type": "calculate_pi_digits", "reason": "mathematical_exercise", "description": "A neutral computation."}
+        # Case 4: Permissible (No specific prohibitive/cautionary rules matched, only neutral or globally non-violated)
+        action4 = {"action_type": "optimize_internal_algorithm", "intent": "improve_system_efficiency", "description": "A neutral computation for performance. Will not cause harm."}
         eval4 = self.self_model.perform_ethical_evaluation(action4)
         self.assertEqual(eval4["outcome"], "PERMISSIBLE")
-        # R005 (Neutral Operations) might be matched if description includes "neutral" or similar, or if it's global.
-        # If R005 is not matched, relevant_rules is empty.
-        # If R005 *is* matched (e.g. by description "neutral computation" if we made rule more general):
-        # self.assertIn("R005", eval4["relevant_rules"])
-        # self.assertIn("Action is permissible and aligns with neutral ethical guidelines", eval4["reasoning"])
-        # If R005 is NOT matched:
-        self.assertEqual(len(eval4["relevant_rules"]), 0, f"Expected no rules, got {eval4['relevant_rules']}")
-        self.assertIn("No specific ethical rules were found to be directly relevant or prohibitive.", eval4["reasoning"],
-                      f"Unexpected reasoning: {eval4['reasoning']}")
+        self.assertIsInstance(eval4["reasoning"], list)
+        # R005 (Neutral Operations) might be matched if "neutral" is in description.
+        # R006 (Non-Maleficence) is global impermissible, but "not cause harm" in desc might prevent its negative trigger here (conceptual)
+        # For this test, we'll assume it correctly navigates to PERMISSIBLE.
+        self.assertTrue(any("aligning with neutral guidelines or not significantly constrained" in step or "no specific ethical rules were found to be directly applicable or prohibitive" in step for step in eval4["reasoning"]))
+        self.assertTrue(any(r["rule_id"] == "R005_NeutralOps" for r in eval4["detailed_relevant_rules"]) or not eval4["detailed_relevant_rules"])
 
-        # Case 5: Requires Review (Medium priority "requires_caution" rule, global context)
-        action5 = {"action_type": "deploy_unvetted_model", "reason": "speed_up_process", "description": "Deploying a new model that has not been fully vetted for Transparency."}
-        eval5 = self.self_model.perform_ethical_evaluation(action5) # No specific context string, R003 might apply globally
+
+        # Case 5: Requires Review (Global caution rule R003 Transparency, no specific context needed if principle keyword matches)
+        action5 = {"action_type": "obscure_data_source", "intent": "To simplify user interface, hiding complex transparency details.", "description": "This action relates to Transparency."}
+        eval5 = self.self_model.perform_ethical_evaluation(action5)
         self.assertEqual(eval5["outcome"], "REQUIRES_REVIEW")
-        self.assertIn("R003", eval5["relevant_rules"])
-        self.assertIn(f"Rule 'R003' ({self.self_model.ethical_framework.rules[2].principle}, Prio: medium) has implication 'requires_caution'. Action requires review.", eval5["reasoning"],
-                      f"Unexpected reasoning: {eval5['reasoning']}")
+        self.assertIsInstance(eval5["reasoning"], list)
+        self.assertTrue(any("R003_Transparency" in step for step in eval5["reasoning"]))
 
-        # Case 6: Permissible with a "neutral" rule explicitly matched.
-        action6 = {"action_type": "routine_database_backup", "reason": "data_integrity", "description": "Standard Neutral Operations for system maintenance."}
+        # Case 6: Impermissible (Global critical rule R006 Non-Maleficence)
+        action6 = {"action_type": "test_potentially_harmful_code", "intent": "stress_test_system_with_non-maleficence_override_attempt", "description": "This test might cause harm."}
         eval6 = self.self_model.perform_ethical_evaluation(action6)
-        self.assertEqual(eval6["outcome"], "PERMISSIBLE")
-        self.assertIn("R005", eval6["relevant_rules"])
-        self.assertIn("Action is permissible and aligns with neutral ethical guidelines or is not constrained by them.", eval6["reasoning"],
-                      f"Unexpected reasoning: {eval6['reasoning']}")
+        self.assertEqual(eval6["outcome"], "IMPERMISSIBLE")
+        self.assertIsInstance(eval6["reasoning"], list)
+        self.assertTrue(any("R006_Harm" in step for step in eval6["reasoning"]))
+        self.assertTrue(any(r["rule_id"] == "R006_Harm" and r["implication"] == "impermissible" for r in eval6["detailed_relevant_rules"]))
 
+        # Case 7: Detailed relevant rules check - multiple rules match, one is decisive
+        action7 = {"action_type": "collect_and_share_user_feedback", "intent": "Improve service (Beneficence) but involves User Privacy.", "description": "Collect feedback for Beneficence, but be mindful of User Privacy."}
+        eval7 = self.self_model.perform_ethical_evaluation(action7, context={"keywords": ["user_data_sharing"]}) # Triggers R001
+        self.assertEqual(eval7["outcome"], "IMPERMISSIBLE") # R001 (critical) should override R004 (low)
+        self.assertIsInstance(eval7["reasoning"], list)
+        self.assertTrue(any("R001_Privacy" in step for step in eval7["reasoning"])) # R001 is decisive
+
+        relevant_rule_ids = [r["rule_id"] for r in eval7["detailed_relevant_rules"]]
+        self.assertIn("R001_Privacy", relevant_rule_ids)
+        self.assertIn("R004_Beneficence", relevant_rule_ids) # R004 also matched by principle
 
     def test_assess_confidence_in_knowledge(self):
         import time # for last_accessed_ts

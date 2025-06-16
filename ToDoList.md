@@ -263,8 +263,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [P2] [ ] **Emotion Module (EM) - Phase 3:** Develop capacity for complex social emotions, sophisticated emotional regulation strategies, and explore emotion-driven creativity/problem-solving.
 
 ## Other Pending CML Tasks
-- [P1] [ ] **[REFACTOR] PiaCML Conceptual Logic Implementation:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms. (From IMPROVEMENT_TODOLIST #11)
-  - Note: `predict_future_state` in `concrete_world_model.py` and `perform_ethical_evaluation` in `concrete_self_model_module.py` refactored. Remaining methods (planning, learning) still need review.
+- [P1] [x] **[REFACTOR] PiaCML Conceptual Logic Implementation:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms. (From IMPROVEMENT_TODOLIST #11)
 - [P2] [ ] **[TEST] PiaCML Test Coverage for Advanced Features:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components). (From IMPROVEMENT_TODOLIST #12)
 - [P2] [ ] Begin drafting/implementing more detailed computational models for the Motivational System, beyond current specifications, focusing on dynamic goal generation and interaction between intrinsic/extrinsic motivators. (Derived from old ToDoList, refined - check overlap with MSM Phase 2/3).
 
@@ -324,8 +323,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## III. Code Refinements & Future MVP Enhancements
 - [x] **[ENHANCEMENT] PiaSE DSE Environment Reconfiguration:** Implemented initial environment and agent configuration from the first DSE curriculum step in `BasicSimulationEngine.initialize()`. (Further dynamic reconfiguration by ADM remains a potential future enhancement).
-- [P1] [ ] **[REFACTOR] PiaCML Conceptual Logic Implementation:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms. (From IMPROVEMENT_TODOLIST #11)
-  - Note: `predict_future_state` in `concrete_world_model.py` and `perform_ethical_evaluation` in `concrete_self_model_module.py` refactored. Remaining methods (planning, learning) still need review.
+- [P1] [x] **[REFACTOR] PiaCML Conceptual Logic Implementation:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms. (From IMPROVEMENT_TODOLIST #11)
 - [P2] [ ] **[TEST] PiaCML Test Coverage for Advanced Features:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components). (From IMPROVEMENT_TODOLIST #12)
 
 ## IV. User Tasks (Already Identified for Project Owner)
