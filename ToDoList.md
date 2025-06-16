@@ -324,9 +324,11 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 ## III. Code Refinements & Future MVP Enhancements
 - [x] **[ENHANCEMENT] PiaSE DSE Environment Reconfiguration:** Implemented initial environment and agent configuration from the first DSE curriculum step in `BasicSimulationEngine.initialize()`. (Further dynamic reconfiguration by ADM remains a potential future enhancement).
 - [P1] [x] **[REFACTOR] PiaCML Conceptual Logic Implementation:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms. (From IMPROVEMENT_TODOLIST #11)
-- [P2] [ ] **[TEST] PiaCML Test Coverage for Advanced Features:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components). (From IMPROVEMENT_TODOLIST #12)
+- [P2] [x] **[TEST] PiaCML Test Coverage for Advanced Features:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components). (From IMPROVEMENT_TODOLIST #12)
 
 ## IV. User Tasks (Already Identified for Project Owner)
 - [P1] [ ] **[USER_TASK] Diagram Integration in `PiaAGI.md`:**
+
+[end of ToDoList.md]
 
 [end of ToDoList.md]

@@ -10,7 +10,8 @@ try:
     from .message_bus import MessageBus
     from .core_messages import (
         GenericMessage, PerceptDataPayload, LTMQueryResultPayload, ActionEventPayload, MemoryItem,
-        LTMQueryPayload # Though WM doesn't send LTM queries in this subtask, good to have for context
+        LTMQueryPayload, # Though WM doesn't send LTM queries in this subtask, good to have for context
+        EntityMovementOutcome, EntityCreationOutcome, EntityStateChangeOutcome, GeneralActionOutcome # New outcomes
     )
 except ImportError:
     print("Warning: Running ConcreteWorldModel with stubbed imports.")
@@ -192,21 +193,43 @@ class ConcreteWorldModel(BaseWorldModel):
 
         # Update entity states based on outcome
         if payload.status == "SUCCESS" and payload.outcome:
-            if payload.action_type.upper() == "MOVE_AGENT" or "MOVE_TO" in payload.action_type.upper() : # Flexible check
-                agent_id = payload.outcome.get("agent_id", payload.outcome.get("entity_id"))
-                new_loc_id = payload.outcome.get("new_location_id", payload.outcome.get("location_id"))
+            outcome_data = payload.outcome
+            action_type_upper = payload.action_type.upper()
+
+            if action_type_upper == "MOVE_AGENT" or "MOVE_TO" in action_type_upper:
+                agent_id, new_loc_id = None, None
+                if isinstance(outcome_data, EntityMovementOutcome):
+                    agent_id = outcome_data.entity_id
+                    new_loc_id = outcome_data.new_location_id
+                    self._log_message(f"Processing EntityMovementOutcome for '{agent_id}'.")
+                elif isinstance(outcome_data, dict): # Fallback for backward compatibility
+                    agent_id = outcome_data.get("agent_id", outcome_data.get("entity_id"))
+                    new_loc_id = outcome_data.get("new_location_id", outcome_data.get("location_id"))
+                    self._log_message(f"Processing MOVE_AGENT with dict outcome for '{agent_id}'.")
+
                 if agent_id and new_loc_id and agent_id in self._entity_repository:
                     self._entity_repository[agent_id].location_id = new_loc_id
                     self._entity_repository[agent_id].last_observed_ts = ts
                     self._log_message(f"Entity '{agent_id}' moved to '{new_loc_id}' due to ActionEvent.")
                     self._update_timestamp()
-            
-            elif payload.action_type.upper() == "CREATE_OBJECT":
-                obj_id = payload.outcome.get("object_id")
-                obj_type = payload.outcome.get("object_type", "unknown_created_object")
-                obj_loc = payload.outcome.get("location_id")
-                obj_state = payload.outcome.get("state", {})
-                obj_props = payload.outcome.get("properties", {})
+
+            elif action_type_upper == "CREATE_OBJECT":
+                obj_id, obj_type, obj_loc, obj_state, obj_props = None, None, None, {}, {}
+                if isinstance(outcome_data, EntityCreationOutcome):
+                    obj_id = outcome_data.entity_id
+                    obj_type = outcome_data.entity_type
+                    obj_loc = outcome_data.location_id
+                    obj_state = outcome_data.state
+                    obj_props = outcome_data.properties
+                    self._log_message(f"Processing EntityCreationOutcome for '{obj_id}'.")
+                elif isinstance(outcome_data, dict): # Fallback
+                    obj_id = outcome_data.get("object_id")
+                    obj_type = outcome_data.get("object_type", "unknown_created_object")
+                    obj_loc = outcome_data.get("location_id")
+                    obj_state = outcome_data.get("state", {})
+                    obj_props = outcome_data.get("properties", {})
+                    self._log_message(f"Processing CREATE_OBJECT with dict outcome for '{obj_id}'.")
+
                 if obj_id:
                     if obj_id not in self._entity_repository:
                         self._entity_repository[obj_id] = WorldEntity(
@@ -214,14 +237,43 @@ class ConcreteWorldModel(BaseWorldModel):
                             affordances=[], relationships={}, last_observed_ts=ts, location_id=obj_loc
                         )
                         self._log_message(f"New entity '{obj_id}' created due to ActionEvent.")
-                        self._update_timestamp()
-                    else: # Object already existed, update its state if provided
+                    else: # Object already existed, update its state/props
                         self._entity_repository[obj_id].state.update(obj_state)
                         self._entity_repository[obj_id].properties.update(obj_props)
                         self._entity_repository[obj_id].last_observed_ts = ts
                         if obj_loc: self._entity_repository[obj_id].location_id = obj_loc
-                        self._log_message(f"Entity '{obj_id}' state updated due to CREATE_OBJECT ActionEvent.")
+                        self._log_message(f"Entity '{obj_id}' state/props updated due to CREATE_OBJECT ActionEvent.")
+                    self._update_timestamp()
+
+            elif action_type_upper == "CHANGE_ENTITY_STATE":
+                if isinstance(outcome_data, EntityStateChangeOutcome):
+                    entity_id_to_change = outcome_data.entity_id
+                    self._log_message(f"Processing EntityStateChangeOutcome for '{entity_id_to_change}'. Reason: {outcome_data.reason}")
+                    if entity_id_to_change in self._entity_repository:
+                        entity = self._entity_repository[entity_id_to_change]
+                        entity.state.update(outcome_data.changed_state)
+                        entity.last_observed_ts = ts
+                        self._log_message(f"Entity '{entity_id_to_change}' state updated: {outcome_data.changed_state}.")
                         self._update_timestamp()
+                    else:
+                        self._log_message(f"Entity '{entity_id_to_change}' for state change not found.")
+                elif isinstance(outcome_data, dict) and "entity_id" in outcome_data and "changed_state" in outcome_data: # Fallback
+                    entity_id_to_change = outcome_data["entity_id"]
+                    changed_state_dict = outcome_data["changed_state"]
+                    self._log_message(f"Processing CHANGE_ENTITY_STATE with dict outcome for '{entity_id_to_change}'.")
+                    if entity_id_to_change in self._entity_repository and isinstance(changed_state_dict, dict):
+                        entity = self._entity_repository[entity_id_to_change]
+                        entity.state.update(changed_state_dict)
+                        entity.last_observed_ts = ts
+                        self._log_message(f"Entity '{entity_id_to_change}' state updated via dict: {changed_state_dict}.")
+                        self._update_timestamp()
+                    else:
+                        self._log_message(f"Entity '{entity_id_to_change}' for state change not found or changed_state invalid.")
+            # Else, other action types or generic outcomes might be logged or handled by a default mechanism
+            elif isinstance(outcome_data, GeneralActionOutcome):
+                 self._log_message(f"Received GeneralActionOutcome: {outcome_data.description}. Details: {outcome_data.details}")
+            elif isinstance(outcome_data, dict): # Fallback for other dict-based outcomes
+                 self._log_message(f"Received generic dict outcome for action '{payload.action_type}': {str(outcome_data)[:100]}")
 
 
     # --- Existing Methods (ensure they use self._module_id in logs if applicable) ---
@@ -534,10 +586,11 @@ if __name__ == '__main__':
         assert world_model._entity_repository["chair05"].properties.get("label") == "OldChair"
         print("  WM processed LTMQueryResult with entity data.")
 
-        # 3. ActionEvent - MOVE_AGENT
+        # 3. ActionEvent - MOVE_AGENT using new outcome type
+        move_outcome = EntityMovementOutcome(entity_id="RedApple", new_location_id="loc_floor", old_location_id="table_area", method="teleport")
         action_event_move = ActionEventPayload(
             action_command_id="cmd_move1", action_type="MOVE_AGENT", status="SUCCESS",
-            outcome={"agent_id": "RedApple", "new_location_id": "loc_floor"} # RedApple is not an agent, but test entity update
+            outcome=move_outcome
         )
         bus.publish(GenericMessage(source_module_id="TestExecSys", message_type="ActionEvent", payload=action_event_move))
         await asyncio.sleep(0.01)
@@ -545,22 +598,50 @@ if __name__ == '__main__':
         assert world_model._entity_repository["RedApple"].location_id == "loc_floor"
         assert len(world_model._temporal_model_events) == 1
         assert world_model._temporal_model_events[0].type == "action_outcome_MOVE_AGENT"
-        print("  WM processed MOVE_AGENT ActionEvent, updated entity location and added temporal event.")
+        print("  WM processed MOVE_AGENT ActionEvent (typed outcome), updated entity location and added temporal event.")
 
-        # 4. ActionEvent - CREATE_OBJECT
+        # 4. ActionEvent - CREATE_OBJECT using new outcome type
+        create_outcome = EntityCreationOutcome(
+            entity_id="box01", entity_type="container_v2", location_id="loc_tabletop_v2",
+            state={"color":"blue", "material":"cardboard_v2"}, properties={"weight_kg": 0.5}
+        )
         action_event_create = ActionEventPayload(
             action_command_id="cmd_create1", action_type="CREATE_OBJECT", status="SUCCESS",
-            outcome={"object_id": "box01", "object_type": "container", "location_id": "loc_tabletop", "state": {"color":"blue"}}
+            outcome=create_outcome
         )
         bus.publish(GenericMessage(source_module_id="TestFabSys", message_type="ActionEvent", payload=action_event_create))
         await asyncio.sleep(0.01)
 
         assert "box01" in world_model._entity_repository
-        assert world_model._entity_repository["box01"].type == "container"
-        assert world_model._entity_repository["box01"].location_id == "loc_tabletop"
+        assert world_model._entity_repository["box01"].type == "container_v2"
+        assert world_model._entity_repository["box01"].location_id == "loc_tabletop_v2"
         assert world_model._entity_repository["box01"].state.get("color") == "blue"
+        assert world_model._entity_repository["box01"].state.get("material") == "cardboard_v2"
+        assert world_model._entity_repository["box01"].properties.get("weight_kg") == 0.5
         assert len(world_model._temporal_model_events) == 2
-        print("  WM processed CREATE_OBJECT ActionEvent, created new entity and added temporal event.")
+        print("  WM processed CREATE_OBJECT ActionEvent (typed outcome), created new entity and added temporal event.")
+
+        # 5. ActionEvent - CHANGE_ENTITY_STATE using new outcome type
+        change_state_outcome = EntityStateChangeOutcome(
+            entity_id="RedApple", # Use existing entity
+            changed_state={"color": "golden", "status": "ripe"},
+            old_state_summary={"color": "green"}, # Previous color was green after p2
+            reason="Ripening process"
+        )
+        action_event_change_state = ActionEventPayload(
+            action_command_id="cmd_change_state1", action_type="CHANGE_ENTITY_STATE", status="SUCCESS",
+            outcome=change_state_outcome
+        )
+        bus.publish(GenericMessage(source_module_id="TestSimSys", message_type="ActionEvent", payload=action_event_change_state))
+        await asyncio.sleep(0.01)
+
+        assert world_model._entity_repository["RedApple"].state.get("color") == "golden"
+        assert world_model._entity_repository["RedApple"].state.get("status") == "ripe"
+        # Check if original 'source_percept_id' from initial creation is still there (merge, not overwrite all state)
+        assert world_model._entity_repository["RedApple"].state.get("source_percept_id") == "p2"
+        assert len(world_model._temporal_model_events) == 3 # One more event
+        print("  WM processed CHANGE_ENTITY_STATE ActionEvent (typed outcome), updated entity state.")
+
 
         print("\n--- Testing Enhanced Queries ---")
         # Query entities by type 'fruit'
@@ -684,12 +765,12 @@ if __name__ == '__main__':
         print("\n--- Final World Model Status ---")
         final_status = world_model.get_world_model_status()
         print(final_status)
-        # Counts remain same, just testing query and prediction logic
-        assert final_status["entity_count"] == 4
-        assert final_status["event_count"] == 2
+        # Counts updated due to new CHANGE_ENTITY_STATE event
+        assert final_status["entity_count"] == 4 # RedApple, TableTop, chair05, box01
+        assert final_status["event_count"] == 3 # Move, Create, ChangeState
         assert final_status["handled_message_counts"]["PerceptData"] == 1
         assert final_status["handled_message_counts"]["LTMQueryResult"] == 1
-        assert final_status["handled_message_counts"]["ActionEvent"] == 2
+        assert final_status["handled_message_counts"]["ActionEvent"] == 3 # Updated count
 
 
         print("\n--- ConcreteWorldModel __main__ Test Complete ---")
