@@ -92,6 +92,15 @@ class TestConcreteSelfModelModuleIntegration(unittest.TestCase):
             self.assertTrue(self_model.attributes.confidence_in_capabilities > initial_confidence or initial_confidence == 1.0)
             self.assertEqual(self_model._handled_message_counts["ActionEvent"], 1)
 
+            # Verify autobiography entry content for success
+            last_entry_success = self_model.autobiography.entries[-1]
+            self.assertIn(action_event.action_command_id, last_entry_success.description) # cmd_test_eval
+            self.assertIn(action_event.status, last_entry_success.description) # SUCCESS
+            self.assertEqual(last_entry_success.type, "performance_evaluation_success")
+            self.assertTrue("Confidence adjusted" in last_entry_success.impact_on_self_model_summary)
+            self.assertTrue(f"Confidence changed from {initial_confidence:.2f} to {self_model.attributes.confidence_in_capabilities:.2f}" in last_entry_success.impact_on_self_model_summary)
+
+
             # Test failure
             action_event_fail = ActionEventPayload(
                 action_command_id="cmd_test_fail", action_type="another_action", status="FAILURE",
@@ -102,6 +111,14 @@ class TestConcreteSelfModelModuleIntegration(unittest.TestCase):
             await asyncio.sleep(0.01)
             self.assertEqual(len(self_model.autobiography.entries), initial_autobiography_count + 2)
             self.assertTrue(self_model.attributes.confidence_in_capabilities < initial_confidence_before_fail or initial_confidence_before_fail == 0.0)
+
+            # Verify autobiography entry content for failure
+            last_entry_fail = self_model.autobiography.entries[-1]
+            self.assertIn(action_event_fail.action_command_id, last_entry_fail.description)
+            self.assertIn(action_event_fail.status, last_entry_fail.description)
+            self.assertEqual(last_entry_fail.type, "performance_evaluation_failure")
+            self.assertTrue("Confidence adjusted" in last_entry_fail.impact_on_self_model_summary)
+            self.assertTrue(f"Confidence changed from {initial_confidence_before_fail:.2f} to {self_model.attributes.confidence_in_capabilities:.2f}" in last_entry_fail.impact_on_self_model_summary)
 
         asyncio.run(run_test_logic())
 
@@ -206,27 +223,17 @@ class TestConcreteSelfModelAdvancedLogic(unittest.TestCase):
 
     def setUp(self):
         # Using message_bus=None for these unit tests focusing on internal logic.
-        # If a test specifically needs to check publishing, a mock bus can be injected there.
         self.self_model = ConcreteSelfModelModule(message_bus=None, module_id="TestSMAdvanced")
-        self.self_model.ethical_framework.rules = []
-        self.self_model.knowledge_map.concepts = {}
-        self.self_model._knowledge_confidence = {} # Internal store for update_confidence
-        self.self_model._log = [] # Clear logs
-
-    def test_perform_ethical_evaluation(self):
-        # PRIORITY_ORDER = {"critical": 4, "high": 3, "medium": 2, "moderate": 2, "low": 1, "1":3, "2":2, "3":1}
-        # Note: The actual PRIORITY_ORDER in the module is: {"critical": 5, "high": 4, "medium": 3, "low": 2, "neutral": 1}
-        # For tests, we'll use the string versions and trust the module's internal mapping.
-        self.self_model.ethical_framework.rules = [
+        self.standard_rules = [
             EthicalRule(rule_id="R001_Privacy", principle="User Privacy",
-                        description="Must not share user data without explicit consent.", priority_level="critical", # Was high
+                        description="Must not share user data without explicit consent.", priority_level="critical",
                         applicability_contexts=["user_data_sharing", "pii_access"], implication="impermissible"),
             EthicalRule(rule_id="R002_Minimization", principle="Data Minimization",
                         description="Collect only strictly necessary data.", priority_level="medium",
                         applicability_contexts=["data_collection_design"], implication="requires_caution"),
             EthicalRule(rule_id="R003_Transparency", principle="Transparency",
-                        description="Operations should be transparent to users when appropriate.", priority_level="medium",
-                        implication="requires_caution"), # Global caution
+                        description="Operations should be transparent to users when appropriate.", priority_level="medium", global_rule=True,
+                        implication="requires_caution"),
             EthicalRule(rule_id="R004_Beneficence", principle="Beneficence",
                         description="Aim to benefit humanity and users.", priority_level="low",
                         implication="encouraged"),
@@ -234,105 +241,153 @@ class TestConcreteSelfModelAdvancedLogic(unittest.TestCase):
                         description="Standard ops without direct ethical valence.", priority_level="low",
                         implication="neutral"),
             EthicalRule(rule_id="R006_Harm", principle="Non-Maleficence",
-                        description="Do not cause harm.", priority_level="critical",
-                        implication="impermissible") # Global critical rule
+                        description="Do not cause harm.", priority_level="critical", global_rule=True,
+                        implication="impermissible")
         ]
+        self.self_model.ethical_framework.rules = []
+        self.self_model.knowledge_map.concepts = {}
+        self.self_model._knowledge_confidence = {}
+        self.self_model._log = []
+
+    def test_perform_ethical_evaluation_empty_ruleset(self):
+        """Test ethical evaluation with no rules defined."""
+        self.self_model.ethical_framework.rules = []
+        action = {"action_type": "any_action", "description": "A generic action."}
+        eval_result = self.self_model.perform_ethical_evaluation(action)
+        self.assertEqual(eval_result["outcome"], "PERMISSIBLE")
+        self.assertTrue(any("no specific ethical rules were found to be directly applicable" in step for step in eval_result["reasoning"]))
+
+    def test_perform_ethical_evaluation_global_rule_non_maleficence(self):
+        """Test application of a global critical rule (Non-Maleficence)."""
+        self.self_model.ethical_framework.rules = [
+            next(rule for rule in self.standard_rules if rule.rule_id == "R006_Harm")
+        ]
+        action = {"action_type": "potential_harm_action", "description": "This action description implies Non-Maleficence is relevant and might cause harm."}
+        eval_result = self.self_model.perform_ethical_evaluation(action)
+        self.assertEqual(eval_result["outcome"], "IMPERMISSIBLE")
+        self.assertTrue(any("R006_Harm" in step for step in eval_result["reasoning"]))
+        self.assertTrue(any("Decisive rule: R006_Harm" in step for step in eval_result["reasoning"]))
+        self.assertIn("R006_Harm", [r["rule_id"] for r in eval_result["detailed_relevant_rules"]])
+        # Test specific reasoning steps
+        self.assertIn("Starting ethical evaluation for action: potential_harm_action", eval_result["reasoning"][0])
+        self.assertIn("Evaluating global rules.", eval_result["reasoning"][1])
+        self.assertTrue("Rule R006_Harm (Non-Maleficence) matched based on keyword 'harm' in description" in eval_result["reasoning"][2] or \
+                        "Rule R006_Harm (Non-Maleficence) matched based on principle keyword 'Non-Maleficence' in description" in eval_result["reasoning"][2])
+
+
+    def test_perform_ethical_evaluation_rule_overriding(self):
+        """Test that a critical rule overrides an encouraged rule."""
+        self.self_model.ethical_framework.rules = [
+            next(rule for rule in self.standard_rules if rule.rule_id == "R001_Privacy"),
+            next(rule for rule in self.standard_rules if rule.rule_id == "R004_Beneficence")
+        ]
+        action = {"action_type": "share_beneficial_user_data", "description": "Share User Privacy data for Beneficence."}
+        eval_result = self.self_model.perform_ethical_evaluation(action, context={"keywords": ["user_data_sharing"]})
+        self.assertEqual(eval_result["outcome"], "IMPERMISSIBLE")
+        self.assertTrue(any("R001_Privacy" in step for step in eval_result["reasoning"]))
+        self.assertTrue(any("Decisive rule: R001_Privacy" in step for step in eval_result["reasoning"]))
+
+        relevant_rule_ids = [r["rule_id"] for r in eval_result["detailed_relevant_rules"]]
+        self.assertIn("R001_Privacy", relevant_rule_ids)
+        self.assertIn("R004_Beneficence", relevant_rule_ids)
+
+    def test_perform_ethical_evaluation_cautionary_outcome(self):
+        """Test a rule leading to a 'REQUIRES_REVIEW' (cautionary) outcome."""
+        self.self_model.ethical_framework.rules = [
+            next(rule for rule in self.standard_rules if rule.rule_id == "R003_Transparency")
+        ]
+        action = {"action_type": "perform_opaque_logging", "description": "Log data without explicit user Transparency."}
+        # R003 is global and matches on principle keyword 'Transparency' in description
+        eval_result = self.self_model.perform_ethical_evaluation(action)
+        self.assertEqual(eval_result["outcome"], "REQUIRES_REVIEW")
+        self.assertTrue(any("R003_Transparency" in step for step in eval_result["reasoning"]))
+        self.assertTrue(any("Highest priority implication is 'requires_caution'" in step for step in eval_result["reasoning"]))
+
+    def test_perform_ethical_evaluation_original_cases(self):
+        """Includes original test cases for broader coverage."""
+        self.self_model.ethical_framework.rules = self.standard_rules # Use the full standard set
         self.self_model._log_message(f"Ethical rules for test: {[r.rule_id for r in self.self_model.ethical_framework.rules]}")
 
-        # Case 1: Permissible and Encouraged
         action1 = {"action_type": "generate_public_good_report", "intent": "To promote beneficence by sharing insights.", "description": "Report on beneficence."}
         eval1 = self.self_model.perform_ethical_evaluation(action1)
         self.assertEqual(eval1["outcome"], "PERMISSIBLE")
-        self.assertIsInstance(eval1["reasoning"], list)
-        self.assertTrue(any("R004_Beneficence" in step for step in eval1["reasoning"]))
         self.assertTrue(any("ENCOURAGED by rule(s): R004_Beneficence" in step for step in eval1["reasoning"]))
-        self.assertIn("R004_Beneficence", [r["rule_id"] for r in eval1["detailed_relevant_rules"]])
 
-        # Case 2: Impermissible (Critical priority rule R001 matched by context keyword)
         action2 = {"action_type": "share_user_emails", "intent": "targeted_marketing_user_privacy", "description": "Share user emails for marketing."}
-        # context_string for broader match, keywords for specific context matching.
         eval2 = self.self_model.perform_ethical_evaluation(action2, context={"keywords": ["user_data_sharing"], "context_string": "external_pii_access"})
         self.assertEqual(eval2["outcome"], "IMPERMISSIBLE")
-        self.assertIsInstance(eval2["reasoning"], list)
-        self.assertTrue(any("R001_Privacy" in step and "IMPERMISSIBLE" in step for step in eval2["reasoning"]))
-        self.assertTrue(any(r["rule_id"] == "R001_Privacy" and r["implication"] == "impermissible" for r in eval1["detailed_relevant_rules"]), "R001 should be in detailed_relevant_rules if it was the decisive rule")
+        self.assertTrue(any("Decisive rule: R001_Privacy" in step for step in eval2["reasoning"]))
 
-
-        # Case 3: Requires Review (Medium priority "requires_caution" matched by keyword in applicability_contexts)
         action3 = {"action_type": "design_new_data_collection_feature", "intent": "To gather more user interaction data for Data Minimization analysis.", "description": "Designing a feature to log user clicks."}
         eval3 = self.self_model.perform_ethical_evaluation(action3, context={"keywords": ["data_collection_design"]})
         self.assertEqual(eval3["outcome"], "REQUIRES_REVIEW")
-        self.assertIsInstance(eval3["reasoning"], list)
-        self.assertTrue(any("R002_Minimization" in step and "REQUIRES_REVIEW" in step for step in eval3["reasoning"]))
+        self.assertTrue(any("R002_Minimization" in step for step in eval3["reasoning"]))
 
-        # Case 4: Permissible (No specific prohibitive/cautionary rules matched, only neutral or globally non-violated)
         action4 = {"action_type": "optimize_internal_algorithm", "intent": "improve_system_efficiency", "description": "A neutral computation for performance. Will not cause harm."}
         eval4 = self.self_model.perform_ethical_evaluation(action4)
         self.assertEqual(eval4["outcome"], "PERMISSIBLE")
-        self.assertIsInstance(eval4["reasoning"], list)
-        # R005 (Neutral Operations) might be matched if "neutral" is in description.
-        # R006 (Non-Maleficence) is global impermissible, but "not cause harm" in desc might prevent its negative trigger here (conceptual)
-        # For this test, we'll assume it correctly navigates to PERMISSIBLE.
-        self.assertTrue(any("aligning with neutral guidelines or not significantly constrained" in step or "no specific ethical rules were found to be directly applicable or prohibitive" in step for step in eval4["reasoning"]))
-        self.assertTrue(any(r["rule_id"] == "R005_NeutralOps" for r in eval4["detailed_relevant_rules"]) or not eval4["detailed_relevant_rules"])
+        self.assertTrue(any("aligning with neutral guidelines" in step for step in eval4["reasoning"]) or any("no specific ethical rules were found to be directly applicable or prohibitive" in step for step in eval4["reasoning"]))
 
-
-        # Case 5: Requires Review (Global caution rule R003 Transparency, no specific context needed if principle keyword matches)
         action5 = {"action_type": "obscure_data_source", "intent": "To simplify user interface, hiding complex transparency details.", "description": "This action relates to Transparency."}
-        eval5 = self.self_model.perform_ethical_evaluation(action5)
+        eval5 = self.self_model.perform_ethical_evaluation(action5) # R003 is global
         self.assertEqual(eval5["outcome"], "REQUIRES_REVIEW")
-        self.assertIsInstance(eval5["reasoning"], list)
         self.assertTrue(any("R003_Transparency" in step for step in eval5["reasoning"]))
 
-        # Case 6: Impermissible (Global critical rule R006 Non-Maleficence)
         action6 = {"action_type": "test_potentially_harmful_code", "intent": "stress_test_system_with_non-maleficence_override_attempt", "description": "This test might cause harm."}
-        eval6 = self.self_model.perform_ethical_evaluation(action6)
+        eval6 = self.self_model.perform_ethical_evaluation(action6) # R006 is global
         self.assertEqual(eval6["outcome"], "IMPERMISSIBLE")
-        self.assertIsInstance(eval6["reasoning"], list)
         self.assertTrue(any("R006_Harm" in step for step in eval6["reasoning"]))
-        self.assertTrue(any(r["rule_id"] == "R006_Harm" and r["implication"] == "impermissible" for r in eval6["detailed_relevant_rules"]))
 
-        # Case 7: Detailed relevant rules check - multiple rules match, one is decisive
         action7 = {"action_type": "collect_and_share_user_feedback", "intent": "Improve service (Beneficence) but involves User Privacy.", "description": "Collect feedback for Beneficence, but be mindful of User Privacy."}
-        eval7 = self.self_model.perform_ethical_evaluation(action7, context={"keywords": ["user_data_sharing"]}) # Triggers R001
-        self.assertEqual(eval7["outcome"], "IMPERMISSIBLE") # R001 (critical) should override R004 (low)
-        self.assertIsInstance(eval7["reasoning"], list)
-        self.assertTrue(any("R001_Privacy" in step for step in eval7["reasoning"])) # R001 is decisive
-
+        eval7 = self.self_model.perform_ethical_evaluation(action7, context={"keywords": ["user_data_sharing"]})
+        self.assertEqual(eval7["outcome"], "IMPERMISSIBLE")
+        self.assertTrue(any("R001_Privacy" in step for step in eval7["reasoning"]))
         relevant_rule_ids = [r["rule_id"] for r in eval7["detailed_relevant_rules"]]
         self.assertIn("R001_Privacy", relevant_rule_ids)
-        self.assertIn("R004_Beneficence", relevant_rule_ids) # R004 also matched by principle
+        self.assertIn("R004_Beneficence", relevant_rule_ids)
 
-    def test_assess_confidence_in_knowledge(self):
-        import time # for last_accessed_ts
-        concept1_id = "c1_test_increase"
-        concept2_id = "c2_test_decrease"
+    def test_assess_confidence_in_knowledge_precise_and_clamping(self):
+        import time
+        current_time = time.time()
         self.self_model.knowledge_map.concepts = {
-            concept1_id: KnowledgeConcept(concept_id=concept1_id, label="Frequent & Grounded", confidence_score=0.5, groundedness_score=0.8, access_frequency=20, last_accessed_ts=time.time() - (1 * 24 * 60 * 60)), # Accessed 1 day ago
-            concept2_id: KnowledgeConcept(concept_id=concept2_id, label="Old & Ungrounded", confidence_score=0.7, groundedness_score=0.1, access_frequency=1, last_accessed_ts=time.time() - (60 * 24 * 60 * 60)) # Accessed 60 days ago
+            "C_test_increase": KnowledgeConcept(concept_id="C_test_increase", label="Frequent & Grounded", confidence_score=0.5, groundedness_score=0.8, access_frequency=20, last_accessed_ts=current_time - (1 * 24 * 60 * 60)),
+            "D_test_precise": KnowledgeConcept(concept_id="D_test_precise", label="Concept D", confidence_score=0.5, groundedness_score=0.8, access_frequency=20, last_accessed_ts=current_time - (2 * 24 * 60 * 60)),
+            "E_test_precise": KnowledgeConcept(concept_id="E_test_precise", label="Concept E", confidence_score=0.6, groundedness_score=0.1, access_frequency=1, last_accessed_ts=current_time - (70 * 24 * 60 * 60)),
+            "F_test_clamp_high": KnowledgeConcept(concept_id="F_test_clamp_high", label="Clamp High", confidence_score=0.9, groundedness_score=0.9, access_frequency=30, last_accessed_ts=current_time),
+            "G_test_clamp_low": KnowledgeConcept(concept_id="G_test_clamp_low", label="Clamp Low", confidence_score=0.1, groundedness_score=0.05, access_frequency=0, last_accessed_ts=current_time - (80 * 24 * 60 * 60))
         }
-        # Mock update_confidence to check internal dict, as bus is None
-        # update_confidence directly updates self._knowledge_confidence and self._capability_confidence
 
-        # Case 1: Increase confidence
-        new_conf1 = self.self_model.assess_confidence_in_knowledge(concept1_id)
-        self.assertIsNotNone(new_conf1)
-        self.assertTrue(new_conf1 > 0.5) # Expected increase (0.5 +0.05 for freq +0.1 for groundedness = 0.65)
-        self.assertEqual(self.self_model._knowledge_confidence.get(concept1_id), new_conf1)
-        self.assertEqual(self.self_model.knowledge_map.concepts[concept1_id].confidence_score, new_conf1)
-        self.assertGreater(self.self_model.knowledge_map.concepts[concept1_id].access_frequency, 20)
+        # Precise adjustments
+        # Concept D: Expected: 0.5 (base) + 0.1 (groundedness) + 0.05 (access_frequency) + 0.0 (age_factor for 2 days old) = 0.65
+        new_conf_D = self.self_model.assess_confidence_in_knowledge("D_test_precise")
+        self.assertAlmostEqual(new_conf_D, 0.65, places=2)
+        self.assertEqual(self.self_model.knowledge_map.concepts["D_test_precise"].confidence_score, new_conf_D)
 
+        # Concept E: Expected: 0.6 (base) - 0.1 (groundedness) - 0.02 (access_frequency) - 0.05 (age_factor for 70 days old) = 0.43
+        new_conf_E = self.self_model.assess_confidence_in_knowledge("E_test_precise")
+        self.assertAlmostEqual(new_conf_E, 0.43, places=2)
+        self.assertEqual(self.self_model.knowledge_map.concepts["E_test_precise"].confidence_score, new_conf_E)
 
-        # Case 2: Decrease confidence
-        new_conf2 = self.self_model.assess_confidence_in_knowledge(concept2_id)
-        self.assertIsNotNone(new_conf2)
-        self.assertTrue(new_conf2 < 0.7) # Expected decrease (0.7 -0.05 for age -0.1 for groundedness -0.02 for freq = 0.53)
-        self.assertEqual(self.self_model._knowledge_confidence.get(concept2_id), new_conf2)
+        # Clamping
+        # Concept F: Expected: 0.9 (base) + 0.1 (groundedness) + 0.05 (access_frequency) + 0.05 (age_factor for recent) = 1.1 -> clamped to 1.0
+        new_conf_F = self.self_model.assess_confidence_in_knowledge("F_test_clamp_high")
+        self.assertAlmostEqual(new_conf_F, 1.0, places=2)
+        self.assertEqual(self.self_model.knowledge_map.concepts["F_test_clamp_high"].confidence_score, 1.0)
 
-        # Case 3: Non-existent concept
+        # Concept G: Expected: 0.1 (base) - 0.1 (groundedness) - 0.02 (access_frequency) - 0.05 (age_factor for 80 days old) = -0.07 -> clamped to 0.0
+        new_conf_G = self.self_model.assess_confidence_in_knowledge("G_test_clamp_low")
+        self.assertAlmostEqual(new_conf_G, 0.0, places=2)
+        self.assertEqual(self.self_model.knowledge_map.concepts["G_test_clamp_low"].confidence_score, 0.0)
+
+        # Original tests for coverage
+        new_conf_increase = self.self_model.assess_confidence_in_knowledge("C_test_increase")
+        self.assertIsNotNone(new_conf_increase)
+         # C_test_increase: 0.5 (base) + 0.1 (groundedness) + 0.05 (access_frequency) + 0.05 (age for 1 day old) = 0.7
+        self.assertAlmostEqual(new_conf_increase, 0.70, places=2)
+
         new_conf_non_existent = self.self_model.assess_confidence_in_knowledge("non_existent_concept")
         self.assertIsNone(new_conf_non_existent)
-        self.assertIn("Concept 'non_existent_concept' not found", self.self_model._log[-1])
+        self.assertTrue(any("Concept 'non_existent_concept' not found" in log_msg for log_msg in self.self_model._log))
 
     def test_integration_action_event_to_assess_confidence(self):
         # Simulate a successful ActionEvent

@@ -62,8 +62,10 @@ def analyze_task_performance(parsed_logs: List[Dict[str, Any]]) -> Dict[str, Dic
         task["event_history"].append(entry) # Keep a log of all events for this task_id
 
         if event_type == "GOAL_CREATED":
-            # Considering only EXTRINSIC_TASK or similar as primary tasks for this analysis.
-            # This can be expanded based on how tasks are defined in your system.
+            # Task identification: Checks if the goal type ends with "_TASK" (case-insensitive)
+            # or contains "TASK". This provides flexibility.
+            # Note: For specific analyses, one might want to adapt this to match exact
+            # task-representing goal types logged by the agent (e.g., "EXTRINSIC_TASK", "LEARNING_TASK").
             if event_data.get("type", "").upper().endswith("_TASK") or "TASK" in event_data.get("type", ""):
                 task["task_id"] = task_id
                 task["description"] = event_data.get("description", "N/A")

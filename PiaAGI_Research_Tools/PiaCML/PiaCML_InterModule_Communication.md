@@ -39,8 +39,8 @@ A **hybrid approach combining an Asynchronous Message Bus (or Event Bus) with st
 *   **Primary Mode (Message Bus): Asynchronous Publish/Subscribe.**
     *   Modules register with the message bus, declaring which message types they can publish and which they wish to subscribe to.
     *   When a module publishes a message, the bus routes it to all subscribed modules.
-    *   **Enhanced Filtering:** Subscribers can register for messages not only by `message_type` and an optional custom `filter_func` (a Python callable that inspects the message), but also by providing a `metadata_filter` (a dictionary). If a `metadata_filter` is provided, the bus will only deliver messages where the `GenericMessage.metadata` field contains all key-value pairs specified in the subscriber's `metadata_filter`.
-    *   **Error Handling and Subscriber Suspension:** The message bus includes robust error handling for subscriber callbacks. If a specific subscriber's callback repeatedly raises exceptions (exceeding a predefined threshold), that subscriber will be temporarily suspended to prevent it from disrupting other message processing. Suspended subscribers will not receive further messages until explicitly unsuspended. This mechanism enhances the overall stability of the communication system.
+    *   **Enhanced Filtering:** Subscribers can register for messages not only by `message_type` and an optional custom `filter_func` (a Python callable that inspects the message), but also by providing a `metadata_filter` (a dictionary). If a `metadata_filter` is provided, the bus will only deliver messages where the `GenericMessage.metadata` field contains all key-value pairs specified in the subscriber's `metadata_filter`. This allows for fine-grained control over message reception based on arbitrary metadata tags (e.g., priority, specific sub-type, origin sub-component).
+    *   **Error Handling and Subscriber Suspension:** The message bus implements robust error handling for subscriber callbacks. If a specific subscriber's callback repeatedly raises exceptions (exceeding `MAX_CALLBACK_ERRORS`, a configurable constant), that subscriber is automatically suspended for that specific message type to prevent it from disrupting other message processing or causing cascading failures. Suspended subscribers will not receive further messages of that type until explicitly unsuspended by an administrative action or a predefined timeout/recovery mechanism (if implemented). This mechanism significantly enhances the overall stability and resilience of the communication system.
 *   **Secondary Mode (Direct API): Synchronous Request/Response (typically).**
     *   Used for specific, pre-defined interface methods.
 *   **Message Identification:** Each message type will have a unique identifier (e.g., a string name like "PerceptDataAvailable" or "LTMQueryRequest").
@@ -58,7 +58,7 @@ GenericMessage {
     message_type: String      // E.g., "PerceptData", "LTMQuery"
     timestamp: DateTime       // Timestamp of message creation (UTC)
     payload: Object           // The actual specific message data (e.g., PerceptData object)
-    metadata: Dict            // Optional: For routing tags (e.g., for `metadata_filter` subscriptions), priority, or other bus-specific info. Also used by the bus for internal tracking if needed.
+    metadata: Dict            // Optional: Key-value pairs for routing tags (used by `metadata_filter` subscriptions), priority, or other bus-specific info.
 }
 ```
 
@@ -105,9 +105,10 @@ GenericMessage {
         *   `priority`: Float // Numerical priority (e.g., 0.0 to 1.0)
         *   `status`: String // E.g., "new", "active", "achieved", "failed", "suspended", "updated"
         *   `originator`: String // E.g., "intrinsic_curiosity", "extrinsic_user_command", "self_preservation_drive"
-        *   `criteria_for_completion`: String // Description of what constitutes achievement
+        *   `criteria_for_completion`: String // Optional: Description of what constitutes achievement
         *   `associated_rewards_penalties`: Dict // Optional: Expected rewards or penalties
         *   `deadline`: DateTime // Optional: Goal deadline
+        *   `parent_goal_id`: String // Optional: UUID of a parent or overarching goal
 
 5.  **`EmotionalStateChange`**
     *   **Purpose:** For the Emotion Module to broadcast updates about the agent's current emotional state.
@@ -133,27 +134,27 @@ GenericMessage {
 7.  **`ActionEvent`**
     *   **Purpose**: For Behavior Generation or other action-performing modules to report the outcome of an executed action.
     *   **`message_type`**: "ActionEvent"
-    *   **Payload Fields**:
-        *   `action_command_id: UUID` // ID of the original ActionCommand
-        *   `action_type: String` // Type of the action that was executed
-        *   `status: String` // e.g., "SUCCESS", "FAILURE", "IN_PROGRESS"
-        *   `outcome: Dict` // Specific results or details of the action's execution (e.g., `{"goal_id": "g1", "value_changed": 10}`)
-        *   `timestamp: DateTime` // Timestamp of the event
-        *   `metadata: Dict` // Optional metadata
+    *   **Payload Fields (reflecting `core_messages.py` `ActionEventPayload`):**
+        *   `action_command_id: String` // Links back to the ActionCommand that initiated this event
+        *   `action_type: String` // The type of action that was executed
+        *   `status: String` // E.g., "SUCCESS", "FAILURE", "IN_PROGRESS", "CANCELLED"
+        *   `outcome: Union[EntityMovementOutcome, EntityCreationOutcome, EntityStateChangeOutcome, GeneralActionOutcome, Dict[str, Any]]` // Results or details. Specific outcome dataclasses are preferred for clarity.
+        *   `timestamp: DateTime` // Timestamp of the event occurrence
+        *   `metadata: Dict` // Optional: Additional context or details about the event
 
 8.  **`LearningOutcome`**
-    *   **Purpose**: For Learning modules to announce the result of a learning process.
+    *   **Purpose**: For Learning modules to announce the result of a learning process, or for any module to report an observation that should inform learning.
     *   **`message_type`**: "LearningOutcome"
-    *   **Payload Fields**:
-        *   `learning_task_id: String` // Identifier for the learning task
-        *   `status: String` // e.g., "LEARNED", "UPDATED", "FAILED_TO_LEARN"
-        *   `learned_item_type: String` // Optional: e.g., "skill", "knowledge_concept", "association"
-        *   `item_id: String` // Optional: ID of the learned/updated item
-        *   `item_description: String` // Optional: Brief description of what was learned
-        *   `confidence: Float` // Optional: Confidence in the learned item
-        *   `source_message_ids: List[String]` // Optional: IDs of messages that contributed to this learning
-        *   `metadata: Dict` // Optional: Additional details about the learning outcome
-        *   `timestamp: DateTime` // Timestamp of the learning outcome
+    *   **Payload Fields (reflecting `core_messages.py` `LearningOutcomePayload`):**
+        *   `learning_task_id: String` // Identifier for the learning task or episode
+        *   `status: String` // E.g., "LEARNED", "UPDATED", "FAILED_TO_LEARN", "NO_CHANGE", "OBSERVED_FOR_LEARNING"
+        *   `learned_item_type: String` // Optional: E.g., "skill", "knowledge_concept", "association", "parameter_tuning", "behavioral_heuristic"
+        *   `item_id: String` // Optional: ID of the learned/updated item, if applicable
+        *   `item_description: String` // Optional: Brief description of what was learned or the outcome/observation
+        *   `confidence: Float` // Optional: Confidence in the learned item or the validity of the observation
+        *   `source_message_ids: List[String]` // Optional: IDs of messages that triggered/informed this learning
+        *   `metadata: Dict` // Optional: Additional details, e.g., specific parameters learned, reward signals, context of observation
+        *   `timestamp: DateTime` // Timestamp of the learning outcome or observation
 
 ## 4. Interaction Patterns (Examples)
 
@@ -182,7 +183,7 @@ GenericMessage {
     *   The `GenericMessage` wrapper remains the same.
 *   **Versioning:** As message structures evolve, a versioning system for payload schemas might be necessary (e.g., `message_type_v2`). This can be included in the `GenericMessage.metadata` or as part of the `message_type` string.
 *   **Service Discovery:** For more complex scenarios, a service discovery mechanism could allow modules to dynamically find out about other modules and the message types they handle.
-*   **Bus Robustness and QoS:** The current PiaCML Message Bus implements callback error tracking and automatic suspension of persistently failing subscribers. The asynchronous dispatch mechanism is built on `asyncio`. Future enhancements could include more explicit QoS levels (e.g., guaranteed delivery, at-least-once, best-effort semantics) for different message types, potentially managed via `GenericMessage.metadata` or dedicated bus channels.
+    *   **Bus Robustness and QoS:** The PiaCML Message Bus implements robust error handling with its `MAX_CALLBACK_ERRORS` threshold leading to subscriber suspension for a given message type, preventing cascading failures. Asynchronous callback execution is handled via `asyncio.create_task`, ensuring non-blocking operation. While this provides a good baseline, future enhancements could explore more explicit Quality of Service (QoS) levels (e.g., guaranteed delivery, at-least-once semantics for critical messages vs. best-effort for high-volume, less critical data) and more sophisticated retry or dead-letter queue mechanisms.
 *   **Security and Permissions:** In multi-agent or externally exposed systems, message validation and module permissions for publishing/subscribing to certain topics might be needed.
 
 ---

@@ -206,7 +206,7 @@ class TestConcreteWorldModelAdvancedLogic(unittest.TestCase):
         # Ensure clean state for repositories for each test
         self.world_model._entity_repository = {}
         self.world_model._temporal_model_events = []
-        self.world_model._log = [] # Clear logs too
+        self.world_model._log = []
 
     def test_predict_future_state(self):
         # Test case 0: Non-existent entity
@@ -351,6 +351,96 @@ class TestConcreteWorldModelAdvancedLogic(unittest.TestCase):
         self.assertEqual(prediction_idle["prediction_rule_applied"], "no_specific_rule_applied_current_state_assumed")
         # Verify original entity in repo is unchanged
         self.assertEqual(self.world_model._entity_repository[agent_idle_id].to_dict(), original_idle_entity_dict)
+
+        # Test case 9: Rule Interaction/Precedence (moving_to_goal vs. constant_velocity)
+        agent_vel_goal_id = "agent_vel_and_goal"
+        goal_loc_for_vel_test_id = "goal_loc_entity_for_vel"
+
+        self.world_model._entity_repository[goal_loc_for_vel_test_id] = WorldEntity(
+            id=goal_loc_for_vel_test_id, type="location_marker",
+            state={"position": [50.0, 50.0, 0.0]}
+        )
+        self.world_model._entity_repository[agent_vel_goal_id] = WorldEntity(
+            id=agent_vel_goal_id, type="agent",
+            state={
+                "position": [0.0, 0.0, 0.0],
+                "velocity": [1.0, 1.0, 0.0], # Low constant velocity
+                "current_action": "moving_to_goal",
+                "goal_location_id": goal_loc_for_vel_test_id,
+                "movement_speed": 10.0 # Higher directed speed
+            },
+            properties={}, affordances=[], relationships={}
+        )
+
+        prediction_vel_goal = self.world_model.predict_future_state(agent_vel_goal_id, time_horizon=1.0)
+        self.assertIsNotNone(prediction_vel_goal)
+        # Expected position should be based on directed movement towards goal, not just velocity
+        # Target: [50,50,0]. Start: [0,0,0]. Speed: 10. Time: 1.0. Distance covered: 10.
+        # Direction vector: [50,50,0] normalized is approx [0.707, 0.707, 0]
+        # Expected position: [10*0.707, 10*0.707, 0] = [7.07, 7.07, 0]
+        expected_pos_vel_goal = [10.0 * (50.0 / math.sqrt(50.0**2 + 50.0**2)), 10.0 * (50.0 / math.sqrt(50.0**2 + 50.0**2)), 0.0]
+
+        self.assertTrue(math.isclose(prediction_vel_goal["predicted_entity_state_dict"]["state"]["position"][0], expected_pos_vel_goal[0], rel_tol=1e-3))
+        self.assertTrue(math.isclose(prediction_vel_goal["predicted_entity_state_dict"]["state"]["position"][1], expected_pos_vel_goal[1], rel_tol=1e-3))
+        self.assertEqual(prediction_vel_goal["prediction_rule_applied"], "mobile_entity_moves_towards_goal")
+        self.assertEqual(prediction_vel_goal["prediction_confidence"], 0.4) # Default for this rule if not reaching
+
+    def test_conflicting_updates_resolution(self):
+        """Test how the WorldModel handles conflicting entity updates based on timestamps and processing order."""
+        item_id = "item_to_update"
+        self.world_model._entity_repository[item_id] = WorldEntity(
+            id=item_id, type="test_item", state={}, properties={},
+            location_id="initial_loc", last_observed_ts=datetime(2023, 1, 1, 11, 59, 0, tzinfo=timezone.utc).timestamp()
+        )
+
+        # Scenario 1: Later event processed later (last write wins)
+        event1_payload = ActionEventPayload(
+            action_command_id="cmd1", action_type="MOVE_AGENT", status="SUCCESS",
+            outcome={"agent_id": item_id, "new_location_id": "loc_A"},
+            timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        )
+        event2_payload = ActionEventPayload(
+            action_command_id="cmd2", action_type="MOVE_AGENT", status="SUCCESS",
+            outcome={"agent_id": item_id, "new_location_id": "loc_B"},
+            timestamp=datetime(2023, 1, 1, 12, 0, 1, tzinfo=timezone.utc) # Later
+        )
+
+        # Process in chronological order of event timestamps
+        self.world_model._handle_action_event_message(GenericMessage("Test", "ActionEvent", event1_payload))
+        self.world_model._handle_action_event_message(GenericMessage("Test", "ActionEvent", event2_payload))
+
+        entity_after_scenario1 = self.world_model.get_entity_representation(item_id)
+        self.assertEqual(entity_after_scenario1.location_id, "loc_B")
+        self.assertEqual(entity_after_scenario1.last_observed_ts, event2_payload.timestamp.timestamp())
+
+        # Scenario 2: Older event processed LATER than a newer event
+        # Entity state should reflect the last processed message, and last_observed_ts should be that of the last processed message.
+        self.world_model._entity_repository[item_id] = WorldEntity( # Reset entity
+            id=item_id, type="test_item", state={}, properties={},
+            location_id="initial_loc_2", last_observed_ts=datetime(2023, 1, 1, 11, 58, 0, tzinfo=timezone.utc).timestamp()
+        )
+
+        event3_payload = ActionEventPayload( # Newer event
+            action_command_id="cmd3", action_type="MOVE_AGENT", status="SUCCESS",
+            outcome={"agent_id": item_id, "new_location_id": "loc_C"},
+            timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        )
+        event4_payload = ActionEventPayload( # Older event
+            action_command_id="cmd4", action_type="MOVE_AGENT", status="SUCCESS",
+            outcome={"agent_id": item_id, "new_location_id": "loc_D"},
+            timestamp=datetime(2023, 1, 1, 11, 59, 59, tzinfo=timezone.utc)
+        )
+
+        # Process newer event first, then the older event
+        self.world_model._handle_action_event_message(GenericMessage("Test", "ActionEvent", event3_payload))
+        self.world_model._handle_action_event_message(GenericMessage("Test", "ActionEvent", event4_payload))
+
+        entity_after_scenario2 = self.world_model.get_entity_representation(item_id)
+        # The state reflects the last processed message (event4), even if its timestamp is older.
+        self.assertEqual(entity_after_scenario2.location_id, "loc_D")
+        # And last_observed_ts is updated to the timestamp of the last processed message.
+        self.assertEqual(entity_after_scenario2.last_observed_ts, event4_payload.timestamp.timestamp())
+
 
     def test_query_world_state_advanced_queries(self):
         # Populate entities

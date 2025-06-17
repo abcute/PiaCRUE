@@ -212,6 +212,8 @@ def generate_summary_report(analyzed_goals_data: dict):
     # Define priority bands (example, assuming priorities are 0-10 from GoalUpdatePayload, or 0-1 for intrinsic intensity based)
     # For this example, let's assume initial_priority_value is on a 0-10 scale for extrinsic,
     # and intrinsic (intensity*10) also falls in this.
+    # Note: The actual priority scale (e.g., 0-1, 0-100) and these bands might need adjustment
+    # based on the actual range of priority values logged by the specific PiaAGI agent configuration.
     priority_bands = {
         "Low (0-3.5)": {"total": 0, "achieved": 0},
         "Medium (3.5-7.5)": {"total": 0, "achieved": 0},
