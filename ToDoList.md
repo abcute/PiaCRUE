@@ -264,7 +264,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## Other Pending CML Tasks
 - [P1] [x] **[REFACTOR] PiaCML Conceptual Logic Implementation:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms. (From IMPROVEMENT_TODOLIST #11)
-- [P2] [ ] **[TEST] PiaCML Test Coverage for Advanced Features:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components). (From IMPROVEMENT_TODOLIST #12)
+- [P2] [x] **[TEST] PiaCML Test Coverage for Advanced Features:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components). (Completed by Jules: Enhanced test coverage for ConcreteSelfModelModule's ethical evaluation & confidence assessment, and for ConcreteWorldModelModule's prediction logic & update consistency.)
 - [P2] [ ] Begin drafting/implementing more detailed computational models for the Motivational System, beyond current specifications, focusing on dynamic goal generation and interaction between intrinsic/extrinsic motivators. (Derived from old ToDoList, refined - check overlap with MSM Phase 2/3).
 
 ## III. PiaSE (PiaAGI Simulation Environment)
@@ -292,7 +292,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## Other General & Research Tasks
 - [P2] [ ] Outline a research plan for Theory of Mind (ToM) acquisition and scaffolding in early-stage PiaAGI agents, detailing experimental setups in PiaSE. (Derived from old ToDoList)
-- [P2] [ ] Conduct a survey and review of existing Python libraries relevant to implementing advanced aspects of the PiaAGI cognitive architecture (e.g., probabilistic reasoning, knowledge graphs, advanced ML models for CML components). (Derived from old ToDoList)
+- [P2] [x] Conduct a survey and review of existing Python libraries relevant to implementing advanced aspects of the PiaAGI cognitive architecture (e.g., probabilistic reasoning, knowledge graphs, advanced ML models for CML components). (Completed by Jules: Created Papers/Python_Libraries_Survey_for_PiaAGI.md with an initial survey of relevant libraries.)
 - [P1] [x] Integrate insights from `Papers/AGI_Interdisciplinary_Memorandum.md` into various tool designs and the core `PiaAGI.md` framework where applicable. (Derived from old ToDoList)
 - [P2] [x] Expand upon the concepts in `Papers/Human_Inspired_Agent_Blueprint.md` to create more detailed specifications or design documents for agent construction. (Completed by Jules by creating Papers/Blueprint_PiaAGI_Integration.md)
 
@@ -324,7 +324,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 ## III. Code Refinements & Future MVP Enhancements
 - [x] **[ENHANCEMENT] PiaSE DSE Environment Reconfiguration:** Implemented initial environment and agent configuration from the first DSE curriculum step in `BasicSimulationEngine.initialize()`. (Further dynamic reconfiguration by ADM remains a potential future enhancement).
 - [P1] [x] **[REFACTOR] PiaCML Conceptual Logic Implementation:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms. (From IMPROVEMENT_TODOLIST #11)
-- [P2] [x] **[TEST] PiaCML Test Coverage for Advanced Features:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components). (From IMPROVEMENT_TODOLIST #12)
+- [P2] [x] **[TEST] PiaCML Test Coverage for Advanced Features:** Unit tests for PiaCML modules, while good for some basic aspects (e.g., MessageBus, SelfModel confidence), do not yet cover the more complex conceptual algorithms and data structures being defined (e.g., ethical reasoning logic, WorldModel consistency checks, advanced SelfModel data components). (Completed by Jules: Enhanced test coverage for ConcreteSelfModelModule's ethical evaluation & confidence assessment, and for ConcreteWorldModelModule's prediction logic & update consistency.)
 
 ## IV. User Tasks (Already Identified for Project Owner)
 - [P1] [ ] **[USER_TASK] Diagram Integration in `PiaAGI.md`:**
