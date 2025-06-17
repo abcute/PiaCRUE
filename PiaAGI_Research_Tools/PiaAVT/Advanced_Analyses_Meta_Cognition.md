@@ -31,19 +31,68 @@ Based on the extended `Logging_Specification.md`, the following key meta-cogniti
 
 ### A. MCP Lifecycle and Usage Analysis
 
-*   **Goal:** To understand how MCPs are created, modified, and utilized, and their correlation with performance.
-*   **Methods & Metrics:**
-    *   **Frequency Analysis:**
-        *   Count `MCP_DEFINITION_REQUESTED`, `MCP_GENERATED`, `MCP_MODIFIED` events over time or by context.
-        *   Track frequency of `MCP_INVOKED` for each `mcp_id`.
-    *   **Contextual Analysis:**
-        *   Identify common `source_problem_id`s leading to `MCP_GENERATED`.
-        *   Analyze contexts (e.g., task types, environmental states) where specific MCPs are most frequently invoked.
-    *   **Performance Correlation:**
-        *   Correlate `MCP_INVOKED` events (for specific MCPs) with subsequent task success/failure rates, efficiency metrics (e.g., time to completion, resources used).
-        *   Compare performance on tasks where a relevant MCP was used versus not used.
-    *   **Complexity Tracking:** Analyze `complexity_score` trends for generated/modified MCPs.
-*   **Required Log Data:** `MCP_DEFINITION_REQUESTED`, `MCP_GENERATED`, `MCP_MODIFIED`, `MCP_INVOKED`, and related task performance logs.
+*   **Goal:** To understand how Meta-Cognitive Primitives (MCPs) are defined, requested, generated, modified, and utilized by the agent, and to correlate MCP usage with task performance and agent development.
+
+*   **Required Input Log Event Types (from `Logging_Specification.md`):**
+    *   `MCP_DEFINITION_REQUESTED`: Provides context on why an MCP might be needed (`event_data` fields like `source_problem_id`, `capability_gap_description`).
+    *   `MCP_GENERATED`: Details of newly created MCPs (`event_data` fields like `mcp_id`, `description`, `parameters`, `complexity_score`).
+    *   `MCP_MODIFIED`: Tracks changes to MCPs (`event_data` fields like `mcp_id`, `version`, `change_description`, `reason_for_modification`).
+    *   `MCP_INVOKED`: Records usage of MCPs (`event_data` fields like `mcp_id`, `context_id`, `input_parameters`, `outcome_summary`).
+    *   `TASK_STATUS_UPDATE` (from PiaSE or agent's internal task manager): To correlate MCP usage with task outcomes (`event_data` fields like `task_id`, `status` such as "SUCCESS", "FAILURE", `metrics` like `completion_time`, `resource_usage`).
+    *   `GOAL_STATUS_CHANGED`: To link MCP usage to goal achievement (`event_data` fields like `goal_id`, `status`).
+    *   `AGENT_ACTION_EXECUTED_IN_ENV`: If MCP invocation leads to specific, logged environmental actions.
+    *   `SELFMODEL_ATTRIBUTE_UPDATED`: If MCP generation/modification impacts self-assessed capabilities (e.g., a new skill related to the MCP).
+
+*   **Key Metrics and Insights to be Generated:**
+    1.  **MCP Repertoire Evolution:**
+        *   Timeline visualization of `MCP_GENERATED` and `MCP_MODIFIED` events.
+        *   Count of unique MCPs over simulation time or developmental stages.
+        *   Average and distribution of `complexity_score` for MCPs over time.
+        *   Rate of new MCP generation and modification frequency.
+    2.  **MCP Trigger Analysis:**
+        *   Frequency table/bar chart of top `source_problem_id`s or themes from `capability_gap_description` (from `MCP_DEFINITION_REQUESTED` or inferred from context of `MCP_GENERATED`).
+        *   Categorization and frequency of `reason_for_modification` for `MCP_MODIFIED` events.
+    3.  **MCP Usage Patterns:**
+        *   Bar chart: Top N most frequently invoked MCPs (by `mcp_id`).
+        *   For selected MCPs: Distribution of `context_id`s or common `input_parameters` patterns.
+        *   Success rate of MCP invocations (derived from `outcome_summary` in `MCP_INVOKED` or correlation with subsequent `TASK_STATUS_UPDATE` for related tasks).
+    4.  **MCP Performance Correlation:**
+        *   Statistical correlation (e.g., point-biserial for success/failure, Pearson for continuous metrics) between the invocation of specific MCPs (or MCP categories) and task success rates, completion times, or resource usage.
+        *   Comparative analysis: Performance metrics for tasks where a relevant MCP was invoked versus similar tasks where it was not.
+        *   Analysis of performance changes after an `MCP_MODIFIED` event (comparing invocations of different versions).
+    5.  **MCP Adoption and Utility:**
+        *   "Time-to-first-use": Histogram of time elapsed between `MCP_GENERATED` and the first `MCP_INVOKED` for that `mcp_id`.
+        *   "Usage decay": Identify MCPs whose invocation frequency significantly drops over time, potentially indicating obsolescence or supersession.
+    6.  **MCP Inter-dependencies (Advanced):**
+        *   Sequence analysis: Common sequences of `MCP_INVOKED` events, suggesting MCPs that are often used together to solve more complex problems.
+
+*   **Conceptual Algorithm / Data Processing Steps:**
+    1.  **Log Ingestion and Parsing:** Load JSONL log files. Validate schema for required top-level fields and `event_data` structures for MCP-related events.
+    2.  **Event Filtering:** Select all log entries with `event_type` in the list of required input log event types.
+    3.  **MCP Instance Tracking:**
+        *   Maintain a data structure (e.g., a dictionary mapping `mcp_id` to MCP objects/dictionaries).
+        *   Populate/update this structure based on `MCP_GENERATED` (create new entry), `MCP_MODIFIED` (update version, description, etc.), and `MCP_INVOKED` (log invocation details, link to context/task).
+    4.  **Task Correlation:**
+        *   For each `MCP_INVOKED` event, attempt to link it to a specific task or goal using `context_id`, timestamps, and `simulation_run_id`.
+        *   Extract relevant performance metrics from associated `TASK_STATUS_UPDATE` or `GOAL_STATUS_CHANGED` logs.
+    5.  **Metric Calculation:**
+        *   Iterate through filtered logs and tracked MCP instances to calculate frequencies, rates, success percentages, etc.
+        *   For correlation analysis, prepare datasets pairing MCP usage indicators with performance outcomes.
+    6.  **Temporal Analysis:** Group metrics by time windows (e.g., per simulation day, per developmental sub-stage) to plot trends.
+
+*   **Conceptual Visualization / Presentation of Results (within PiaAVT):**
+    1.  **MCP Dashboard Overview:**
+        *   Total MCPs, Average Complexity, Generation Rate (KPIs).
+        *   Timeline chart: `MCP_GENERATED` events over time, perhaps color-coded by a primary MCP category (if defined).
+    2.  **Individual MCP View (Selectable `mcp_id`):**
+        *   Details: Description, parameters, versions, current complexity.
+        *   Usage Statistics: Total invocations, success rate, contexts of use (e.g., top 5 `source_problem_id`s it helped solve).
+        *   Performance Impact: Charts showing correlation of its use with relevant task metrics (e.g., "Tasks using MCP X completed 15% faster on average").
+        *   Modification History: List of `MCP_MODIFIED` events with reasons.
+    3.  **MCP Invocation Flow (Advanced):**
+        *   A Sankey diagram or chord diagram showing common sequences or co-occurrence of different MCP invocations within broader tasks or problem-solving episodes.
+    4.  **MCP Trigger Report:**
+        *   Table listing common `capability_gap_description`s and the MCPs generated in response.
 
 ### B. Self-Correction Effectiveness Analysis
 
