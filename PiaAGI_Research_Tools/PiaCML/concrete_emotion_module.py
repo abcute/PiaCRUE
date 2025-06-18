@@ -165,8 +165,10 @@ class ConcreteEmotionModule(BaseEmotionModule):
             "type": "GOAL_STATUS_UPDATE",
             # Intensity: Higher priority goals might evoke stronger emotional responses. Scaled 0-1.
             # Clamped to ensure a minimum intensity for any goal update.
+            # Note: Dividing payload.priority by 10.0 assumes original priority is on a 0-10 scale.
+            # This mapping might need alignment with how Motivational System actually sets/uses GoalUpdatePayload.priority (currently float 0-1).
             "intensity": self._clamp_value(payload.priority / 10.0 if payload.priority else 0.1, 0.05, 1.0),
-            "goal_importance": self._clamp_value(payload.priority / 10.0 if payload.priority else 0.1, 0.0, 1.0),
+            "goal_importance": self._clamp_value(payload.priority / 10.0 if payload.priority else 0.1, 0.0, 1.0), # Same assumption for importance scaling
             "triggering_message_id": message.message_id,
             "agency": "system" # Goals are internal/system states or tasks.
         }
