@@ -344,6 +344,95 @@ This integration focuses on the bi-directional influence between the agent's goa
     This iterative refinement loop allows the PiaAGI to not only create MCPs but also to maintain, improve, and manage their lifecycle based on empirical performance and evolving understanding.
 *   **Output:** Refined tool/script specs; updated `CapabilityInventory`; new learning goals.
 
+### 3.7 SMM Phase 3: Advanced Self-Adaptation and Meta-Learning
+
+Phase 3 of the Self-Model Module (SMM) development focuses on enabling more profound levels of self-understanding, autonomous learning strategy adaptation, and proactive self-driven exploration. These capabilities represent a significant step towards a truly adaptive and self-improving AGI.
+
+#### 3.7.1 Automated Model Refinement (Self-Correction and Parameter Tuning)
+
+*   **Objective:** To enable the SMM to autonomously identify and guide the correction of inaccuracies or inefficiencies within its own models (e.g., `KnowledgeMap`, `CapabilityInventory` parameters, internal predictive models used for self-assessment) and potentially suggest refinements for other CML modules it interacts with.
+
+*   **Mechanisms for Identifying Inaccuracies/Inefficiencies:**
+    *   **Persistent Discrepancy Analysis:** The SMM analyzes its `AutobiographicalLogSummary` and `DevelopmentalState.self_correction_records` for recurring patterns of:
+        *   Prediction errors related to its own performance forecasts (e.g., consistently over/underestimating task completion times or success probabilities).
+        *   Failures in tasks where its `CapabilityInventory` indicated high proficiency.
+        *   Ineffectiveness of specific cognitive strategies (see 3.7.2) in certain contexts.
+    *   **Feedback from PiaAVT (Conceptual):** If PiaAVT (or a similar external/internal analysis tool) identifies statistical anomalies in the SMM's performance (e.g., a specific knowledge concept's `confidence_score` fluctuating wildly without clear external cause, or a skill's `proficiency_level` not improving despite successful task completions), this data could be fed to the SMM (e.g., via a `SystemDiagnosticInfo` message).
+    *   **Internal Consistency Checks:** The SMM periodically reviews its `KnowledgeMap` for inconsistencies (e.g., conflicting confidence scores for closely related concepts) or its `CapabilityInventory` for misalignments (e.g., high proficiency in a skill but low confidence in applying it).
+    *   **Analysis of "Surprise" from Emotion Module:** If the Emotion Module frequently reports "surprise" (high arousal, neutral/negative valence) in situations where the SMM predicted high certainty, it indicates a flaw in the SMM's predictive self-modeling.
+
+*   **Mechanisms for Triggering and Guiding Refinement:**
+    *   **Interaction with Learning Modules (LM):**
+        *   Upon identifying a refinement target (e.g., "Improve accuracy of self-assessed `confidence_score` for domain X"), the SMM formulates a meta-learning goal.
+        *   This goal is sent to the LM (e.g., via a `GoalUpdatePayload` with `originator="SMM_ModelRefinement"` and `type="META_LEARNING_INTERNAL_MODEL"`).
+        *   The LM might then:
+            *   Adjust parameters of the SMM's internal predictive models (e.g., learning rates for confidence updates, decay factors for `groundedness_score`).
+            *   Initiate targeted "internal simulations" (see 3.7.3) or request specific "self-reflection tasks" to gather more data about the SMM's inaccuracies.
+            *   Suggest modifications to how the SMM weighs different factors in its confidence assessments or ethical evaluations.
+    *   **Internal Simulation for Hypothesis Testing:** The SMM can use its predictive self-modeling capabilities (see 3.5.2) in a "what-if" mode. For example, "What if I changed the weight of `groundedness_score` in my confidence calculation? How would that have affected my past 10 confidence assessments versus actual outcomes?" This requires LTM access to past self-assessment data and outcomes.
+    *   **Updating SMM Parameters:** Refinements could involve adjusting parameters within `SelfAttributes` (e.g., base rates for confidence decay), tuning heuristics used in its core algorithms (e.g., for identifying knowledge gaps), or even modifying the structure of its `EthicalFramework` rules if a systemic bias is detected (with extreme caution and likely human oversight for ethical changes).
+
+#### 3.7.2 Meta-Cognitive Strategy Generation and Adaptation
+
+*   **Objective:** To enable the SMM to develop, store, evaluate, select, and adapt its own high-level cognitive strategies for tasks like learning, problem-solving, self-assessment, and attention allocation.
+
+*   **Developing and Representing Strategies:**
+    *   **Source of Strategies:**
+        *   **Abstraction from Episodic LTM:** The SMM, in conjunction with LM, analyzes `AutobiographicalLogSummary` and detailed episodic memories to identify sequences of cognitive operations (e.g., specific ways of querying LTM, focusing attention, then planning) that consistently led to success in particular types of tasks or contexts.
+        *   **Explicit Scaffolding:** Through PiaPES, a human or curriculum might introduce abstract strategy templates (e.g., "Means-Ends Analysis Template," "Analogical Reasoning Framework").
+        *   **Internal Generation/Variation:** Advanced SMM/LM might generate novel strategy variants by modifying or combining existing ones.
+    *   **Representation:** Meta-cognitive strategies could be stored in `CapabilityInventory.tools` with a specific `type` like "MetaCognitiveStrategy" or "CognitiveHeuristic".
+        *   `operational_details` would describe the steps or principles of the strategy.
+        *   `mcp_description_logic` (if using MCP structure) could store a more formal representation.
+        *   `usage_context_appropriateness` would store learned information about when the strategy is most effective.
+        *   `effectiveness_metrics` would track its historical performance.
+
+*   **Evaluating and Adapting Strategies:**
+    *   **Internal Simulation:** The SMM can simulate the application of different strategies to hypothetical or past problems (retrieved from LTM) to predict their effectiveness.
+    *   **Small-Scale Real-World Tests:** The SMM might (via MSM) motivate the agent to try a novel or adapted strategy on a non-critical task to gather real performance data.
+    *   **Feedback Loop:**
+        *   The SMM monitors the outcomes of tasks where a specific strategy was employed (via `ActionEventPayload`, `GoalUpdatePayload`).
+        *   It updates the `effectiveness_metrics` and `usage_context_appropriateness` for that strategy in `CapabilityInventory`.
+        *   If a strategy consistently underperforms or is misapplied, the SMM might trigger its refinement (interaction with LM) or deprecation.
+    *   **Strategy Selection:** When faced with a new task or problem, the SMM (or Planning Module consulting SMM) can select the most promising meta-cognitive strategy from its inventory based on context, task type, and past effectiveness.
+
+*   **Role of LTM (Procedural and Episodic):**
+    *   **Procedural LTM:** Stores the "how-to" for executing basic cognitive operations that form parts of a larger meta-cognitive strategy.
+    *   **Episodic LTM:** Stores instances of strategy application, their contexts, and outcomes, providing the raw data for strategy evaluation, abstraction, and refinement.
+
+#### 3.7.3 Self-Driven Exploration (Internal Epistemic Actions)
+
+*   **Objective:** To enable the SMM to proactively identify and seek to resolve uncertainties about itself, its capabilities, the effectiveness of its internal models or strategies, or its understanding of its own cognitive architecture.
+
+*   **Identifying Knowledge Gaps about Self:**
+    *   Beyond general knowledge gaps (handled by standard curiosity), the SMM might identify *meta-knowledge gaps*:
+        *   "I am uncertain about the true accuracy of my `KnowledgeMap.concepts.ConceptX.confidence_score`."
+        *   "I don't know how effective `CapabilityInventory.tools.StrategyY` is in high-stress situations."
+        *   "My model of how the Emotion Module influences my planning (`SMM-EM-Planning_interaction_model`) seems incomplete."
+        *   "I lack data on my performance for tasks requiring sustained attention beyond 30 minutes."
+    *   These gaps are logged in `KnowledgeMap.knowledge_gaps` with a specific type, e.g., "meta_uncertainty".
+
+*   **Formulating Exploratory Goals for Self-Understanding:**
+    *   Based on these meta-knowledge gaps, the SMM formulates specific "internal epistemic action" goals.
+    *   These goals are sent to the Motivational System (via `GoalUpdatePayload` with `originator="SMM_SelfExploration"` and `type="INTRINSIC_META_KNOWLEDGE_SEEKING"`).
+    *   Examples:
+        *   "Goal: Test confidence calibration for `ConceptX` by performing 3 diverse tasks heavily reliant on it and comparing predicted vs. actual outcome."
+        *   "Goal: Evaluate `StrategyY` in a simulated high-stress scenario (requires PiaSE setup)."
+        *   "Goal: Design and execute internal thought experiments to probe the SMM-EM-Planning interaction under varying emotional states." (Requires sophisticated internal simulation capabilities).
+        *   "Goal: Engage in a long-duration task to gather data on sustained attention performance."
+
+*   **Relationship with Intrinsic Motivation:**
+    *   This self-driven exploration is a sophisticated form of **curiosity** (reducing uncertainty about the self) and **competence** (improving the self-model's accuracy and the agent's self-management capabilities).
+    *   The MSM needs to be able to prioritize these internal epistemic goals alongside external and other intrinsic goals. The `importance` or `priority` assigned by SMM to these goals would be critical.
+
+*   **Executing Self-Exploration:**
+    *   May involve internal simulation (using World Model, and models of its own modules).
+    *   May involve requesting specific types of interactions or tasks in PiaSE.
+    *   May involve focused self-reflection on specific past episodes from LTM.
+    *   The results of these explorations (new data, confirmed/refuted hypotheses about self) are then used by SMM to update its models (`KnowledgeMap`, `CapabilityInventory`, `AutobiographicalLogSummary`, `DevelopmentalState`) and refine its meta-cognitive strategies.
+
+This Phase 3 functionality moves the SMM towards being a more autonomous, reflective, and self-improving system, crucial for advanced AGI.
+
 ## 4. Key Interactions with Other CML Modules
 
 The Self-Model is highly interconnected:
