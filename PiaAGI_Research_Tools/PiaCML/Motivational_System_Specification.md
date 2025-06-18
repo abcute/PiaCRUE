@@ -557,6 +557,88 @@ This integration allows the MSM to generate and refine goals based on the SMM's 
     *   The MSM can track the success/failure rates and progress of SMM-initiated developmental goals as a category.
     *   Persistent failure to achieve such goals, or SMM repeatedly proposing similar unachievable developmental goals, could indicate a deeper issue. This might trigger MSM to generate a higher-level intrinsic goal like "Re-evaluate_Self_Improvement_Strategy" or "Identify_Obstacles_To_Developmental_Progress," which would then engage SMM, Learning, and potentially Planning modules in a more profound meta-learning cycle.
 
+## 9. MSM Phase 3: Strategic Motivation, Value Alignment, and Resilience
+
+This section outlines Phase 3 advanced capabilities for the Motivational System Module (MSM), focusing on its role in supporting strategic long-term objectives, aligning goal generation with learned values, and exhibiting resilience in goal pursuit.
+
+### 9.1. Strategic Long-Term Planning Support
+
+*   **Objective:** Enable the MSM to represent, prioritize, and maintain drive for abstract, long-term goals that may span significant operational periods and require extensive decomposition by the Planning Module.
+
+*   **Representation of Long-Term Goals:**
+    *   Long-term goals (e.g., "achieve mastery in domain X," "contribute to solving problem Y") are represented within MSM's goal structures, likely with a specific `type` like "LONG_TERM_STRATEGIC" or "DEVELOPMENTAL_EPIC".
+    *   These goals would have very high-level `description` and `criteria_for_completion` (e.g., "SMM reports 'Expert' status in domain X," "Specific set of sub-goals related to climate change research completed with positive impact").
+    *   They might also have a `projected_duration` (e.g., "months", "years") and a very high `base_priority` if deemed critical by the agent's configuration or Self-Model.
+
+*   **Interaction with Planning Module:**
+    *   MSM provides these high-level, long-term goals to the Planning Module.
+    *   The Planning Module is responsible for decomposing these abstract objectives into shorter-term, actionable sub-goals and plans.
+    *   MSM's role is to maintain the "motivational salience" or "drive" for the overarching long-term goal, ensuring that the agent continues to generate and pursue sub-goals related to it over extended periods, even if immediate rewards are sparse. This can be achieved by MSM periodically re-asserting the long-term goal's priority or by linking the success of sub-goals back to the parent long-term goal for "progress satisfaction."
+
+*   **Role of Self-Model Module (SMM):**
+    *   SMM continuously assesses progress towards long-term goals by analyzing its `AutobiographicalLogSummary`, `KnowledgeMap`, and `CapabilityInventory`.
+    *   SMM provides feedback to MSM (e.g., via `GoalUpdatePayload` with status "IN_PROGRESS_UPDATE" for the long-term goal, including `progress_metric: 0.65`) on the perceived progress.
+    *   If SMM assesses that a long-term goal is substantially achieved (e.g., "Expertise in Quantum Physics criteria met"), it can signal MSM to mark the goal as "ACHIEVED".
+    *   If SMM deems a long-term goal consistently unachievable despite efforts, or if core values/priorities shift significantly, it might propose to MSM that the goal be "DEPRIORITIZED" or "ABANDONED", providing detailed reasoning.
+
+*   **Mechanisms for Delayed Gratification:**
+    *   MSM's prioritization algorithm (`_calculate_dynamic_priority`) can be configured with higher weights for `ValueAlignment(g)` or for goals with a `type="LONG_TERM_STRATEGIC"` if they are part of a core directive.
+    *   The SMM can play a role by providing "cognitive framing": if the SMM understands the link between current, less rewarding sub-goals and a highly valued long-term objective, it can provide a contextual signal to MSM or WM that reinforces the pursuit of these sub-goals (e.g., by associating them with the anticipated positive outcome of the long-term goal).
+    *   The Emotion Module's anticipation of future reward/satisfaction (a Phase 3 EM capability) related to a long-term goal could also generate positive valence that supports persistence on intermediate steps.
+
+### 9.2. Value Learning & Alignment in Motivation
+
+*   **Objective:** To enable MSM's goal generation and prioritization processes to dynamically adapt based on learned ethical values and alignment with the agent's core principles, as defined in the SMM's `EthicalFramework`.
+
+*   **Dynamic Adjustment of Goal Parameters based on Ethical Outcomes:**
+    *   MSM subscribes to feedback from SMM concerning the ethical evaluation of outcomes from previously pursued goals/actions. This might be a new conceptual message (e.g., `EthicalOutcomeAssessmentPayload` from SMM to MSM and LM) or inferred from detailed `ActionEventPayload` outcomes that SMM has enriched with ethical tags.
+    *   If a type of goal or a strategy used to achieve it consistently leads to SMM flagging ethically negative outcomes, MSM can:
+        *   Decrease the `base_priority` or `intensity` associated with generating similar goals in the future.
+        *   Modify the `source_trigger_details` for intrinsic motivations to be less sensitive to triggers that have historically led to value-misaligned pursuits.
+        *   For example, if a "explore_user_data_files" curiosity goal (initially high intensity) leads to SMM flagging a privacy violation, future "explore_filesystem" curiosity goals might have their intensity calculation down-weighted if the target involves user-specific directories.
+
+*   **Learning Module Interaction for Value-Aligned Heuristics:**
+    *   The Learning Module(s), by analyzing patterns of actions, outcomes, and their ethical evaluations (from SMM feedback), can develop heuristics for what constitutes value-aligned behavior.
+    *   These learned heuristics can be fed back to MSM to refine its internal models for:
+        *   **Goal Generation:** Bias intrinsic goal generation towards areas or methods that are more likely to be value-aligned. E.g., if "collaborative problem solving" consistently leads to positive ethical and task outcomes, the competence drive might be more easily triggered for collaborative skills.
+        *   **Prioritization:** The `ValueAlignment(g)` component in the priority calculation can be updated based on these learned heuristics, not just static mappings from the `EthicalFramework`.
+
+*   **Developing "Preference" for Aligned Goals/Strategies:**
+    *   Over time, through reinforcement (both intrinsic rewards and positive ethical feedback), MSM's parameters (e.g., weights in intensity calculation, thresholds for goal generation) can shift to favor goals and strategies that are consistently aligned with core values. This is a form of learned bias towards ethical behavior.
+    *   For instance, if "curiosity_leading_to_privacy_breach" is consistently punished (internally or externally), the activation threshold for such specific curiosity goals might increase, or the intensity might be capped at a lower value.
+
+*   **Safeguards against Value Drift:**
+    *   **SMM's `EthicalFramework.core_values`:** These are designed to be highly stable or immutable. MSM's value learning should primarily refine its understanding and application of these core values, not override them.
+    *   **SMM Oversight:** The SMM continuously evaluates the ethical implications of MSM's generated goals and their outcomes. If MSM starts generating goals that consistently conflict with `core_values`, SMM should flag this as a critical issue (e.g., `operational_status="SafeMode_MSM_ValueDrift"`) and potentially trigger a process to reset or constrain MSM's learned parameters, possibly requiring human intervention.
+    *   **Transparency & Auditability:** Logs of how MSM's parameters and goal generation heuristics change over time, and the ethical feedback that drove those changes, are crucial for understanding and managing value alignment (via PiaAVT).
+
+### 9.3. Resilience and Grit Modeling
+
+*   **Objective:** To enable the MSM to maintain pursuit of important, high-priority goals despite setbacks, failures, or obstacles, while also adaptively disengaging from truly futile endeavors.
+
+*   **Maintaining Goal Pursuit (Grit):**
+    *   **Priority Stability for Critical Goals:** For goals identified by SMM as critical (e.g., core directives, essential self-preservation, highly valued long-term objectives), MSM can have mechanisms to make their `priority` more resistant to decay or negative feedback, or to quickly re-prioritize them after transient disturbances.
+    *   **Adaptive Intensity Recalculation:** Instead of simply decreasing intensity after a failure, if a goal is critical and SMM assesses the failure as a learning opportunity (rather than an indication of true impossibility), MSM might maintain or even slightly boost the `intensity` of the intrinsic drive (e.g., competence) to overcome the obstacle.
+    *   **Long-Term Persistence Parameters:** Goals could have an associated "persistence_factor" that influences how many setbacks are tolerated before significant de-prioritization. This factor could be higher for long-term strategic goals.
+
+*   **Interaction with Emotion Module:**
+    *   **Frustration Processing:** MSM receives `EmotionalStateChangePayload`. If frustration (e.g., negative valence, high arousal) is linked to a specific blocked goal:
+        *   If the goal is of very high priority/criticality, this frustration might be interpreted by MSM (potentially guided by SMM's assessment of the goal's importance vs. current emotional toll) as a signal to *increase* resource allocation or explore alternative strategies more vigorously for a limited time (determination).
+        *   If the goal is less critical, or if frustration becomes chronic and very high, it might lead MSM to lower the goal's priority to reduce negative affect and allow the agent to focus on other, potentially more achievable goals.
+    *   **Hope/Optimism (Conceptual):** If SMM can provide an assessment of future success probability for a challenging goal, this "optimism" could counteract the demotivating effects of negative emotions and help MSM maintain the goal's priority.
+
+*   **Interaction with Self-Model Module:**
+    *   **Self-Efficacy Beliefs:** SMM's assessment of `CapabilityInventory.skills.[skill_id].confidence_in_skill` and overall `SelfAttributes.confidence_in_capabilities` directly impacts MSM. High self-efficacy can bolster persistence on challenging goals.
+    *   **Learned Helplessness Analogue:** If SMM detects a pattern of repeated failure across multiple domains despite effort (logged in `AutobiographicalLogSummary`), it might develop a state analogous to learned helplessness. This could manifest as generally lower `confidence_in_capabilities` and a reduced tendency for MSM to generate or sustain high-priority intrinsic goals for exploration or competence, favoring instead only highly predictable extrinsic tasks. Overcoming this would require significant positive feedback or scaffolded successes.
+    *   **Self-Compassion Analogue / Adaptive Disengagement:** If SMM assesses that continued pursuit of a goal is causing excessive negative emotional toll, is consistently failing despite varied strategies, and is perhaps not absolutely critical, it can signal MSM to significantly de-prioritize or "gracefully abandon" the goal. This prevents the agent from getting stuck in unproductive, detrimental loops. The `reason` for abandonment would be logged (e.g., "SMM_assessment_low_progress_high_distress").
+
+*   **Mechanisms for Adaptive Coping & Re-engagement:**
+    *   **Temporary De-prioritization:** Instead of outright abandonment, MSM can temporarily lower a frustrating goal's priority, allowing the agent to focus on other tasks. The goal remains in a "suspended" or "low_priority_pending" state.
+    *   **Shift to Sub-Goals or Prerequisite Skills:** If a major goal is blocked, MSM (guided by Planning/SMM) might increase the priority of related sub-goals or goals to acquire prerequisite skills that could eventually help overcome the main obstacle.
+    *   **Periodic Re-evaluation of Deprioritized Goals:** MSM, perhaps prompted by SMM or a timed mechanism, can periodically re-evaluate previously deprioritized or suspended goals. If context has changed, new skills/knowledge have been acquired, or emotional state is more favorable, the goal might be re-activated.
+
+These Phase 3 capabilities aim to make the MSM more strategic, value-aware, and robust, contributing significantly to the agent's autonomy, adaptability, and long-term effectiveness.
+
 ---
 Return to [PiaAGI Core Document](../../PiaAGI.md)
 Return to [PiaCML README](../README.md)
