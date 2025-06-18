@@ -254,13 +254,13 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## Advanced Module Features (Post-Phase 1 Prototypes) (From User's New List)
 - [P2] [x] **Self-Model Module (SMM) - Phase 2:** Integration with LTM (self-history, trajectory) and Motivational System (goal-driven self-assessment, predictive self-modeling). (Completed by Jules: Conceptually designed SMM-LTM and SMM-MSM Phase 2 integrations in Self_Model_Module_Specification.md, Section 3.5.)
-- [P2] [ ] **Self-Model Module (SMM) - Phase 3:** Advanced Self-Adaptation and Meta-Learning (automated model refinement, meta-cognitive strategy generation, self-driven exploration).
+- [P2] [x] **Self-Model Module (SMM) - Phase 3:** Advanced Self-Adaptation and Meta-Learning (automated model refinement, meta-cognitive strategy generation, self-driven exploration). (Completed by Jules: Added new section 3.7 to Self_Model_Module_Specification.md with conceptual designs for these features.)
 - [P2] [x] **Long-Term Memory (LTM) Module - Phase 2:** Implement active forgetting mechanisms and memory consolidation/abstraction processes. (Completed by Jules: Created LTM_Advanced_Features_Specification.md detailing conceptual designs for forgetting, consolidation, and abstraction.)
-- [P2] [ ] **Long-Term Memory (LTM) Module - Phase 3:** Implement prospective memory, counterfactual memory/reasoning, and explore integration with generative models for memory reconstruction.
+- [P2] [ ] **Long-Term Memory (LTM) Module - Phase 3:** Implement prospective memory, counterfactual memory/reasoning, and explore integration with generative models for memory reconstruction. (Conceptual design for features completed by Jules: Added new section 7 to LTM_Advanced_Features_Specification.md).
 - [P2] [x] **Motivational System Module (MSM) - Phase 2:** Integration with Emotion Module (emotion-modulated motivation) and Self-Model (self-aware goal setting, adaptive goal generation). (Completed by Jules: Conceptually designed MSM-EM and further MSM-SMM Phase 2 integrations in Motivational_System_Specification.md, Section 8.)
-- [P2] [ ] **Motivational System Module (MSM) - Phase 3:** Strategic long-term planning, value learning/alignment, and resilience/grit modeling.
+- [P2] [x] **Motivational System Module (MSM) - Phase 3:** Strategic long-term planning, value learning/alignment, and resilience/grit modeling. (Completed by Jules: Added new section 9 to Motivational_System_Specification.md with conceptual designs).
 - [P2] [x] **Emotion Module (EM) - Phase 2:** Strengthen emotion-cognition feedback loops, implement basic emotional regulation mechanisms, and basic social signal interpretation. (Completed by Jules: Created Emotion_Module_Phase2_Specification.md detailing conceptual designs for EM integrations and basic regulation.)
-- [P2] [ ] **Emotion Module (EM) - Phase 3:** Develop capacity for complex social emotions, sophisticated emotional regulation strategies, and explore emotion-driven creativity/problem-solving.
+- [P2] [x] **Emotion Module (EM) - Phase 3:** Develop capacity for complex social emotions, sophisticated emotional regulation strategies, and explore emotion-driven creativity/problem-solving. (Completed by Jules: Expanded Emotion_Module_Phase2_Specification.md to include Phase 3 concepts, renaming to Emotion_Module_Specification.md and adding new section 7).
 
 ## Other Pending CML Tasks
 - [P1] [x] **[REFACTOR] PiaCML Conceptual Logic Implementation:** Many methods in the concrete CML modules (e.g., `ConcreteWorldModel.predict_future_state`, `ConcreteSelfModelModule.perform_ethical_evaluation`, various planning and learning methods) currently contain placeholder logic, print statements indicating "conceptual," or highly simplified algorithms. (From IMPROVEMENT_TODOLIST #11)
@@ -269,7 +269,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## III. PiaSE (PiaAGI Simulation Environment)
 - [P2] [x] **Full PiaAGI Agent Instantiation:** Develop examples and helper classes in PiaSE to demonstrate assembling and running a complete PiaAGI agent (composed of multiple PiaCML modules using the Message Bus). (Completed by Jules: Refined PiaAGIAgent to use a shared MessageBus for CML modules and created scenario_full_agent_simple_task.py as a demonstration.)
-- [P2] [ ] **Environment API & Library Expansion:** (Derived from User's New List & old ToDoList `[/]`)
+- [P2] [x] **Environment API & Library Expansion:** (Completed by Jules: Created Environment_API_Expansion_Ideas.md with conceptual designs and added cross-references in interfaces.py.)
 - [P2] [ ] **Dynamic Scenario Engine for Scaffolding:** Enhance PiaSE's scenario manager to allow dynamic adjustments (complexity, hints, new challenges) based on agent performance (from PiaAVT) or curriculum triggers (from PiaPES). (From User's New List - This covers existing DSE work and future enhancements).
 - [P2] [ ] **Human-in-the-Loop (HITL) Interface:** Conceptualize how a human user could interact with a PiaSE simulation in real-time (e.g., as a tutor, evaluator, or another agent). (From User's New List)
 

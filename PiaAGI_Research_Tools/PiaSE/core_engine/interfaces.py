@@ -1,3 +1,6 @@
+# For conceptual ideas on further API expansions and utility library concepts,
+# see: PiaAGI_Research_Tools/PiaSE/docs/specifications/Environment_API_Expansion_Ideas.md
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pydantic import BaseModel, Field
@@ -10,6 +13,7 @@ class BaseDataModel(BaseModel):
 
 # New Pydantic Models for richer API definitions
 class DetectedObject(BaseDataModel):
+    # TODO: Consider adding relative_position and size_dimensions as per Environment_API_Expansion_Ideas.md
     object_id: Optional[str] = None # Unique ID if trackable
     label: str # e.g., "cat", "table"
     confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
@@ -59,6 +63,7 @@ class PerceptionData(BaseDataModel):
     auditory_percepts: Optional[List[AuditoryPercept]] = None
     textual_percepts: Optional[List[TextualPercept]] = None
     self_state_percept: Optional[AgentStatePercept] = None # Added
+    # TODO: Consider adding global_environmental_cues and agent_internal_physiological_proxy as per Environment_API_Expansion_Ideas.md
     custom_sensor_data: Dict[str, Any] = Field(default_factory=dict)
     messages: List[Dict[str, Any]] = Field(default_factory=list)
     agent_specific_data: Optional[Dict[str, Any]] = None
