@@ -236,7 +236,99 @@ This section outlines the conceptual mechanisms by which the Self-Model identifi
         *   "DG_LTM_Metric: Develop a new internal metric to benchmark associative linking quality."
     *   These more granular developmental goals can then be pursued via the Motivational System and Learning Module(s).
 
-### 3.5. ALITA-Inspired Self-Correction Loop for Tool/Script Generation (Interaction with other modules)
+### 3.5 Advanced Integration Designs
+
+This section details conceptual designs for how the Self-Model Module (SMM) integrates more deeply with other key CML modules, particularly LTM and the Motivational System, to enable advanced self-awareness and adaptive behaviors.
+
+#### 3.5.1 SMM-LTM Integration (Self-History & Trajectory)
+
+This integration focuses on how the SMM uses the Long-Term Memory (LTM), especially its episodic components, to build and maintain a coherent understanding of its own history and developmental trajectory.
+
+*   **Populating/Updating `AutobiographicalLogSummary`:**
+    *   **Message Subscription:** The SMM subscribes to various message types that signify important events in the agent's "life." These include:
+        *   `LearningOutcome` messages (from Learning Modules): Indicating new knowledge acquisition, skill refinement, or significant learning failures.
+        *   `GoalUpdatePayload` messages (from Motivational System): Specifically, terminal states like "ACHIEVED" or "FAILED" for significant goals.
+        *   Significant `ActionEventPayload` messages (from Behavior Generation or external environment via Perception): Particularly those with high impact, unexpected outcomes, or direct relevance to the agent's core tasks or self-preservation.
+        *   `SELF_REFLECTION_INSIGHT` and `SELF_CORRECTION_APPLIED` (internal events from SMM itself, if logged via bus for broader system awareness or if these represent significant "aha!" moments).
+    *   **Information Extraction and Entry Creation:**
+        *   Upon receiving a relevant message, the SMM extracts key information to create or update an `AutobiographicalLogSummaryEntry`.
+        *   `ltm_ref`: This field is crucial. It would conceptually store a pointer or unique identifier to a more detailed record of the event within the Episodic LTM. For example, if a `LearningOutcome` message is processed, the SMM might request the Learning Module (or LTM directly, if Learning Module has already stored it) to provide an LTM reference for the full learning episode.
+        *   `impact_on_self_model_summary`: This field is a concise summary of how the event affected the Self-Model. Examples:
+            *   For a `LearningOutcome` indicating a new skill: "Increased proficiency in `CapabilityInventory.skills.NewSkill_ID` from 0.2 to 0.4."
+            *   For a `GoalUpdatePayload` (goal achieved): "Successfully achieved `Goal_ID_XYZ` (related to `Task_ABC`), reinforcing confidence in related capabilities."
+            *   For an `ActionEventPayload` (unexpected failure): "Critical failure of `Action_DEF` during `Task_QRS`; triggered review of `CapabilityInventory.tools.Tool_123`."
+        *   Other fields like `timestamp`, `description` (a summary of the event), and `type` (e.g., "LearningEvent", "GoalCompletionEvent", "SignificantActionOutcome") are populated directly from the message or inferred by SMM.
+    *   **Maintaining Coherence:** The SMM ensures that the `AutobiographicalLogSummary` remains a relatively high-level summary, relying on LTM for exhaustive details. This prevents the Self-Model itself from becoming bloated with raw historical data.
+
+*   **SMM Querying LTM for Self-Assessment:**
+    *   **Trigger:** Internal SMM processes, such as periodic self-assessment routines, responding to a novel challenge, or trying to understand a recent performance anomaly, can trigger the need to consult its own history.
+    *   **Query Formulation:** The SMM formulates an `LTMQueryPayload` to retrieve relevant past experiences.
+        *   `requester_module_id`: SMM's own module ID.
+        *   `query_type`: Could be "episodic_keyword_search" (e.g., keywords like "failed_navigation_task", "user_feedback_positive_sentiment"), "episodic_retrieve_by_metadata_tags" (e.g., tags like `{"task_type": "problem_solving", "outcome": "success"}`), or more complex structured queries if LTM supports them.
+        *   `query_content`: The specific keywords, metadata tags, or temporal ranges.
+        *   `target_memory_type`: Primarily "episodic", but could also query "semantic" for related conceptual knowledge.
+    *   **Interaction:** SMM publishes the `LTMQueryPayload` to the Message Bus and subscribes to `LTMQueryResult` messages, processing the results to inform its current self-assessment (e.g., "Have I encountered similar problems before? How did I solve them? What was my emotional state?").
+
+*   **Building a "Trajectory" of Self-Development:**
+    *   This is an internal, analytical process within the SMM.
+    *   **Process:** The SMM periodically or upon specific triggers reviews:
+        *   Its `AutobiographicalLogSummary` for patterns in successes, failures, learning events, and ethical choice points over time.
+        *   Trends in its `KnowledgeMap` (e.g., how `confidence_score` and `groundedness_score` for key concepts have evolved).
+        *   Trends in its `CapabilityInventory` (e.g., how `proficiency_level` for critical skills has changed, rate of new tool/MCP acquisition).
+    *   **Output:** The insights from this trajectory analysis directly inform and update the `DevelopmentalState` components, such as:
+        *   Identifying if `active_developmental_goals` are being met or if new ones are needed.
+        *   Recognizing if an `architectural_maturation_target` might be necessary due to persistent plateaus in development.
+        *   Providing a basis for the SMM to understand its own learning rate and adaptability over time.
+
+#### 3.5.2 SMM-Motivational System Integration (Goal-Driven Self-Assessment & Predictive Self-Modeling)
+
+This integration focuses on the bi-directional influence between the agent's goals (managed by the Motivational System Module - MSM) and its self-perception (managed by SMM).
+
+*   **SMM using Goal Information from MSM for Self-Assessment:**
+    *   **Subscription:** SMM subscribes to `GoalUpdatePayload` messages from the MSM.
+    *   **Impact of Goal Outcomes on Self-Model:**
+        *   **`ACHIEVED` Goals:** When a significant goal is reported as "ACHIEVED", the SMM:
+            *   Increases its confidence in the skills and knowledge areas (`CapabilityInventory`, `KnowledgeMap`) deemed relevant to that goal's success. This might involve internal calls to its own confidence update mechanisms (e.g., `assess_confidence_in_knowledge`, `update_confidence_in_capability`).
+            *   Logs this achievement in `AutobiographicalLogSummary` with a positive impact statement.
+        *   **`FAILED` Goals:** When a goal is reported as "FAILED":
+            *   The SMM decreases confidence in relevant skills/knowledge, especially if the `reason` for failure (from `GoalUpdatePayload.event_data` or a linked `ActionEventPayload.outcome`) points to a deficiency.
+            *   The failure and its reason are logged in `AutobiographicalLogSummary`.
+            *   The SMM may analyze the failure reason to identify specific knowledge gaps or skill deficiencies, potentially updating `KnowledgeMap.knowledge_gaps` or flagging items in `CapabilityInventory`.
+    *   **Contextual Self-Assessment:** The priority, type (intrinsic/extrinsic), and complexity of active goals (from `GoalUpdatePayload`) provide context for the SMM's ongoing self-assessment of its operational effectiveness and alignment with its purpose.
+
+*   **SMM Performing "Predictive Self-Modeling" for Goals:**
+    *   **Triggers:**
+        *   Receipt of a new, high-priority `GoalUpdatePayload` from MSM.
+        *   A direct query from the Planning Module asking for a feasibility assessment of a potential goal or plan.
+        *   An internal SMM trigger, e.g., during periodic self-review or when considering long-term developmental objectives.
+    *   **Process:**
+        1.  **Identify Requirements:** The SMM analyzes the goal's description, criteria for completion, and any associated task breakdown (if available, perhaps from Planning). It identifies the key knowledge concepts and capabilities (skills, tools) required.
+        2.  **Assess Current Self-State:** It consults its `KnowledgeMap` and `CapabilityInventory` to retrieve current `confidence_score`, `groundedness_score`, `proficiency_level`, etc., for the identified requirements.
+        3.  **Query Historical Performance (LTM Interaction):** The SMM may formulate `LTMQueryPayload`s to retrieve data from Episodic LTM about past performance on similar goals or tasks, or tasks requiring similar skills/knowledge.
+        4.  **Generate Feasibility Score / Success Probability:** Based on current self-assessed capabilities and relevant past performance, the SMM computes a conceptual feasibility score or a qualitative assessment (e.g., "High Likelihood of Success with Current Capabilities", "Moderate Likelihood - Key Skill X is at Novice Level", "Low Likelihood - Significant Knowledge Gap in Domain Y").
+    *   **Output:**
+        *   Primarily, this is an internal assessment used by the SMM to understand its own readiness for the goal.
+        *   If triggered by Planning, the SMM could provide this assessment back. This might be via a direct response if a query mechanism exists, or conceptually, via a new message type like `SelfModelGoalFeasibilityAssessmentPayload` (though using existing channels or internal states is preferred initially). Such a payload might contain: `goal_id`, `feasibility_score_or_category`, `key_supporting_capabilities_refs`, `identified_risks_or_gaps_refs`, `confidence_in_assessment`.
+        *   The assessment can also trigger internal SMM actions, such as identifying a new knowledge gap if a goal is important but feasibility is low due to a specific deficiency.
+
+*   **SMM's Self-Assessments Generating New Goals for MSM:**
+    *   **Triggers:**
+        *   Identification of critical `KnowledgeMap.knowledge_gaps`.
+        *   Identification of skills in `CapabilityInventory` with consistently low `proficiency_level` or poor `success_rate_history` that are deemed important for the agent's role or overall development.
+        *   Analysis of `AutobiographicalLogSummary` revealing recurring failure patterns attributable to specific self-deficiencies.
+        *   An `ArchitecturalMaturationTarget` in `DevelopmentalState` might be broken down into actionable learning/developmental goals.
+    *   **Goal Formulation:** The SMM formulates a "developmental goal" aimed at addressing the identified deficiency. The description would specify what needs to be learned or improved.
+    *   **Publishing to MSM:** The SMM can then construct and publish a `GoalUpdatePayload` message.
+        *   `goal_id`: A new unique ID.
+        *   `goal_description`: e.g., "Improve understanding of concept 'X'", "Increase proficiency in skill 'Y' to 'Competent' level", "Resolve recurring failure pattern Z by investigating alternative strategies."
+        *   `priority`: Determined by the SMM based on the criticality of the deficiency.
+        *   `status`: "NEW" or "PENDING".
+        *   `originator`: A specific identifier like "SMM_SelfImprovementInitiative" or "SMM_DevelopmentalObjective".
+        *   `type`: A specific category like "INTRINSIC_SELF_IMPROVEMENT", "KNOWLEDGE_ACQUISITION_GOAL", or "SKILL_ENHANCEMENT_GOAL". (These types would need to be recognized by the MSM).
+        *   `criteria_for_completion`: e.g., "Achieve confidence_score > 0.8 for concept 'X'", "Successfully apply skill 'Y' in 5 diverse scenarios".
+    *   This allows the SMM to proactively contribute to its own learning and development by tasking the MSM (and subsequently Planning and Learning modules) with goals derived from its deep self-assessment.
+
+### 3.6. ALITA-Inspired Self-Correction Loop for Tool/Script Generation (Interaction with other modules)
 *   **Inputs:** Tool/script failure notification (from Behavior Generation sandbox), error details, original specifications, `CapabilityInventory`, `AutobiographicalLogSummary`.
 *   **Process:**
     *   **Step 1 (Logging & Initial Analysis):** "Log failure in `AutobiographicalLogSummary` and create/update an entry in `DevelopmentalState.self_correction_records`. The **Emotion Module** might tag this event with an affective state (e.g., 'frustration,' 'surprise'), influencing the priority of correction via the **Motivational System**."

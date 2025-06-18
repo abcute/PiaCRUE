@@ -38,21 +38,36 @@ try:
     from PiaAGI_Research_Tools.PiaCML.tom_module import TheoryOfMindModule
     from PiaAGI_Research_Tools.PiaCML.communication_module import CommunicationModule
     from PiaAGI_Research_Tools.PiaCML.base_world_model import BaseWorldModel
+    from PiaAGI_Research_Tools.PiaCML.message_bus import MessageBus # Ensure MessageBus is imported
     CML_PLACEHOLDERS_USED = False
 except ImportError as e:
     print(f"PiaAGIAgent: Error importing CML modules: {e}. Using placeholders. Ensure PiaCML is structured correctly or in PYTHONPATH.")
     CML_PLACEHOLDERS_USED = True
 
+    # Ensure MessageBus is available even if CML modules fail to import, for the agent's own bus.
+    try:
+        from PiaAGI_Research_Tools.PiaCML.message_bus import MessageBus
+    except ImportError:
+        print("PiaAGIAgent: CRITICAL - MessageBus itself could not be imported. Agent cannot function with shared bus.")
+        # Define a dummy MessageBus if it's absolutely critical for the rest of the agent structure to load
+        class MessageBus:
+            def __init__(self, *args, **kwargs): print("Dummy MessageBus initialized due to import error.")
+            def publish(self, *args, **kwargs): print("Dummy MessageBus: publish called.")
+            def subscribe(self, *args, **kwargs): print("Dummy MessageBus: subscribe called.")
+
+
     class PlaceholderModule(BaseDataModel): # Inherit from BaseDataModel for Pydantic compatibility if needed
         config: Optional[Dict] = None
         agent_id: Optional[str] = None
+        message_bus: Optional[Any] = None # Added message_bus argument
         # Allow arbitrary additional keyword arguments for flexibility with different module signatures
-        def __init__(self, config: Optional[Dict] = None, agent_id: Optional[str] = None, **kwargs):
+        def __init__(self, config: Optional[Dict] = None, agent_id: Optional[str] = None, message_bus: Optional[Any] = None, **kwargs):
             super().__init__() # Pydantic requires calling super's init
             self.config = config
             self.agent_id = agent_id
+            self.message_bus = message_bus # Store it
             self._kwargs = kwargs # Store other args
-            # print(f"Placeholder {self.__class__.__name__} initialized with config: {config}, agent_id: {agent_id}, other_args: {kwargs}")
+            # print(f"Placeholder {self.__class__.__name__} initialized with config: {config}, agent_id: {agent_id}, message_bus: {self.message_bus is not None}, other_args: {kwargs}")
 
         def process_sensory_input(self, data: Any, **kwargs) -> Any: print(f"Placeholder {self.__class__.__name__} processing sensory input {data}"); return {"processed_percepts": "placeholder_data"}
         def update_from_perception(self, data: Any, **kwargs): print(f"Placeholder {self.__class__.__name__} updating from perception {data}")
@@ -101,19 +116,26 @@ class PiaAGIAgent(AgentInterface):
         self.agent_id = agent_id
         self.cml_configs = cml_module_configs if cml_module_configs else {}
 
-        # Instantiate CML modules based on config or use defaults
-        wm_config = self.cml_configs.get("world_model")
-        self.world_model: BaseWorldModel = shared_world_model if shared_world_model else ConcreteWorldModel(config=wm_config, agent_id=self.agent_id)
+        # Instantiate a shared MessageBus for this agent instance
+        self.message_bus = MessageBus()
 
-        # Pass references to other modules as needed during construction
-        # This simplifies setup compared to many post-init connection calls.
-        self.perception_module: PerceptionModule = ConcretePerceptionModule(config=self.cml_configs.get("perception"), agent_id=self.agent_id, world_model=self.world_model)
-        self.working_memory: WorkingMemoryModule = ConcreteWorkingMemoryModule(config=self.cml_configs.get("working_memory"), agent_id=self.agent_id) # CE is part of WM
-        self.ltm: LongTermMemoryModule = ConcreteLongTermMemoryModule(config=self.cml_configs.get("ltm"), agent_id=self.agent_id)
-        self.attention_module: AttentionModule = ConcreteAttentionModule(config=self.cml_configs.get("attention"), agent_id=self.agent_id, working_memory=self.working_memory)
-        self.learning_module: BaseLearningModule = ConcreteLearningModule(config=self.cml_configs.get("learning"), agent_id=self.agent_id, world_model=self.world_model, ltm=self.ltm)
-        self.motivation_module: MotivationalSystemModule = ConcreteMotivationalSystemModule(config=self.cml_configs.get("motivation"), agent_id=self.agent_id, world_model=self.world_model)
-        self.emotion_module: EmotionModule = ConcreteEmotionModule(config=self.cml_configs.get("emotion"), agent_id=self.agent_id)
+        # Instantiate CML modules based on config or use defaults
+        # Pass the shared message_bus to all modules that accept it.
+        wm_config = self.cml_configs.get("world_model")
+        # World Model might be shared or agent-specific; if agent-specific, it also uses the agent's bus.
+        self.world_model: BaseWorldModel = shared_world_model if shared_world_model else ConcreteWorldModel(config=wm_config, agent_id=self.agent_id, message_bus=self.message_bus)
+
+        self.perception_module: PerceptionModule = ConcretePerceptionModule(config=self.cml_configs.get("perception"), agent_id=self.agent_id, world_model=self.world_model, message_bus=self.message_bus)
+        self.working_memory: WorkingMemoryModule = ConcreteWorkingMemoryModule(config=self.cml_configs.get("working_memory"), agent_id=self.agent_id, message_bus=self.message_bus) # CE is part of WM
+        self.ltm: LongTermMemoryModule = ConcreteLongTermMemoryModule(config=self.cml_configs.get("ltm"), agent_id=self.agent_id, message_bus=self.message_bus)
+        self.attention_module: AttentionModule = ConcreteAttentionModule(config=self.cml_configs.get("attention"), agent_id=self.agent_id, working_memory=self.working_memory, message_bus=self.message_bus)
+        self.learning_module: BaseLearningModule = ConcreteLearningModule(config=self.cml_configs.get("learning"), agent_id=self.agent_id, world_model=self.world_model, ltm=self.ltm, message_bus=self.message_bus)
+        self.motivation_module: MotivationalSystemModule = ConcreteMotivationalSystemModule(config=self.cml_configs.get("motivation"), agent_id=self.agent_id, world_model=self.world_model, message_bus=self.message_bus)
+        self.emotion_module: EmotionModule = ConcreteEmotionModule(config=self.cml_configs.get("emotion"), agent_id=self.agent_id, message_bus=self.message_bus)
+
+        # SelfModel is initialized before Planning, as Planning depends on it.
+        self.self_model: SelfModelModule = ConcreteSelfModelModule(config=self.cml_configs.get("self_model"), agent_id=self.agent_id, message_bus=self.message_bus)
+
         self.planning_module: PlanningAndDecisionMakingModule = ConcretePlanningAndDecisionMakingModule(
             config=self.cml_configs.get("planning"),
             agent_id=self.agent_id,
@@ -122,23 +144,24 @@ class PiaAGIAgent(AgentInterface):
             working_memory=self.working_memory,
             motivation_module=self.motivation_module,
             emotion_module=self.emotion_module,
-            self_model=None # self.self_model is not yet initialized
+            self_model=self.self_model, # Pass the initialized self_model
+            message_bus=self.message_bus
         )
-        self.behavior_generation: BehaviorGenerationModule = ConcreteBehaviorGenerationModule(config=self.cml_configs.get("behavior_generation"), agent_id=self.agent_id)
-        self.self_model: SelfModelModule = ConcreteSelfModelModule(config=self.cml_configs.get("self_model"), agent_id=self.agent_id)
-        # Now update planning_module with self_model if it has a setter or re-init if truly needed (less ideal)
-        if hasattr(self.planning_module, 'set_self_model_reference'):
-            self.planning_module.set_self_model_reference(self.self_model)
+        self.behavior_generation: BehaviorGenerationModule = ConcreteBehaviorGenerationModule(config=self.cml_configs.get("behavior_generation"), agent_id=self.agent_id, message_bus=self.message_bus)
 
-        self.tom_module: TheoryOfMindModule = ConcreteTheoryOfMindModule(config=self.cml_configs.get("tom"), agent_id=self.agent_id, world_model=self.world_model)
-        self.communication_module: CommunicationModule = ConcreteCommunicationModule(config=self.cml_configs.get("communication"), agent_id=self.agent_id, working_memory=self.working_memory, ltm=self.ltm)
+        self.tom_module: TheoryOfMindModule = ConcreteTheoryOfMindModule(config=self.cml_configs.get("tom"), agent_id=self.agent_id, world_model=self.world_model, message_bus=self.message_bus)
+        self.communication_module: CommunicationModule = ConcreteCommunicationModule(config=self.cml_configs.get("communication"), agent_id=self.agent_id, working_memory=self.working_memory, ltm=self.ltm, message_bus=self.message_bus)
 
-        # Establish inter-module connections (simplified, more robust is via constructor injection)
+        # Simplified inter-module connections if needed beyond bus (prefer bus or constructor injection)
         if hasattr(self.working_memory, 'set_ltm_reference') and self.ltm is not None:
             self.working_memory.set_ltm_reference(self.ltm)
         if hasattr(self.working_memory, 'set_perception_reference') and self.perception_module is not None:
             self.working_memory.set_perception_reference(self.perception_module)
-        # Consider that Central Executive (CE) functions are partly in WM, partly orchestrated by PiaAGIAgent's methods.
+
+        # If planning_module could not get self_model at init and has a setter (less ideal)
+        if hasattr(self.planning_module, 'set_self_model_reference') and getattr(self.planning_module, 'self_model', None) is None:
+             self.planning_module.set_self_model_reference(self.self_model)
+
 
         self.q_table: Dict[Any, Dict[Any, float]] = {} # For AgentInterface compatibility
 

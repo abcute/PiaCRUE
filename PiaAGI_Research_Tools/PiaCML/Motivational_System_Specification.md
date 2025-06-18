@@ -515,6 +515,48 @@ This section outlines the primary conceptual information flows between the Motiv
     *   `Environmental Context Updates`: General information about the current state of the environment from the World Model, which can reveal opportunities or threats relevant to goal generation and prioritization.
     *   `Object/Situation Affordance Information`: Data from Perception/World Model about potential interactions or uses of objects/situations, which can trigger competence or task-related motivations.
 
+## 8. Phase 2 Advanced Integration Designs (Conceptual)
+
+This section details further conceptual designs for how the Motivational System Module (MSM) integrates more deeply with other key CML modules, particularly the Emotion Module and the Self-Model Module, to enable more nuanced and adaptive motivational dynamics.
+
+### 8.1. Integration with Emotion Module (Emotion-Modulated Motivation)
+
+This integration allows the agent's emotional state to dynamically influence its motivations, making goal prioritization and generation more adaptive and human-like.
+
+*   **Message Subscription:**
+    *   The MSM subscribes to `EmotionalStateChange` messages (payload: `EmotionalStateChangePayload`) published by the Emotion Module.
+*   **Influence of Emotional States on Motivation:**
+    *   **Goal Priority Modulation:**
+        *   *Negative Emotions (e.g., fear, high anxiety, significant frustration):* High intensity of these emotions can lead the MSM to increase the priority of goals related to safety, threat mitigation, problem resolution, or uncertainty reduction. It may also temporarily suppress or lower the priority of less critical goals like exploration or long-term skill development. The `triggering_event_id` in the emotion payload can help MSM link the emotion to a specific failed/blocked goal, potentially reducing that goal's immediate priority if it's causing persistent negative affect and no progress is being made.
+        *   *Positive Emotions (e.g., joy, interest, satisfaction):* Positive affect, especially if linked via `triggering_event_id` to a specific activity, domain, or successful goal completion, can lead MSM to:
+            *   Increase the priority or internal intensity parameter of related intrinsic goals (e.g., boost a competence goal for a skill used successfully, or a curiosity goal for a domain where new, interesting information was found).
+            *   Enhance persistence parameters (e.g., willingness to expend more resources) for goals currently being pursued successfully and generating positive affect.
+    *   **New Goal Generation (Conceptual):**
+        *   Sustained positive emotional states like high "interest" or "engagement" (e.g., derived from VAD: high valence, moderate arousal) related to a specific context (identified via `triggering_event_id` or ongoing perceptual cues) could prompt MSM to generate new `INTRINSIC_CURIOSITY` or `INTRINSIC_COMPETENCE` goals focused on that context.
+        *   Conversely, sustained negative states like "boredom" (e.g., low arousal, neutral/low valence) could trigger intrinsic goals to seek novelty or engage in more stimulating tasks.
+    *   **Internal MSM Logic:**
+        *   The MSM needs internal mechanisms (e.g., rule-based mappings, weighted functions, or learned associations) to translate patterns in `EmotionalStateChangePayload.current_emotion_profile` (and `primary_emotion`, `intensity`) into concrete adjustments to goal parameters (e.g., dynamic priority scores, activation/suppression thresholds) or parameters influencing the generation of new intrinsic goals.
+        *   Example: `IF emotion.valence < -0.5 AND emotion.arousal > 0.7 THEN increase_priority_factor_for_safety_goals = 1.5`.
+
+### 8.2. Integration with Self-Model Module (Adaptive Goal Generation & Refinement)
+
+This integration allows the MSM to generate and refine goals based on the SMM's deep self-assessments, fostering more targeted and effective self-improvement and development. This builds upon the SMM's Phase 2 capability to propose developmental goals.
+
+*   **Processing SMM-Generated Developmental Goals:**
+    *   The MSM subscribes to `GoalUpdatePayload` messages. It identifies goals originating from the SMM by checking for a specific `originator` field, such as `"SMM_SelfImprovementInitiative"` or `"SMM_DevelopmentalObjective"`, and a relevant `type` like `"INTRINSIC_SELF_IMPROVEMENT"`, `"KNOWLEDGE_ACQUISITION_GOAL"`, or `"SKILL_ENHANCEMENT_GOAL"`.
+    *   Upon receiving such a goal, the MSM incorporates it into its pool of manageable goals. The `priority` value provided by SMM in the payload serves as the initial base priority.
+    *   MSM's internal dynamic prioritization mechanism (`_calculate_dynamic_priority`) will then consider this base priority alongside other factors (e.g., urgency, dependencies, overall system state, current emotional state) to determine the goal's active pursuit priority relative to extrinsic tasks and other intrinsic drives.
+    *   The `criteria_for_completion` (e.g., "Achieve confidence_score > 0.8 for concept 'X'") and other details (`target_skill_id`, `target_task_domain`, `competence_details`) provided by SMM in the `GoalUpdatePayload.event_data` (or within the `goal_description` if structured) are used by MSM and subsequently by Planning/Learning modules.
+*   **Prioritization of Self-Improvement Goals:**
+    *   The weighting factors within MSM's dynamic priority calculation can be tuned to give appropriate consideration to these SMM-generated developmental goals.
+    *   The agent's `current_developmental_stage` (an attribute within SMM, potentially communicated to MSM or queried) could influence these weights, allowing, for example, more mature agents (e.g., PiaArbor, PiaGrove) to place a higher intrinsic value on self-improvement goals.
+*   **Handling Vague Goal Proposals from SMM (Conceptual):**
+    *   If an SMM-proposed developmental goal is too abstract for MSM to directly operationalize (e.g., "Improve general understanding of physics"), the MSM might (Option B):
+        *   Generate a low-priority internal "meta-goal" like "Refine_Developmental_Goal_ID_XYZ". This might indirectly prompt SMM (if it monitors MSM's internal states or goals about itself) or Planning to address the vagueness. This approach is chosen to avoid introducing new message types at this stage.
+*   **Tracking Overarching Self-Improvement Meta-Goals:**
+    *   The MSM can track the success/failure rates and progress of SMM-initiated developmental goals as a category.
+    *   Persistent failure to achieve such goals, or SMM repeatedly proposing similar unachievable developmental goals, could indicate a deeper issue. This might trigger MSM to generate a higher-level intrinsic goal like "Re-evaluate_Self_Improvement_Strategy" or "Identify_Obstacles_To_Developmental_Progress," which would then engage SMM, Learning, and potentially Planning modules in a more profound meta-learning cycle.
+
 ---
 Return to [PiaAGI Core Document](../../PiaAGI.md)
 Return to [PiaCML README](../README.md)
