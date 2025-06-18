@@ -253,11 +253,11 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [P3] [ ] Explore and implement further advanced features for `MessageBus` (e.g., enhanced routing options, more Quality of Service levels, advanced filtering).
 
 ## Advanced Module Features (Post-Phase 1 Prototypes) (From User's New List)
-- [P2] [ ] **Self-Model Module (SMM) - Phase 2:** Integration with LTM (self-history, trajectory) and Motivational System (goal-driven self-assessment, predictive self-modeling).
+- [P2] [x] **Self-Model Module (SMM) - Phase 2:** Integration with LTM (self-history, trajectory) and Motivational System (goal-driven self-assessment, predictive self-modeling). (Completed by Jules: Conceptually designed SMM-LTM and SMM-MSM Phase 2 integrations in Self_Model_Module_Specification.md, Section 3.5.)
 - [P2] [ ] **Self-Model Module (SMM) - Phase 3:** Advanced Self-Adaptation and Meta-Learning (automated model refinement, meta-cognitive strategy generation, self-driven exploration).
 - [P2] [ ] **Long-Term Memory (LTM) Module - Phase 2:** Implement active forgetting mechanisms and memory consolidation/abstraction processes.
 - [P2] [ ] **Long-Term Memory (LTM) Module - Phase 3:** Implement prospective memory, counterfactual memory/reasoning, and explore integration with generative models for memory reconstruction.
-- [P2] [ ] **Motivational System Module (MSM) - Phase 2:** Integration with Emotion Module (emotion-modulated motivation) and Self-Model (self-aware goal setting, adaptive goal generation).
+- [P2] [x] **Motivational System Module (MSM) - Phase 2:** Integration with Emotion Module (emotion-modulated motivation) and Self-Model (self-aware goal setting, adaptive goal generation). (Completed by Jules: Conceptually designed MSM-EM and further MSM-SMM Phase 2 integrations in Motivational_System_Specification.md, Section 8.)
 - [P2] [ ] **Motivational System Module (MSM) - Phase 3:** Strategic long-term planning, value learning/alignment, and resilience/grit modeling.
 - [P2] [ ] **Emotion Module (EM) - Phase 2:** Strengthen emotion-cognition feedback loops, implement basic emotional regulation mechanisms, and basic social signal interpretation.
 - [P2] [ ] **Emotion Module (EM) - Phase 3:** Develop capacity for complex social emotions, sophisticated emotional regulation strategies, and explore emotion-driven creativity/problem-solving.
@@ -291,7 +291,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [P1] [x] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02)
 
 ## Other General & Research Tasks
-- [P2] [ ] Outline a research plan for Theory of Mind (ToM) acquisition and scaffolding in early-stage PiaAGI agents, detailing experimental setups in PiaSE. (Derived from old ToDoList)
+- [P2] [x] Outline a research plan for Theory of Mind (ToM) acquisition and scaffolding in early-stage PiaAGI agents, detailing experimental setups in PiaSE. (Completed by Jules: Created Papers/Research_Plan_ToM_Scaffolding.md with a conceptual plan.)
 - [P2] [x] Conduct a survey and review of existing Python libraries relevant to implementing advanced aspects of the PiaAGI cognitive architecture (e.g., probabilistic reasoning, knowledge graphs, advanced ML models for CML components). (Completed by Jules: Created Papers/Python_Libraries_Survey_for_PiaAGI.md with an initial survey of relevant libraries.)
 - [P1] [x] Integrate insights from `Papers/AGI_Interdisciplinary_Memorandum.md` into various tool designs and the core `PiaAGI.md` framework where applicable. (Derived from old ToDoList)
 - [P2] [x] Expand upon the concepts in `Papers/Human_Inspired_Agent_Blueprint.md` to create more detailed specifications or design documents for agent construction. (Completed by Jules by creating Papers/Blueprint_PiaAGI_Integration.md)
