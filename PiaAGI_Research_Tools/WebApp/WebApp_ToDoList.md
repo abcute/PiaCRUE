@@ -1,47 +1,57 @@
-# WebApp To-Do List
+# PiaAGI Unified WebApp - Enhancements ToDo List
 
-- [x] **Analyze Existing WebApp Implementations:**
-    - [x] Read the code for `PiaAGI_Research_Tools/WebApp/backend/app.py` and `PiaAGI_Research_Tools/WebApp/frontend/src/App.jsx`.
-    - [x] Read the code for `PiaAGI_Research_Tools/PiaAVT/webapp/app.py` (Streamlit).
-    - [x] Read the code for `PiaAGI_Research_Tools/PiaPES/web_app/app.py` (Flask) and its `llm_config.ini.template`.
-    - [x] Read the code for `PiaAGI_Research_Tools/PiaSE/WebApp/app.py` (Flask).
-    - [x] Understand their current functionalities, UI, and how they might be integrated.
-- [x] **Design the Unified WebApp Architecture:**
-    - [x] Decide on a primary web framework (e.g., Flask or FastAPI for the backend, React/Vue for the frontend, or leverage Streamlit if suitable for all tools). The existing `PiaAGI_Research_Tools/WebApp` already uses Flask and React.
-    - [x] Plan how each toolset (PiaCML, PiaSE, PiaPES, PiaAVT) will be presented and interacted with within the unified interface.
-    - [x] Design the navigation structure.
-    - [x] Outline how LLM configuration will be managed globally.
-- [x] **Develop the Unified WebApp Backend:**
-    - [x] If Flask is chosen (as per existing `PiaAGI_Research_Tools/WebApp`), consolidate backend functionalities.
-    - [x] Create API endpoints to serve data and interact with the PiaAGI tools.
-    - [x] Integrate or adapt the LLM configuration mechanism from PiaPES.
-- [x] **Develop the Unified WebApp Frontend:**
-    - [x] Design and implement React components for each toolset's interface.
-    - [x] Focus on user experience and aesthetics.
-    - [x] Ensure responsiveness and ease of navigation.
-- [x] **Integrate PiaCML Interface:**
-    - [x] Design a way for users to conceptually interact with PiaCML. This might involve:
-        - [x] Visualizing module connections (based on `PiaAGI.md` diagrams).
-        - [x] Allowing users to see or set conceptual parameters for modules (similar to PiaPES cognitive configurations).
-        - [x] Displaying documentation or summaries for each module.
-- [x] **Integrate PiaSE Interface:**
-    - [x] Adapt or embed the existing PiaSE WebApp functionality.
-    - [x] Allow users to select and run simulations.
-    - [x] Display simulation visualizations.
-- [x] **Integrate PiaPES Interface:**
-    - [x] Adapt or embed the existing PiaPES web app functionality.
-    - [x] Allow users to design and manage prompts and curricula.
-    - [x] Ensure LLM configuration is handled correctly.
-- [x] **Integrate PiaAVT Interface:**
-    - [x] Decide how to integrate the Streamlit-based PiaAVT webapp. Options include:
-        - [x] Running it as a separate service and linking to it.
-        - [x] Embedding Streamlit components if possible (can be challenging with Flask/React).
-        - [x] Re-implementing key PiaAVT visualizations/analyses within the main WebApp framework (Flask/React).
-- [x] **Documentation and Deployment:**
-    - [x] Write a comprehensive `README.md` for the `PiaAGI_Research_Tools/WebApp` directory, including:
-        - [x] Overview of the WebApp.
-        - [x] Detailed local deployment instructions (backend and frontend).
-        - [x] Instructions for LLM configuration.
-    - [x] Update/create the main `requirements.txt` in `PiaAGI_Research_Tools/WebApp/backend/` and any frontend dependencies in `PiaAGI_Research_Tools/WebApp/frontend/package.json`.
-- [x] **Update Root `ToDoList.md`:** Mark the WebApp task as in progress/completed.
-- [x] **Submit Changes:** Commit the new WebApp, `WebApp_ToDoList.md`, and updated documentation.
+This document outlines planned enhancements for the PiaAGI Unified WebApp to improve its clarity, intuition, and ability to visualize the integrated PiaAGI framework.
+
+## P1: Core Workflow Enhancements
+
+- [ ] **Implement PiaAGI Experiment Runner (P1-Overall)**
+    - [ ] `[P1-1]` Backend: Design API to accept PiaPES prompt/curriculum ref, PiaSE scenario ref, and PiaAGI agent configuration.
+    - [ ] `[P1-2]` Backend: Implement logic to initialize a full PiaAGI agent (CML modules) based on the configuration.
+    - [ ] `[P1-3]` Backend: Implement logic to run the configured PiaAGI agent in the specified PiaSE scenario, collecting logs.
+    - [ ] `[P1-4]` Frontend: Design UI (new page/section) for "Experiment Runner" (prompt selection, scenario selection, run initiation).
+    - [ ] `[P1-5]` Frontend: Display basic simulation results (textual logs, summary stats, links to detailed AVT analysis).
+    - [ ] `[P1-6]` Frontend (Optional Stretch): Basic visualization of agent's primary actions/state changes during simulation.
+
+## P2: Module-Specific Visualizations & Interface Improvements
+
+- [ ] **CML Visualizations & Interaction Enhancements (P2-Overall)**
+    - [ ] `[P2-1]` Working Memory Module:
+        - [ ] Frontend: Display current WM items (list/tags).
+        - [ ] Frontend: Show item salience and active focus.
+        - [ ] Backend: Ensure WM API provides necessary data.
+    - [ ] `[P2-2]` Motivational System Module:
+        - [ ] Frontend: Visualize current goal hierarchy (tree/list), active goals, priorities/intensities.
+        - [ ] Frontend: Display recent intrinsic rewards or significant motivation state changes.
+        - [ ] Backend: Ensure MSM API provides necessary data.
+    - [ ] `[P2-3]` Emotion Module:
+        - [ ] Frontend: Display current VAD state (sliders/numerical) and primary discrete emotion.
+        - [ ] Frontend (Optional): List key recent appraisals influencing emotion.
+        - [ ] Backend: Ensure Emotion API provides necessary data.
+- [ ] **SE Interface Enhancements (P2-Overall)**
+    - [ ] `[P2-4]` Scenario Selection:
+        - [ ] Backend: API endpoint to list available PiaSE scenarios.
+        - [ ] Frontend: Dropdown on `SEPage` to select scenarios.
+    - [ ] `[P2-5]` Agent Selection (Initial Simple Agents):
+        - [ ] Frontend: Allow selection between different simple, hardcoded agents for PiaSE runs (if backend supports).
+- [ ] **AVT Integration Enhancements (In-WebApp) (P2-Overall)**
+    - [ ] `[P2-6]` Goal Lifecycle Count Plot:
+        - [ ] Backend: Extend basic AVT analysis to return goal event counts.
+        - [ ] Frontend: Display as a bar chart on `AVTPage`.
+    - [ ] `[P2-7]` Basic VAD Trajectory Plot:
+        - [ ] Backend: AVT API to provide simplified VAD time-series data if present in logs.
+        - [ ] Frontend: Basic line plot of V, A, D over time on `AVTPage`.
+
+## P3: General UI/UX and Conceptual Visualizations
+
+- [ ] **PiaPES Visualization Enhancements (P3-Overall)**
+    - [ ] `[P3-1]` Developmental Curriculum Flowchart:
+        - [ ] Frontend: Implement simple flowchart/graph view for `DevelopmentalCurriculum` steps.
+        - [ ] Backend: Ensure curriculum data is easily parsable.
+    - [ ] `[P3-2]` Cognitive Configuration Summary (Conceptual):
+        - [ ] Frontend: Display human-readable summary of cognitive configurations on "View Prompt" page.
+- [ ] **UI/UX & Guidance (P3-Overall)**
+    - [ ] `[P3-3]` Implement tooltips/info icons for complex settings in CML, PES, SE interfaces.
+    - [ ] `[P3-4]` Add brief explanatory text on each main page (CML, PES, SE, AVT) about the tool's purpose and role.
+    - [ ] `[P3-5]` High-Level Framework Diagram:
+        - [ ] Frontend: Add static image/diagram of PiaAGI architecture to HomePage or "About/Framework" page.
+        - [ ] Frontend: Briefly describe how WebApp tools relate to this architecture.
