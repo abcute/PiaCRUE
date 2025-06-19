@@ -143,6 +143,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## Unified WebApp Development
 - [x] **PiaAGI_Research_Tools/WebApp Integration:** Developed the unified WebApp in `PiaAGI_Research_Tools/WebApp/` providing frontend interfaces (React) and backend APIs (Flask) for PiaCML, PiaSE (simulation run and result viewing), PiaPES (prompt/curriculum management), and basic PiaAVT (log upload and simple analysis). Includes LLM configuration guidance and a detailed README for setup and deployment. (Completed 2024-07-31)
+- [ ] Review and implement WebApp enhancements (see `PiaAGI_Research_Tools/WebApp/WebApp_ToDoList.md` for detailed tasks).
 
 ## Priority 1:
 - [x] Example: Examples/Cognitive_Configuration/Configuring_Emotion_Module.md (baseline states, reactivity, empathy).
@@ -291,6 +292,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 - [P1] [x] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02, updated 2024-08-07)
 - [ ] Review and update all project README files for consistency and accuracy post-AGI framework definition and initial README rewrite.
 - [x] Rewrite main README.md and README_cn.md to align with AGI focus (Completed 2024-08-07).
+- [x] Revise README.md and README_cn.md to enhance the expression of project ownership and confidence. (Completed 2024-08-07)
 
 ## Other General & Research Tasks
 - [P2] [x] Outline a research plan for Theory of Mind (ToM) acquisition and scaffolding in early-stage PiaAGI agents, detailing experimental setups in PiaSE. (Completed by Jules: Created Papers/Research_Plan_ToM_Scaffolding.md with a conceptual plan.)
