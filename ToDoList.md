@@ -230,7 +230,7 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 ## Cross-Cutting: Tooling for AGI's Internalization of Developer Tools & MCPs
 - [x] **PiaAVT Logging for Meta-Cognition:** Formally propose and document new event types in `Logging_Specification.md` related to AGI self-analysis, internal simulation, MCP generation, and cognitive reconfiguration. (`Logging_Specification.md` updated with detailed meta-cognitive event types)
 - [x] **PiaAVT Analysis for Meta-Cognition:** Design and prototype at least one conceptual analysis in PiaAVT to detect patterns indicative of an AGI internalizing tool principles (e.g., correlating `AGENT_MCP_GENERATED` with improved task performance). (Conceptual design document `Advanced_Analyses_Meta_Cognition.md` created)
-- [P1] [x] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02)
+- [P1] [x] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02, updated 2024-08-07)
 
 ## Cross-Cutting Future Enhancements (From User's New List)
 - [x] **PiaPES Scaffolding for Meta-Cognition:** Design a conceptual `DevelopmentalScaffolding` curriculum segment in PiaPES aimed at encouraging an AGI to reflect on its problem-solving processes or generalize solutions into MCP-like structures.
@@ -288,7 +288,9 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## VII. Examples & General Documentation
 - [P3] [ ] Perform ongoing/second-pass updates to all READMEs for continued accuracy, clarity, and completeness, reflecting latest changes and future plans. (Derived from old ToDoList, following initial pass)
-- [P1] [x] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02)
+- [P1] [x] Create and maintain `README_CN.md`: A Chinese version of `README.md`. Ensure it's kept synchronized with the English version when updates occur. (Task initiated on 2025-06-02, updated 2024-08-07)
+- [ ] Review and update all project README files for consistency and accuracy post-AGI framework definition and initial README rewrite.
+- [x] Rewrite main README.md and README_cn.md to align with AGI focus (Completed 2024-08-07).
 
 ## Other General & Research Tasks
 - [P2] [x] Outline a research plan for Theory of Mind (ToM) acquisition and scaffolding in early-stage PiaAGI agents, detailing experimental setups in PiaSE. (Completed by Jules: Created Papers/Research_Plan_ToM_Scaffolding.md with a conceptual plan.)
@@ -328,7 +330,3 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## IV. User Tasks (Already Identified for Project Owner)
 - [P1] [ ] **[USER_TASK] Diagram Integration in `PiaAGI.md`:**
-
-[end of ToDoList.md]
-
-[end of ToDoList.md]
