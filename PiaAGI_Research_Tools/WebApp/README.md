@@ -1,5 +1,36 @@
 # PiaAGI Unified WebApp
 
+## PiaAGI Framework Overview in WebApp (Conceptual)
+
+To help users understand the context of the Unified WebApp and how its different tool interfaces (PiaCML, PiaPES, PiaSE, PiaAVT) relate to the broader PiaAGI project, a high-level overview is beneficial.
+
+1.  **Placement ([P3-5]):**
+    *   **HomePage/Dashboard:** A dedicated section on the WebApp's main landing page or dashboard.
+    *   **"About/Framework" Page:** Alternatively, a separate "About" or "Framework Overview" page accessible from the main navigation.
+
+2.  **Content ([P3-5]):**
+    *   **Static Image/Diagram:**
+        *   Display a high-level architectural diagram of the PiaAGI framework. This diagram should visually represent:
+            *   The core PiaAGI agent cognitive architecture (key CML modules like Self-Model, LTM, Motivation, etc.).
+            *   The surrounding research tools: PiaPES, PiaSE, and PiaAVT.
+            *   How these tools interact with the agent and each other (e.g., PiaPES configures the agent, the agent runs in PiaSE, PiaAVT analyzes logs from PiaSE/agent).
+        *   This could be one of the diagrams from the main `PiaAGI.md` document (e.g., a simplified version of "Diagram 2: PiaAGI Cognitive Architecture" combined with tool interactions, or "Diagram 1: PiaAGI Framework Foundational Influences" if focusing on the project's conceptual basis).
+    *   **Explanatory Text:**
+        *   A brief textual description accompanying the diagram, explaining the overall vision of PiaAGI.
+        *   Short descriptions of each major component shown (Agent Core, PiaPES, PiaSE, PiaAVT).
+        *   Crucially, explain how the different sections/pages of the Unified WebApp map to these components. For example:
+            *   "Use the **PiaPES Interface** in this WebApp to design prompts and curricula that configure your agent's cognition."
+            *   "The **Experiment Runner** allows you to deploy agents (configured via PiaPES) into **PiaSE Scenarios**."
+            *   "View agent logs and analysis from **PiaAVT** in the results sections."
+            *   "Conceptually explore **PiaCML Module** states through the dedicated visualization views."
+
+3.  **Purpose:**
+    *   Provides users with a mental model of the entire PiaAGI ecosystem.
+    *   Clarifies the role and purpose of the Unified WebApp as an interface to this ecosystem.
+    *   Helps users navigate the WebApp more effectively by understanding how different features connect to the underlying research tools and AGI development workflow.
+
+This overview serves as an orienting guide, especially for users new to the PiaAGI project or the specific functionalities of the Unified WebApp.
+
 ## Overview
 
 The PiaAGI Unified WebApp serves as a centralized interface for interacting with the various tools and modules within the PiaAGI Research Suite. Its primary purpose is to provide a user-friendly platform for experimenting with and managing:
@@ -12,21 +43,36 @@ The PiaAGI Unified WebApp serves as a centralized interface for interacting with
 
 The WebApp consists of a **Flask backend** that serves APIs and manages tool interactions, and a **React frontend** that provides the user interface.
 
-## Features
+## Core Features
 
-*   **CML Dashboard:** Interactive forms to send data to and receive responses from CML modules (Perception, Emotion, Motivation, Working Memory) via backend APIs.
-*   **PES Interface:**
-    *   List, view, create, and edit PiaAGIPrompt templates.
-    *   List, view, create, and edit DevelopmentalCurriculum metadata and basic step structures.
-    *   Render prompts and curricula to Markdown for easy inspection.
-*   **SE Interface:**
-    *   Run a default GridWorld simulation scenario via a backend API call.
-    *   View textual logs and visual step-by-step outputs (images) from the simulation.
-*   **AVT Interface (Basic):**
-    *   Link to the standalone PiaAVT Streamlit application for detailed log analysis.
-    *   Upload PiaSE log files (`.json`, `.jsonl`) for a simple, integrated analysis (e.g., event type counts displayed as a chart).
-*   **LLM Testbed:** The `/api/process_prompt` endpoint (and other LLM-dependent features) utilize backend-configured LLM API keys.
-*   **Settings Guidance:** Instructions on how to configure backend LLM API keys.
+The Unified WebApp provides a central interface for interacting with the PiaAGI research tool suite. Its core conceptual features include:
+
+*   **PiaAGI Experiment Orchestration:**
+    *   **Experiment Runner:** Configure and initiate simulation runs by selecting:
+        *   PiaPES Guiding Prompts or Developmental Curricula (defining agent tasks and cognitive setup).
+        *   Agent Templates (for simpler agent definitions).
+        *   PiaSE Scenarios (defining the environment and tasks).
+        *   Logging levels for the simulation.
+    *   **Run Management:** Track the status of ongoing and completed experiment runs.
+*   **Results Visualization & Basic Analysis:**
+    *   **Basic Log Viewer:** Display textual logs from simulation runs for immediate feedback.
+    *   **Real-time Action/State Feed:** A simple feed of an agent's primary actions or significant state changes during a run.
+    *   **Summary Statistics:** Show key performance indicators from experiment outcomes.
+    *   **Link to PiaAVT:** Direct users to detailed analysis and visualization in the PiaAVT environment.
+*   **Cognitive Module State Inspection (PiaCML Insights):**
+    *   **Motivational System (MSM) Display:** Visualize goal hierarchies, active goals, priorities, and intrinsic reward events.
+    *   **Working Memory (WM) Display:** Show current WM items, their salience, and the Central Executive's focus.
+    *   **Emotion Module Display:** Visualize Valence-Arousal-Dominance (VAD) states, primary discrete emotions, and recent appraisal events.
+*   **PiaPES Interface Enhancements:**
+    *   **Curriculum Flowchart Viewer:** Visually represent the structure of `DevelopmentalCurriculum` steps.
+    *   **Cognitive Configuration Summary:** Display human-readable summaries of agent cognitive setups from prompts.
+    *   (Assumed from existing functionality: Managing PiaPES Guiding Prompts and Developmental Curricula - Create, Read, Update, Delete).
+*   **Enhanced User Experience (UI/UX):**
+    *   **Tooltips and Info Icons:** Contextual help for complex settings and parameters.
+    *   **Explanatory Text:** Guidance on main pages and features.
+    *   **Framework Overview:** An introductory section with a diagram explaining the PiaAGI architecture and the WebApp's role.
+*   **LLM Configuration:**
+    *   The backend provides a template (`llm_config.ini`) for researchers to configure LLM API keys if any backend processes directly require them. Individual tools interfaced via the WebApp (like a standalone PiaPES prompt generation tool) might have their own LLM configurations.
 
 ## Prerequisites
 
@@ -546,6 +592,130 @@ This UI component displays the agent's emotional state, providing insights into 
     *   Actions for fetching and updating this data.
 
 This UI helps researchers correlate agent behavior and decisions with its internal affective state, offering a deeper understanding of the emotion model's impact.
+
+### AVT Analysis Plot Display UI (Conceptual)
+
+This UI component is responsible for displaying specific analytical plots generated by PiaAVT, embedded within the WebApp for convenient access. It would typically be part of a detailed experiment results view.
+
+1.  **Main AVT Plot Display Component (`AvtPlotDisplay.js`):**
+    *   **Props:** Takes `run_id` and `analysis_type` (e.g., 'goal_lifecycle_counts', 'vad_trajectory') as props.
+    *   **Data Fetching:**
+        *   Based on `analysis_type`, it calls the appropriate backend API endpoint:
+            *   `/api/avt/analysis/goal_lifecycle_counts/<run_id>` for goal counts.
+            *   `/api/avt/analysis/vad_trajectory/<run_id>` for VAD trajectory.
+        *   Handles loading and error states.
+    *   **Layout:** Renders the specific plot component based on the fetched data.
+
+2.  **Goal Lifecycle Count Plot Component (`GoalLifecycleChart.js` - for P2-6):**
+    *   **Input:** The `data` array/object from the `/api/avt/analysis/goal_lifecycle_counts/<run_id>` response.
+    *   **Display:**
+        *   Uses a charting library (e.g., Chart.js, Recharts, Nivo) to render a bar chart.
+        *   **If not grouped by type:** Bars for "GOAL_CREATED", "GOAL_ACTIVATED", "GOAL_ACHIEVED", "GOAL_FAILED", showing their respective counts.
+        *   **If grouped by type:** Grouped bar chart, where each group is a goal type (e.g., "EXTRINSIC"), and within each group, bars for different lifecycle events.
+        *   Includes appropriate labels, titles, and legends.
+        *   Tooltips on bars to show exact counts.
+
+3.  **VAD Trajectory Plot Component (`VadTrajectoryChart.js` - for P2-7):**
+    *   **Input:** The `timestamps`, `valence`, `arousal`, and `dominance` arrays from the `/api/avt/analysis/vad_trajectory/<run_id>` response.
+    *   **Display:**
+        *   Uses a charting library to render a multi-line time-series chart.
+        *   X-axis: Time (derived from `timestamps`).
+        *   Y-axis: Value (typically -1 to 1 for Valence/Dominance, 0 to 1 for Arousal).
+        *   Three distinct lines for Valence, Arousal, and Dominance, each with a different color and clearly labeled in a legend.
+        *   Interactive features like zoom, pan, and tooltips showing V/A/D values at specific timestamps would be beneficial.
+
+4.  **State Management:**
+    *   The global state for the inspected `run_id` could store the data for these plots to avoid re-fetching if the user navigates away and back.
+    *   Actions for fetching the plot data.
+
+These components allow users to quickly visualize key analytical insights from PiaAVT directly within the main WebApp interface, streamlining the research workflow.
+
+### UI/UX Enhancements: Tooltips and Explanatory Text (Conceptual)
+
+To improve the usability and accessibility of the PiaAGI Unified WebApp, especially for new users or those engaging with complex configurations, incorporating tooltips and explanatory text is crucial.
+
+1.  **General Principles:**
+    *   **Clarity and Conciseness:** Explanations should be brief and to the point.
+    *   **Contextual Availability:** Information should be available where and when the user needs it, without cluttering the interface.
+    *   **Progressive Disclosure:** Offer basic information directly, with options to expand for more details if needed.
+
+2.  **Implementation Strategy:**
+    *   **Tooltip Component (`Tooltip.js`):** A reusable React component that can wrap any UI element (buttons, input fields, labels) to display a text bubble on hover or click.
+    *   **Info Icons (`InfoIcon.js`):** Small clickable "i" icons next to complex settings or section titles, which reveal more detailed explanations in a popover or modal.
+    *   **Explanatory Text Sections:** Brief paragraphs on main pages or within complex forms to provide an overview of the functionality.
+
+3.  **Key Areas for Tooltips and Explanations ([P3-3], [P3-4]):**
+
+    *   **Experiment Runner Page:**
+        *   **PiaPES Item Selector:**
+            *   Tooltip: "Select a PiaPES Guiding Prompt or Developmental Curriculum to configure the agent and define its tasks."
+        *   **Agent Template Selector:**
+            *   Tooltip: "Choose a pre-defined agent archetype. May be overridden if the selected PiaPES item specifies a detailed agent configuration."
+        *   **PiaSE Scenario Selector:**
+            *   Tooltip: "Select the simulation environment and specific scenario for the experiment run."
+        *   **Logging Level Selector:**
+            *   Tooltip: "Determine the verbosity of logs generated during the simulation. 'Detailed' is recommended for thorough analysis."
+        *   **Run Experiment Button (when disabled):**
+            *   Tooltip: "Please select a PiaPES item, agent template (if applicable), and a PiaSE scenario to enable."
+    *   **Module Visualization Pages (MSM, WM, Emotion):**
+        *   **Page Introduction:** Brief text at the top of each visualization page explaining what module's state is being shown and its role in the PiaAGI framework (e.g., "The Motivational System Module (MSM) drives the agent's goal-oriented behavior. This view shows its active goals and internal drives for the selected run.").
+        *   **Specific Metrics/Visuals:**
+            *   Goal Hierarchy (MSM): Info icon explaining "priority", "status", "type", "intensity".
+            *   VAD Display (Emotion): Info icon explaining Valence, Arousal, and Dominance dimensions.
+            *   WM Item Salience: Tooltip: "Indicates the current importance or activation level of this item in Working Memory."
+    *   **AVT Analysis Plot Display:**
+        *   **Page Introduction:** Text explaining that these are specific analyses from PiaAVT.
+        *   **Goal Lifecycle Chart:** Info icon explaining what each bar (created, activated, achieved, failed) represents.
+        *   **VAD Trajectory Chart:** Info icon explaining the time-series nature of the emotional state display.
+    *   **Main Tool Pages (Conceptual CML, PES, SE, AVT sections in WebApp):**
+        *   As per P3-4, each main page corresponding to a PiaAGI tool (e.g., a page for managing PiaPES prompts, a page for browsing PiaSE scenarios) should have a brief introductory paragraph explaining the purpose of that tool suite component and its role within the broader PiaAGI ecosystem. For example, on a PiaPES management page:
+            > "The PiaAGI Prompt Engineering Suite (PiaPES) provides tools to design, manage, and evaluate structured Guiding Prompts and Developmental Curricula. These are used to configure agent cognition and guide their learning pathways."
+
+4.  **Content Management:**
+    *   Tooltip and explanatory text content could be managed within the React components themselves for simplicity, or for larger applications, centralized in a JSON file or a simple internationalization (i18n) framework to facilitate updates and potential translations.
+
+By strategically placing these informational elements, the WebApp can become much more intuitive and guide users effectively through the complexities of PiaAGI experimentation.
+
+### PiaPES Visualization UI Enhancements (Conceptual)
+
+These UI enhancements aim to make complex PiaPES structures, such as Developmental Curricula and detailed Cognitive Configurations within prompts, more understandable at a glance.
+
+1.  **Developmental Curriculum Flowchart Viewer (`CurriculumFlowchart.js` - for P3-1):**
+    *   **Purpose:** To visually represent the structure and progression of a `DevelopmentalCurriculum`.
+    *   **Input:** A `DevelopmentalCurriculum` object (loaded from PiaPES, likely JSON).
+    *   **Display:**
+        *   Uses a graph visualization library (e.g., React Flow, Cytoscape.js, or even simpler custom CSS-based layouts for basic flowcharts) to render the curriculum steps as nodes and their sequential relationship as edges.
+        *   Each node (representing a `CurriculumStep`) could display:
+            *   `name` or a summary of the `prompt_reference`.
+            *   Key `learning_objectives` as short bullet points or tags.
+            *   `status` (e.g., "pending", "in_progress", "completed_success", "failed") if integrated with live agent progress tracking from PiaPES/PiaAVT.
+        *   Edges could be styled or annotated to indicate prerequisite conditions if they are more complex than simple sequence.
+    *   **Interaction:**
+        *   Clicking on a node could expand to show more details of the `CurriculumStep` (e.g., full prompt reference, success criteria, associated PiaSE scenario).
+        *   Pan and zoom capabilities for large curricula.
+    *   **Location:** This could be a dedicated view on a PiaPES curriculum management page or a modal displayed when a user inspects a curriculum.
+
+2.  **Cognitive Configuration Summary Viewer (`CognitiveConfigSummary.js` - for P3-2):**
+    *   **Purpose:** To provide a human-readable summary of the `<Cognitive_Module_Configuration>` section within a PiaAGI Guiding Prompt.
+    *   **Input:** The `Cognitive_Module_Configuration` object (dictionary) from a loaded `PiaAGIPrompt`.
+    *   **Display:**
+        *   Instead of showing raw JSON or parameter names/values directly, it translates them into more descriptive text.
+        *   **Example for Personality:**
+            *   Raw: `{"OCEAN_Openness": 0.9, "OCEAN_Conscientiousness": 0.3}`
+            *   Summary Display:
+                *   "**Personality:** Highly Open (Curious, Imaginative), Low Conscientiousness (Flexible, Spontaneous)"
+        *   **Example for Motivation:**
+            *   Raw: `{"IntrinsicGoal_Curiosity": "High", "ExtrinsicGoal_TaskCompletion": "Very_High"}`
+            *   Summary Display:
+                *   "**Motivation:** Driven by High Curiosity, Very High focus on Task Completion."
+        *   **Example for Emotion:**
+            *   Raw: `{"Baseline_Valence": "Mildly_Positive", "ReactivityToFailure_Intensity": "Low"}`
+            *   Summary Display:
+                *   "**Emotional Profile:** Generally Mildly Positive outlook, Low reactivity to failures."
+    *   **Structure:** Could be a list of key-value pairs or a short paragraph for each configured module (Personality, Motivation, Emotion, Learning).
+    *   **Location:** This component would be used on the "View Prompt" page within PiaPES, or any UI where a detailed prompt configuration is displayed, to offer a quick understanding of the agent's intended cognitive setup.
+
+These visualization enhancements help users to more intuitively grasp the design and implications of their PiaPES artifacts, aiding in both creation and review processes.
 
 1.  **Navigate to Frontend Directory:**
     In a new terminal window:
