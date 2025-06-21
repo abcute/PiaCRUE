@@ -151,19 +151,19 @@ PiaAGI is a project that aims to upgrade the existing PiaA project to use the la
 
 ## Unified WebApp Development
 - [x] **PiaAGI_Research_Tools/WebApp Integration:** Developed the unified WebApp in `PiaAGI_Research_Tools/WebApp/` providing frontend interfaces (React) and backend APIs (Flask) for PiaCML, PiaSE (simulation run and result viewing), PiaPES (prompt/curriculum management), and basic PiaAVT (log upload and simple analysis). Includes LLM configuration guidance and a detailed README for setup and deployment. (Completed 2024-07-31)
-- [ ] Review and implement WebApp enhancements (see `PiaAGI_Research_Tools/WebApp/WebApp_ToDoList.md` for detailed tasks).
+- [x] Review and implement WebApp enhancements (see `PiaAGI_Research_Tools/WebApp/WebApp_ToDoList.md` for detailed tasks). (Backend core workflow implemented)
     - <思考> This is the primary task requested by the user. The `WebApp_ToDoList.md` outlines features that have UI/API shells but require backend implementation for full functionality and tool synergy. This is high priority. </思考>
     - <优先级>高</优先级>
     - [ ] **Implement WebApp Backend Logic for Core Experiment Workflow:**
         - <思考>Based on current analysis, the WebApp frontend and API definitions for experiment execution and data visualization are largely in place. However, the backend logic to (1) initialize a PiaAGI agent with PiaCML modules based on PiaPES configurations, (2) run this agent in a selected PiaSE scenario, and (3) fetch and display actual (non-mock) CML state data and PiaAVT analysis results from these runs is missing. This is the core of the "WebApp upgrade." This task is critical for the WebApp to function as an integrated platform.</思考>
         - <优先级>高</优先级>
-        - [ ] Backend: Implement full agent initialization logic in `/api/experiments/run` (P1-2 from WebApp_ToDoList).
-        - [ ] Backend: Implement PiaSE simulation execution logic in `/api/experiments/run` (P1-3 from WebApp_ToDoList).
-        - [ ] Backend: Replace mock data with actual data fetching for CML state APIs (`/api/cml/.../state/<run_id>`).
-        - [ ] Backend: Replace mock data/client with actual PiaAVT integration for analysis APIs (`/api/avt/analysis/.../<run_id>`).
-        - [ ] Backend: Implement actual listing of PiaSE scenarios for `/api/se/scenarios`.
-        - [ ] Backend: Implement support for agent templates if `AgentTemplateSelector` is to be functional.
-        - [ ] Backend: Ensure actual logs from PiaSE runs are accessible via `/api/experiments/logs/<run_id>`.
+        - [x] Backend: Implement full agent initialization logic in `/api/experiments/run` (P1-2 from WebApp_ToDoList).
+        - [x] Backend: Implement PiaSE simulation execution logic in `/api/experiments/run` (P1-3 from WebApp_ToDoList).
+        - [x] Backend: Replace mock data with actual data fetching for CML state APIs (`/api/cml/.../state/<run_id>`).
+        - [x] Backend: Replace mock data/client with actual PiaAVT integration for analysis APIs (`/api/avt/analysis/.../<run_id>`).
+        - [x] Backend: Implement actual listing of PiaSE scenarios for `/api/se/scenarios`.
+        - [x] Backend: Implement support for agent templates if `AgentTemplateSelector` is to be functional.
+        - [x] Backend: Ensure actual logs from PiaSE runs are accessible via `/api/experiments/logs/<run_id>`.
 
 ## Priority 1:
 - [x] Example: Examples/Cognitive_Configuration/Configuring_Emotion_Module.md (baseline states, reactivity, empathy).
