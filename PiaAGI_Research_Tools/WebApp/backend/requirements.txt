@@ -3,3 +3,4 @@ python-dotenv
 openai
 Flask-CORS
 matplotlib
+Werkzeug

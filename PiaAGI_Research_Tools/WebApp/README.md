@@ -118,25 +118,15 @@ The Unified WebApp provides a central interface for interacting with the PiaAGI 
         ```
         This should work if you run the Flask app from `PiaAGI_Research_Tools/WebApp/backend/`.
 
-    *   **Manual `PYTHONPATH` (If Needed):** If the automatic modification is insufficient (e.g., due to how your IDE runs the script or if you restructure parts of the project), you might need to set the `PYTHONPATH` environment variable manually. 
-        From the **root of the `PiaAGI_Research_Tools` directory**, you can set it to include the project root:
-        *   On macOS/Linux:
-            ```bash
-            export PYTHONPATH=$(pwd) 
-            # Or, to be very explicit and include each tool's parent if they are not directly in root:
-            # export PYTHONPATH=$(pwd)/PiaCML:$(pwd)/PiaPES:$(pwd)/PiaSE:$(pwd)/PiaAVT:$(pwd) 
-            ```
-        *   On Windows (Command Prompt):
-            ```bash
-            set PYTHONPATH=%CD%
-            ```
-        *   On Windows (PowerShell):
-            ```bash
-            $env:PYTHONPATH = (Get-Location).Path
-            ```
-        Setting `PYTHONPATH` to the `PiaAGI_Research_Tools` directory itself should allow Python to find `PiaCML.module`, `PiaPES.module`, etc., assuming each tool directory (`PiaCML`, `PiaPES`, etc.) is a package (contains an `__init__.py`) or its submodules are structured to be importable when their parent is in the path. The backend currently adds the main `PiaAGI_Research_Tools` directory and then specific sub-tool directories like `PiaPES` and `PiaSE` to `sys.path`, which should cover most import needs.
+    *   **Manual `PYTHONPATH` (If Needed):** If the automatic modification is insufficient (e.g., due to how your IDE runs the script or if you restructure parts of the project), you might need to set the `PYTHONPATH` environment variable manually **before starting the Flask server**. The most straightforward way is to ensure the **absolute path to your `PiaAGI_Research_Tools` directory** is included in `PYTHONPATH`.
+        *   Example (assuming your terminal's current directory is `PiaAGI_Research_Tools`):
+            *   macOS/Linux: `export PYTHONPATH="${PYTHONPATH}:$(pwd)"` (appends to existing PYTHONPATH)
+            *   Windows (Command Prompt): `set PYTHONPATH=%PYTHONPATH%;%CD%` (appends)
+            *   Windows (PowerShell): `$env:PYTHONPATH = "$env:PYTHONPATH;" + (Get-Location).Path` (appends)
+        *   This allows Python to find top-level packages like `PiaCML`, `PiaPES`, etc., directly (e.g., `from PiaCML.some_module import ...`). The `app.py` also adds specific subdirectories, but having the root in `PYTHONPATH` is a good general practice for project-wide imports.
 
-5.  **LLM Configuration:**
+5.  **LLM Configuration (API Keys):**
+    If the WebApp or underlying tools need to interact with Large Language Models (LLMs), you must configure API keys.
     *   The backend uses an `llm_config.ini` file located in `PiaAGI_Research_Tools/WebApp/backend/` to manage LLM API keys and model preferences.
     *   A template file, originally from `PiaAGI_Research_Tools/PiaPES/web_app/llm_config.ini.template`, should have been copied to `PiaAGI_Research_Tools/WebApp/backend/llm_config.ini` during a previous setup step.
     *   If `llm_config.ini` does not exist in the backend directory, copy the template:
@@ -146,12 +136,20 @@ The Unified WebApp provides a central interface for interacting with the PiaAGI 
         # Or, if it's missing entirely, copy from PiaPES source (adjust path if needed)
         cp ../../PiaPES/web_app/llm_config.ini.template ./llm_config.ini
         ```
-    *   Edit `llm_config.ini` with your actual API keys. For example, for OpenAI:
-        ```ini
-        [OpenAI]
-        API_KEY = YOUR_OPENAI_API_KEY_HERE
-        # MODEL_NAME = gpt-4o 
-        ```
+    *   The backend uses an `llm_config.ini` file located in `PiaAGI_Research_Tools/WebApp/backend/` to manage LLM API keys and model preferences.
+    *   **To configure LLM access:**
+        1.  Copy the template file from `PiaAGI_Research_Tools/PiaPES/web_app/llm_config.ini.template` to the `PiaAGI_Research_Tools/WebApp/backend/` directory.
+        2.  Rename the copied file to `llm_config.ini`.
+            ```bash
+            # Example command from PiaAGI_Research_Tools/WebApp/backend/
+            cp ../../PiaPES/web_app/llm_config.ini.template ./llm_config.ini
+            ```
+        3.  Edit the newly created `PiaAGI_Research_Tools/WebApp/backend/llm_config.ini` with your actual API keys and preferred model names. For example, for OpenAI:
+            ```ini
+            [OpenAI]
+            API_KEY = YOUR_OPENAI_API_KEY_HERE
+            # MODEL_NAME = gpt-4o
+            ```
     *   **Important:** The backend server must be restarted after any changes to `llm_config.ini` for the new settings to take effect.
 
 6.  **Run the Backend Server:**
